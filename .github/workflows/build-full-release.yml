@@ -1,0 +1,69 @@
+name: Build Full Release APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      # Nuvio official backend / QR / account sync
+      NUVIO_SUPABASE_URL: https://api.nuvio.tv
+      NUVIO_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgxNTIxMzQ2LCJleHAiOjE5MzkyMDEzNDZ9.tmQaj682pwzehpqlgCDMnySOqiUvpgRbrE43T4VJpDI
+      NUVIO_SUPABASE_FALLBACK_URL: https://api-two.nuvioapp.space
+
+      # Official web endpoints used by QR / device linking
+      TV_LOGIN_WEB_BASE_URL: https://nuvio.tv/tv-login
+      DEVICE_LOGIN_WEB_BASE_URL: https://nuvio.tv/link
+
+      # Lab build: release variant with debug signing.
+      # This avoids needing a keystore just to produce the APK.
+      CI_USE_DEBUG_SIGNING: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Configure local.properties
+        shell: bash
+        run: |
+          cat > local.properties <<EOF
+          NUVIO_SUPABASE_URL=${NUVIO_SUPABASE_URL}
+          NUVIO_SUPABASE_ANON_KEY=${NUVIO_SUPABASE_ANON_KEY}
+          NUVIO_SUPABASE_FALLBACK_URL=${NUVIO_SUPABASE_FALLBACK_URL}
+          TV_LOGIN_WEB_BASE_URL=${TV_LOGIN_WEB_BASE_URL}
+          DEVICE_LOGIN_WEB_BASE_URL=${DEVICE_LOGIN_WEB_BASE_URL}
+          CI_USE_DEBUG_SIGNING=${CI_USE_DEBUG_SIGNING}
+          EOF
+
+      - name: Run Full Release tests
+        run: ./gradlew :app:testFullReleaseUnitTest --tests 'com.nuvio.tv.updater.*' --stacktrace
+
+      - name: Build Full Release APK
+        run: ./gradlew :app:assembleFullRelease --stacktrace
+
+      - name: List generated APKs
+        shell: bash
+        run: |
+          echo "=== APKs generated ==="
+          find app/build/outputs/apk/full/release -type f -name "*.apk" -print
+
+      - name: Upload Full Release APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: NuvioTV-1.0.0-FR-full
+          path: app/build/outputs/apk/full/release/*.apk
+          if-no-files-found: error
