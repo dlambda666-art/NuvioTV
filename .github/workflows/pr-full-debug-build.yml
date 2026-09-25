@@ -1,31 +1,41 @@
-name: PR Full Debug Build
+name: Build Full Debug / Release
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [dev]
+
   workflow_dispatch:
+    inputs:
+      build_type:
+        description: Build type
+        required: true
+        type: choice
+        options:
+          - debug
+          - release
+        default: release
 
 permissions:
   contents: read
 
 concurrency:
-  group: pr-full-debug-build-${{ github.event.pull_request.number || github.ref }}
+  group: full-build-${{ github.event.pull_request.number || github.ref }}-${{ inputs.build_type || 'debug' }}
   cancel-in-progress: true
 
 jobs:
-  full-debug-build:
-    name: Build fullDebug APK
+  build:
+    name: Build Full ${{ inputs.build_type == 'debug' && 'Debug' || 'Release' }}
     runs-on: ubuntu-latest
 
     env:
-      # Nuvio stable 1.0.0 - official backend
       NUVIO_SUPABASE_URL: https://api.nuvio.tv
       NUVIO_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgxNTIxMzQ2LCJleHAiOjE5MzkyMDEzNDZ9.tmQaj682pwzehpqlgCDMnySOqiUvpgRbrE43T4VJpDI
       NUVIO_SUPABASE_FALLBACK_URL: https://api-two.nuvioapp.space
-
       TV_LOGIN_WEB_BASE_URL: https://nuvio.tv/tv-login
       DEVICE_LOGIN_WEB_BASE_URL: https://nuvio.tv/link
+
+      CI_USE_DEBUG_SIGNING: true
 
     steps:
       - name: Checkout
@@ -49,32 +59,8 @@ jobs:
           DEVICE_LOGIN_WEB_BASE_URL=${DEVICE_LOGIN_WEB_BASE_URL}
           EOF
 
-          echo "Supabase URL configured: ${NUVIO_SUPABASE_URL}"
-          echo "Supabase fallback configured: ${NUVIO_SUPABASE_FALLBACK_URL}"
-          echo "TV login URL configured: ${TV_LOGIN_WEB_BASE_URL}"
-          echo "Device login URL configured: ${DEVICE_LOGIN_WEB_BASE_URL}"
-
-      - name: Prepare CI signing config
-        run: |
-          keytool -genkeypair \
-            -v \
-            -keystore "$RUNNER_TEMP/ci-debug.jks" \
-            -storepass android \
-            -alias androiddebugkey \
-            -keypass android \
-            -dname "CN=Android Debug,O=Android,C=US" \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000
-
-          {
-            echo "NUVIO_RELEASE_STORE_FILE=$RUNNER_TEMP/ci-debug.jks"
-            echo "NUVIO_RELEASE_KEY_ALIAS=androiddebugkey"
-            echo "NUVIO_RELEASE_KEY_PASSWORD=android"
-            echo "NUVIO_RELEASE_STORE_PASSWORD=android"
-          } >> "$GITHUB_ENV"
-
-      - name: Test updater and build fullDebug APK
+      - name: Build fullDebug
+        if: ${{ github.event_name == 'pull_request' || inputs.build_type == 'debug' }}
         run: |
           ./gradlew \
             :app:testFullDebugUnitTest \
@@ -82,16 +68,48 @@ jobs:
             :app:assembleFullDebug \
             --stacktrace
 
-      - name: Verify generated APK
+      - name: Build fullRelease
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_type == 'release' }}
+        run: |
+          ./gradlew \
+            :app:testFullReleaseUnitTest \
+            --tests 'com.nuvio.tv.updater.*' \
+            :app:assembleFullRelease \
+            --stacktrace
+
+      - name: Verify generated APKs
         shell: bash
         run: |
-          echo "=== Generated APK ==="
-          find app/build/outputs/apk/full/debug -maxdepth 1 -type f -name "*.apk" -print
+          if [[ "${{ github.event_name == 'workflow_dispatch' && inputs.build_type == 'release' }}" == "true" ]]; then
+            echo "=== Full Release APKs ==="
+            find app/build/outputs/apk/full/release \
+              -maxdepth 1 \
+              -type f \
+              -name "*.apk" \
+              -print
+          else
+            echo "=== Full Debug APKs ==="
+            find app/build/outputs/apk/full/debug \
+              -maxdepth 1 \
+              -type f \
+              -name "*.apk" \
+              -print
+          fi
 
-      - name: Upload fullDebug APK
-        uses: actions/upload-artifact@v7
+      - name: Upload Full Release APKs
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_type == 'release' }}
+        uses: actions/upload-artifact@v4
         with:
-          path: app/build/outputs/apk/full/debug/app-full-universal-debug.apk
-          archive: false
+          name: NuvioTV-1.0.0-FR-full-release
+          path: app/build/outputs/apk/full/release/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Full Debug APKs
+        if: ${{ github.event_name == 'pull_request' || inputs.build_type == 'debug' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: NuvioTV-1.0.0-FR-full-debug
+          path: app/build/outputs/apk/full/debug/*.apk
           if-no-files-found: error
           retention-days: 7
