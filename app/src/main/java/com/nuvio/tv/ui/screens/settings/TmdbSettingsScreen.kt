@@ -262,7 +262,7 @@ fun TmdbSettingsContent(
             selectedLanguage = uiState.language,
             showNoneOption = false,
             onLanguageSelected = { language ->
-                viewModel.onEvent(TmdbSettingsEvent.SetLanguage(language ?: "en"))
+                viewModel.onEvent(TmdbSettingsEvent.SetLanguage(language ?: "fr"))
                 showLanguageDialog = false
             },
             onDismiss = { showLanguageDialog = false }
