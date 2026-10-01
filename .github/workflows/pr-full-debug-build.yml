@@ -59,6 +59,29 @@ jobs:
           DEVICE_LOGIN_WEB_BASE_URL=${DEVICE_LOGIN_WEB_BASE_URL}
           EOF
 
+      # The debug build type signs with the "release" signing config, so it
+      # needs a keystore. Generate a throwaway one for CI debug builds.
+      - name: Prepare CI signing config (debug)
+        if: ${{ github.event_name == 'pull_request' || inputs.build_type == 'debug' }}
+        run: |
+          keytool -genkeypair \
+            -v \
+            -keystore "$RUNNER_TEMP/ci-debug.jks" \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US" \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000
+
+          {
+            echo "NUVIO_RELEASE_STORE_FILE=$RUNNER_TEMP/ci-debug.jks"
+            echo "NUVIO_RELEASE_KEY_ALIAS=androiddebugkey"
+            echo "NUVIO_RELEASE_KEY_PASSWORD=android"
+            echo "NUVIO_RELEASE_STORE_PASSWORD=android"
+          } >> "$GITHUB_ENV"
+
       - name: Build fullDebug
         if: ${{ github.event_name == 'pull_request' || inputs.build_type == 'debug' }}
         run: |

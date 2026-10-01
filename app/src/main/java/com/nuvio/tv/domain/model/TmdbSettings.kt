@@ -4,7 +4,7 @@ data class TmdbSettings(
     val enabled: Boolean = false,
     val modernHomeEnabled: Boolean = false,
     val enrichContinueWatching: Boolean = true,
-    // TMDB language preference (ISO-639-1, default English)
+    // TMDB language preference (ISO-639-1, default French)
     val language: String = "fr",
     // Group: Artwork (logo, backdrop)
     val useArtwork: Boolean = true,
