@@ -35,8 +35,6 @@ jobs:
       TV_LOGIN_WEB_BASE_URL: https://nuvio.tv/tv-login
       DEVICE_LOGIN_WEB_BASE_URL: https://nuvio.tv/link
 
-      CI_USE_DEBUG_SIGNING: true
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -90,6 +88,27 @@ jobs:
             --tests 'com.nuvio.tv.updater.*' \
             :app:assembleFullDebug \
             --stacktrace
+
+      # Signature fixe : sans elle, chaque APK release aurait une signature
+      # différente et Android refuserait la mise à jour par-dessus l'ancien.
+      - name: Prepare release signing key
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_type == 'release' }}
+        env:
+          NUVIO_KEYSTORE_BASE64: ${{ secrets.NUVIO_KEYSTORE_BASE64 }}
+          NUVIO_KEYSTORE_PASSWORD: ${{ secrets.NUVIO_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          if [ -z "$NUVIO_KEYSTORE_BASE64" ] || [ -z "$NUVIO_KEYSTORE_PASSWORD" ]; then
+            echo "::error::Secrets NUVIO_KEYSTORE_BASE64 et/ou NUVIO_KEYSTORE_PASSWORD manquants (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          printf '%s' "$NUVIO_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/nuviotv-fr.jks"
+          {
+            echo "NUVIO_RELEASE_STORE_FILE=$RUNNER_TEMP/nuviotv-fr.jks"
+            echo "NUVIO_RELEASE_KEY_ALIAS=nuviotv-fr"
+            echo "NUVIO_RELEASE_KEY_PASSWORD=$NUVIO_KEYSTORE_PASSWORD"
+            echo "NUVIO_RELEASE_STORE_PASSWORD=$NUVIO_KEYSTORE_PASSWORD"
+          } >> "$GITHUB_ENV"
 
       - name: Build fullRelease
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_type == 'release' }}

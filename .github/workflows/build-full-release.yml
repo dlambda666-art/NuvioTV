@@ -20,10 +20,6 @@ jobs:
       TV_LOGIN_WEB_BASE_URL: https://nuvio.tv/tv-login
       DEVICE_LOGIN_WEB_BASE_URL: https://nuvio.tv/link
 
-      # Lab build: release variant with debug signing.
-      # This avoids needing a keystore just to produce the APK.
-      CI_USE_DEBUG_SIGNING: true
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,8 +42,27 @@ jobs:
           NUVIO_SUPABASE_FALLBACK_URL=${NUVIO_SUPABASE_FALLBACK_URL}
           TV_LOGIN_WEB_BASE_URL=${TV_LOGIN_WEB_BASE_URL}
           DEVICE_LOGIN_WEB_BASE_URL=${DEVICE_LOGIN_WEB_BASE_URL}
-          CI_USE_DEBUG_SIGNING=${CI_USE_DEBUG_SIGNING}
           EOF
+
+      # Signature fixe : sans elle, chaque APK release aurait une signature
+      # différente et Android refuserait la mise à jour par-dessus l'ancien.
+      - name: Prepare release signing key
+        env:
+          NUVIO_KEYSTORE_BASE64: ${{ secrets.NUVIO_KEYSTORE_BASE64 }}
+          NUVIO_KEYSTORE_PASSWORD: ${{ secrets.NUVIO_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          if [ -z "$NUVIO_KEYSTORE_BASE64" ] || [ -z "$NUVIO_KEYSTORE_PASSWORD" ]; then
+            echo "::error::Secrets NUVIO_KEYSTORE_BASE64 et/ou NUVIO_KEYSTORE_PASSWORD manquants (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          printf '%s' "$NUVIO_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/nuviotv-fr.jks"
+          {
+            echo "NUVIO_RELEASE_STORE_FILE=$RUNNER_TEMP/nuviotv-fr.jks"
+            echo "NUVIO_RELEASE_KEY_ALIAS=nuviotv-fr"
+            echo "NUVIO_RELEASE_KEY_PASSWORD=$NUVIO_KEYSTORE_PASSWORD"
+            echo "NUVIO_RELEASE_STORE_PASSWORD=$NUVIO_KEYSTORE_PASSWORD"
+          } >> "$GITHUB_ENV"
 
       - name: Run Full Release tests
         run: ./gradlew :app:testFullReleaseUnitTest --tests 'com.nuvio.tv.updater.*' --stacktrace
