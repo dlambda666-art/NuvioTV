@@ -260,7 +260,7 @@ data class PlayerSettings(
     val dv7LibdoviModeOverride: Int = -1,
     val stripHdr10PlusSei: Boolean = false,
     /** ExoPlayer reads Matroska chapters itself over HTTP; mpv always lists them. */
-    val exoChaptersEnabled: Boolean = true,
+    val exoChaptersEnabled: Boolean = false,
     val mpvHi10pGnextSoftwareFallbackEnabled: Boolean = false,
     val mpvHardwareDecodeMode: MpvHardwareDecodeMode = MpvHardwareDecodeMode.AUTO_SAFE,
     // Display settings
@@ -886,7 +886,7 @@ class PlayerSettingsDataStore @Inject constructor(
                 },
                 dv7LibdoviModeOverride = (prefs[dv7LibdoviModeOverrideKey] ?: -1).coerceIn(-1, 4),
                 stripHdr10PlusSei = prefs[stripHdr10PlusSeiKey] ?: false,
-                exoChaptersEnabled = prefs[exoChaptersEnabledKey] ?: true,
+                exoChaptersEnabled = prefs[exoChaptersEnabledKey] ?: false,
                 mpvHi10pGnextSoftwareFallbackEnabled =
                     prefs[mpvHi10pGnextSoftwareFallbackEnabledKey] ?: false,
                 mpvHardwareDecodeMode = parseMpvHardwareDecodeMode(prefs[mpvHardwareDecodeModeKey]),
