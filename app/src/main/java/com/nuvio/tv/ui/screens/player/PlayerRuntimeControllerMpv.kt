@@ -170,7 +170,8 @@ internal fun PlayerRuntimeController.initializeMpvPlayer(
                 subtitleTracks = emptyList(),
                 selectedAudioTrackIndex = -1,
                 selectedSubtitleTrackIndex = -1,
-                chapters = emptyList()
+                chapters = emptyList(),
+                showChaptersPanel = false
             )
         }
         cancelPauseOverlay()
