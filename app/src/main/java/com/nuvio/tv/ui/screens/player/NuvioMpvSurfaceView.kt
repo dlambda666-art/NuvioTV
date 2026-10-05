@@ -225,6 +225,14 @@ class NuvioMpvSurfaceView @JvmOverloads constructor(
         mpv.setPropertyDouble("time-pos", seconds)
     }
 
+    /** Exact even when the file was loaded with `hr-seek=no`, where [seekToMs] lands on a keyframe. */
+    fun seekToMsExact(positionMs: Long) {
+        if (!initialized) return
+        val seconds = String.format(Locale.US, "%.3f", positionMs.coerceAtLeast(0L) / 1000.0)
+        runCatching { mpv.command("seek", seconds, "absolute+exact") }
+            .onFailure { Log.w(TAG, "Exact seek failed: ${it.message}") }
+    }
+
     fun currentPositionMs(): Long {
         if (!initialized) return 0L
         val seconds = mpv.getPropertyDouble("time-pos/full")
@@ -806,6 +814,7 @@ class NuvioMpvSurfaceView @JvmOverloads constructor(
         private const val MPV_MAX_VOLUME_PERCENT = 400.0
         private const val ASPECT_RETRY_DELAY_MS = 120L
         private const val MAX_ASPECT_RETRY_COUNT = 10
+        /** Track list re-reads (one per tick) while an audio track has no channel count yet. */
         private const val SUBTITLE_VERTICAL_OFFSET_MIN = -20
         private const val SUBTITLE_VERTICAL_OFFSET_MAX = 50
         private const val MPV_SUB_POS_AT_BOTTOM = 103.4
