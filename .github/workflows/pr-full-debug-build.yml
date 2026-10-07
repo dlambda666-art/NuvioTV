@@ -34,6 +34,9 @@ jobs:
       NUVIO_SUPABASE_FALLBACK_URL: https://api-two.nuvioapp.space
       TV_LOGIN_WEB_BASE_URL: https://nuvio.tv/tv-login
       DEVICE_LOGIN_WEB_BASE_URL: https://nuvio.tv/link
+      # Clé TMDB de l'app (bandes-annonces, enrichissement TMDB). Sans elle,
+      # BuildConfig.TMDB_API_KEY est vide et tous les appels TMDB de l'app échouent.
+      TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
 
     steps:
       - name: Checkout
@@ -55,7 +58,12 @@ jobs:
           NUVIO_SUPABASE_FALLBACK_URL=${NUVIO_SUPABASE_FALLBACK_URL}
           TV_LOGIN_WEB_BASE_URL=${TV_LOGIN_WEB_BASE_URL}
           DEVICE_LOGIN_WEB_BASE_URL=${DEVICE_LOGIN_WEB_BASE_URL}
+          TMDB_API_KEY=${TMDB_API_KEY}
           EOF
+          if [ -z "${TMDB_API_KEY}" ]; then
+            echo "::error::Secret TMDB_API_KEY manquant (Settings > Secrets and variables > Actions) : sans lui, bandes-annonces et TMDB ne marchent pas dans l'app."
+            exit 1
+          fi
 
       # The debug build type signs with the "release" signing config, so it
       # needs a keystore. Generate a throwaway one for CI debug builds.
