@@ -37,6 +37,11 @@ jobs:
       # Clé TMDB de l'app (bandes-annonces, enrichissement TMDB). Sans elle,
       # BuildConfig.TMDB_API_KEY est vide et tous les appels TMDB de l'app échouent.
       TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+      # Passer l'intro : IntroDB est public, lecture sans cle.
+      INTRODB_API_URL: https://api.introdb.app/
+      # Synchro Trakt : cles de ton appli perso sur trakt.tv (facultatif).
+      TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
+      TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
 
     steps:
       - name: Checkout
@@ -59,6 +64,9 @@ jobs:
           TV_LOGIN_WEB_BASE_URL=${TV_LOGIN_WEB_BASE_URL}
           DEVICE_LOGIN_WEB_BASE_URL=${DEVICE_LOGIN_WEB_BASE_URL}
           TMDB_API_KEY=${TMDB_API_KEY}
+          INTRODB_API_URL=${INTRODB_API_URL}
+          TRAKT_CLIENT_ID=${TRAKT_CLIENT_ID}
+          TRAKT_CLIENT_SECRET=${TRAKT_CLIENT_SECRET}
           EOF
           if [ -z "${TMDB_API_KEY}" ]; then
             echo "::error::Secret TMDB_API_KEY manquant (Settings > Secrets and variables > Actions) : sans lui, bandes-annonces et TMDB ne marchent pas dans l'app."
