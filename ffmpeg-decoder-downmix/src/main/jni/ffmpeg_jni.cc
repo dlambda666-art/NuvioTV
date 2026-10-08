@@ -520,7 +520,23 @@ int decodePacket(DecoderContext* decoderContext, AVPacket* packet,
         return AUDIO_DECODER_ERROR_INVALID_DATA;
       }
 
-      if (decoderContext->downmix_active) {
+      // Mode dialogue : avant le réencodage AC-3, on monte uniquement le canal
+      // central (les voix) du gain choisi par l'utilisateur. Le limiteur évite
+      // ensuite la saturation.
+      bool dialogueBoost = userCenterMixLevelDb != 0;
+      if (dialogueBoost) {
+        int centerIndex = av_channel_layout_index_from_channel(
+            &decoderContext->output_layout, AV_CHAN_FRONT_CENTER);
+        if (centerIndex >= 0 && centerIndex < nb_channels) {
+          float gain = powf(10.0f, static_cast<float>(userCenterMixLevelDb) / 20.0f);
+          float* center = reinterpret_cast<float*>(converted_data[centerIndex]);
+          for (int s = 0; s < convertedSamples; ++s) {
+            center[s] *= gain;
+          }
+        }
+      }
+
+      if (decoderContext->downmix_active || dialogueBoost) {
         limitPlanarFloat(&decoderContext->limiter, converted_data,
                          convertedSamples, nb_channels, sampleRate);
       }

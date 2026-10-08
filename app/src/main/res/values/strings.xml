@@ -807,8 +807,8 @@
     <string name="audio_enable_downmix_subtitle">Uses the FFmpeg downmix path. Requires Prefer app decoders (FFmpeg). When disabled, audio follows the previous Android/device path.</string>
     <string name="audio_tunneled">Tunneled Playback</string>
     <string name="audio_tunneled_sub">Hardware-level audio/video sync. May improve playback on some Android TV devices</string>
-    <string name="audio_force_optical_passthrough">Force AC-3 Transcoding (Optical/SPDIF)</string>
-    <string name="audio_force_optical_passthrough_sub">Transcodes multichannel formats (TrueHD, DTS, AAC, etc.) to Dolby Digital 5.1 in real-time for Optical/SPDIF connections.</string>
+    <string name="audio_force_optical_passthrough">Force AC-3 Transcoding (dialogue mode)</string>
+    <string name="audio_force_optical_passthrough_sub">Transcodes multichannel tracks (DD+, TrueHD, DTS, AC-3…) to Dolby Digital 5.1 in real-time. Lets you raise the voice level during playback while keeping Dolby sound (no Atmos). Also useful for Optical/SPDIF connections.</string>
     <!-- DV7 Handling Mode -->
     <string name="dv7_handling_title">Dolby Vision Handling</string>
     <string name="dv7_handling_dialog_subtitle">Choose how DV streams are processed at playback time.</string>
@@ -1799,10 +1799,10 @@
     <string name="audio_mix_range">Range: %1$d dB to %2$d dB</string>
     <string name="audio_mix_range_saved">Range: %1$d dB to %2$d dB (saved)</string>
     <string name="audio_mix_unavailable">Amplification is not available on this device</string>
-    <string name="audio_center_mix_label">Downmix: Center Mix Level</string>
+    <string name="audio_center_mix_label">Voices (center channel)</string>
     <string name="audio_center_mix_value_db">%1$d dB</string>
-    <string name="audio_center_mix_help">Center Mix Level in dB relative to metadata or default (-3 dB)</string>
-    <string name="audio_center_mix_unavailable">Center mix is only available when FFmpeg downmix is active.</string>
+    <string name="audio_center_mix_help">Voice level in dB. With "Force AC-3 Transcoding": direct gain on the center channel, Dolby 5.1 kept. With downmix: relative to metadata (default -3 dB).</string>
+    <string name="audio_center_mix_unavailable">Voice level requires "Force AC-3 Transcoding" or FFmpeg downmix, on a multichannel track.</string>
     <string name="audio_maintain_original_audio_on_downmix_title">Maintain original audio on downmix</string>
     <string name="audio_maintain_original_audio_on_downmix_subtitle">When disabled, downmix normalization can reduce overall volume.</string>
 

@@ -60,6 +60,7 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
   @Nullable private volatile FfmpegAudioDecoder activeDecoder;
   private volatile boolean rendererEnabled;
   private volatile boolean downmixActive;
+  private volatile boolean transcodeActive;
   private volatile boolean forceOpticalPassthrough;
 
   public FfmpegAudioRenderer() {
@@ -118,6 +119,7 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
     } finally {
       rendererEnabled = false;
       downmixActive = false;
+      transcodeActive = false;
       activeDecoder = null;
     }
   }
@@ -131,15 +133,10 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
     if (!FfmpegLibrary.supportsFormat(mimeType)) {
       return C.FORMAT_UNSUPPORTED_SUBTYPE;
     }
-    if (forceOpticalPassthrough && MimeTypes.AUDIO_AC3.equals(mimeType)) {
+    boolean transcodeToAc3 = shouldTranscodeToAc3(format, mimeType);
+    if (forceOpticalPassthrough && MimeTypes.AUDIO_AC3.equals(mimeType) && !transcodeToAc3) {
       return C.FORMAT_UNSUPPORTED_SUBTYPE;
     }
-    boolean isDtsOrTrueHd = MimeTypes.AUDIO_DTS.equals(mimeType)
-        || MimeTypes.AUDIO_DTS_HD.equals(mimeType)
-        || MimeTypes.AUDIO_TRUEHD.equals(mimeType);
-    boolean transcodeToAc3 = forceOpticalPassthrough &&
-        !MimeTypes.AUDIO_AC3.equals(mimeType) &&
-        (format.channelCount > 2 || format.channelCount <= 0 || isDtsOrTrueHd);
 
     if (!transcodeToAc3 && (format.channelCount <= 0 || format.sampleRate <= 0)) {
       return format.cryptoType == C.CRYPTO_TYPE_NONE
@@ -181,12 +178,7 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
       throws FfmpegDecoderException {
     TraceUtil.beginSection("createFfmpegAudioDecoder");
     String mimeType = checkNotNull(format.sampleMimeType);
-    boolean isDtsOrTrueHd = MimeTypes.AUDIO_DTS.equals(mimeType)
-        || MimeTypes.AUDIO_DTS_HD.equals(mimeType)
-        || MimeTypes.AUDIO_TRUEHD.equals(mimeType);
-    boolean transcodeToAc3 = forceOpticalPassthrough &&
-        !MimeTypes.AUDIO_AC3.equals(mimeType) &&
-        (format.channelCount > 2 || format.channelCount <= 0 || isDtsOrTrueHd);
+    boolean transcodeToAc3 = shouldTranscodeToAc3(format, mimeType);
     int initialInputBufferSize =
         format.maxInputSize != Format.NO_VALUE ? format.maxInputSize : DEFAULT_INPUT_BUFFER_SIZE;
     @C.PcmEncoding int outputEncoding;
@@ -197,6 +189,7 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
       nativeOutputChannelCount = 6;
       outputLayoutName = "5.1";
       downmixActive = false;
+      transcodeActive = true;
     } else {
       int outputChannelCount = resolveOutputChannelCount(format.channelCount);
       boolean shouldRequestDownmix = shouldRequestDownmix(format.channelCount, outputChannelCount);
@@ -204,6 +197,7 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
       outputLayoutName = shouldRequestDownmix ? requestedOutputLayoutName : null;
       nativeOutputChannelCount = shouldRequestDownmix ? outputChannelCount : 0;
       downmixActive = shouldRequestDownmix;
+      transcodeActive = false;
     }
     FfmpegAudioDecoder decoder =
         new FfmpegAudioDecoder(
@@ -268,9 +262,27 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
     this.forceOpticalPassthrough = enabled;
   }
 
-  /** Returns whether this renderer is the active playback path for FFmpeg downmix + center mix. */
+  /**
+   * Returns whether the center (voice) level can be adjusted: during an FFmpeg downmix, or during
+   * the AC-3 transcode ("mode dialogue"), where the center channel gain is applied before encoding.
+   */
   public boolean isCenterMixActive() {
-    return rendererEnabled && activeDecoder != null && downmixActive;
+    return rendererEnabled && activeDecoder != null && (downmixActive || transcodeActive);
+  }
+
+  /**
+   * Forced AC-3 transcode: multichannel formats (DD+, TrueHD, DTS, AAC...) and, for the dialogue
+   * mode, multichannel AC-3 too, so the voice level can be raised whatever the source track.
+   * Stereo AC-3 keeps its passthrough.
+   */
+  private boolean shouldTranscodeToAc3(Format format, String mimeType) {
+    if (!forceOpticalPassthrough) {
+      return false;
+    }
+    boolean isDtsOrTrueHd = MimeTypes.AUDIO_DTS.equals(mimeType)
+        || MimeTypes.AUDIO_DTS_HD.equals(mimeType)
+        || MimeTypes.AUDIO_TRUEHD.equals(mimeType);
+    return format.channelCount > 2 || format.channelCount <= 0 || isDtsOrTrueHd;
   }
 
   /** Returns whether this renderer is the active playback path for FFmpeg audio decoding. */

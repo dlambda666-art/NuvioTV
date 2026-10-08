@@ -578,8 +578,8 @@
     <string name="audio_decoder_priority">Priorité du décodeur</string>
     <string name="audio_tunneled">Lecture tunnelisée</string>
     <string name="audio_tunneled_sub">Synchronisation audio/vidéo au niveau matériel. Peut améliorer la lecture sur certains appareils Android TV</string>
-    <string name="audio_force_optical_passthrough">Forcer le transcodage AC-3 (optique/SPDIF)</string>
-    <string name="audio_force_optical_passthrough_sub">Transcode les formats multicanaux (TrueHD, DTS, AAC, etc.) en Dolby Digital 5.1 en temps réel pour les connexions optiques/SPDIF.</string>
+    <string name="audio_force_optical_passthrough">Forcer le transcodage AC-3 (mode dialogue)</string>
+    <string name="audio_force_optical_passthrough_sub">Transcode les pistes multicanaux (DD+, TrueHD, DTS, AC-3…) en Dolby Digital 5.1 en temps réel. Permet de régler le niveau des voix pendant la lecture tout en gardant le son Dolby (sans Atmos). Aussi utile pour les connexions optiques/SPDIF.</string>
     <string name="audio_mpv_hwdec_title">Décodage matériel (MPV uniquement)</string>
     <string name="audio_mpv_hwdec_dialog_subtitle">Choisissez comment libmpv doit utiliser les décodeurs matériels.</string>
     <string name="audio_mpv_hwdec_legacy_direct_copy">Ancien mode (direct -&gt; copy)</string>
@@ -2469,10 +2469,10 @@
     <string name="audio_enable_downmix_title">Activer le downmix</string>
     <string name="audio_number_of_channels">Nombre de canaux</string>
     <string name="audio_number_of_channels_desc">Définit la disposition des haut-parleurs utilisée pour le downmix FFmpeg.</string>
-    <string name="audio_center_mix_label">Downmix&#160;: niveau du canal central</string>
+    <string name="audio_center_mix_label">Voix (canal central)</string>
     <string name="audio_center_mix_value_db">%1$d dB</string>
-    <string name="audio_center_mix_help">Niveau du canal central en dB par rapport aux métadonnées ou à la valeur par défaut (-3 dB)</string>
-    <string name="audio_center_mix_unavailable">Le mixage du canal central n’est disponible que lorsque le downmix FFmpeg est actif.</string>
+    <string name="audio_center_mix_help">Niveau des voix en dB. Avec « Forcer le transcodage AC-3 » : gain direct sur le canal central, son Dolby 5.1 conservé. En downmix : par rapport aux métadonnées (-3 dB par défaut).</string>
+    <string name="audio_center_mix_unavailable">Le réglage des voix nécessite « Forcer le transcodage AC-3 » ou le downmix FFmpeg, sur une piste multicanaux.</string>
     <string name="audio_maintain_original_audio_on_downmix_title">Conserver l’audio d’origine lors du downmix</string>
     <string name="audio_maintain_original_audio_on_downmix_subtitle">Quand il est désactivé, la normalisation du downmix peut réduire le volume global.</string>
 
