@@ -5,6 +5,10 @@ name: Rebuild FFmpeg decoder AAR
 # À relancer uniquement après une modification du décodeur natif.
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - "ffmpeg-decoder-downmix/**"
+      - ".github/workflows/build-ffmpeg-aar.yml"
 
 permissions:
   contents: write
