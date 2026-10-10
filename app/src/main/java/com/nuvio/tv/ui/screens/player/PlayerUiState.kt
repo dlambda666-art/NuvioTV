@@ -234,6 +234,12 @@ internal fun PlayerUiState.clearFrameRateDetection(): PlayerUiState = copy(
     detectedFrameRateSource = null
 )
 
+internal fun PlayerUiState.clearFrameRateDetection(): PlayerUiState = copy(
+    detectedFrameRateRaw = 0f,
+    detectedFrameRate = 0f,
+    detectedFrameRateSource = null
+)
+
 data class PlaybackTimelineState(
     val currentPosition: Long = 0L,
     val duration: Long = 0L,
