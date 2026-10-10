@@ -1141,7 +1141,7 @@ open class MainActivity : ComponentActivity() {
                                     activeProfileName = activeProfile?.name ?: "",
                                     activeProfileColorHex = activeProfile?.avatarColorHex ?: "#1E88E5",
                                     activeProfileAvatarImageUrl = activeProfileAvatarImageUrl,
-                                    showProfileSelector = profiles.size > 1,
+                                    showProfileSelector = profiles.isNotEmpty(),
                                     onSwitchProfile = handleSwitchProfile,
                                     onNavigate = { optimisticRoute = it },
                                     onExitApp = handleExitApp
@@ -1160,7 +1160,7 @@ open class MainActivity : ComponentActivity() {
                                     activeProfileName = activeProfile?.name ?: "",
                                     activeProfileColorHex = activeProfile?.avatarColorHex ?: "#1E88E5",
                                     activeProfileAvatarImageUrl = activeProfileAvatarImageUrl,
-                                    showProfileSelector = profiles.size > 1,
+                                    showProfileSelector = profiles.isNotEmpty(),
                                     onSwitchProfile = handleSwitchProfile,
                                     onNavigate = { optimisticRoute = it },
                                     onExitApp = handleExitApp
