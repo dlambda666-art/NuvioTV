@@ -156,22 +156,26 @@ internal fun buildModernHomePresentation(
                     } else {
                         val rowItemOccurrenceCounts = mutableMapOf<String, Int>()
                         val rowItemCache = cache.catalogItemCache.getOrPut(rowKey) { mutableMapOf() }
+                        val rowTitle = catalogRowTitle(
+                            row = row,
+                            showCatalogTypeSuffix = input.showCatalogTypeSuffix,
+                            strTypeMovie = strTypeMovie,
+                            strTypeSeries = strTypeSeries
+                        )
+                        // LambdaTV : une rangée « Top 10 » s'arrête au 10e titre.
+                        val isTopTenRow = isTopTenRowTitle(rowTitle)
+                        val rowSourceItems = if (isTopTenRow) row.items.take(TOP_TEN_MAX_RANK) else row.items
                         HeroCarouselRow(
                             key = rowKey,
-                            title = catalogRowTitle(
-                                row = row,
-                                showCatalogTypeSuffix = input.showCatalogTypeSuffix,
-                                strTypeMovie = strTypeMovie,
-                                strTypeSeries = strTypeSeries
-                            ),
+                            title = rowTitle,
                             globalRowIndex = index,
                             catalogId = row.catalogId,
                             addonId = row.addonId,
                             apiType = row.apiType,
                             supportsSkip = row.supportsSkip,
-                            hasMore = row.hasMore,
+                            hasMore = row.hasMore && !isTopTenRow,
                             isLoading = row.isLoading,
-                            items = row.items.mapIndexed { itemIndex, item ->
+                            items = rowSourceItems.mapIndexed { itemIndex, item ->
                                 val occurrence = rowItemOccurrenceCounts.getOrDefault(item.id, 0)
                                 rowItemOccurrenceCounts[item.id] = occurrence + 1
                                 val cacheKey = "${item.id}_$occurrence"
