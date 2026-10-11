@@ -528,6 +528,7 @@ internal fun ModernRowSection(
             titleMediumStyle.copy(fontWeight = FontWeight.SemiBold)
         }
         val rowTitle = row.title
+        val isTopTenRow = remember(rowTitle) { isTopTenRowTitle(rowTitle) }
         val textColor = NuvioTheme.colors.TextPrimary
         val textModifier = remember(rowTitleBottom) {
             Modifier.padding(start = 52.dp, bottom = rowTitleBottom)
@@ -865,7 +866,15 @@ internal fun ModernRowSection(
                     val itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == expandedIndex }
                         ?: return@collect
                     val viewportEnd = layoutInfo.viewportEndOffset
-                    val itemEndExpanded = itemInfo.offset + expandedCardWidthPx
+                    val rankOffsetPx = if (isTopTenRow && expandedIndex < TOP_TEN_MAX_RANK) {
+                        with(density) {
+                            topTenRankOffset(
+                                expandedIndex + 1,
+                                if (useLandscapePosters) landscapeCatalogCardHeight else portraitCatalogCardHeight
+                            ).roundToPx()
+                        }
+                    } else 0
+                    val itemEndExpanded = itemInfo.offset + rankOffsetPx + expandedCardWidthPx
                     if (itemEndExpanded > viewportEnd) {
                         // Scroll just enough to reveal the trailing edge plus a small margin.
                         // Flag prevents isBackdropExpandedLambda from collapsing during this scroll.
@@ -993,9 +1002,13 @@ internal fun ModernRowSection(
                                 }
                             }
                             val placeholderFocusBlock = isPlaceholder && index > 0
+                            val rankCardHeight = if (useLandscapePosters) landscapeCatalogCardHeight else portraitCatalogCardHeight
+                            val showRank = isTopTenRow && !isPlaceholder &&
+                                payload is ModernPayload.Catalog && index < TOP_TEN_MAX_RANK
                             Box(modifier = if (placeholderFocusBlock) {
                                 Modifier.focusProperties { canFocus = false }
                             } else Modifier) {
+                            val rankedCard: @Composable () -> Unit = {
                             ModernCatalogRowItem(
                                 item = item,
                                 payload = payload,
@@ -1033,6 +1046,12 @@ internal fun ModernRowSection(
                                 onExpandedCatalogFocusKeyChange = onExpandedCatalogFocusKeyChange,
                                 enrichedPreviews = enrichedPreviews
                             )
+                            }
+                            if (showRank) {
+                                TopTenRankedItem(rank = index + 1, cardHeight = rankCardHeight, content = rankedCard)
+                            } else {
+                                rankedCard()
+                            }
                             } // Box
                         }
                     }
