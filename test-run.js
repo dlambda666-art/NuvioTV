@@ -2,7 +2,7 @@
 const fs = require('fs');
 const plugin = require('./comet666.js');
 (async () => {
-  const cases = [['tt0111161', 'movie'], ['tt1375666', 'movie'], ['tt0903747', 'tv', 1, 1], ['tt14500286', 'movie'], ['tt0052520', 'tv', 1, 1], ['tt0045152', 'movie'], ['tt0061184', 'movie'], ['tt1675434', 'movie'], ['tt1064932', 'movie'], ['tt0471061', 'tv', 1, 1]];
+  const cases = [['tt15239678','movie'],['tt15398776','movie'],['tt6263850','movie'],['tt3581920','tv',1,1],['tt0944947','tv',1,1],['tt11280740','tv',1,1],['tt1190634','tv',1,1],['tt9218128','movie']];
   const report = { at: new Date().toISOString(), cases: [] };
   for (const [id, type, s, e] of cases) {
     const t0 = Date.now();
