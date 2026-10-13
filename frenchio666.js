@@ -67,18 +67,46 @@ function formatSize(bytes) {
     return bytes >= 1e9 ? (bytes / 1e9).toFixed(1) + ' Go' : Math.round(bytes / 1e6) + ' Mo';
 }
 
+var LAST_ERROR = '';
+
 async function getJson(url, label) {
     try {
         var res = await fetch(url, { headers: { 'Accept': 'application/json' } });
         if (!res || !res.ok) {
-            console.log(ADDON_NAME + '666 : ' + (label || 'requête') + ' → HTTP ' + (res && res.status));
+            LAST_ERROR = (label || 'requête') + ' → HTTP ' + (res && res.status);
+            console.log(ADDON_NAME + '666 : ' + LAST_ERROR);
             return null;
         }
-        return await res.json();
+        var body = await res.text();
+        try {
+            return JSON.parse(body);
+        } catch (e) {
+            LAST_ERROR = (label || 'requête') + ' → réponse non JSON : ' + scrub(body).slice(0, 120);
+            return null;
+        }
     } catch (e) {
-        console.log(ADDON_NAME + '666 : ' + (label || 'requête') + ' → ' + (e && e.message));
+        LAST_ERROR = (label || 'requête') + ' → ' + (e && e.message);
+        console.log(ADDON_NAME + '666 : ' + LAST_ERROR);
         return null;
     }
+}
+
+// retire toute adresse (qui pourrait contenir une config) d'un texte affiché
+function scrub(text) {
+    return String(text || '').replace(/(?:https?|stremio):\/\/\S+/gi, '[lien]').replace(/\s+/g, ' ').trim();
+}
+
+// Bouton « Tester » de 666TV = Matrix (TMDB 603) : si rien n'est gardé,
+// on renvoie une ligne de diagnostic lisible au lieu d'une liste vide.
+function diagnostic(tmdbId, lines) {
+    if (String(tmdbId).replace(/^tmdb:/i, '') !== '603') return [];
+    return [{
+        name: ADDON_NAME + '666 diagnostic',
+        title: lines.filter(Boolean).join('\n'),
+        url: 'https://diagnostic.invalid/' + ADDON_NAME.toLowerCase(),
+        provider: ADDON_NAME + '666',
+        type: 'direct'
+    }];
 }
 
 // --- Adresse de l'addon (jamais en clair dans les logs) -------------------
@@ -89,6 +117,10 @@ function addonBase() {
     if (/^stremio:\/\//i.test(url)) url = 'https://' + url.substring('stremio://'.length);
     url = url.replace(/\/+$/, '').replace(/\/manifest\.json$/i, '').replace(/\/+$/, '');
     return /^https?:\/\//i.test(url) ? url : null;
+}
+
+function privateHost(url) {
+    return String(url).replace(/^https?:\/\//i, '').split('/')[0];
 }
 
 // --- Identifiants ---------------------------------------------------------
@@ -118,13 +150,14 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     var base = addonBase();
     if (!base) {
         console.log(ADDON_NAME + '666 : pas d\'adresse configurée (Plugins → Comet666 – mes sources)');
-        return [];
+        var keys = (typeof SCRAPER_SETTINGS !== 'undefined' && SCRAPER_SETTINGS) ? Object.keys(SCRAPER_SETTINGS).join(',') : 'aucun';
+        return diagnostic(tmdbId, ['Adresse absente ou invalide', 'Réglages reçus : ' + (keys || 'aucun'), 'id plugin : ' + (typeof SCRAPER_ID !== 'undefined' ? SCRAPER_ID : '?')]);
     }
     var isTv = mediaType === 'tv' || mediaType === 'series';
     var imdbId = await resolveImdb(tmdbId, mediaType);
     if (!imdbId) {
         console.log(ADDON_NAME + '666 : id IMDb introuvable pour ' + tmdbId);
-        return [];
+        return diagnostic(tmdbId, ['Adresse OK (' + privateHost(base) + ')', 'id IMDb introuvable pour ' + tmdbId, LAST_ERROR]);
     }
     var sid = isTv ? imdbId + ':' + season + ':' + episode : imdbId;
     var data = await getJson(base + '/stream/' + (isTv ? 'series' : 'movie') + '/' + sid + '.json', ADDON_NAME);
@@ -158,6 +191,18 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     console.log(ADDON_NAME + '666 : ' + streams.length + ' flux reçus, ' + found.length + ' gardés (écartés : ' +
         dropped.noUrl + ' sans lien, ' + dropped.notCached + ' pas en cache, ' + dropped.lang + ' pas VF, ' +
         dropped.quality + ' < 1080p)');
+
+    if (!found.length) {
+        var first = streams[0] || {};
+        return diagnostic(tmdbId, [
+            'Adresse OK (' + privateHost(base) + ') · ' + imdbId,
+            data ? streams.length + ' flux reçus de ' + ADDON_NAME : 'Aucune réponse : ' + LAST_ERROR,
+            'écartés : ' + dropped.noUrl + ' sans lien, ' + dropped.notCached + ' pas en cache, ' + dropped.lang + ' pas VF, ' + dropped.quality + ' < 1080p',
+            streams.length ? 'ex. nom : ' + scrub(first.name).slice(0, 80) : '',
+            streams.length ? 'ex. titre : ' + scrub([first.title, first.description].filter(Boolean).join(' | ')).slice(0, 200) : '',
+            streams.length ? 'ex. lien : ' + (first.url ? first.url.split(':')[0] : 'aucun') + (first.infoHash ? ' · infoHash' : '') : ''
+        ]);
+    }
 
     found.sort(function (a, b) {
         var c = (a.lang.indexOf('?') >= 0) - (b.lang.indexOf('?') >= 0);

@@ -23,7 +23,7 @@
       "id": "lumio666",
       "name": "Lumio666",
       "description": "Ton addon Lumio avec ta config, interrogé depuis la Shield. VF, 1080p/4K, liens debrid en cache. Adresse à coller dans Plugins → « Comet666 – mes sources ».",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "filename": "lumio666.js",
       "supportedTypes": [
         "movie",
@@ -38,7 +38,7 @@
       "id": "frenchio666",
       "name": "Frenchio666",
       "description": "Ton addon Frenchio avec ta config, interrogé depuis la Shield. VF, 1080p/4K, liens debrid en cache. Adresse à coller dans Plugins → « Comet666 – mes sources ».",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "filename": "frenchio666.js",
       "supportedTypes": [
         "movie",
@@ -53,7 +53,7 @@
       "id": "streamfusion666",
       "name": "StreamFusion666",
       "description": "Ton addon StreamFusion avec ta config, interrogé depuis la Shield. VF, 1080p/4K, liens debrid en cache. Adresse à coller dans Plugins → « Comet666 – mes sources ».",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "filename": "streamfusion666.js",
       "supportedTypes": [
         "movie",
