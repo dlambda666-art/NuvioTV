@@ -26,7 +26,9 @@ data class PluginUiState(
     // Pending change from phone
     val pendingRepoChange: PendingRepoChangeInfo? = null,
     // Pending scraper enable confirmation
-    val pendingScraperEnable: PendingScraperEnableInfo? = null
+    val pendingScraperEnable: PendingScraperEnableInfo? = null,
+    // 666TV : sources privées (hôte seulement, jamais l'adresse complète)
+    val privateSourceHosts: Map<String, String> = emptyMap()
 )
 
 data class PendingRepoChangeInfo(
@@ -60,4 +62,6 @@ sealed interface PluginUiEvent {
     object RejectPendingRepoChange : PluginUiEvent
     object ConfirmPendingScraperEnable : PluginUiEvent
     object DismissPendingScraperEnable : PluginUiEvent
+    data class SavePrivateSource(val scraperId: String, val url: String) : PluginUiEvent
+    data class ClearPrivateSource(val scraperId: String) : PluginUiEvent
 }

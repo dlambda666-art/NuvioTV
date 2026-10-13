@@ -186,6 +186,14 @@ fun PluginScreenContent(
                     )
                 }
 
+                item {
+                    PrivateSourcesCard(
+                        savedHosts = uiState.privateSourceHosts,
+                        onSave = { id, url -> viewModel.onEvent(PluginUiEvent.SavePrivateSource(id, url)) },
+                        onClear = { id -> viewModel.onEvent(PluginUiEvent.ClearPrivateSource(id)) }
+                    )
+                }
+
                 // Manage from phone card
                 item {
                     ManageFromPhoneCard(onClick = { viewModel.onEvent(PluginUiEvent.StartQrMode) })

@@ -10,6 +10,7 @@ import com.nuvio.tv.core.profile.ProfileManager
 import com.nuvio.tv.core.qr.QrCodeGenerator
 import com.nuvio.tv.core.server.DeviceIpAddress
 import com.nuvio.tv.core.server.RepositoryConfigServer
+import com.nuvio.tv.data.local.PluginDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ import javax.inject.Inject
 class PluginViewModel @Inject constructor(
     private val pluginManager: PluginManager,
     private val profileManager: ProfileManager,
+    private val pluginDataStore: PluginDataStore,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -43,6 +45,50 @@ class PluginViewModel @Inject constructor(
     init {
         loadLogoBytes()
         observePluginData()
+        loadPrivateSources()
+    }
+
+    private fun loadPrivateSources() {
+        viewModelScope.launch {
+            val hosts = PRIVATE_SOURCES.mapNotNull { source ->
+                val url = pluginDataStore.getScraperSettings(source.scraperId)[PRIVATE_SOURCE_URL_KEY] as? String
+                url?.takeIf { it.isNotBlank() }?.let { source.scraperId to privateSourceHost(it) }
+            }.toMap()
+            _uiState.update { it.copy(privateSourceHosts = hosts) }
+        }
+    }
+
+    private fun savePrivateSource(scraperId: String, raw: String) {
+        val label = PRIVATE_SOURCES.firstOrNull { it.scraperId == scraperId }?.label ?: scraperId
+        val url = normalizePrivateSourceUrl(raw)
+        if (url == null) {
+            _uiState.update { it.copy(errorMessage = "$label : adresse invalide (elle doit commencer par https://)") }
+            return
+        }
+        viewModelScope.launch {
+            val current = pluginDataStore.getScraperSettings(scraperId)
+            pluginDataStore.setScraperSettings(scraperId, current + (PRIVATE_SOURCE_URL_KEY to url))
+            _uiState.update {
+                it.copy(
+                    privateSourceHosts = it.privateSourceHosts + (scraperId to privateSourceHost(url)),
+                    successMessage = "$label enregistré sur cet appareil"
+                )
+            }
+        }
+    }
+
+    private fun clearPrivateSource(scraperId: String) {
+        val label = PRIVATE_SOURCES.firstOrNull { it.scraperId == scraperId }?.label ?: scraperId
+        viewModelScope.launch {
+            val current = pluginDataStore.getScraperSettings(scraperId)
+            pluginDataStore.setScraperSettings(scraperId, current - PRIVATE_SOURCE_URL_KEY)
+            _uiState.update {
+                it.copy(
+                    privateSourceHosts = it.privateSourceHosts - scraperId,
+                    successMessage = "$label effacé"
+                )
+            }
+        }
     }
 
     private fun loadLogoBytes() {
@@ -103,6 +149,8 @@ class PluginViewModel @Inject constructor(
             PluginUiEvent.RejectPendingRepoChange -> rejectPendingRepoChange()
             PluginUiEvent.ConfirmPendingScraperEnable -> confirmPendingScraperEnable()
             PluginUiEvent.DismissPendingScraperEnable -> dismissPendingScraperEnable()
+            is PluginUiEvent.SavePrivateSource -> savePrivateSource(event.scraperId, event.url)
+            is PluginUiEvent.ClearPrivateSource -> clearPrivateSource(event.scraperId)
         }
     }
 
