@@ -130,12 +130,16 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     var found = [];
     var lists = [await fromTorrentio(ids.imdbId, isTv, season, episode), await fromZilean(ids.imdbId, isTv, season, episode)];
     var seen = {};
+    var seenNames = {};
     lists.forEach(function (list) {
         list.forEach(function (t) {
-            if (seen[t.hash]) return;
+            // même release publiée deux fois (avec ou sans « .mkv ») : une seule ligne
+            var key = String(t.release).toLowerCase().replace(/[ ._-]*mkv$/, '').replace(/[^a-z0-9]+/g, ' ').trim();
+            if (seen[t.hash] || seenNames[key]) return;
             var lang = frenchLabel(t.text);
             if (!lang) return;
             seen[t.hash] = true;
+            seenNames[key] = true;
             t.lang = lang;
             t.quality = qualityOf(t.text);
             found.push(t);
@@ -150,7 +154,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         var line2 = ['🇫🇷 ' + t.lang].concat(extras(t.text)).join(' · ');
         var line3 = [formatSize(t.bytes), t.seeders != null ? '👤 ' + t.seeders : '', t.source].filter(Boolean).join(' · ');
         return {
-            name: 'Comet666 ' + (t.quality || ''),
+            name: ('Comet666 ' + (t.quality || '')).trim(),
             title: t.release + '\n' + line2 + (line3 ? '\n' + line3 : ''),
             url: 'magnet:?xt=urn:btih:' + t.hash + '&dn=' + encodeURIComponent(t.release),
             infoHash: t.hash,
