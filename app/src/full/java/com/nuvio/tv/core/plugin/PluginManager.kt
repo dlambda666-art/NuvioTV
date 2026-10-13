@@ -825,7 +825,14 @@ class PluginManager @Inject constructor(
                 // ignore
             }
 
-            val settings = dataStore.getScraperSettings(scraper.id)
+            // 666TV : les sources privées sont enregistrées sous l'id court du plugin
+            // (ex. « lumio666 »), alors que l'id installé vaut « <dépôt>:lumio666 ».
+            val shortId = scraper.id.substringAfterLast(':')
+            val settings = if (shortId != scraper.id) {
+                dataStore.getScraperSettings(shortId) + dataStore.getScraperSettings(scraper.id)
+            } else {
+                dataStore.getScraperSettings(scraper.id)
+            }
             
             Log.d(TAG, "Executing scraper: ${scraper.name}")
             val results = withTimeoutOrNull(SCRAPER_TIMEOUT_MS) {
