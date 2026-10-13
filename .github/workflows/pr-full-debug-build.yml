@@ -134,6 +134,7 @@ jobs:
             --tests 'com.nuvio.tv.updater.*' \
             --tests 'com.nuvio.tv.ui.screens.player.PlayerNextEpisodeRulesTest' \
             --tests 'com.nuvio.tv.core.player.StreamAutoPlaySelectorTest' \
+            --tests 'com.nuvio.tv.core.debrid.DebridStreamFormatterTest' \
             :app:assembleFullRelease \
             --stacktrace
 

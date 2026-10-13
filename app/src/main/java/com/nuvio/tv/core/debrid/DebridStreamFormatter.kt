@@ -23,9 +23,11 @@ class DebridStreamFormatter @Inject constructor(
         settings: DebridSettings,
         compiledBadgeFilters: List<CompiledStreamBadgeFilter> = emptyList()
     ): Stream {
-        if (!stream.isManagedDebridForFormatting()) return stream
+        val isPlugin666 = stream.isPlugin666()
+        if (!isPlugin666 && !stream.isManagedDebridForFormatting()) return stream
         val matchedBadges = StreamBadgeMatcher.matchedBadges(stream, compiledBadgeFilters)
         val values = buildValues(stream, settings, matchedBadges)
+        if (isPlugin666) values.putAll(plugin666Values(stream, values))
         val formattedName = engine.render(settings.streamNameTemplate, values)
             .lineSequence()
             .joinToString(" ") { it.trim() }
@@ -49,7 +51,7 @@ class DebridStreamFormatter @Inject constructor(
         stream: Stream,
         settings: DebridSettings,
         matchedBadges: List<StreamBadge>
-    ): Map<String, Any?> {
+    ): MutableMap<String, Any?> {
         val resolve = stream.clientResolve
         val raw = resolve?.stream?.raw
         val parsed = raw?.parsed
@@ -68,7 +70,7 @@ class DebridStreamFormatter @Inject constructor(
         val edition = parsed?.edition ?: buildEdition(parsed)
         val matchedBadgeNames = matchedBadges.map { it.name }
 
-        return linkedMapOf(
+        return linkedMapOf<String, Any?>(
             "stream.title" to (parsed?.parsedTitle ?: resolve?.title ?: stream.title),
             "stream.year" to parsed?.year,
             "stream.season" to season,
@@ -103,6 +105,53 @@ class DebridStreamFormatter @Inject constructor(
             "service.name" to serviceName(stream, resolve),
             "addon.name" to stream.addonName
         )
+    }
+
+    /** 666TV : flux de nos plugins (groupe Binge « 666|… »). */
+    private fun Stream.isPlugin666(): Boolean =
+        behaviorHints?.bingeGroup?.startsWith("666|") == true
+
+    /**
+     * 666TV : nos plugins n'ont pas de fiche « parsed » comme AIOStreams ; on la
+     * reconstruit depuis le nom de la release (1re ligne du titre) pour que le
+     * même formateur que Duck s'applique. La langue garde la précision VFF/VFQ…
+     */
+    private fun plugin666Values(stream: Stream, base: Map<String, Any?>): Map<String, Any?> {
+        val lines = stream.title.orEmpty().lines()
+        val release = lines.firstOrNull()?.trim().orEmpty()
+        val vfLabel = lines.firstNotNullOfOrNull { line ->
+            Regex("\uD83C\uDDEB\uD83C\uDDF7\\s*([^·\n]+)").find(line)?.groupValues?.get(1)?.trim()
+        } ?: "VF"
+        val words = release.replace(Regex("\\.(mkv|mp4|avi|m2ts)$", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("[._]+"), " ")
+        val episodeMatch = Regex("\\bS(\\d{1,2})[ ._-]?E(\\d{1,3})\\b", RegexOption.IGNORE_CASE).find(words)
+        val yearMatch = Regex("\\b(19\\d{2}|20\\d{2})\\b").find(words)
+        val cut = listOfNotNull(episodeMatch?.range?.first, yearMatch?.range?.first)
+            .minOrNull()
+            ?: Regex("\\b(2160p|1080p|720p|MULTi|FRENCH|TRUEFRENCH|VFF|VFQ|VF2)\\b", RegexOption.IGNORE_CASE)
+                .find(words)?.range?.first
+        val cleanTitle = (if (cut != null && cut > 0) words.substring(0, cut) else words)
+            .replace(Regex("[\\[(].*$"), "")
+            .trim()
+            .takeIf { it.isNotBlank() }
+        val season = episodeMatch?.groupValues?.get(1)?.toIntOrNull()
+        val episode = episodeMatch?.groupValues?.get(2)?.toIntOrNull()
+        return buildMap {
+            put("stream.title", cleanTitle ?: base["stream.title"])
+            put("stream.year", yearMatch?.value?.toIntOrNull() ?: base["stream.year"])
+            if (season != null) put("stream.season", season)
+            if (episode != null) put("stream.episode", episode)
+            if (season != null && episode != null) {
+                put("stream.seasonEpisode", listOf("S${season.twoDigits()}E${episode.twoDigits()}"))
+            }
+            put("stream.filename", release.takeIf { it.isNotBlank() } ?: base["stream.filename"])
+            put("stream.languages", listOf(vfLabel))
+            put("stream.languageEmojis", listOf("\uD83C\uDDEB\uD83C\uDDF7 $vfLabel"))
+            put("stream.vf", vfLabel)
+            put("stream.type", "Debrid")
+            // Seuls des liens prêts sont proposés (pas en cache = masqué).
+            put("service.cached", base["service.cached"] ?: true)
+        }
     }
 
     private fun streamType(stream: Stream, resolve: StreamClientResolve?): String {

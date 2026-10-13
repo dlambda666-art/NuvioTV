@@ -53,11 +53,19 @@ class DebridStreamPresentation @Inject constructor(
                 .filterNot { stream -> stream.isInactiveResolverStream(settings) }
                 .filterNot { stream -> stream.isUncachedDebridStream() }
             val debridStreams = visibleStreams.filter { stream -> stream.isManagedDebridStream() }
-            if (debridStreams.isEmpty()) return@map group.copy(streams = visibleStreams)
+            // 666TV : les liens directs de nos plugins passent aussi par le formateur.
+            val passthroughStreams = visibleStreams.filterNot { stream -> stream.isManagedDebridStream() }
+                .map { stream ->
+                    if (stream.behaviorHints?.bingeGroup?.startsWith("666|") == true) {
+                        formatter.format(stream, settings, badgeFilters)
+                    } else {
+                        stream
+                    }
+                }
+            if (debridStreams.isEmpty()) return@map group.copy(streams = passthroughStreams)
 
             val presentedDebridStreams = DirectDebridStreamFilter.applyPreferences(debridStreams, settings)
                 .map { stream -> formatter.format(stream, settings, badgeFilters) }
-            val passthroughStreams = visibleStreams.filterNot { stream -> stream.isManagedDebridStream() }
 
             group.copy(streams = presentedDebridStreams + passthroughStreams)
         }

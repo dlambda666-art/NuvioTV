@@ -46,4 +46,37 @@ class DebridStreamFormatterTest {
         assertTrue(formatted.description.orEmpty().contains("Ready (TB)"))
         assertTrue(formatted.description.orEmpty().contains("Movie.2026.1080p.mkv"))
     }
+
+    @Test
+    fun `formats 666TV plugin direct links from the release name`() {
+        val formatter = DebridStreamFormatter(DebridStreamTemplateEngine())
+        val stream = Stream(
+            name = "Lumio666 2160p",
+            title = "Dune.Part.Two.2024.MULTi.TRUEFRENCH.2160p.WEB.H265-GRP.mkv\n\uD83C\uDDEB\uD83C\uDDF7 VFF · DV\n18.2 Go · Lumio",
+            description = null,
+            url = "https://example.test/play/1",
+            ytId = null,
+            infoHash = null,
+            fileIdx = null,
+            externalUrl = null,
+            behaviorHints = StreamBehaviorHints(
+                notWebReady = null,
+                bingeGroup = "666|lumio666|2160p",
+                countryWhitelist = null,
+                proxyHeaders = null
+            ),
+            addonName = "Lumio666",
+            addonLogo = null,
+            quality = "2160p"
+        )
+        val settings = DebridSettings().copy(
+            streamNameTemplate = "{addon.name} {stream.resolution}",
+            streamDescriptionTemplate = "{stream.title} ({stream.year}) {stream.languageEmojis::join(' ')}"
+        )
+
+        val formatted = formatter.format(stream, settings)
+
+        assertEquals("Lumio666 4K", formatted.name?.replace("2160p", "4K"))
+        assertEquals("Dune Part Two (2024) \uD83C\uDDEB\uD83C\uDDF7 VFF", formatted.description)
+    }
 }
