@@ -7,7 +7,7 @@
  */
 
 var FRANK_URL = 'https://lambda666-frankenstream.hf.space';
-var TORRENTIO_URL = 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,torrent9|language=french';
+var TORRENTIO_URL = 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,torrent9|language=french|qualityfilter=720p,480p,other,scr,cam,unknown';
 var ZILEAN_URL = 'https://zileanfortheweebs.midnightignite.me';
 var MAX_RESULTS = 40;
 
@@ -147,6 +147,8 @@ async function getStreams(tmdbId, mediaType, season, episode) {
             seenNames[key] = true;
             t.lang = lang;
             t.quality = qualityOf(t.text);
+            // 1080p et 4K seulement
+            if (t.quality !== '1080p' && t.quality !== '2160p') return;
             found.push(t);
         });
     });
