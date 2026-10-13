@@ -855,6 +855,7 @@ internal fun PlayerRuntimeController.initializePlayer(
             val isForcePassthroughActive = !isBluetoothAudioOutput &&
                 playerSettings.forceOpticalPassthrough &&
                 playerSettings.decoderPriority != 0
+            soundbarWakeupEnabled = isForcePassthroughActive
             // Prefer FFmpeg/extension audio decoder on BT so multi-channel TrueHD/DTS always
             // decode to stereo PCM even when the platform MediaCodec path is flaky.
             val effectiveDecoderPriority = if (
@@ -1377,6 +1378,25 @@ internal fun PlayerRuntimeController.initializePlayer(
                         if (!startPaused && !userPausedManually) {
                             playWhenReady = true
                             play()
+                            if (isFirstFrame && soundbarWakeupEnabled) {
+                                // 666TV : en Dolby (AC-3), la barre de son met ~1-2 s à
+                                // « s'accrocher » au flux et ce son-là est perdu. On laisse
+                                // tourner le temps qu'elle s'accroche, puis on revient au
+                                // point de départ (déjà dans le tampon : retour instantané).
+                                val wakeupTarget = currentPosition.coerceAtLeast(0L)
+                                soundbarWakeupJob?.cancel()
+                                soundbarWakeupJob = scope.launch {
+                                    delay(SOUNDBAR_WAKEUP_MS)
+                                    val player = _exoPlayer ?: return@launch
+                                    val position = player.currentPosition
+                                    if (player.isPlaying &&
+                                        position >= wakeupTarget &&
+                                        position <= wakeupTarget + SOUNDBAR_WAKEUP_MS + 1_500L
+                                    ) {
+                                        player.seekTo(wakeupTarget)
+                                    }
+                                }
+                            }
                         }
                         refreshStableProgressResetGate()
                         cancelFirstFrameWatchdog()
@@ -2817,3 +2837,6 @@ private fun PlayerView.videoBoundsFraction(aspectRatio: Float): RectF? {
         top + frameHeight / viewHeight,
     )
 }
+
+/** 666TV : temps laissé à la barre de son pour reconnaître le flux Dolby au démarrage. */
+internal const val SOUNDBAR_WAKEUP_MS = 2_000L

@@ -11,6 +11,8 @@ internal fun PlayerRuntimeController.releasePlayer() {
 internal fun PlayerRuntimeController.releasePlayer(flushPlaybackState: Boolean) {
     logScrobbleDiagnostic("release_player", "flushPlaybackState=$flushPlaybackState")
     isReleasingPlayer = true
+    soundbarWakeupJob?.cancel()
+    soundbarWakeupJob = null
     com.nuvio.tv.core.recommendations.TvRecommendationManager.isPlaybackActive.value = false
     if (flushPlaybackState) {
         stopTorrentStream()

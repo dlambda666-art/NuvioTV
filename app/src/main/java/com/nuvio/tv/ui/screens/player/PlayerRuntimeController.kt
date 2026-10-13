@@ -401,6 +401,9 @@ class PlayerRuntimeController(
 
     internal var playbackStartedForParentalGuide = false
     internal var hasRenderedFirstFrame = false
+    // 666TV : réveil de la barre de son (voir onRenderedFirstFrame).
+    internal var soundbarWakeupEnabled = false
+    internal var soundbarWakeupJob: kotlinx.coroutines.Job? = null
     // Prevent the previous stream's end from completing the new stream.
     internal var endDetectionArmed = false
     // Ignore EOF until MPV has reported a non-EOF state for this stream.
