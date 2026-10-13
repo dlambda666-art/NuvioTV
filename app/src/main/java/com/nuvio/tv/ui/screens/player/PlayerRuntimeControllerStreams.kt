@@ -1699,21 +1699,11 @@ internal fun PlayerRuntimeController.playNextEpisode(userInitiated: Boolean = fa
             } else {
                 playerSettings.streamAutoPlayMode
             }
-            val effectiveSource = if (shouldAutoSelectInManualMode) {
-                StreamAutoPlaySource.ALL_SOURCES
-            } else {
-                playerSettings.streamAutoPlaySource
-            }
-            val effectiveSelectedAddons = if (shouldAutoSelectInManualMode) {
-                emptySet()
-            } else {
-                playerSettings.streamAutoPlaySelectedAddons
-            }
-            val effectiveSelectedPlugins = if (shouldAutoSelectInManualMode) {
-                emptySet()
-            } else {
-                playerSettings.streamAutoPlaySelectedPlugins
-            }
+            // 666TV : même en mode manuel, l'enchaînement respecte la portée choisie
+            // (ex. « Plugins activés uniquement ») et les addons/plugins autorisés.
+            val effectiveSource = playerSettings.streamAutoPlaySource
+            val effectiveSelectedAddons = playerSettings.streamAutoPlaySelectedAddons
+            val effectiveSelectedPlugins = playerSettings.streamAutoPlaySelectedPlugins
             val effectiveRegex = if (shouldAutoSelectInManualMode) {
                 ""
             } else {

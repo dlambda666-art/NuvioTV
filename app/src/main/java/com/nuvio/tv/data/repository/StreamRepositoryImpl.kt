@@ -511,14 +511,14 @@ class StreamRepositoryImpl @Inject constructor(
             addonName = addonName,
             addonLogo = null,
             description = buildDescription(this),
-            behaviorHints = headers?.let { headers ->
-                StreamBehaviorHints(
-                    notWebReady = null,
-                    bingeGroup = null,
-                    countryWhitelist = null,
-                    proxyHeaders = ProxyHeaders(request = headers, response = null)
-                )
-            },
+            // 666TV : groupe Binge = même plugin + même qualité, pour que l'épisode
+            // suivant reprenne la même source.
+            behaviorHints = StreamBehaviorHints(
+                notWebReady = null,
+                bingeGroup = "666|${scraper.id.substringAfterLast(':')}|${quality ?: "?"}",
+                countryWhitelist = null,
+                proxyHeaders = headers?.let { ProxyHeaders(request = it, response = null) }
+            ),
             infoHash = infoHash,
             fileIdx = null,
             ytId = null,

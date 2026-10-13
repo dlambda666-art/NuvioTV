@@ -100,6 +100,8 @@ internal fun PlayerRuntimeController.applyAudioAmplification(db: Int) {
 internal fun PlayerRuntimeController.applyCenterMixLevel(db: Int) {
     val clampedDb = db.coerceIn(CENTER_MIX_LEVEL_MIN_DB, CENTER_MIX_LEVEL_MAX_DB)
     ffmpegAudioRenderer?.setCenterMixLevelDb(clampedDb)
+    // 666TV : même réglage pour les pistes stéréo / décodées par l'appareil.
+    dialogueBoostProcessor.setBoostDb(clampedDb)
     _uiState.update { state ->
         state.copy(centerMixLevelDb = clampedDb)
     }
@@ -111,8 +113,12 @@ internal fun PlayerRuntimeController.updateAudioControlAvailability(
 ) {
     val selectedTrack = audioTracks.getOrNull(selectedAudioIndex)
     val isAudioAmplificationAvailable = isUsingMpvEngine() || _exoPlayer != null
+    // 666TV : voix réglables sur toutes les pistes lues avec ExoPlayer (FFmpeg pour le
+    // multicanal transcodé, DialogueBoostAudioProcessor pour le reste).
     val isCenterMixAvailable =
-        ffmpegAudioRenderer?.isCenterMixActive() == true && (selectedTrack?.channelCount ?: 0) > 2
+        (ffmpegAudioRenderer?.isCenterMixActive() == true && (selectedTrack?.channelCount ?: 0) > 2) ||
+            (_exoPlayer != null && !isUsingMpvEngine())
+    dialogueBoostProcessor.setBoostDb(_uiState.value.centerMixLevelDb)
     val clampedDb = _uiState.value.audioAmplificationDb
         .coerceIn(AUDIO_AMPLIFICATION_MIN_DB, AUDIO_AMPLIFICATION_MAX_DB)
     gainAudioProcessor.setGainDb(

@@ -45,6 +45,9 @@ object StreamAutoPlaySelector {
 
 
 
+    private fun isUncertainFrench(stream: Stream): Boolean =
+        listOf(stream.name, stream.title, stream.description).any { it?.contains("VF ?") == true }
+
     fun selectAutoPlayStream(
         streams: List<Stream>,
         mode: StreamAutoPlayMode,
@@ -100,7 +103,15 @@ object StreamAutoPlaySelector {
 
         return when (mode) {
             StreamAutoPlayMode.MANUAL -> null
-            StreamAutoPlayMode.FIRST_STREAM -> candidateStreams.firstOrNull { isPlayable(it) }
+            // 666TV : meilleure source d'abord — VF sûre avant « VF ? », puis la qualité
+            // (ordre d'origine conservé à égalité).
+            StreamAutoPlayMode.FIRST_STREAM -> candidateStreams
+                .filter { isPlayable(it) }
+                .sortedWith(
+                    compareBy<Stream> { if (isUncertainFrench(it)) 1 else 0 }
+                        .thenByDescending { it.qualityValue }
+                )
+                .firstOrNull()
             StreamAutoPlayMode.REGEX_MATCH -> {
                 val pattern = regexPattern.trim()
  

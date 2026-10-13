@@ -235,7 +235,7 @@ data class PlayerSettings(
     val skipSilence: Boolean = false,
     val audioAmplificationDb: Int = 0,
     val centerMixLevelDb: Int = 0,
-    val persistAudioAmplification: Boolean = false,
+    val persistAudioAmplification: Boolean = true, // 666TV
     val rememberAudioDelayPerDevice: Boolean = true,
     val preferredAudioLanguage: String = "fr", // 666TV : VF par défaut
     val secondaryPreferredAudioLanguage: String? = null,
@@ -850,7 +850,7 @@ class PlayerSettingsDataStore @Inject constructor(
                     CENTER_MIX_LEVEL_DB_MIN,
                     CENTER_MIX_LEVEL_DB_MAX
                 ),
-                persistAudioAmplification = prefs[persistAudioAmplificationKey] ?: false,
+                persistAudioAmplification = prefs[persistAudioAmplificationKey] ?: true, // 666TV : voix gardées d'une vidéo à l'autre
                 rememberAudioDelayPerDevice = prefs[rememberAudioDelayPerDeviceKey] ?: true,
                 preferredAudioLanguage = normalizeSelectableLanguageCode(
                     prefs[preferredAudioLanguageKey] ?: "fr" // 666TV : VF par défaut
@@ -933,7 +933,7 @@ class PlayerSettingsDataStore @Inject constructor(
                     min = 0f,
                     max = 3.5f
                 ),
-                streamReuseLastLinkEnabled = prefs[streamReuseLastLinkEnabledKey] ?: false,
+                streamReuseLastLinkEnabled = prefs[streamReuseLastLinkEnabledKey] ?: true, // 666TV : reprise instantanée
                 streamReuseLastLinkCacheHours = (prefs[streamReuseLastLinkCacheHoursKey] ?: 24).coerceIn(1, 168),
                 externalPlayerForwardSubtitles = prefs[externalPlayerForwardSubtitlesKey] ?: false,
                 externalPlayerSendSkipSegments = prefs[externalPlayerSendSkipSegmentsKey] ?: false,

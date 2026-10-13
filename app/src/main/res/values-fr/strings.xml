@@ -2472,7 +2472,7 @@
     <string name="audio_number_of_channels_desc">Définit la disposition des haut-parleurs utilisée pour le downmix FFmpeg.</string>
     <string name="audio_center_mix_label">Voix (canal central)</string>
     <string name="audio_center_mix_value_db">%1$d dB</string>
-    <string name="audio_center_mix_help">Niveau des voix en dB. Avec « Forcer le transcodage AC-3 » : gain direct sur le canal central, son Dolby 5.1 conservé. En downmix : par rapport aux métadonnées (-3 dB par défaut).</string>
+    <string name="audio_center_mix_help">Niveau des voix en dB, sur toutes les pistes : canal central en 5.1 (avec « Forcer le transcodage AC-3 », son Dolby conservé), bande de la voix renforcée en stéréo.</string>
     <string name="audio_center_mix_unavailable">Le réglage des voix nécessite « Forcer le transcodage AC-3 » ou le downmix FFmpeg, sur une piste multicanaux.</string>
     <string name="audio_maintain_original_audio_on_downmix_title">Conserver l’audio d’origine lors du downmix</string>
     <string name="audio_maintain_original_audio_on_downmix_subtitle">Quand il est désactivé, la normalisation du downmix peut réduire le volume global.</string>

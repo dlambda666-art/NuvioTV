@@ -132,6 +132,8 @@ jobs:
           ./gradlew \
             :app:testFullReleaseUnitTest \
             --tests 'com.nuvio.tv.updater.*' \
+            --tests 'com.nuvio.tv.ui.screens.player.PlayerNextEpisodeRulesTest' \
+            --tests 'com.nuvio.tv.core.player.StreamAutoPlaySelectorTest' \
             :app:assembleFullRelease \
             --stacktrace
 

@@ -79,8 +79,10 @@ object PlayerNextEpisodeRules {
                     }
                 }
             } else {
-                // Outro ends close to the file end — fire at earliest outro start.
-                positionMs / 1_000.0 >= outroSegments.minOf { it.startTime }
+                // 666TV : générique en fin de fichier — on enchaîne au milieu du générique.
+                val outroStart = outroSegments.minOf { it.startTime }
+                val outroEnd = outroSegments.maxOf { it.endTime }
+                positionMs / 1_000.0 >= outroStart + (outroEnd - outroStart) * MID_CREDITS_FRACTION
             }
         }
 
@@ -130,6 +132,9 @@ object PlayerNextEpisodeRules {
     val OUTRO_SEGMENT_TYPES = setOf("outro", "ed", "mixed-ed")
 
     const val POST_OUTRO_AUTOPLAY_GAP_MS = 5_000L
+
+    /** 666TV : part du générique laissée avant d'enchaîner (0.5 = milieu). */
+    const val MID_CREDITS_FRACTION = 0.5
 
     const val END_OF_VIDEO_EPSILON_MS = 1_000L
 

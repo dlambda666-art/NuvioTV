@@ -218,4 +218,20 @@ class PlayerNextEpisodeRulesTest {
     fun `an unknown duration is not away from the end`() {
         assertFalse(awayFromEnd(positionMs = 0L, durationMs = 0L))
     }
+
+    @Test
+    fun `outro at the end of the file fires at mid-credits`() {
+        val outro = listOf(outro(startSec = 1_140.0, endSec = 1_200.0))
+        fun at(sec: Long) = PlayerNextEpisodeRules.shouldShowNextEpisodeCard(
+            positionMs = sec * 1_000L,
+            durationMs = 1_200_000L,
+            skipIntervals = outro,
+            thresholdMode = NextEpisodeThresholdMode.MINUTES_BEFORE_END,
+            thresholdPercent = 99f,
+            thresholdMinutesBeforeEnd = 0.5f
+        )
+        assertFalse(at(1_140L))
+        assertFalse(at(1_169L))
+        assertTrue(at(1_170L))
+    }
 }
