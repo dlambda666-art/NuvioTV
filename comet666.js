@@ -26,7 +26,7 @@ function frenchLabel(text) {
     if (FRENCH_AUDIO.test(text)) return 'VF';
     if (MULTI.test(text) && FRENCH_FLAG.test(text)) return 'MULTI VF';
     // « MULTi » avec un i minuscule : convention de la scène française (VO + VF)
-    if (/\bMULTi\b/.test(text)) return 'MULTI VF';
+    if (/\bMULTi\b/.test(text)) return 'MULTi (VF ?)';
     // langue française repérée par l'index (DMM/Zilean)
     if (MULTI.test(text) && /\[lang:[^\]]*\bfr/i.test(text)) return 'MULTI VF';
     return null;
@@ -151,6 +151,9 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         });
     });
     found.sort(function (a, b) {
+        // VF sûre d'abord, « MULTi (VF ?) » ensuite
+        var c = (a.lang.indexOf('?') >= 0) - (b.lang.indexOf('?') >= 0);
+        if (c) return c;
         var q = (QUALITY_RANK[b.quality] || 0) - (QUALITY_RANK[a.quality] || 0);
         if (q) return q;
         return (b.bytes || 0) - (a.bytes || 0);
