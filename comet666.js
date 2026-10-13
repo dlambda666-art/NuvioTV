@@ -25,6 +25,10 @@ function frenchLabel(text) {
     if (/\bVF2\b/i.test(text)) return 'VF2';
     if (FRENCH_AUDIO.test(text)) return 'VF';
     if (MULTI.test(text) && FRENCH_FLAG.test(text)) return 'MULTI VF';
+    // « MULTi » avec un i minuscule : convention de la scène française (VO + VF)
+    if (/\bMULTi\b/.test(text)) return 'MULTI VF';
+    // langue française repérée par l'index (DMM/Zilean)
+    if (MULTI.test(text) && /\[lang:[^\]]*\bfr/i.test(text)) return 'MULTI VF';
     return null;
 }
 
@@ -114,7 +118,8 @@ async function fromZilean(imdbId, isTv, season, episode) {
         var hash = t.info_hash || t.infoHash;
         var title = t.raw_title || t.rawTitle || '';
         if (!hash || !title) return;
-        out.push({ hash: String(hash).toLowerCase(), release: title, text: title, bytes: Number(t.size) || 0, seeders: null, source: 'DMM' });
+        var langs = (t.languages || []).join(',');
+        out.push({ hash: String(hash).toLowerCase(), release: title, text: title + (langs ? ' [lang:' + langs + ']' : ''), bytes: Number(t.size) || 0, seeders: null, source: 'DMM' });
     });
     return out;
 }
