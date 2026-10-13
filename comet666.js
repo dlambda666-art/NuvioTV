@@ -9,6 +9,8 @@
 var FRANK_URL = 'https://lambda666-frankenstream.hf.space';
 var TORRENTIO_URL = 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,torrent9|language=french|qualityfilter=720p,480p,other,scr,cam,unknown';
 var ZILEAN_URL = 'https://zileanfortheweebs.midnightignite.me';
+var STREMTHRU_URL = 'https://stremthru.13377001.xyz';
+var TORRENTSDB_URL = 'https://torrentsdb.com';
 var MAX_RESULTS = 40;
 
 // --- Règles de langue (mêmes que Frank) -----------------------------------
@@ -124,6 +126,70 @@ async function fromZilean(imdbId, isTv, season, episode) {
     return out;
 }
 
+
+function decodeEntities(t) {
+    return String(t || '').replace(/&#(\d+);/g, function (_, n) { return String.fromCharCode(parseInt(n, 10)); })
+        .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+
+// Pour une série : l'épisode demandé, la saison entière ou l'intégrale
+function matchesEpisode(title, season, episode) {
+    var t = String(title);
+    var se = t.match(/\bS(\d{1,2})[ ._-]?E(\d{1,3})\b/i);
+    if (se) return parseInt(se[1], 10) === season && parseInt(se[2], 10) === episode;
+    var sOnly = t.match(/\bS(\d{1,2})\b(?![ ._-]?E\d)/i) || t.match(/\bSaison[ ._-]?(\d{1,2})\b/i) || t.match(/\bSeason[ ._-]?(\d{1,2})\b/i);
+    if (sOnly) {
+        var range = t.match(/\bS(\d{1,2})[ ._-]?-[ ._-]?S?(\d{1,2})\b/i);
+        if (range) return season >= parseInt(range[1], 10) && season <= parseInt(range[2], 10);
+        return parseInt(sOnly[1], 10) === season;
+    }
+    return /\b(INTEGRALE|COMPLETE|COMPLETA|INT[ÉE]GRALE)\b/i.test(t);
+}
+
+async function getText(url) {
+    try {
+        var res = await fetch(url, {});
+        if (!res || !res.ok) return '';
+        return await res.text();
+    } catch (e) {
+        return '';
+    }
+}
+
+// StremThru : grosse base de torrents, très fournie en releases françaises
+async function fromStremThru(imdbId, isTv, season, episode) {
+    var url = STREMTHRU_URL + '/v0/torznab/api?t=search&imdbid=' + imdbId;
+    var xml = await getText(url);
+    var out = [];
+    var items = xml.split('<item>').slice(1);
+    items.forEach(function (it) {
+        var title = decodeEntities((it.match(/<title>([^<]*)<\/title>/) || [])[1]);
+        var hash = (it.match(/name="infohash"\s+value="([0-9a-fA-F]{40})"/) || it.match(/btih:([0-9a-fA-F]{40})/) || [])[1];
+        if (!title || !hash) return;
+        if (isTv && !matchesEpisode(title, season, episode)) return;
+        var size = Number((it.match(/<size>(\d+)<\/size>/) || [])[1]) || Number((it.match(/name="size"\s+value="(\d+)"/) || [])[1]) || 0;
+        var seeders = (it.match(/name="seeders"\s+value="(\d+)"/) || [])[1];
+        out.push({ hash: hash.toLowerCase(), release: title, text: title, bytes: size, seeders: seeders ? parseInt(seeders, 10) : null, source: 'StremThru' });
+    });
+    return out;
+}
+
+// TorrentsDB : addon public au format Stremio
+async function fromTorrentsDb(imdbId, isTv, season, episode) {
+    var sid = isTv ? imdbId + ':' + season + ':' + episode : imdbId;
+    var data = await getJson(TORRENTSDB_URL + '/stream/' + (isTv ? 'series' : 'movie') + '/' + sid + '.json');
+    var out = [];
+    ((data && data.streams) || []).forEach(function (s) {
+        if (!s.infoHash) return;
+        var text = (s.title || '') + '\n' + (s.name || '') + '\n' + (s.description || '');
+        var release = String(s.title || s.description || '').split('\n')[0];
+        var size = (text.match(/💾\s*([\d.,]+\s*[GMT]B)/i) || [])[1];
+        var seeders = (text.match(/👤\s*(\d+)/) || [])[1];
+        out.push({ hash: s.infoHash.toLowerCase(), release: release, text: text, bytes: sizeToBytes(size), seeders: seeders ? parseInt(seeders, 10) : null, source: 'TorrentsDB' });
+    });
+    return out;
+}
+
 // --- Point d'entrée appelé par 666TV --------------------------------------
 async function getStreams(tmdbId, mediaType, season, episode) {
     var isTv = mediaType === 'tv' || mediaType === 'series';
@@ -133,7 +199,12 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         return [];
     }
     var found = [];
-    var lists = [await fromTorrentio(ids.imdbId, isTv, season, episode), await fromZilean(ids.imdbId, isTv, season, episode)];
+    var lists = [
+        await fromStremThru(ids.imdbId, isTv, season, episode),
+        await fromTorrentio(ids.imdbId, isTv, season, episode),
+        await fromZilean(ids.imdbId, isTv, season, episode),
+        await fromTorrentsDb(ids.imdbId, isTv, season, episode)
+    ];
     var seen = {};
     var seenNames = {};
     lists.forEach(function (list) {
@@ -177,4 +248,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     });
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { getStreams: getStreams, _frenchLabel: frenchLabel };
+if (typeof module !== 'undefined' && module.exports) module.exports = { getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode };
