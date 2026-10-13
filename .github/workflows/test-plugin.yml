@@ -1,0 +1,25 @@
+name: Test plugin Comet666
+on:
+  push:
+    branches: [plugins]
+    paths: ['comet666.js', 'test-run.js', '.github/workflows/test-plugin.yml']
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: node test-run.js
+      - name: Save report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin plugins-test-report || true
+          git checkout --orphan report-tmp
+          git rm -rf --cached . >/dev/null
+          git add test-report.json
+          git commit -m "test report [skip ci]"
+          git push -f origin HEAD:plugins-test-report

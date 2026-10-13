@@ -1,0 +1,18 @@
+{
+  "name": "666TV — plugins",
+  "version": "1.0.0",
+  "description": "Plugins perso de 666TV",
+  "author": "Lambda666",
+  "scrapers": [
+    {
+      "id": "comet666",
+      "name": "Comet666",
+      "description": "Torrents en VF (MULTI, VFF, TRUEFRENCH…), lus via TorBox. Jamais de P2P.",
+      "version": "1.0.0",
+      "filename": "comet666.js",
+      "supportedTypes": ["movie", "tv"],
+      "enabled": true,
+      "contentLanguage": ["fr"]
+    }
+  ]
+}
