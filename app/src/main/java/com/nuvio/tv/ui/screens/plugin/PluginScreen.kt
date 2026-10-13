@@ -194,6 +194,10 @@ fun PluginScreenContent(
                     )
                 }
 
+                item {
+                    ShieldTransferCard(onImported = { viewModel.loadPrivateSources() })
+                }
+
                 // Manage from phone card
                 item {
                     ManageFromPhoneCard(onClick = { viewModel.onEvent(PluginUiEvent.StartQrMode) })

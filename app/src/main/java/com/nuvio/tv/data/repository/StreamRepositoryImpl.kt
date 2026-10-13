@@ -283,10 +283,22 @@ class StreamRepositoryImpl @Inject constructor(
                     }
                 }
 
+                // 666TV : releases déjà proposées par un autre plugin (clé = release + qualité)
+                val seenPluginReleases = HashSet<String>()
+
                 // Emit results as they arrive
                 for (result in resultChannel) {
                     val checkingResult = localDebridAvailabilityService.markChecking(listOf(result)).firstOrNull() ?: result
-                    val checkedResult = localDebridAvailabilityService.annotateCachedAvailability(listOf(checkingResult)).firstOrNull() ?: checkingResult
+                    val annotatedResult = localDebridAvailabilityService.annotateCachedAvailability(listOf(checkingResult)).firstOrNull() ?: checkingResult
+                    val checkedResult = annotatedResult.copy(
+                        streams = annotatedResult.streams.filter { stream ->
+                            // P2P coupé : un torrent absent du cache debrid ne se lancerait pas.
+                            val hiddenUncached = !com.nuvio.tv.core.torrent.TorrentService.P2P_ENABLED &&
+                                stream.debridCacheStatus?.state == com.nuvio.tv.domain.model.StreamDebridCacheState.NOT_CACHED
+                            !hiddenUncached && stream.pluginReleaseKey()?.let { seenPluginReleases.add(it) } != false
+                        }
+                    )
+                    if (checkedResult.streams.isEmpty()) continue
                     mergePresentedResult(accumulatedResults, checkedResult, debridSettings)
                     emit(NetworkResult.Success(accumulatedResults.toList()))
                     Log.d(TAG, "Emitted ${accumulatedResults.size} addon(s), latest: ${checkedResult.addonName} with ${checkedResult.streams.size} streams")
@@ -527,6 +539,18 @@ class StreamRepositoryImpl @Inject constructor(
             qualityValue = parseQualityValue(quality),
             subtitles = subtitles
         )
+    }
+
+    /** 666TV : clé « release + qualité » des flux de nos plugins (groupe Binge « 666|… »). */
+    private fun Stream.pluginReleaseKey(): String? {
+        if (behaviorHints?.bingeGroup?.startsWith("666|") != true) return null
+        val release = title?.lineSequence()?.firstOrNull()?.trim().orEmpty()
+        if (release.isBlank()) return null
+        val normalized = release.lowercase()
+            .replace(Regex("\\.(mkv|mp4|avi|m2ts|ts)$"), "")
+            .replace(Regex("[^a-z0-9]+"), " ")
+            .trim()
+        return if (normalized.isBlank()) null else "$normalized|${quality.orEmpty()}"
     }
 
     private fun Stream.dedupKey(): String {

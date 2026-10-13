@@ -48,7 +48,7 @@ class PluginViewModel @Inject constructor(
         loadPrivateSources()
     }
 
-    private fun loadPrivateSources() {
+    fun loadPrivateSources() {
         viewModelScope.launch {
             val hosts = PRIVATE_SOURCES.mapNotNull { source ->
                 val url = pluginDataStore.getScraperSettings(source.scraperId)[PRIVATE_SOURCE_URL_KEY] as? String
