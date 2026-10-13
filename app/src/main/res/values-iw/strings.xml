@@ -2737,6 +2737,7 @@
     <!-- Torrent service / TorrServer binary errors -->
     <string name="network_fast_error_script_path_missing">fast.com: נתיב הסקריפט לא נמצא</string>
     <string name="network_fast_error_token_missing">fast.com: האסימון לא נמצא בחבילה</string>
+    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TV)</string>
 
     <string name="torrent_error_add_failed">נכשל בהוספת טורנט</string>
 

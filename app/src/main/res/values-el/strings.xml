@@ -2664,6 +2664,7 @@
   <string name="network_fast_error_script_path_missing">fast.com: δεν βρέθηκε διαδρομή script</string>
   <string name="network_fast_error_token_missing">fast.com: δεν βρέθηκε διακριτικό στο bundle</string>
   <!-- Torrent service / TorrServer binary errors -->
+    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TV)</string>
   <string name="torrent_error_add_failed">Αποτυχία προσθήκης torrent</string>
   <string name="torrent_error_binary_missing">Το δυαδικό TorrServer δεν βρέθηκε στο %1$s</string>
   <string name="torrent_error_process_died">Η διεργασία TorrServer τερμάτισε κατά την εκκίνηση (κωδικός εξόδου %1$d)</string>

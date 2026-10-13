@@ -2663,6 +2663,7 @@
     <string name="network_fast_error_script_path_missing">fast.com: shtegu i skriptit nuk u gjet</string>
     <string name="network_fast_error_token_missing">fast.com: tokeni nuk u gjet në paketë</string>
     <!-- Torrent service / TorrServer binary errors -->
+    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TV)</string>
     <string name="torrent_error_add_failed">Shtimi i torrentit dështoi</string>
     <string name="torrent_error_binary_missing">Binari TorrServer nuk u gjet në %1$s</string>
     <string name="torrent_error_process_died">Procesi TorrServer u ndërpre gjatë nisjes (kodi i daljes %1$d)</string>

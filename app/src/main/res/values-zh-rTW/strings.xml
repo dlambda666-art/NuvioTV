@@ -2547,6 +2547,7 @@
     <string name="network_fast_error_token_missing">fast.com：在 bundle 中找不到令牌</string>
 
     <!-- Torrent 服務 / TorrServer 二進位錯誤 -->
+    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TV)</string>
     <string name="torrent_error_add_failed">新增 torrent 失敗</string>
     <string name="torrent_error_binary_missing">在 %1$s 找不到 TorrServer 二進位</string>
     <string name="torrent_error_process_died">TorrServer 程序在啟動時終止 (退出代碼 %1$d)</string>

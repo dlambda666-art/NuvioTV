@@ -26,6 +26,8 @@ class TorrentService @Inject constructor(
     private val api: TorrServerApi
 ) {
     companion object {
+        /** 666TV : lecture torrent P2P (TorrServer) coupée volontairement. */
+        const val P2P_ENABLED = false
         private const val TAG = "TorrentService"
         private val DEFAULT_TRACKERS = listOf(
             "udp://tracker.opentrackr.org:1337/announce",
@@ -52,6 +54,13 @@ class TorrentService @Inject constructor(
         filename: String? = null,
         trackers: List<String> = emptyList()
     ): String = withContext(Dispatchers.IO) {
+        // 666TV : jamais de torrent en pair-à-pair depuis la maison (pas de VPN,
+        // le FAI verrait le trafic). Un lien qui n'est pas servi par le debrid
+        // (TorBox…) échoue ici au lieu de basculer sur TorrServer.
+        if (!P2P_ENABLED) {
+            _state.value = TorrentState.Idle
+            throw TorrentException(appContext.getString(com.nuvio.tv.R.string.torrent_error_p2p_disabled))
+        }
         stopStream()
         _state.value = TorrentState.Connecting
 

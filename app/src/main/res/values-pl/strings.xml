@@ -2302,6 +2302,7 @@
 
     <string name="network_fast_error_script_path_missing">fast.com: nie znaleziono ścieżki skryptu</string>
     <string name="network_fast_error_token_missing">fast.com: nie znaleziono tokenu w pakiecie</string>
+    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TV)</string>
 
     <string name="torrent_error_add_failed">Nie udało się dodać torrenta</string>
     <string name="torrent_error_binary_missing">Nie znaleziono pliku TorrServer w %1$s</string>
