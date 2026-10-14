@@ -55,7 +55,8 @@ data class PrivateSource(val scraperId: String, val label: String)
 val PRIVATE_SOURCES = listOf(
     PrivateSource("lumio666", "Lumio"),
     PrivateSource("frenchio666", "Frenchio"),
-    PrivateSource("streamfusion666", "StreamFusion")
+    PrivateSource("streamfusion666", "StreamFusion"),
+    PrivateSource("wastream666", "Wastream")
 )
 
 const val PRIVATE_SOURCE_URL_KEY = "url"
