@@ -1161,6 +1161,22 @@ private fun PlaybackNavHost(
             )
         }
 
+        composable(Screen.Calendar.route) {
+            com.nuvio.tv.ui.screens.calendar.CalendarScreen(
+                onOpenEpisode = { seriesId, addonBaseUrl, season, episode ->
+                    navController.navigate(
+                        Screen.Detail.createRoute(
+                            itemId = seriesId,
+                            itemType = "series",
+                            addonBaseUrl = addonBaseUrl,
+                            returnFocusSeason = season,
+                            returnFocusEpisode = episode
+                        )
+                    )
+                }
+            )
+        }
+
         composable(Screen.Library.route) {
             LibraryScreen(
                 showBuiltInHeader = !hideBuiltInHeaders,

@@ -49,6 +49,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
@@ -259,6 +260,9 @@ open class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var layoutPreferenceDataStore: LayoutPreferenceDataStore
+
+    @Inject
+    lateinit var calendarRepository: com.nuvio.tv.core.calendar.CalendarRepository
 
     @Inject
     lateinit var experienceModeDataStore: ExperienceModeDataStore
@@ -1012,6 +1016,7 @@ open class MainActivity : ComponentActivity() {
                             add(Screen.Home.route)
                             add(Screen.Search.route)
                             add(Screen.Library.route)
+                            add(Screen.Calendar.route)
                             add(Screen.Settings.route)
                             if (discoverLocation == DiscoverLocation.IN_SIDEBAR) {
                                 add(Screen.Discover.route)
@@ -1061,6 +1066,13 @@ open class MainActivity : ComponentActivity() {
                                     route = Screen.Library.route,
                                     label = strNavLibrary,
                                     iconRes = R.raw.sidebar_library
+                                )
+                            )
+                            add(
+                                DrawerItem(
+                                    route = Screen.Calendar.route,
+                                    label = "Calendrier",
+                                    icon = Icons.Default.CalendarMonth
                                 )
                             )
                             add(
@@ -1164,6 +1176,32 @@ open class MainActivity : ComponentActivity() {
                                     onSwitchProfile = handleSwitchProfile,
                                     onNavigate = { optimisticRoute = it },
                                     onExitApp = handleExitApp
+                                )
+                            }
+
+                            // 666TV : « nouvel épisode en VF » pour les séries avec la cloche.
+                            var calendarVfAnnouncements by remember {
+                                mutableStateOf<List<com.nuvio.tv.core.calendar.CalendarEpisode>>(emptyList())
+                            }
+                            LaunchedEffect(activeProfile?.id) {
+                                delay(20_000L)
+                                while (true) {
+                                    val found = runCatching { calendarRepository.newVfEpisodesToAnnounce() }
+                                        .getOrDefault(emptyList())
+                                    if (found.isNotEmpty()) {
+                                        calendarVfAnnouncements = found
+                                        delay(15_000L)
+                                        calendarVfAnnouncements = emptyList()
+                                    }
+                                    delay(6L * 60L * 60L * 1000L)
+                                }
+                            }
+                            if (calendarVfAnnouncements.isNotEmpty() && currentRoute?.startsWith("player/") != true) {
+                                com.nuvio.tv.ui.screens.calendar.CalendarVfBanner(
+                                    episodes = calendarVfAnnouncements,
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(24.dp)
                                 )
                             }
 

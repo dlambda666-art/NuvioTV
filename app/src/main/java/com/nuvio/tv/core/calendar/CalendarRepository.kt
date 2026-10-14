@@ -1,0 +1,230 @@
+package com.nuvio.tv.core.calendar
+
+import android.util.Log
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
+import com.nuvio.tv.core.network.NetworkResult
+import com.nuvio.tv.core.plugin.PluginManager
+import com.nuvio.tv.core.profile.ProfileManager
+import com.nuvio.tv.core.tmdb.TmdbService
+import com.nuvio.tv.core.util.parseEpisodeReleaseInstant
+import com.nuvio.tv.data.local.ProfileDataStoreFactory
+import com.nuvio.tv.domain.model.Meta
+import com.nuvio.tv.domain.repository.LibraryRepository
+import com.nuvio.tv.domain.repository.MetaRepository
+import com.nuvio.tv.domain.repository.WatchProgressRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/** Un épisode dans le calendrier de 666TV. */
+data class CalendarEpisode(
+    val seriesId: String,
+    val seriesName: String,
+    val poster: String?,
+    val season: Int,
+    val episode: Int,
+    val title: String?,
+    val airInstant: Instant,
+    val addonBaseUrl: String?
+) {
+    val key: String get() = "$seriesId:$season:$episode"
+    val code: String get() = "S%02dE%02d".format(season, episode)
+    fun airDate(zone: ZoneId = ZoneId.systemDefault()): LocalDate = airInstant.atZone(zone).toLocalDate()
+    fun hasAired(now: Instant = Instant.now()): Boolean = !airInstant.isAfter(now)
+}
+
+enum class VfState { UNKNOWN, CHECKING, AVAILABLE, NOT_YET, NO_CHECKER }
+
+/**
+ * 666TV : calendrier des sorties.
+ * - Séries suivies : celles de la bibliothèque + celles en cours (vues ces 90 derniers jours).
+ * - Dates des épisodes : la fiche de la série (aiometadata).
+ * - VF : pour un épisode déjà sorti, Comet666 cherche une release VF prête (index publics + TorBox).
+ * - Cloche : séries pour lesquelles on veut être prévenu d'un nouvel épisode en VF.
+ * Idée de Nuvio Arc (ysosrs123/NuvioTV-Fork), réécrite pour 666TV.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+@Singleton
+class CalendarRepository @Inject constructor(
+    private val libraryRepository: LibraryRepository,
+    private val watchProgressRepository: WatchProgressRepository,
+    private val metaRepository: MetaRepository,
+    private val tmdbService: TmdbService,
+    private val pluginManager: PluginManager,
+    private val factory: ProfileDataStoreFactory,
+    private val profileManager: ProfileManager
+) {
+    private data class SeriesSeed(val id: String, val name: String, val poster: String?, val addonBaseUrl: String?)
+
+    private data class CachedEpisodes(val at: Long, val episodes: List<CalendarEpisode>)
+
+    private val episodeCache = ConcurrentHashMap<String, CachedEpisodes>()
+    private val vfNegativeCache = ConcurrentHashMap<String, Long>()
+    private val metaSemaphore = Semaphore(4)
+    private val vfSemaphore = Semaphore(2)
+
+    private val bellsKey = stringSetPreferencesKey("calendar_bells_666")
+    private val vfFoundKey = stringSetPreferencesKey("calendar_vf_found_666")
+    private val notifiedKey = stringSetPreferencesKey("calendar_notified_666")
+    private val lastRefreshKey = stringPreferencesKey("calendar_last_refresh_666")
+
+    private fun store(pid: Int = profileManager.activeProfileId.value) = factory.get(pid, FEATURE)
+
+    val bells: Flow<Set<String>> = profileManager.activeProfileId.flatMapLatest { pid ->
+        factory.get(pid, FEATURE).data.map { it[bellsKey].orEmpty() }
+    }
+
+    suspend fun toggleBell(seriesId: String) {
+        store().edit { prefs ->
+            val current = prefs[bellsKey].orEmpty()
+            prefs[bellsKey] = if (seriesId in current) current - seriesId else current + seriesId
+        }
+    }
+
+    /** Épisodes de [daysBack] jours en arrière à [daysAhead] jours en avant, triés par date. */
+    suspend fun episodes(daysBack: Long = 7, daysAhead: Long = 30, force: Boolean = false): List<CalendarEpisode> =
+        withContext(Dispatchers.IO) {
+            val seeds = followedSeries()
+            val now = Instant.now()
+            val from = now.minusSeconds(daysBack * 86_400)
+            val to = now.plusSeconds(daysAhead * 86_400)
+            coroutineScope {
+                seeds.map { seed ->
+                    async { metaSemaphore.withPermit { episodesFor(seed, force) } }
+                }.awaitAll()
+            }.flatten()
+                .filter { !it.airInstant.isBefore(from) && !it.airInstant.isAfter(to) }
+                .sortedBy { it.airInstant }
+        }
+
+    private suspend fun followedSeries(): List<SeriesSeed> {
+        val seeds = LinkedHashMap<String, SeriesSeed>()
+        val library = withTimeoutOrNull(5_000) { libraryRepository.libraryItems.first() }.orEmpty()
+        library.filter { it.type.isSeriesType() }.forEach {
+            seeds.putIfAbsent(it.id, SeriesSeed(it.id, it.name, it.poster, it.addonBaseUrl))
+        }
+        val recentLimit = System.currentTimeMillis() - 90L * 86_400_000L
+        val progress = withTimeoutOrNull(5_000) { watchProgressRepository.allProgress.first() }.orEmpty()
+        progress.filter { it.contentType.isSeriesType() && it.lastWatched >= recentLimit }
+            .sortedByDescending { it.lastWatched }
+            .forEach { seeds.putIfAbsent(it.contentId, SeriesSeed(it.contentId, it.name, it.poster, it.addonBaseUrl)) }
+        return seeds.values.take(MAX_SERIES)
+    }
+
+    private suspend fun episodesFor(seed: SeriesSeed, force: Boolean): List<CalendarEpisode> {
+        val cached = episodeCache[seed.id]
+        if (!force && cached != null && System.currentTimeMillis() - cached.at < META_TTL_MS) return cached.episodes
+        val meta: Meta = withTimeoutOrNull(15_000) {
+            metaRepository.getMetaFromPrimaryAddon("series", seed.id)
+                .firstOrNull { it is NetworkResult.Success }
+                ?.let { (it as NetworkResult.Success).data }
+        } ?: return cached?.episodes.orEmpty()
+        val episodes = meta.videos.mapNotNull { video ->
+            val season = video.season ?: return@mapNotNull null
+            val episode = video.episode ?: return@mapNotNull null
+            if (season <= 0) return@mapNotNull null
+            val instant = parseEpisodeReleaseInstant(video.released) ?: return@mapNotNull null
+            CalendarEpisode(
+                seriesId = seed.id,
+                seriesName = meta.name.ifBlank { seed.name },
+                poster = meta.poster ?: seed.poster,
+                season = season,
+                episode = episode,
+                title = video.title.takeIf { it.isNotBlank() && !it.equals("Episode $episode", ignoreCase = true) },
+                airInstant = instant,
+                addonBaseUrl = seed.addonBaseUrl
+            )
+        }
+        episodeCache[seed.id] = CachedEpisodes(System.currentTimeMillis(), episodes)
+        return episodes
+    }
+
+    /** VF déjà trouvée (mémorisée) pour cet épisode ? */
+    suspend fun knownVf(): Set<String> = store().data.first()[vfFoundKey].orEmpty()
+
+    /** Cherche une release VF prête pour un épisode sorti, avec Comet666. */
+    suspend fun checkVf(episode: CalendarEpisode): VfState = withContext(Dispatchers.IO) {
+        if (!episode.hasAired()) return@withContext VfState.UNKNOWN
+        if (episode.key in knownVf()) return@withContext VfState.AVAILABLE
+        vfNegativeCache[episode.key]?.let { at ->
+            if (System.currentTimeMillis() - at < VF_NEGATIVE_TTL_MS) return@withContext VfState.NOT_YET
+        }
+        val scraper = pluginManager.enabledScrapers.first()
+            .firstOrNull { it.id.substringAfterLast(':').equals(VF_CHECKER_ID, ignoreCase = true) }
+            ?: return@withContext VfState.NO_CHECKER
+        val found = vfSemaphore.withPermit {
+            runCatching {
+                val tmdbId = tmdbService.ensureTmdbId(episode.seriesId, "series") ?: return@runCatching false
+                val results = withTimeoutOrNull(45_000) {
+                    pluginManager.executeScraper(scraper, tmdbId, "tv", episode.season, episode.episode)
+                }.orEmpty()
+                results.any { result ->
+                    !result.url.isNullOrBlank() &&
+                        result.name?.contains("diagnostic", ignoreCase = true) != true
+                }
+            }.onFailure { Log.d(TAG, "VF check failed for ${episode.key}: ${it.message}") }
+                .getOrDefault(false)
+        }
+        if (found) {
+            store().edit { it[vfFoundKey] = (it[vfFoundKey].orEmpty() + episode.key).takeLast(MAX_REMEMBERED) }
+            VfState.AVAILABLE
+        } else {
+            vfNegativeCache[episode.key] = System.currentTimeMillis()
+            VfState.NOT_YET
+        }
+    }
+
+    /**
+     * Pour la cloche : épisodes des séries suivies sortis ces 10 derniers jours, dispo en VF
+     * et pas encore signalés. Les renvoie et les marque comme signalés.
+     */
+    suspend fun newVfEpisodesToAnnounce(): List<CalendarEpisode> = withContext(Dispatchers.IO) {
+        val bellSet = store().data.first()[bellsKey].orEmpty()
+        if (bellSet.isEmpty()) return@withContext emptyList()
+        val notified = store().data.first()[notifiedKey].orEmpty()
+        val candidates = episodes(daysBack = 10, daysAhead = 0)
+            .filter { it.seriesId in bellSet && it.hasAired() && it.key !in notified }
+        val announce = candidates.filter { checkVf(it) == VfState.AVAILABLE }
+        if (announce.isNotEmpty()) {
+            store().edit { prefs ->
+                prefs[notifiedKey] = (prefs[notifiedKey].orEmpty() + announce.map { it.key }).takeLast(MAX_REMEMBERED)
+                prefs[lastRefreshKey] = System.currentTimeMillis().toString()
+            }
+        }
+        announce
+    }
+
+    private fun Set<String>.takeLast(n: Int): Set<String> = if (size <= n) this else toList().takeLast(n).toSet()
+
+    private fun String.isSeriesType(): Boolean =
+        equals("series", ignoreCase = true) || equals("tv", ignoreCase = true) || equals("show", ignoreCase = true)
+
+    private companion object {
+        const val TAG = "Calendar666"
+        const val FEATURE = "player_settings"
+        const val VF_CHECKER_ID = "comet666"
+        const val MAX_SERIES = 40
+        const val MAX_REMEMBERED = 400
+        const val META_TTL_MS = 6L * 60 * 60 * 1000
+        const val VF_NEGATIVE_TTL_MS = 3L * 60 * 60 * 1000
+    }
+}
