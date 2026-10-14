@@ -735,6 +735,12 @@ fun PlayerScreen(
                                 return@onKeyEvent true
                             }
                         }
+                        // 666TV : ⏩ ⏪ avec aperçu, le saut se fait quand on lâche.
+                        KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
+                        KeyEvent.KEYCODE_MEDIA_REWIND -> {
+                            viewModel.onEvent(PlayerEvent.OnCommitPreviewSeek)
+                            return@onKeyEvent true
+                        }
                     }
                     return@onKeyEvent false
                 }
@@ -844,7 +850,7 @@ fun PlayerScreen(
                         }
                         KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
                             viewModel.onEvent(
-                                PlayerEvent.OnSeekBy(
+                                PlayerEvent.OnPreviewSeekBy(
                                     PlayerScrubRates.deltaMsForKeyRepeat(
                                         repeatCount = keyEvent.nativeKeyEvent.repeatCount,
                                         forward = true
@@ -855,7 +861,7 @@ fun PlayerScreen(
                         }
                         KeyEvent.KEYCODE_MEDIA_REWIND -> {
                             viewModel.onEvent(
-                                PlayerEvent.OnSeekBy(
+                                PlayerEvent.OnPreviewSeekBy(
                                     PlayerScrubRates.deltaMsForKeyRepeat(
                                         repeatCount = keyEvent.nativeKeyEvent.repeatCount,
                                         forward = false

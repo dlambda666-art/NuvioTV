@@ -251,8 +251,25 @@ class PlayerViewModel @Inject constructor(
         controller.startInitialPlaybackIfNeeded()
     }
 
+    // 666TV : le saut se fait 1 s après avoir lâché la touche, le temps de voir l'image
+    // d'aperçu (et de continuer à avancer si on rappuie).
+    private var commitPreviewSeekJob: kotlinx.coroutines.Job? = null
+
     fun onEvent(event: PlayerEvent) {
-        controller.onEvent(event)
+        when (event) {
+            is PlayerEvent.OnPreviewSeekBy -> {
+                commitPreviewSeekJob?.cancel()
+                controller.onEvent(event)
+            }
+            PlayerEvent.OnCommitPreviewSeek -> {
+                commitPreviewSeekJob?.cancel()
+                commitPreviewSeekJob = viewModelScope.launch {
+                    kotlinx.coroutines.delay(PREVIEW_COMMIT_DELAY_MS)
+                    controller.onEvent(PlayerEvent.OnCommitPreviewSeek)
+                }
+            }
+            else -> controller.onEvent(event)
+        }
     }
 
     /** 666TV : boutons de la télécommande personnalisés. */
@@ -396,5 +413,9 @@ class PlayerViewModel @Inject constructor(
             }
             onResult(launched)
         }
+    }
+
+    private companion object {
+        const val PREVIEW_COMMIT_DELAY_MS = 1_000L
     }
 }

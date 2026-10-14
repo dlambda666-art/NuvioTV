@@ -28,11 +28,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import kotlinx.coroutines.delay
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * 666TV : vignette au-dessus de la barre de progression pendant qu'on avance ou recule.
- * L'image est demandée quand on s'arrête un quart de seconde sur une position.
+ * L'image est demandée dès qu'on vise une nouvelle position (une à la fois).
  */
 @Composable
 internal fun SeekThumbnailOverlay(
@@ -46,10 +49,16 @@ internal fun SeekThumbnailOverlay(
     if (timeline.isLive || timeline.duration <= 0L) return
 
     val bucket = position / 10_000L
-    LaunchedEffect(bucket) {
-        delay(250)
-        val bitmap = viewModel.seekThumbnail(position) ?: return@LaunchedEffect
-        shown = bucket to bitmap.asImageBitmap()
+    val latestPosition = rememberUpdatedState(position)
+    // Une image à la fois : pendant qu'elle arrive, on ne garde que la dernière position visée.
+    LaunchedEffect(Unit) {
+        snapshotFlow { latestPosition.value / 10_000L }
+            .distinctUntilChanged()
+            .conflate()
+            .collect { wanted ->
+                val bitmap = viewModel.seekThumbnail(wanted * 10_000L + 5_000L) ?: return@collect
+                shown = wanted to bitmap.asImageBitmap()
+            }
     }
     val (shownBucket, image) = shown ?: return
     val isCurrent = shownBucket == bucket
