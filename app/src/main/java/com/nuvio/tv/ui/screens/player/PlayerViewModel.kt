@@ -43,6 +43,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
@@ -93,6 +94,7 @@ class PlayerViewModel @Inject constructor(
     private val externalPlaybackTracker: com.nuvio.tv.core.player.ExternalPlaybackTracker,
     private val subtitleFileCache: com.nuvio.tv.core.player.SubtitleFileCache,
     private val tvRecommendationManager: com.nuvio.tv.core.recommendations.TvRecommendationManager,
+    remoteButtonsDataStore: com.nuvio.tv.data.local.RemoteButtonsDataStore,
     profileManager: com.nuvio.tv.core.profile.ProfileManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -251,6 +253,14 @@ class PlayerViewModel @Inject constructor(
 
     fun onEvent(event: PlayerEvent) {
         controller.onEvent(event)
+    }
+
+    /** 666TV : boutons de la télécommande personnalisés. */
+    val remoteButtons: StateFlow<com.nuvio.tv.data.local.RemoteButtonMap> = remoteButtonsDataStore.map
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, com.nuvio.tv.data.local.RemoteButtonMap.EMPTY)
+
+    fun runRemoteButton(binding: com.nuvio.tv.data.local.RemoteButtonBinding) {
+        controller.runRemoteButton(binding)
     }
 
     fun bindExoSubtitleView(subtitleView: androidx.media3.ui.SubtitleView?) {
