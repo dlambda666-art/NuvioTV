@@ -43,7 +43,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,7 +83,6 @@ private enum class PlaybackSection {
     AUDIO_TRAILER,
     SUBTITLES,
     P2P,
-    REMOTE_BUTTONS,
     BUFFER_NETWORK,
     DIAGNOSTICS
 }
@@ -209,13 +207,6 @@ internal fun PlaybackSettingsSections(
     var audioTrailerExpanded by rememberSaveable { mutableStateOf(false) }
     var subtitlesExpanded by rememberSaveable { mutableStateOf(false) }
     var p2pExpanded by rememberSaveable { mutableStateOf(false) }
-    var remoteButtonsExpanded by rememberSaveable { mutableStateOf(false) }
-    val remoteButtonsHeaderFocus = remember { FocusRequester() }
-    val remoteButtonsViewModel: RemoteButtonsSettingsViewModel =
-        androidx.hilt.navigation.compose.hiltViewModel()
-    val remoteButtonMap by remoteButtonsViewModel.map.collectAsState()
-    var remoteButtonEditKey by remember { mutableStateOf<Int?>(null) }
-    var remoteButtonLearning by remember { mutableStateOf(false) }
     var bufferAndNetworkExpanded by rememberSaveable { mutableStateOf(false) }
 
     val defaultGeneralHeaderFocus = remember { FocusRequester() }
@@ -325,11 +316,6 @@ internal fun PlaybackSettingsSections(
     LaunchedEffect(p2pExpanded, focusedSection) {
         if (!p2pExpanded && focusedSection == PlaybackSection.P2P) {
             p2pHeaderFocus.requestFocus()
-        }
-    }
-    LaunchedEffect(remoteButtonsExpanded, focusedSection) {
-        if (!remoteButtonsExpanded && focusedSection == PlaybackSection.REMOTE_BUTTONS) {
-            remoteButtonsHeaderFocus.requestFocus()
         }
     }
     LaunchedEffect(bufferAndNetworkExpanded, focusedSection) {
@@ -697,24 +683,6 @@ internal fun PlaybackSettingsSections(
         }
 
         playbackCollapsibleSection(
-            keyPrefix = "remote_buttons",
-            title = "Boutons de la télécommande",
-            description = "Donne une action à tes touches pendant un film (avancer de 5 min, sous-titres, audio…)",
-            expanded = remoteButtonsExpanded,
-            onToggle = { remoteButtonsExpanded = !remoteButtonsExpanded },
-            focusRequester = remoteButtonsHeaderFocus,
-            onHeaderFocused = { focusedSection = PlaybackSection.REMOTE_BUTTONS }
-        ) {
-            remoteButtonsSettingsItems(
-                map = remoteButtonMap,
-                onEditKey = { remoteButtonEditKey = it },
-                onLearnKey = { remoteButtonLearning = true },
-                onResetAll = remoteButtonsViewModel::resetAll,
-                onItemFocused = { focusedSection = PlaybackSection.REMOTE_BUTTONS }
-            )
-        }
-
-        playbackCollapsibleSection(
             keyPrefix = "p2p",
             title = strSectionP2p,
             description = strSectionP2pDesc,
@@ -784,26 +752,6 @@ internal fun PlaybackSettingsSections(
 
     }
         SettingsVerticalScrollIndicators(state = playbackListState)
-        remoteButtonEditKey?.let { keyCode ->
-            RemoteButtonPickerDialog(
-                keyCode = keyCode,
-                current = remoteButtonMap.bindingFor(keyCode),
-                onSelected = { binding ->
-                    remoteButtonsViewModel.assign(keyCode, binding)
-                    remoteButtonEditKey = null
-                },
-                onDismiss = { remoteButtonEditKey = null }
-            )
-        }
-        if (remoteButtonLearning) {
-            RemoteButtonLearnDialog(
-                onKeyLearned = { keyCode ->
-                    remoteButtonLearning = false
-                    remoteButtonEditKey = keyCode
-                },
-                onDismiss = { remoteButtonLearning = false }
-            )
-        }
     }
 }
 

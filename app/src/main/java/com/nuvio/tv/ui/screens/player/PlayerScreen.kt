@@ -157,7 +157,6 @@ fun PlayerScreen(
     onOpenRecommendationDetails: (PostPlayRecommendation) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val remoteButtons by viewModel.remoteButtons.collectAsState()
     val postPlayRecommendationState by viewModel.postPlayRecommendationUiState.collectAsState()
     val effectiveAutoplayEnabled by viewModel.effectiveAutoplayEnabled.collectAsState(initial = false)
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -555,29 +554,6 @@ fun PlayerScreen(
                         }
                         else -> true
                     }
-                }
-
-                // 666TV : touche de télécommande personnalisée (Paramètres → Lecture).
-                val remoteBinding = remoteButtons.overrideFor(keyEvent.nativeKeyEvent.keyCode)
-                if (remoteBinding != null &&
-                    uiState.error == null &&
-                    !uiState.showEpisodesPanel &&
-                    !uiState.showSourcesPanel &&
-                    !uiState.showAudioOverlay &&
-                    !uiState.showSubtitleOverlay &&
-                    !uiState.showSubtitleStylePanel &&
-                    !uiState.showSubtitleTimingDialog &&
-                    !uiState.showSubtitleDelayOverlay &&
-                    !uiState.showSpeedDialog &&
-                    !uiState.showMoreDialog &&
-                    !postPlayHandlesBack
-                ) {
-                    if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN &&
-                        keyEvent.nativeKeyEvent.repeatCount == 0
-                    ) {
-                        viewModel.runRemoteButton(remoteBinding)
-                    }
-                    return@onPreviewKeyEvent true
                 }
 
                 if (keyEvent.nativeKeyEvent.keyCode != KeyEvent.KEYCODE_CAPTIONS) {
