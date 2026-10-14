@@ -195,6 +195,8 @@ internal object StreamBadgeRulesParser {
 }
 
 internal object StreamBadgeMatcher {
+    private val LETTER_DIGIT_BOUNDARY = Regex("(?<=[A-Za-z])(?=\\d)")
+
     fun compile(rules: StreamBadgeRules): List<CompiledStreamBadgeFilter> {
         if (!rules.hasImport) return emptyList()
         return rules.normalized().imports.filter { it.isActive }.flatMap { import ->
@@ -375,11 +377,15 @@ internal object StreamBadgeMatcher {
             .filter { it.isNotBlank() }
             .distinct()
 
-        return if (candidates.size <= 1) {
+        val all = if (candidates.size <= 1) {
             candidates
         } else {
             candidates + candidates.joinToString(" ")
         }
+        // 666TV : « DDP5.1 » / « AAC2.0 » → aussi « DDP 5.1 », pour que les badges
+        // de canaux (\\b5\\.1\\b) reconnaissent les noms de releases collés.
+        val split = all.lastOrNull()?.replace(LETTER_DIGIT_BOUNDARY, " ")
+        return if (split != null && split != all.last()) all + split else all
     }
 }
 

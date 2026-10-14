@@ -529,7 +529,10 @@ class StreamRepositoryImpl @Inject constructor(
                 notWebReady = null,
                 bingeGroup = "666|${scraper.id.substringAfterLast(':')}|${quality ?: "?"}",
                 countryWhitelist = null,
-                proxyHeaders = headers?.let { ProxyHeaders(request = it, response = null) }
+                proxyHeaders = headers?.let { ProxyHeaders(request = it, response = null) },
+                // 666TV : taille (badge de taille) et nom de fichier (badges image).
+                videoSize = parsePluginSizeBytes(size),
+                filename = baseTitle?.lineSequence()?.firstOrNull()?.trim()?.takeIf { it.isNotBlank() }
             ),
             infoHash = infoHash,
             fileIdx = null,
@@ -539,6 +542,19 @@ class StreamRepositoryImpl @Inject constructor(
             qualityValue = parseQualityValue(quality),
             subtitles = subtitles
         )
+    }
+
+    /** 666TV : « 18.2 Go », « 950 Mo », « 1.4 TB »… → octets. */
+    private fun parsePluginSizeBytes(text: String?): Long? {
+        val match = Regex("([\\d.,]+)\\s*(TB|GB|MB|To|Go|Mo)\\b", RegexOption.IGNORE_CASE)
+            .find(text.orEmpty()) ?: return null
+        val number = match.groupValues[1].replace(',', '.').toDoubleOrNull() ?: return null
+        val factor = when (match.groupValues[2].uppercase()) {
+            "TB", "TO" -> 1e12
+            "GB", "GO" -> 1e9
+            else -> 1e6
+        }
+        return (number * factor).toLong().takeIf { it > 0 }
     }
 
     /** 666TV : clé « release + qualité » des flux de nos plugins (groupe Binge « 666|… »). */

@@ -42,8 +42,8 @@ class DebridStreamFormatterTest {
 
         val formatted = formatter.format(stream, DebridSettings())
 
-        assertEquals("🎞️ 1080p Addon", formatted.name)
-        assertTrue(formatted.description.orEmpty().contains("⚡ Prêt (TB)"))
+        assertEquals("🗣️ 🇫🇷", formatted.name)
+        assertTrue(formatted.description.orEmpty(), formatted.description.orEmpty().startsWith("🎬"))
     }
 
     @Test
@@ -80,7 +80,7 @@ class DebridStreamFormatterTest {
     }
 
     @Test
-    fun `666TV default formatter renders plugin streams with emojis`() {
+    fun `666TV default formatter shows the talking head, the flag and the title only`() {
         val formatter = DebridStreamFormatter(DebridStreamTemplateEngine())
         val stream = Stream(
             name = "Frenchio666 1080p",
@@ -104,11 +104,8 @@ class DebridStreamFormatterTest {
 
         val formatted = formatter.format(stream, DebridSettings())
 
-        assertEquals("🎞️ 1080p Frenchio666", formatted.name)
-        val description = formatted.description.orEmpty()
-        assertTrue(description, description.contains("🎬 The Last Of Us · S01E01"))
-        assertTrue(description, description.contains("🗣️ \uD83C\uDDEB\uD83C\uDDF7 VFF"))
-        assertTrue(description, description.contains("⚡ Prêt"))
+        assertEquals("🗣️ 🇫🇷", formatted.name)
+        assertEquals("🎬 The Last Of Us · S01E01", formatted.description)
     }
 
     @Test
@@ -117,5 +114,7 @@ class DebridStreamFormatterTest {
         assertEquals(DebridStreamFormatterDefaults.NAME_TEMPLATE, DebridStreamFormatterDefaults.upgradeName(legacyName))
         assertEquals(DebridStreamFormatterDefaults.NAME_TEMPLATE, DebridStreamFormatterDefaults.upgradeName(null))
         assertEquals("{addon.name}", DebridStreamFormatterDefaults.upgradeName("{addon.name}"))
+        val previousEmojiName = "{stream.resolution::=2160p[\"🎞️ 4K\"||\"\"]}{stream.resolution::=1440p[\"🎞️ 1440p\"||\"\"]}{stream.resolution::=1080p[\"🎞️ 1080p\"||\"\"]}{stream.resolution::=720p[\"🎞️ 720p\"||\"\"]} {addon.name}"
+        assertEquals(DebridStreamFormatterDefaults.NAME_TEMPLATE, DebridStreamFormatterDefaults.upgradeName(previousEmojiName))
     }
 }
