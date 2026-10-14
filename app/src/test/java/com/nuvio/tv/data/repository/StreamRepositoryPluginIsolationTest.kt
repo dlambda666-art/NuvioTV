@@ -156,6 +156,9 @@ class StreamRepositoryPluginIsolationTest {
         every { presentation.apply(any(), any<DebridSettings>(), any(), any()) } answers {
             firstArg<List<AddonStreams>>()
         }
+        coEvery { presentation.applyWithBadges(any(), any()) } coAnswers {
+            firstArg<List<AddonStreams>>()
+        }
         val availability = mockk<LocalDebridAvailabilityService>()
         coEvery { availability.markChecking(any()) } coAnswers {
             firstArg<List<AddonStreams>>()

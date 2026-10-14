@@ -38,6 +38,23 @@ class DebridStreamPresentation @Inject constructor(
         }
     }
 
+    /**
+     * 666TV : présentation côté dépôt AVEC les badges image, pour qu'ils fassent partie
+     * du flux dès sa sortie. Sinon chaque nouvelle émission (un plugin qui répond plus
+     * tard) remplaçait des flux déjà badgés par des flux sans badges.
+     */
+    suspend fun applyWithBadges(
+        groups: List<AddonStreams>,
+        settings: DebridSettings
+    ): List<AddonStreams> = withContext(Dispatchers.Default) {
+        apply(
+            groups = groups,
+            settings = settings,
+            streamBadgeRules = streamBadgeSettingsDataStore.settings.first().rules,
+            includeBadgeMatches = true
+        )
+    }
+
     fun apply(
         groups: List<AddonStreams>,
         settings: DebridSettings,

@@ -43,7 +43,8 @@ class DebridStreamFormatter @Inject constructor(
         return stream.copy(
             name = formattedName.ifBlank { stream.name ?: DebridProviders.instantName(stream.clientResolve?.service) },
             description = formattedDescription.ifBlank { stream.description ?: stream.title },
-            badges = matchedBadges
+            // 666TV : ne jamais effacer des badges déjà trouvés.
+            badges = matchedBadges.ifEmpty { stream.badges }
         )
     }
 

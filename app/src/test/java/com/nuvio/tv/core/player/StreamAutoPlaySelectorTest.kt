@@ -309,4 +309,22 @@ class StreamAutoPlaySelectorTest {
         addonLogo = null,
         streams = streams.toList()
     )
+
+    @Test
+    fun `666TV plugins come in StreamFusion, Frenchio, Lumio, Wastream, Comet order`() {
+        val ordered = StreamAutoPlaySelector.orderAddonStreams(
+            streams = listOf(
+                addonStreams("Lumio666"),
+                addonStreams("Comet666"),
+                addonStreams("Wastream666"),
+                addonStreams("StreamFusion666"),
+                addonStreams("Frenchio666")
+            ),
+            installedOrder = listOf("aiometadata")
+        )
+        assertEquals(
+            listOf("StreamFusion666", "Frenchio666", "Lumio666", "Wastream666", "Comet666"),
+            ordered.map { it.addonName }
+        )
+    }
 }

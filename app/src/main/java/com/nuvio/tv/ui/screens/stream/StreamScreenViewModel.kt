@@ -941,6 +941,7 @@ class StreamScreenViewModel @Inject constructor(
         }
 
         val orderedNames = (directDebridSourceNames + addonNames + pluginNames).distinct()
+            .sortedBy { com.nuvio.tv.core.player.StreamAutoPlaySelector.plugin666Rank(it) }
         if (orderedNames.isEmpty()) {
             updateUiStateIfChanged { it.copy(sourceChips = emptyList()) }
             return

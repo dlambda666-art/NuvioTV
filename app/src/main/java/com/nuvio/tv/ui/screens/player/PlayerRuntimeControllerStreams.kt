@@ -463,6 +463,7 @@ private suspend fun PlayerRuntimeController.updateSourceChipsForFetchStart(
     }
 
     val ordered = (addonNames + pluginNames).distinct()
+        .sortedBy { StreamAutoPlaySelector.plugin666Rank(it) }
     _uiState.update {
         it.copy(
             sourceChips = ordered.map { name -> SourceChipItem(name, SourceChipStatus.LOADING) }
@@ -557,6 +558,7 @@ private suspend fun PlayerRuntimeController.updateEpisodeSourceChipsForFetchStar
     }
 
     val ordered = (addonNames + pluginNames).distinct()
+        .sortedBy { StreamAutoPlaySelector.plugin666Rank(it) }
     _uiState.update {
         it.copy(
             episodeSourceChips = ordered.map { name -> SourceChipItem(name, SourceChipStatus.LOADING) }

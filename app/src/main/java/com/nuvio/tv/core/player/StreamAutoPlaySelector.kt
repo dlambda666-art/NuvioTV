@@ -8,6 +8,17 @@ import com.nuvio.tv.domain.model.Stream
 import com.nuvio.tv.domain.model.StreamDebridCacheState
 
 object StreamAutoPlaySelector {
+    /**
+     * 666TV : ordre des sources dans « Tous » et dans les pastilles :
+     * StreamFusion, puis Frenchio, Lumio, Wastream, et Comet666 en dernier (secours).
+     * Les autres sources gardent leur ordre, après celles-ci.
+     */
+    val PLUGIN_666_ORDER = listOf("StreamFusion666", "Frenchio666", "Lumio666", "Wastream666", "Comet666")
+
+    fun plugin666Rank(name: String): Int =
+        PLUGIN_666_ORDER.indexOfFirst { it.equals(name.trim(), ignoreCase = true) }
+            .let { if (it < 0) Int.MAX_VALUE else it }
+
     fun orderAddonStreams(
         streams: List<AddonStreams>,
         installedOrder: List<String>
@@ -24,10 +35,12 @@ object StreamAutoPlaySelector {
         val (directDebridEntries, remainingEntries) = streams.partition {
             it.streams.any { stream -> stream.isDirectDebrid() }
         }
-        if (installedOrder.isEmpty()) return directDebridEntries + remainingEntries
+        if (installedOrder.isEmpty()) {
+            return (directDebridEntries + remainingEntries).sortedBy { plugin666Rank(it.addonName) }
+        }
         val (addonEntries, pluginEntries) = remainingEntries.partition { it.addonName in addonRankByName }
         val orderedAddons = addonEntries.sortedBy { addonRankByName.getValue(it.addonName) }
-        return directDebridEntries + orderedAddons + pluginEntries
+        return (directDebridEntries + orderedAddons + pluginEntries).sortedBy { plugin666Rank(it.addonName) }
     }
 
     private fun isPlayable(stream: Stream): Boolean {

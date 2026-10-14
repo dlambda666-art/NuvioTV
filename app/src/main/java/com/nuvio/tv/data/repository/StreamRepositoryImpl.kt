@@ -423,11 +423,10 @@ class StreamRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun presentStreams(result: AddonStreams, debridSettings: DebridSettings): AddonStreams {
-        return debridStreamPresentation.apply(
+    private suspend fun presentStreams(result: AddonStreams, debridSettings: DebridSettings): AddonStreams {
+        return debridStreamPresentation.applyWithBadges(
             groups = listOf(result),
-            settings = debridSettings,
-            includeBadgeMatches = false
+            settings = debridSettings
         ).firstOrNull() ?: result
     }
 
