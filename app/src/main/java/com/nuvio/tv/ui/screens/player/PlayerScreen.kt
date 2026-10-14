@@ -1451,6 +1451,15 @@ fun PlayerScreen(
             SeekOverlayHost(viewModel = viewModel)
         }
 
+        // 666TV : image d'aperçu pendant qu'on avance / recule.
+        if (uiState.error == null && !uiState.showSourcesPanel && !uiState.showEpisodesPanel) {
+            SeekThumbnailOverlay(
+                viewModel = viewModel,
+                previewPositionMs = uiState.pendingPreviewSeekPosition,
+                controlsVisible = uiState.showControls
+            )
+        }
+
         // Episodes/streams side panel (slides in from right)
         AnimatedVisibility(
             visible = uiState.showEpisodesPanel && uiState.error == null,

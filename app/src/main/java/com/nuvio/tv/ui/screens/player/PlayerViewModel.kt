@@ -263,6 +263,12 @@ class PlayerViewModel @Inject constructor(
         controller.runRemoteButton(binding)
     }
 
+    /** 666TV : image d'aperçu pendant l'avance / le retour rapide. */
+    private val seekThumbnailProvider = com.nuvio.tv.core.player.SeekThumbnailProvider()
+
+    suspend fun seekThumbnail(positionMs: Long): android.graphics.Bitmap? =
+        seekThumbnailProvider.frameAt(controller.currentStreamUrl, controller.currentHeaders, positionMs)
+
     fun bindExoSubtitleView(subtitleView: androidx.media3.ui.SubtitleView?) {
         controller.bindExoSubtitleView(subtitleView)
     }
@@ -271,8 +277,10 @@ class PlayerViewModel @Inject constructor(
         controller.consumePendingExitReason()
     }
 
+    @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
     override fun onCleared() {
         postPlayRecommendationController.stop()
+        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) { seekThumbnailProvider.release() }
         controller.onCleared()
         // Allow the trailer player to be re-created when returning to home screen.
         trailerPlayerPool.reclaim()
