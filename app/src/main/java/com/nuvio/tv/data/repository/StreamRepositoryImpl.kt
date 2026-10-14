@@ -284,21 +284,53 @@ class StreamRepositoryImpl @Inject constructor(
                 }
 
                 // 666TV : releases déjà proposées par un autre plugin (clé = release + qualité)
-                val seenPluginReleases = HashSet<String>()
+                // → rang du plugin qui la garde. En cas de doublon, c'est le plugin le
+                // mieux placé dans l'ordre (StreamFusion, Frenchio, Lumio, Wastream, Comet)
+                // qui la garde, quel que soit celui qui a répondu le premier.
+                val seenPluginReleases = HashMap<String, Int>()
 
                 // Emit results as they arrive
                 for (result in resultChannel) {
                     val checkingResult = localDebridAvailabilityService.markChecking(listOf(result)).firstOrNull() ?: result
                     val annotatedResult = localDebridAvailabilityService.annotateCachedAvailability(listOf(checkingResult)).firstOrNull() ?: checkingResult
+                    val displacedReleases = HashSet<String>()
                     val checkedResult = annotatedResult.copy(
                         streams = annotatedResult.streams.filter { stream ->
                             // P2P coupé : un torrent absent du cache debrid ne se lancerait pas.
                             val hiddenUncached = !com.nuvio.tv.core.torrent.TorrentService.P2P_ENABLED &&
                                 stream.debridCacheStatus?.state == com.nuvio.tv.domain.model.StreamDebridCacheState.NOT_CACHED
-                            !hiddenUncached && stream.pluginReleaseKey()?.let { seenPluginReleases.add(it) } != false
+                            if (hiddenUncached) return@filter false
+                            val releaseKey = stream.pluginReleaseKey() ?: return@filter true
+                            val rank = stream.plugin666Rank()
+                            val keptRank = seenPluginReleases[releaseKey]
+                            when {
+                                keptRank == null -> {
+                                    seenPluginReleases[releaseKey] = rank
+                                    true
+                                }
+                                rank < keptRank -> {
+                                    seenPluginReleases[releaseKey] = rank
+                                    displacedReleases += releaseKey
+                                    true
+                                }
+                                else -> false
+                            }
                         }
                     )
                     if (checkedResult.streams.isEmpty()) continue
+                    if (displacedReleases.isNotEmpty()) {
+                        // Retire la copie gardée jusque-là par un plugin moins bien placé.
+                        val iterator = accumulatedResults.listIterator()
+                        while (iterator.hasNext()) {
+                            val group = iterator.next()
+                            val remaining = group.streams.filterNot { it.pluginReleaseKey() in displacedReleases }
+                            when {
+                                remaining.size == group.streams.size -> Unit
+                                remaining.isEmpty() -> iterator.remove()
+                                else -> iterator.set(group.copy(streams = remaining))
+                            }
+                        }
+                    }
                     mergePresentedResult(accumulatedResults, checkedResult, debridSettings)
                     emit(NetworkResult.Success(accumulatedResults.toList()))
                     Log.d(TAG, "Emitted ${accumulatedResults.size} addon(s), latest: ${checkedResult.addonName} with ${checkedResult.streams.size} streams")
@@ -554,6 +586,12 @@ class StreamRepositoryImpl @Inject constructor(
             else -> 1e6
         }
         return (number * factor).toLong().takeIf { it > 0 }
+    }
+
+    /** 666TV : rang du plugin d'après son groupe Binge « 666|<id>|… » (plus petit = préféré). */
+    private fun Stream.plugin666Rank(): Int {
+        val id = behaviorHints?.bingeGroup?.split('|')?.getOrNull(1).orEmpty()
+        return com.nuvio.tv.core.player.StreamAutoPlaySelector.plugin666Rank(id)
     }
 
     /** 666TV : clé « release + qualité » des flux de nos plugins (groupe Binge « 666|… »). */
