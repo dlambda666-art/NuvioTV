@@ -243,7 +243,7 @@ private fun VfChip(state: VfState) {
         VfState.AVAILABLE -> "🇫🇷 VF dispo" to Color(0xFF2E7D32)
         VfState.NOT_YET -> "VF pas encore" to Color(0xFF6D4C41)
         VfState.CHECKING -> "VF ? …" to Color(0xFF424242)
-        VfState.NO_CHECKER -> "Comet666 désactivé" to Color(0xFF424242)
+        VfState.NO_CHECKER -> "Plugins 666 désactivés" to Color(0xFF424242)
         VfState.UNKNOWN -> return
     }
     Box(

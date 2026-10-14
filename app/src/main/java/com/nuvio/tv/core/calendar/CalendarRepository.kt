@@ -58,7 +58,7 @@ enum class VfState { UNKNOWN, CHECKING, AVAILABLE, NOT_YET, NO_CHECKER }
  * 666TV : calendrier des sorties.
  * - Séries suivies : celles de la bibliothèque + celles en cours (vues ces 90 derniers jours).
  * - Dates des épisodes : la fiche de la série (aiometadata).
- * - VF : pour un épisode déjà sorti, Comet666 cherche une release VF prête (index publics + TorBox).
+ * - VF : épisode déjà vu, ou un des plugins 666 trouve un lien VF prêt (StreamFusion d'abord).
  * - Cloche : séries pour lesquelles on veut être prévenu d'un nouvel épisode en VF.
  * Idée de Nuvio Arc (ysosrs123/NuvioTV-Fork), réécrite pour 666TV.
  */
@@ -161,36 +161,69 @@ class CalendarRepository @Inject constructor(
     /** VF déjà trouvée (mémorisée) pour cet épisode ? */
     suspend fun knownVf(): Set<String> = store().data.first()[vfFoundKey].orEmpty()
 
-    /** Cherche une release VF prête pour un épisode sorti, avec Comet666. */
+    /**
+     * L'épisode est-il dispo en VF ?
+     * 1. Déjà vu dans 666TV → oui (on ne regarde que de la VF).
+     * 2. Sinon on demande aux plugins 666 dans l'ordre (StreamFusion, Frenchio, Lumio,
+     *    Wastream, puis Comet666) et on s'arrête au premier qui trouve un lien VF prêt.
+     */
     suspend fun checkVf(episode: CalendarEpisode): VfState = withContext(Dispatchers.IO) {
         if (!episode.hasAired()) return@withContext VfState.UNKNOWN
         if (episode.key in knownVf()) return@withContext VfState.AVAILABLE
+        if (isWatched(episode)) {
+            rememberVf(episode)
+            return@withContext VfState.AVAILABLE
+        }
         vfNegativeCache[episode.key]?.let { at ->
             if (System.currentTimeMillis() - at < VF_NEGATIVE_TTL_MS) return@withContext VfState.NOT_YET
         }
-        val scraper = pluginManager.enabledScrapers.first()
-            .firstOrNull { it.id.substringAfterLast(':').equals(VF_CHECKER_ID, ignoreCase = true) }
-            ?: return@withContext VfState.NO_CHECKER
+        val checkers = pluginManager.enabledScrapers.first()
+            .mapNotNull { scraper ->
+                val rank = VF_CHECKERS.indexOf(scraper.id.substringAfterLast(':').lowercase())
+                if (rank >= 0) rank to scraper else null
+            }
+            .sortedBy { it.first }
+            .map { it.second }
+        if (checkers.isEmpty()) return@withContext VfState.NO_CHECKER
         val found = vfSemaphore.withPermit {
-            runCatching {
-                val tmdbId = tmdbService.ensureTmdbId(episode.seriesId, "series") ?: return@runCatching false
-                val results = withTimeoutOrNull(45_000) {
-                    pluginManager.executeScraper(scraper, tmdbId, "tv", episode.season, episode.episode)
-                }.orEmpty()
-                results.any { result ->
-                    !result.url.isNullOrBlank() &&
-                        result.name?.contains("diagnostic", ignoreCase = true) != true
-                }
-            }.onFailure { Log.d(TAG, "VF check failed for ${episode.key}: ${it.message}") }
-                .getOrDefault(false)
+            val tmdbId = runCatching { tmdbService.ensureTmdbId(episode.seriesId, "series") }.getOrNull()
+                ?: return@withPermit false
+            checkers.any { scraper ->
+                runCatching {
+                    val results = withTimeoutOrNull(30_000) {
+                        pluginManager.executeScraper(scraper, tmdbId, "tv", episode.season, episode.episode)
+                    }.orEmpty()
+                    results.any { result ->
+                        result.url.isNotBlank() && result.name?.contains("diagnostic", ignoreCase = true) != true
+                    }
+                }.onFailure { Log.d(TAG, "VF check ${scraper.id} failed for ${episode.key}: ${it.message}") }
+                    .getOrDefault(false)
+            }
         }
         if (found) {
-            store().edit { it[vfFoundKey] = (it[vfFoundKey].orEmpty() + episode.key).takeLast(MAX_REMEMBERED) }
+            rememberVf(episode)
             VfState.AVAILABLE
         } else {
             vfNegativeCache[episode.key] = System.currentTimeMillis()
             VfState.NOT_YET
         }
+    }
+
+    private suspend fun isWatched(episode: CalendarEpisode): Boolean = runCatching {
+        withTimeoutOrNull(3_000) {
+            watchProgressRepository.isWatched(
+                contentId = episode.seriesId,
+                season = episode.season,
+                episode = episode.episode
+            ).first()
+        } == true ||
+            withTimeoutOrNull(3_000) {
+                watchProgressRepository.getEpisodeProgress(episode.seriesId, episode.season, episode.episode).first()
+            } != null
+    }.getOrDefault(false)
+
+    private suspend fun rememberVf(episode: CalendarEpisode) {
+        store().edit { it[vfFoundKey] = (it[vfFoundKey].orEmpty() + episode.key).takeLast(MAX_REMEMBERED) }
     }
 
     /**
@@ -221,7 +254,7 @@ class CalendarRepository @Inject constructor(
     private companion object {
         const val TAG = "Calendar666"
         const val FEATURE = "player_settings"
-        const val VF_CHECKER_ID = "comet666"
+        val VF_CHECKERS = listOf("streamfusion666", "frenchio666", "lumio666", "wastream666", "comet666")
         const val MAX_SERIES = 40
         const val MAX_REMEMBERED = 400
         const val META_TTL_MS = 6L * 60 * 60 * 1000
