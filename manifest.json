@@ -1,6 +1,6 @@
 {
   "name": "666TV — plugins",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Plugins perso de 666TV",
   "author": "Lambda666",
   "scrapers": [
@@ -55,6 +55,21 @@
       "description": "Ton addon StreamFusion avec ta config, interrogé depuis la Shield. VF, 1080p/4K, liens debrid en cache. Adresse à coller dans Plugins → « Comet666 – mes sources ».",
       "version": "1.0.1",
       "filename": "streamfusion666.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "enabled": true,
+      "contentLanguage": [
+        "fr"
+      ]
+    },
+    {
+      "id": "wastream666",
+      "name": "Wastream666",
+      "description": "Ton addon Wastream (téléchargement direct FR) avec ta config, interrogé depuis la Shield. VF, 1080p/4K. Adresse à coller dans Plugins → « Comet666 – mes sources ».",
+      "version": "1.0.0",
+      "filename": "wastream666.js",
       "supportedTypes": [
         "movie",
         "tv"
