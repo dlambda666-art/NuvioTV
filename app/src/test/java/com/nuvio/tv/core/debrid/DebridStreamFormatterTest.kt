@@ -110,4 +110,12 @@ class DebridStreamFormatterTest {
         assertTrue(description, description.contains("🗣️ \uD83C\uDDEB\uD83C\uDDF7 VFF"))
         assertTrue(description, description.contains("⚡ Prêt"))
     }
+
+    @Test
+    fun `old Nuvio template saved on a Shield is replaced by the 666TV one`() {
+        val legacyName = "{stream.resolution::=2160p[\"4K \"||\"\"]}{stream.resolution::=1440p[\"QHD \"||\"\"]}{stream.resolution::=1080p[\"FHD \"||\"\"]}{stream.resolution::=720p[\"HD \"||\"\"]}{stream.resolution::exists[\"\"||\"Direct \"]}{service.shortName::exists[\"{service.shortName} \"||\"Debrid \"]}Instant"
+        assertEquals(DebridStreamFormatterDefaults.NAME_TEMPLATE, DebridStreamFormatterDefaults.upgradeName(legacyName))
+        assertEquals(DebridStreamFormatterDefaults.NAME_TEMPLATE, DebridStreamFormatterDefaults.upgradeName(null))
+        assertEquals("{addon.name}", DebridStreamFormatterDefaults.upgradeName("{addon.name}"))
+    }
 }

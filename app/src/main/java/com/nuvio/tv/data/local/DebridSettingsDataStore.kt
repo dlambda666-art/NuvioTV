@@ -109,10 +109,8 @@ class DebridSettingsDataStore @Inject constructor(
                     DebridStreamCodecFilter.ANY
                 ),
                 streamPreferences = streamPreferences,
-                streamNameTemplate = prefs[streamNameTemplateKey]
-                    ?: DebridStreamFormatterDefaults.NAME_TEMPLATE,
-                streamDescriptionTemplate = prefs[streamDescriptionTemplateKey]
-                    ?: DebridStreamFormatterDefaults.DESCRIPTION_TEMPLATE
+                streamNameTemplate = DebridStreamFormatterDefaults.upgradeName(prefs[streamNameTemplateKey]),
+                streamDescriptionTemplate = DebridStreamFormatterDefaults.upgradeDescription(prefs[streamDescriptionTemplateKey])
             )
         }
     }
