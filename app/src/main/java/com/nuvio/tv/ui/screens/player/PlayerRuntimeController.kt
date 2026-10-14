@@ -548,6 +548,13 @@ class PlayerRuntimeController(
     internal var hasRetriedCurrentStreamAfterMediaPeriodHolderCrash: Boolean = false
     internal var timeoutRecoveryAttempts: Int = 0
     internal var errorRetryCount: Int = 0
+
+    // 666TV : passer tout seul au lien suivant (voir PlayerRuntimeControllerSourceFailover.kt).
+    internal var sourceFailoverJob: Job? = null
+    internal var sourceFailoverRequestKey: String? = null
+    internal val sourceFailoverTriedKeys: MutableSet<String> = HashSet()
+    internal var sourceFailoverCount: Int = 0
+    internal var sourceFailoverExhausted: Boolean = false
     internal var consecutiveAutoPlayCount: Int = 0
     internal var errorRetryJob: Job? = null
     internal var stableProgressResetJob: Job? = null
@@ -648,6 +655,7 @@ class PlayerRuntimeController(
         observeStreamBadgeSettings()
         observeDeviceLocalAspectMode()
         observePlayerStatsHud()
+        observeSourceFailover()
     }
 
     private fun observeTorrentSettings() {
