@@ -409,6 +409,17 @@ class StreamRepositoryImpl @Inject constructor(
             )
         }
 
+        // 666TV : pas de fiche TMDB (galas UFC, catchs WWE, émissions…) mais un id IMDb :
+        // nos plugins savent chercher directement avec l'id IMDb.
+        val imdbBase = videoId.substringBefore(":")
+        if (Regex("^tt\\d+$", RegexOption.IGNORE_CASE).matches(imdbBase)) {
+            return PluginRequest(
+                id = imdbBase,
+                mediaType = normalizeTmdbPluginType(type),
+                source = "IMDB"
+            )
+        }
+
         if (!videoId.canRunLocalPlugins()) return null
 
         return PluginRequest(
