@@ -682,7 +682,8 @@ internal fun PlaybackSettingsSections(
             )
         }
 
-        playbackCollapsibleSection(
+        // 666TV : plus de moteur torrent P2P dans l'appli (tout passe par le debrid).
+        if (com.nuvio.tv.core.torrent.TorrentService.P2P_ENABLED) playbackCollapsibleSection(
             keyPrefix = "p2p",
             title = strSectionP2p,
             description = strSectionP2pDesc,

@@ -272,12 +272,18 @@ android {
         }
     }
 
+    // 666TV : seulement le français (et l'anglais en secours) dans l'APK.
+    androidResources {
+        localeFilters += listOf("fr", "en")
+    }
+
     splits {
         abi {
             isEnable = !buildingAppBundle
             reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            isUniversalApk = true
+            // 666TV : les Shield (Pro et tube) sont en ARM 64 bits ; rien d'autre à compiler.
+            include("arm64-v8a")
+            isUniversalApk = false
         }
     }
 
@@ -323,8 +329,7 @@ android {
                 "lib/*/libavformat.so",
                 "lib/*/libavutil.so",
                 "lib/*/libswscale.so",
-                "lib/*/libswresample.so",
-                "lib/*/libtorrserver.so"
+                "lib/*/libswresample.so"
             )
         }
     }

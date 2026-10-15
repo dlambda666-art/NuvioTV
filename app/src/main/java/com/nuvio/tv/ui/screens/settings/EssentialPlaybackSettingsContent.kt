@@ -112,7 +112,7 @@ fun EssentialPlaybackSettingsContent(
                         },
                         enabled = settings != null
                     )
-                    SettingsToggleRow(
+                    if (com.nuvio.tv.core.torrent.TorrentService.P2P_ENABLED) SettingsToggleRow(
                         title = stringResource(R.string.essential_p2p_streams),
                         subtitle = stringResource(R.string.essential_p2p_streams_subtitle),
                         checked = torrentSettings?.p2pEnabled == true,

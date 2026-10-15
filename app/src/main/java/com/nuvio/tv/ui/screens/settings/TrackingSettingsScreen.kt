@@ -82,6 +82,7 @@ fun TrackingSettingsScreen(
     LaunchedEffect(Unit) {
         delay(160L)
         runCatching { traktFocusRequester.requestFocus() }
+            .onFailure { runCatching { simklFocusRequester.requestFocus() } }
     }
 
     LaunchedEffect(
@@ -443,7 +444,9 @@ internal fun TrackingSettingsOverview(
                             title = stringResource(R.string.tracking_accounts_title),
                             subtitle = stringResource(R.string.tracking_accounts_subtitle)
                         ) {
-                            SettingsActionRow(
+                            // 666TV : Trakt retiré. La ligne ne reste visible que si un compte
+                            // Trakt est encore connecté, pour pouvoir le déconnecter proprement.
+                            if (traktConnected) SettingsActionRow(
                                 title = stringResource(R.string.trakt_name),
                                 subtitle = traktPresentation.subtitle,
                                 value = traktPresentation.value,
