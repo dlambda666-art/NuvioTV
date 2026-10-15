@@ -8,8 +8,9 @@ private val supporterThemes = linkedMapOf(
     AppTheme.GRAPHITE to CosmeticEntitlement.GRAPHITE_THEME
 )
 
-private val standardThemes = listOf(AppTheme.WHITE) + AppTheme.entries.filterNot {
-    it == AppTheme.WHITE || it == AppTheme.CUSTOM || it in supporterThemes
+// 666TV : notre thème vert passe en premier, gratuit, et sert de thème par défaut.
+private val standardThemes = listOf(AppTheme.TV666, AppTheme.WHITE) + AppTheme.entries.filterNot {
+    it == AppTheme.TV666 || it == AppTheme.WHITE || it == AppTheme.CUSTOM || it in supporterThemes
 }
 
 fun availableAppThemes(entitlements: CosmeticEntitlements): List<AppTheme> {
@@ -24,17 +25,11 @@ fun resolveAppTheme(
     selectedTheme: AppTheme?,
     entitlements: CosmeticEntitlements
 ): AppTheme {
-    if (selectedTheme == null) {
-        return supporterThemes
-            .filterValues(entitlements::includes)
-            .keys
-            .firstOrNull()
-            ?: AppTheme.WHITE
-    }
+    if (selectedTheme == null) return AppTheme.TV666   // 666TV : notre vert par défaut
     return if (selectedTheme in availableAppThemes(entitlements)) {
         selectedTheme
     } else {
-        AppTheme.WHITE
+        AppTheme.TV666
     }
 }
 

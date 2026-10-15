@@ -97,6 +97,7 @@ object ThemeColors {
     ): ThemeColorPalette {
         return when (theme) {
             AppTheme.CUSTOM -> customColors.toColorPalette()
+            AppTheme.TV666 -> TV666Colors.Palette
             AppTheme.GOLD -> SupporterThemeColors.Gold
             AppTheme.JADE -> SupporterThemeColors.Jade
             AppTheme.ROSE_GOLD -> SupporterThemeColors.RoseGold
