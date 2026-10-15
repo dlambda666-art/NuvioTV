@@ -863,6 +863,9 @@ fun MetaDetailsScreen(
                     onTrailerProgressChanged = onTrailerProgressChanged,
                     onTrailerEnded = { viewModel.onEvent(MetaDetailsEvent.OnTrailerEnded) },
                     onTrailerButtonClick = { viewModel.onEvent(MetaDetailsEvent.OnTrailerButtonClick) },
+                    seasonRecapTextSeason = uiState.seasonRecapTextSeason,
+                    onSeasonRecapRequested = { viewModel.onEvent(MetaDetailsEvent.OnSeasonRecapRequested(it)) },
+                    onDismissSeasonRecapText = { viewModel.onEvent(MetaDetailsEvent.OnDismissSeasonRecapText) },
                     onSharedTrailerSelected = { viewModel.onEvent(MetaDetailsEvent.OnSharedTrailerSelected(it)) },
                     onDismissSharedTrailer = { viewModel.onEvent(MetaDetailsEvent.OnDismissSharedTrailer) },
                     onRetrySharedTrailer = { viewModel.onEvent(MetaDetailsEvent.OnRetrySharedTrailer) },
@@ -1073,6 +1076,9 @@ private fun MetaDetailsContent(
     onTrailerProgressChanged: (Long, Long) -> Unit,
     onTrailerEnded: () -> Unit,
     onTrailerButtonClick: () -> Unit,
+    seasonRecapTextSeason: Int? = null,
+    onSeasonRecapRequested: (Int) -> Unit = {},
+    onDismissSeasonRecapText: () -> Unit = {},
     onSharedTrailerSelected: (MetaTrailer) -> Unit,
     onDismissSharedTrailer: () -> Unit,
     onRetrySharedTrailer: () -> Unit,
@@ -1495,7 +1501,6 @@ private fun MetaDetailsContent(
     }
     var activePeopleTab by rememberSaveable(meta.id) { mutableStateOf(initialPeopleTab) }
     var seasonOptionsDialogSeason by remember { mutableStateOf<Int?>(null) }
-    var recapDialogSeason by remember { mutableStateOf<Int?>(null) }
     // Tracks whether the initial auto-scroll to the "next to play" episode has fired.
     // Once it fires, no more auto-scrolls happen for the lifetime of this detail screen.
     var initialEpisodeScrollDone by remember(meta.id) { mutableStateOf(false) }
@@ -1855,7 +1860,7 @@ private fun MetaDetailsContent(
                         },
                         onRecapClick = {
                             val ep = nextEpisode
-                            recapDialogSeason = ep?.season?.minus(1)
+                            ep?.season?.minus(1)?.let(onSeasonRecapRequested)
                         },
                         onHeroActionFocused = {
                             if (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0) {
@@ -2251,12 +2256,12 @@ private fun MetaDetailsContent(
             }
         }
 
-        recapDialogSeason?.let { season ->
+        seasonRecapTextSeason?.let { season ->
             SeasonRecapDialog(
                 seriesName = meta.name,
                 season = season,
                 episodes = meta.videos,
-                onDismiss = { recapDialogSeason = null }
+                onDismiss = onDismissSeasonRecapText
             )
         }
 

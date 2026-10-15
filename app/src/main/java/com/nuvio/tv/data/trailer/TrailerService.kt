@@ -224,6 +224,51 @@ class TrailerService(
     }
 
     /**
+     * 666TV : clé YouTube du récap vidéo d'une saison (« Season 1 Recap », « Récap saison 1 »…),
+     * d'après TMDB : vidéos de la saison passée, de la nouvelle saison et de la série.
+     * Le français passe avant l'anglais. Null si TMDB n'en connaît pas.
+     */
+    suspend fun findSeasonRecapYoutubeKey(tmdbId: Int, recapSeason: Int): String? = withContext(Dispatchers.IO) {
+        val apiKey = tmdbService.apiKey()
+        suspend fun season(n: Int): List<TmdbVideoResult> = runCatching {
+            tmdbApi.getTvSeasonVideos(tmdbId, n, apiKey).body()?.results.orEmpty()
+        }.getOrDefault(emptyList())
+        val pastSeason = season(recapSeason)
+        val newSeason = season(recapSeason + 1)
+        val series = runCatching {
+            tmdbApi.getTvVideosAllLanguages(tmdbId, apiKey).body()?.results.orEmpty()
+        }.getOrDefault(emptyList())
+
+        val recapWords = Regex("(?i)r[ée]cap|r[ée]sum[ée]|previously|pr[ée]c[ée]demment|catch[ -]?up|rattrap")
+        val seasonWords = Regex("(?i)\\b(season|saison|s)\\s*0*(\\d+)\\b")
+        fun mentionedSeason(name: String): Int? =
+            seasonWords.findAll(name).mapNotNull { it.groupValues[2].toIntOrNull() }.firstOrNull()
+
+        data class Candidate(val video: TmdbVideoResult, val score: Int)
+        val candidates = (pastSeason.map { it to 30 } + newSeason.map { it to 20 } + series.map { it to 0 })
+            .filter { (v, _) -> v.site.equals("YouTube", ignoreCase = true) && !v.key.isNullOrBlank() }
+            .mapNotNull { (v, base) ->
+                val name = v.name.orEmpty()
+                val isRecap = v.type.equals("Recap", ignoreCase = true) || recapWords.containsMatchIn(name)
+                if (!isRecap) return@mapNotNull null
+                val season = mentionedSeason(name)
+                // Un récap d'une autre saison ne convient pas.
+                if (season != null && season != recapSeason) return@mapNotNull null
+                if (base == 0 && season == null) return@mapNotNull null
+                var score = base
+                if (season == recapSeason) score += 25
+                if (v.type.equals("Recap", ignoreCase = true)) score += 10
+                if (v.iso6391.equals("fr", ignoreCase = true)) score += 15
+                if (v.official == true) score += 5
+                Candidate(v, score)
+            }
+            .distinctBy { it.video.key }
+            .sortedByDescending { it.score }
+        Log.d(TAG, "Season recap candidates for $tmdbId S$recapSeason: ${candidates.size}")
+        candidates.firstOrNull()?.video?.key
+    }
+
+    /**
      * Resolve a YouTube trailer URL to a playback source (prefers in-app extraction).
      */
     suspend fun getTrailerPlaybackSourceFromYouTubeUrl(

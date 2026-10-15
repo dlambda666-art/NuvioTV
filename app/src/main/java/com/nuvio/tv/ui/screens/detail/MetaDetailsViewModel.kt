@@ -334,6 +334,8 @@ class MetaDetailsViewModel @Inject constructor(
             MetaDetailsEvent.OnUserInteraction -> handleUserInteraction()
             MetaDetailsEvent.OnPlayButtonFocused -> handlePlayButtonFocused()
             MetaDetailsEvent.OnTrailerButtonClick -> handleTrailerButtonClick()
+            is MetaDetailsEvent.OnSeasonRecapRequested -> handleSeasonRecapRequested(event.season)
+            MetaDetailsEvent.OnDismissSeasonRecapText -> _uiState.update { it.copy(seasonRecapTextSeason = null) }
             MetaDetailsEvent.OnTrailerEnded -> handleTrailerEnded()
             is MetaDetailsEvent.OnSharedTrailerSelected -> handleSharedTrailerSelected(event.trailer)
             MetaDetailsEvent.OnDismissSharedTrailer -> dismissSharedTrailerOverlay()
@@ -2848,6 +2850,25 @@ class MetaDetailsViewModel @Inject constructor(
         if (state.isTrailerPlaying && !state.showTrailerControls) {
             trailerHasPlayed = true
             setTrailerPlaybackState(isPlaying = false, showControls = false, hideLogo = false)
+        }
+    }
+
+    /** 666TV : récap vidéo de la saison si TMDB en a un, sinon le rappel écrit. */
+    private fun handleSeasonRecapRequested(season: Int) {
+        val meta = _uiState.value.meta ?: return
+        if (_uiState.value.isSeasonRecapSearching) return
+        _uiState.update { it.copy(isSeasonRecapSearching = true) }
+        viewModelScope.launch {
+            val key = runCatching {
+                val tmdbId = tmdbService.ensureTmdbId(meta.id, "series", fallbackImdbId = meta.imdbId)?.toIntOrNull()
+                tmdbId?.let { trailerService.findSeasonRecapYoutubeKey(it, season) }
+            }.getOrNull()
+            _uiState.update { it.copy(isSeasonRecapSearching = false) }
+            if (key != null && AppFeaturePolicy.inAppTrailerPlaybackEnabled) {
+                handleSharedTrailerSelected(MetaTrailer(name = "Récap saison $season", ytId = key))
+            } else {
+                _uiState.update { it.copy(seasonRecapTextSeason = season) }
+            }
         }
     }
 

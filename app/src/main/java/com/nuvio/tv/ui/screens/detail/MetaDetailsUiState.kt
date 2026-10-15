@@ -42,6 +42,9 @@ data class MetaDetailsUiState(
     val showTrailerControls: Boolean = false,
     val hideLogoDuringTrailer: Boolean = false,
     val isSharedTrailerOverlayVisible: Boolean = false,
+    /** 666TV : saison dont on affiche le rappel écrit (pas de récap vidéo trouvé). */
+    val seasonRecapTextSeason: Int? = null,
+    val isSeasonRecapSearching: Boolean = false,
     val isSharedTrailerLoading: Boolean = false,
     val sharedTrailerUrl: String? = null,
     val sharedTrailerAudioUrl: String? = null,
@@ -108,6 +111,8 @@ sealed class MetaDetailsEvent {
     data object OnUserInteraction : MetaDetailsEvent()
     data object OnPlayButtonFocused : MetaDetailsEvent()
     data object OnTrailerButtonClick : MetaDetailsEvent()
+    data class OnSeasonRecapRequested(val season: Int) : MetaDetailsEvent()
+    data object OnDismissSeasonRecapText : MetaDetailsEvent()
     data object OnTrailerEnded : MetaDetailsEvent()
     data class OnSharedTrailerSelected(val trailer: MetaTrailer) : MetaDetailsEvent()
     data object OnDismissSharedTrailer : MetaDetailsEvent()

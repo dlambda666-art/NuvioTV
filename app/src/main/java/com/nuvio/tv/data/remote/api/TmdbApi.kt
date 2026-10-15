@@ -42,6 +42,24 @@ interface TmdbApi {
         @Query("language") language: String = "en-US"
     ): Response<TmdbVideosResponse>
 
+    // 666TV : vidéos d'une saison (pour trouver le récap « Précédemment »).
+    @GET("tv/{tv_id}/season/{season_number}/videos")
+    suspend fun getTvSeasonVideos(
+        @Path("tv_id") tvId: Int,
+        @Path("season_number") seasonNumber: Int,
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String = "fr-FR",
+        @Query("include_video_language") includeVideoLanguage: String = "fr,en,null"
+    ): Response<TmdbVideosResponse>
+
+    @GET("tv/{tv_id}/videos")
+    suspend fun getTvVideosAllLanguages(
+        @Path("tv_id") tvId: Int,
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String = "fr-FR",
+        @Query("include_video_language") includeVideoLanguage: String = "fr,en,null"
+    ): Response<TmdbVideosResponse>
+
     @GET("movie/{movie_id}")
     suspend fun getMovieDetails(
         @Path("movie_id") movieId: Int,
