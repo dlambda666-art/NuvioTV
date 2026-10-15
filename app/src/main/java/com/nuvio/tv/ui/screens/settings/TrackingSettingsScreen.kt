@@ -82,7 +82,10 @@ fun TrackingSettingsScreen(
     LaunchedEffect(Unit) {
         delay(160L)
         runCatching { traktFocusRequester.requestFocus() }
-            .onFailure { runCatching { simklFocusRequester.requestFocus() } }
+            .onFailure {
+                runCatching { simklFocusRequester.requestFocus() }
+                    .onFailure { runCatching { libraryFocusRequester.requestFocus() } }
+            }
     }
 
     LaunchedEffect(
@@ -415,6 +418,7 @@ internal fun TrackingSettingsOverview(
     val traktPresentation = traktConnectionPresentation(traktState)
     val simklPresentation = simklConnectionPresentation(simklState)
     val traktConnected = traktState.mode == TraktConnectionMode.CONNECTED
+    val simklConnected = simklState.mode == SimklConnectionMode.CONNECTED
     val traktProgressActive = trackingState.watchProgressSource == WatchProgressSource.TRAKT
 
     SettingsStandaloneScaffold(
@@ -439,7 +443,9 @@ internal fun TrackingSettingsOverview(
                     contentPadding = PaddingValues(bottom = NuvioTheme.spacing.md),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    item(key = "tracking_accounts") {
+                    // 666TV : Trakt et Simkl retirés ; les comptes n'apparaissent que s'ils sont
+                    // encore connectés, pour pouvoir les déconnecter proprement.
+                    if (traktConnected || simklConnected) item(key = "tracking_accounts") {
                         SettingsGroupCard(
                             title = stringResource(R.string.tracking_accounts_title),
                             subtitle = stringResource(R.string.tracking_accounts_subtitle)
@@ -458,7 +464,7 @@ internal fun TrackingSettingsOverview(
                                     .focusRequester(traktFocusRequester)
                                     .testTag(TrackingSettingsTestTags.TRAKT_PROVIDER)
                             )
-                            SettingsActionRow(
+                            if (simklConnected) SettingsActionRow(
                                 title = stringResource(R.string.simkl_name),
                                 subtitle = simklPresentation.subtitle,
                                 value = simklPresentation.value,
