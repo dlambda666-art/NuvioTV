@@ -862,7 +862,7 @@ class PlayerSettingsDataStore @Inject constructor(
                     ?.let(::normalizeSecondaryAudioLanguageCode),
                 loadingOverlayEnabled = prefs[loadingOverlayEnabledKey] ?: true,
                 showPlayerLoadingStatus = prefs[showPlayerLoadingStatusKey] ?: true,
-                playbackIssueReportsEnabled = prefs[playbackIssueReportsEnabledKey] ?: false,
+                playbackIssueReportsEnabled = false, // 666TV : plus d'envoi de rapports aux devs Nuvio
                 pauseOverlayEnabled = prefs[pauseOverlayEnabledKey] ?: true,
                 osdClockEnabled = prefs[osdClockEnabledKey] ?: true,
                 skipIntroEnabled = prefs[skipIntroEnabledKey] ?: true,

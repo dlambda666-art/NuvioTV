@@ -527,24 +527,7 @@ fun AdvancedSettingsContent(
 
         item(key = "playback_issue_reports") {
             SettingsGroupCard(modifier = Modifier.fillMaxWidth()) {
-                SettingsToggleRow(
-                    title = stringResource(R.string.advanced_sentry_reports),
-                    subtitle = stringResource(R.string.advanced_sentry_reports_subtitle),
-                    checked = uiState.sentryEnabled,
-                    onToggle = { showSentryDialog = true }
-                )
-                SettingsToggleRow(
-                    title = stringResource(R.string.advanced_playback_issue_reports),
-                    subtitle = stringResource(R.string.advanced_playback_issue_reports_subtitle),
-                    checked = uiState.playbackIssueReportsEnabled,
-                    onToggle = {
-                        viewModel.onEvent(
-                            AdvancedSettingsEvent.SetPlaybackIssueReportsEnabled(
-                                !uiState.playbackIssueReportsEnabled
-                            )
-                        )
-                    }
-                )
+                // 666TV : plus de rapports de plantage / de lecture envoyés aux devs Nuvio.
                 SettingsToggleRow(
                     title = stringResource(R.string.advanced_player_stats_hud),
                     subtitle = stringResource(R.string.advanced_player_stats_hud_subtitle),

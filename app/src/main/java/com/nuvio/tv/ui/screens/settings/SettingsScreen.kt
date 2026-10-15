@@ -1217,13 +1217,7 @@ private fun IntegrationSettingsContent(
                                 )
                             }
                             // 666TV : MDBList retiré.
-                            item(key = "integration_hub_animeskip") {
-                                SettingsActionRow(
-                                    title = "Anime-Skip",
-                                    subtitle = stringResource(R.string.settings_animeskip_subtitle),
-                                    onClick = { onSelectSection(IntegrationSettingsSection.AnimeSkip) }
-                                )
-                            }
+                            // 666TV : Anime-Skip retiré (le saut de générique IntroDB reste).
                         }
                         SettingsVerticalScrollIndicators(state = integrationHubState)
                     }
