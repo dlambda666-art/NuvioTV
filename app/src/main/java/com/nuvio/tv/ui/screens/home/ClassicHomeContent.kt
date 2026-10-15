@@ -948,11 +948,8 @@ private fun ContinueWatchingItem.toClassicFocusArtwork(useBackdrop: Boolean): Cl
 
 private fun CollectionFolder.toClassicFocusArtwork(useBackdrop: Boolean): ClassicFocusArtwork {
     return ClassicFocusArtwork(
-        imageUrl = if (useBackdrop) {
-            heroBackdropUrl ?: coverImageUrl
-        } else {
-            coverImageUrl ?: heroBackdropUrl
-        },
-        seed = "$id|$title"
+        // 666TV : fond fixe des collections.
+        imageUrl = COLLECTIONS_BACKDROP_666,
+        seed = "666tv-collections"
     )
 }

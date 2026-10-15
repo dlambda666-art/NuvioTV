@@ -539,7 +539,8 @@ internal fun buildCollectionFolderItem(
     // GIF URL is only used as an animated overlay on focus (when focusGifEnabled is true).
     // Don't use it as a static poster — it would still animate via Coil's GIF decoder.
     val imageUrl = firstNonBlank(folder.coverImageUrl, collection.backdropImageUrl)
-    val heroBackdrop = firstNonBlank(folder.heroBackdropUrl, folder.coverImageUrl, collection.backdropImageUrl)
+    // 666TV : un seul fond fixe pour toutes les collections (intégré à l'appli).
+    val heroBackdrop = COLLECTIONS_BACKDROP_666
 
     return ModernCarouselItem(
         key = "collection_${collection.id}_${folder.id}_$occurrence",
@@ -567,7 +568,7 @@ internal fun buildCollectionFolderItem(
             focusGlowEnabled = collection.focusGlowEnabled,
             focusGifEnabled = folder.focusGifEnabled,
             focusGifUrl = folder.focusGifUrl,
-            heroBackdropUrl = folder.heroBackdropUrl,
+            heroBackdropUrl = COLLECTIONS_BACKDROP_666,
             heroVideoUrl = folder.heroVideoUrl,
             titleLogoUrl = folder.titleLogoUrl,
             coverEmoji = folder.coverEmoji
@@ -690,3 +691,7 @@ internal fun ContinueWatchingItem.episode(): Int? {
         is ContinueWatchingItem.NextUp -> info.seedEpisode
     }
 }
+
+/** 666TV : fond fixe des collections, image intégrée à l'appli (res/drawable-nodpi). */
+internal val COLLECTIONS_BACKDROP_666: String =
+    "android.resource://${com.nuvio.tv.BuildConfig.APPLICATION_ID}/${com.nuvio.tv.R.drawable.fond_collections_666}"
