@@ -71,6 +71,7 @@ import com.nuvio.tv.ui.components.SynopsisDescription
 import com.nuvio.tv.ui.theme.NuvioTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.ui.platform.LocalContext
@@ -110,7 +111,9 @@ fun HeroContentSection(
     restorePlayFocusToken: Int = 0,
     onHeroActionFocused: () -> Unit = {},
     onPlayFocusRestored: () -> Unit = {},
-    onShowFullDescription: () -> Unit = {}
+    onShowFullDescription: () -> Unit = {},
+    recapSeason: Int? = null,
+    onRecapClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val isSeriesApi = remember(meta.apiType) {
@@ -250,6 +253,16 @@ fun HeroContentSection(
                                 onPlayFocusRestored()
                             }
                         )
+
+                        // 666TV : rappel de la saison précédente (avant d'attaquer la nouvelle).
+                        if (recapSeason != null) {
+                            ActionIconButton(
+                                icon = Icons.Default.History,
+                                contentDescription = "Rappel de la saison $recapSeason",
+                                onClick = onRecapClick,
+                                onFocused = onHeroActionFocused
+                            )
+                        }
 
                         ActionIconButton(
                             icon = if (isInLibrary) Icons.Default.Check else null,

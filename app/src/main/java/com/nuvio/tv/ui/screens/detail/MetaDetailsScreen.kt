@@ -1495,6 +1495,7 @@ private fun MetaDetailsContent(
     }
     var activePeopleTab by rememberSaveable(meta.id) { mutableStateOf(initialPeopleTab) }
     var seasonOptionsDialogSeason by remember { mutableStateOf<Int?>(null) }
+    var recapDialogSeason by remember { mutableStateOf<Int?>(null) }
     // Tracks whether the initial auto-scroll to the "next to play" episode has fired.
     // Once it fires, no more auto-scrolls happen for the lifetime of this detail screen.
     var initialEpisodeScrollDone by remember(meta.id) { mutableStateOf(false) }
@@ -1846,6 +1847,16 @@ private fun MetaDetailsContent(
                         hideLogoDuringTrailer = hideLogoDuringTrailer,
                         isTrailerPlaying = isTrailerPlaying,
                         playButtonFocusRequester = heroPlayFocusRequester,
+                        recapSeason = nextEpisode?.let { ep ->
+                            val season = ep.season ?: 0
+                            if (season >= 2 && (ep.episode ?: 0) <= 1 &&
+                                meta.videos.any { it.season == season - 1 }
+                            ) season - 1 else null
+                        },
+                        onRecapClick = {
+                            val ep = nextEpisode
+                            recapDialogSeason = ep?.season?.minus(1)
+                        },
                         onHeroActionFocused = {
                             if (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0) {
                                 coroutineScope.launch {
@@ -2238,6 +2249,15 @@ private fun MetaDetailsContent(
                     }
                 }
             }
+        }
+
+        recapDialogSeason?.let { season ->
+            SeasonRecapDialog(
+                seriesName = meta.name,
+                season = season,
+                episodes = meta.videos,
+                onDismiss = { recapDialogSeason = null }
+            )
         }
 
         seasonOptionsDialogSeason?.let { season ->
