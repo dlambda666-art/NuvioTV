@@ -125,13 +125,6 @@ fun AboutSettingsContent(
                             )
 
                             Text(
-                                text = stringResource(R.string.about_made_with_love),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = NuvioTheme.colors.TextSecondary,
-                                textAlign = TextAlign.Center
-                            )
-
-                            Text(
                                 text = stringResource(R.string.about_version, BuildConfig.VERSION_NAME),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = NuvioTheme.colors.TextSecondary,

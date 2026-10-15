@@ -79,7 +79,7 @@ fun MemberBrandWordmark(
     contentDescription: String? = null,
     drawableOverride: Int? = null
 ) {
-    val access = Membership.access
+    @Suppress("UNUSED_VARIABLE") val access = Membership.access
 
     Row(
         modifier = modifier.height(height),
@@ -98,12 +98,7 @@ fun MemberBrandWordmark(
             )
         }
 
-        access.tier?.let { tier ->
-            LocalMemberSuffix(
-                tier = tier,
-                height = height
-            )
-        }
+        // 666TV : plus de badge « Supporter » à côté du logo (c'est notre appli).
     }
 }
 
