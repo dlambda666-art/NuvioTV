@@ -79,7 +79,7 @@ class CalendarRepository @Inject constructor(
 
     private val episodeCache = ConcurrentHashMap<String, CachedEpisodes>()
     private val vfNegativeCache = ConcurrentHashMap<String, Long>()
-    private val metaSemaphore = Semaphore(4)
+    private val metaSemaphore = Semaphore(6)
     private val vfSemaphore = Semaphore(2)
 
     private val bellsKey = stringSetPreferencesKey("calendar_bells_666")
@@ -121,24 +121,29 @@ class CalendarRepository @Inject constructor(
      * qu'ils aient vraiment des données (jusqu'à 12 s) au lieu de prendre une première liste vide.
      */
     private suspend fun followedSeries(): List<SeriesSeed> {
+        // Ordre de priorité : d'abord ce que tu regardes en ce moment (en cours, puis vu jusqu'au
+        // bout récemment : WWE…), ensuite le reste de la bibliothèque (souvent des séries finies).
         val seeds = LinkedHashMap<String, SeriesSeed>()
-        val library = withTimeoutOrNull(12_000) { libraryRepository.libraryItems.firstOrNull { it.isNotEmpty() } }
-            ?: withTimeoutOrNull(2_000) { libraryRepository.libraryItems.first() }.orEmpty()
-        library.filter { it.type.isSeriesType() }.forEach {
-            seeds.putIfAbsent(it.id, SeriesSeed(it.id, it.name, it.poster, it.addonBaseUrl))
-        }
         val recentLimit = System.currentTimeMillis() - 90L * 86_400_000L
         val progress = withTimeoutOrNull(12_000) { watchProgressRepository.allProgress.firstOrNull { it.isNotEmpty() } }
             ?: withTimeoutOrNull(2_000) { watchProgressRepository.allProgress.first() }.orEmpty()
-        progress.filter { it.contentType.isSeriesType() && it.lastWatched >= recentLimit }
-            .sortedByDescending { it.lastWatched }
-            .forEach { seeds.putIfAbsent(it.contentId, SeriesSeed(it.contentId, it.name, it.poster, it.addonBaseUrl)) }
-        // Épisodes vus jusqu'au bout (ils sortent de « en cours ») : WWE de la semaine, etc.
         val watched = withTimeoutOrNull(8_000) { watchProgressRepository.watchedItems.firstOrNull { it.isNotEmpty() } }
             .orEmpty()
-        watched.filter { it.contentType.isSeriesType() && it.watchedAt >= recentLimit }
-            .sortedByDescending { it.watchedAt }
-            .forEach { seeds.putIfAbsent(it.contentId, SeriesSeed(it.contentId, it.title, it.poster, null)) }
+        val recent = progress.filter { it.contentType.isSeriesType() && it.lastWatched >= recentLimit }
+            .map { Triple(it.lastWatched, it.contentId, SeriesSeed(it.contentId, it.name, it.poster, it.addonBaseUrl)) } +
+            watched.filter { it.contentType.isSeriesType() && it.watchedAt >= recentLimit }
+                .map { Triple(it.watchedAt, it.contentId, SeriesSeed(it.contentId, it.title, it.poster, null)) }
+        recent.sortedByDescending { it.first }.forEach { (_, id, seed) -> seeds.putIfAbsent(id, seed) }
+        val library = withTimeoutOrNull(12_000) { libraryRepository.libraryItems.firstOrNull { it.isNotEmpty() } }
+            ?: withTimeoutOrNull(2_000) { libraryRepository.libraryItems.first() }.orEmpty()
+        library.filter { it.type.isSeriesType() }.forEach {
+            val existing = seeds[it.id]
+            if (existing == null) {
+                seeds[it.id] = SeriesSeed(it.id, it.name, it.poster, it.addonBaseUrl)
+            } else if (existing.addonBaseUrl == null && it.addonBaseUrl != null) {
+                seeds[it.id] = existing.copy(addonBaseUrl = it.addonBaseUrl)
+            }
+        }
         lastFollowedCount = seeds.size
         return seeds.values.take(MAX_SERIES)
     }
@@ -273,7 +278,7 @@ class CalendarRepository @Inject constructor(
         const val TAG = "Calendar666"
         const val FEATURE = "player_settings"
         val VF_CHECKERS = listOf("streamfusion666", "frenchio666", "lumio666", "wastream666", "comet666")
-        const val MAX_SERIES = 40
+        const val MAX_SERIES = 120
         const val MAX_REMEMBERED = 400
         const val META_TTL_MS = 6L * 60 * 60 * 1000
         const val VF_NEGATIVE_TTL_MS = 3L * 60 * 60 * 1000
