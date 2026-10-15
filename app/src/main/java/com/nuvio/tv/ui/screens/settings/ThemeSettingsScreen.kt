@@ -285,7 +285,9 @@ fun ThemeSettingsContent(
                 }
             }
 
-            SettingsGroupCard(
+            // 666TV : une seule icône/bannière, l'Original (notre vert). Le choix n'apparaît
+            // que si une autre icône était encore active, pour pouvoir revenir à l'Original.
+            if (appIconState.selected != AppIconOption.ORIGINAL) SettingsGroupCard(
                 modifier = Modifier.fillMaxWidth(),
                 title = stringResource(R.string.appearance_launcher_artwork),
                 subtitle = stringResource(R.string.appearance_launcher_artwork_subtitle)
