@@ -23,14 +23,15 @@ internal fun HomeViewModel.observeCalendarUpcomingRow() {
         runCatching { profileManager.activeProfileReady.first { it } }
         delay(4_000L)
         while (true) {
-            val episodes = runCatching { calendarRepository.episodes(daysBack = 0, daysAhead = 14) }
+            val episodes = runCatching { calendarRepository.episodes(daysBack = 2, daysAhead = 14) }
                 .getOrDefault(emptyList())
             val row = buildCalendarUpcomingRow(episodes)
             if (row != calendarUpcomingRow) {
                 calendarUpcomingRow = row
                 scheduleUpdateCatalogRows()
             }
-            delay(6L * 60L * 60L * 1000L)
+            // Rien trouvé (données pas encore chargées au démarrage ?) : on réessaie vite.
+            delay(if (row == null) 3L * 60L * 1000L else 6L * 60L * 60L * 1000L)
         }
     }
 }
@@ -42,8 +43,9 @@ private val DAY_FORMAT = DateTimeFormatter.ofPattern("EEE d MMM", Locale.FRENCH)
 internal fun buildCalendarUpcomingRow(episodes: List<CalendarEpisode>): CatalogRow? {
     val zone = ZoneId.systemDefault()
     val today = LocalDate.now(zone)
+    val since = java.time.Instant.now().minusSeconds(2L * 86_400L)
     val firstPerSeries = episodes
-        .filter { !it.hasAired() }
+        .filter { !it.airInstant.isBefore(since) }
         .groupBy { it.seriesId }
         .mapNotNull { (_, eps) -> eps.minByOrNull { it.airInstant } }
         .sortedBy { it.airInstant }
@@ -52,7 +54,9 @@ internal fun buildCalendarUpcomingRow(episodes: List<CalendarEpisode>): CatalogR
     val items = firstPerSeries.map { ep ->
         val day = ep.airDate(zone)
         val dayText = when (day) {
-            today -> "Aujourd'hui"
+            today -> if (ep.hasAired()) "Sorti aujourd'hui" else "Aujourd'hui"
+            today.minusDays(1) -> "Sorti hier"
+            today.minusDays(2) -> "Sorti avant-hier"
             today.plusDays(1) -> "Demain"
             else -> day.format(DAY_FORMAT).replaceFirstChar { it.uppercase() }
         }
@@ -75,7 +79,7 @@ internal fun buildCalendarUpcomingRow(episodes: List<CalendarEpisode>): CatalogR
         addonName = "666TV",
         addonBaseUrl = "",
         catalogId = "a-venir",
-        catalogName = "📅 À venir",
+        catalogName = "📅 Tes séries : nouveaux et à venir",
         type = ContentType.SERIES,
         items = items,
         hasMore = false

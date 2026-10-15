@@ -97,8 +97,13 @@ fun CalendarScreen(
         if (!state.isLoading && state.recent.isEmpty() && state.upcoming.isEmpty()) {
             item(key = "empty") {
                 Text(
-                    text = "Rien à afficher. Ajoute des séries à ta bibliothèque ou commence-en une : " +
-                        "leurs prochains épisodes apparaîtront ici.",
+                    text = if (state.followedCount == 0) {
+                        "Aucune série suivie trouvée. Ajoute des séries à ta bibliothèque ou commence-en une : " +
+                            "leurs prochains épisodes apparaîtront ici."
+                    } else {
+                        "${state.followedCount} série(s) suivie(s), mais aucun épisode sorti ces 7 derniers jours " +
+                            "ni annoncé pour les 30 prochains."
+                    },
                     style = MaterialTheme.typography.bodyLarge,
                     color = NuvioTheme.colors.TextSecondary,
                     modifier = Modifier.padding(top = 24.dp)

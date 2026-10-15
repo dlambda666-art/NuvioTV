@@ -19,6 +19,7 @@ import javax.inject.Inject
 
 data class CalendarUiState(
     val isLoading: Boolean = true,
+    val followedCount: Int = 0,
     val recent: List<CalendarEpisode> = emptyList(),
     val upcoming: List<CalendarEpisode> = emptyList(),
     val vf: Map<String, VfState> = emptyMap()
@@ -51,7 +52,12 @@ class CalendarViewModel @Inject constructor(
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
-            val episodes = runCatching { repository.episodes(force = force) }.getOrDefault(emptyList())
+            var episodes = runCatching { repository.episodes(force = force) }.getOrDefault(emptyList())
+            if (episodes.isEmpty()) {
+                // Au démarrage, bibliothèque / historique peuvent arriver un peu après : 2e essai.
+                kotlinx.coroutines.delay(8_000)
+                episodes = runCatching { repository.episodes(force = true) }.getOrDefault(emptyList())
+            }
             val now = Instant.now()
             val recent = episodes.filter { !it.airInstant.isAfter(now) }.sortedByDescending { it.airInstant }
             val upcoming = episodes.filter { it.airInstant.isAfter(now) }
@@ -59,6 +65,7 @@ class CalendarViewModel @Inject constructor(
             _state.update { state ->
                 state.copy(
                     isLoading = false,
+                    followedCount = repository.lastFollowedCount,
                     recent = recent,
                     upcoming = upcoming,
                     vf = recent.associate { ep ->

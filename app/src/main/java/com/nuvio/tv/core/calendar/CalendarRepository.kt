@@ -116,19 +116,37 @@ class CalendarRepository @Inject constructor(
                 .sortedBy { it.airInstant }
         }
 
+    /**
+     * Séries suivies. Au démarrage, bibliothèque et historique se chargent (Trakt…) : on attend
+     * qu'ils aient vraiment des données (jusqu'à 12 s) au lieu de prendre une première liste vide.
+     */
     private suspend fun followedSeries(): List<SeriesSeed> {
         val seeds = LinkedHashMap<String, SeriesSeed>()
-        val library = withTimeoutOrNull(5_000) { libraryRepository.libraryItems.first() }.orEmpty()
+        val library = withTimeoutOrNull(12_000) { libraryRepository.libraryItems.firstOrNull { it.isNotEmpty() } }
+            ?: withTimeoutOrNull(2_000) { libraryRepository.libraryItems.first() }.orEmpty()
         library.filter { it.type.isSeriesType() }.forEach {
             seeds.putIfAbsent(it.id, SeriesSeed(it.id, it.name, it.poster, it.addonBaseUrl))
         }
         val recentLimit = System.currentTimeMillis() - 90L * 86_400_000L
-        val progress = withTimeoutOrNull(5_000) { watchProgressRepository.allProgress.first() }.orEmpty()
+        val progress = withTimeoutOrNull(12_000) { watchProgressRepository.allProgress.firstOrNull { it.isNotEmpty() } }
+            ?: withTimeoutOrNull(2_000) { watchProgressRepository.allProgress.first() }.orEmpty()
         progress.filter { it.contentType.isSeriesType() && it.lastWatched >= recentLimit }
             .sortedByDescending { it.lastWatched }
             .forEach { seeds.putIfAbsent(it.contentId, SeriesSeed(it.contentId, it.name, it.poster, it.addonBaseUrl)) }
+        // Épisodes vus jusqu'au bout (ils sortent de « en cours ») : WWE de la semaine, etc.
+        val watched = withTimeoutOrNull(8_000) { watchProgressRepository.watchedItems.firstOrNull { it.isNotEmpty() } }
+            .orEmpty()
+        watched.filter { it.contentType.isSeriesType() && it.watchedAt >= recentLimit }
+            .sortedByDescending { it.watchedAt }
+            .forEach { seeds.putIfAbsent(it.contentId, SeriesSeed(it.contentId, it.title, it.poster, null)) }
+        lastFollowedCount = seeds.size
         return seeds.values.take(MAX_SERIES)
     }
+
+    /** Nombre de séries suivies au dernier chargement (affiché dans le calendrier). */
+    @Volatile
+    var lastFollowedCount: Int = 0
+        private set
 
     private suspend fun episodesFor(seed: SeriesSeed, force: Boolean): List<CalendarEpisode> {
         val cached = episodeCache[seed.id]
