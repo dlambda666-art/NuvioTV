@@ -1310,6 +1310,11 @@ fun PlayerRuntimeController.onEvent(event: PlayerEvent) {
                 )
             }
         }
+        is PlayerEvent.OnSetNightMode -> {
+            nightModeProcessor.setEnabled(event.enabled)
+            _uiState.update { it.copy(nightModeEnabled = event.enabled) }
+            scope.launch { playerSettingsDataStore.setNightModeEnabled(event.enabled) }
+        }
         is PlayerEvent.OnSetCenterMixLevelDb -> {
             val clampedDb = event.db.coerceIn(CENTER_MIX_LEVEL_MIN_DB, CENTER_MIX_LEVEL_MAX_DB)
             applyCenterMixLevel(clampedDb)

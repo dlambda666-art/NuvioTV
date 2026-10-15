@@ -235,6 +235,7 @@ data class PlayerSettings(
     val skipSilence: Boolean = false,
     val audioAmplificationDb: Int = 0,
     val centerMixLevelDb: Int = 0,
+    val nightModeEnabled: Boolean = false, // 666TV : mode nuit (compression)
     val persistAudioAmplification: Boolean = true, // 666TV
     val rememberAudioDelayPerDevice: Boolean = true,
     val preferredAudioLanguage: String = "fr", // 666TV : VF par défaut
@@ -500,6 +501,7 @@ class PlayerSettingsDataStore @Inject constructor(
     private val skipSilenceKey = booleanPreferencesKey("skip_silence")
     private val audioAmplificationDbKey = intPreferencesKey("audio_amplification_db")
     private val centerMixLevelDbKey = intPreferencesKey("center_mix_level_db")
+    private val nightModeEnabledKey = booleanPreferencesKey("night_mode_enabled_666")
     private val persistAudioAmplificationKey = booleanPreferencesKey("persist_audio_amplification")
     private val rememberAudioDelayPerDeviceKey = booleanPreferencesKey("remember_audio_delay_per_device")
     private val preferredAudioLanguageKey = stringPreferencesKey("preferred_audio_language")
@@ -850,6 +852,7 @@ class PlayerSettingsDataStore @Inject constructor(
                     CENTER_MIX_LEVEL_DB_MIN,
                     CENTER_MIX_LEVEL_DB_MAX
                 ),
+                nightModeEnabled = prefs[nightModeEnabledKey] ?: false,
                 persistAudioAmplification = prefs[persistAudioAmplificationKey] ?: true, // 666TV : voix gardées d'une vidéo à l'autre
                 rememberAudioDelayPerDevice = prefs[rememberAudioDelayPerDeviceKey] ?: true,
                 preferredAudioLanguage = normalizeSelectableLanguageCode(
@@ -1104,6 +1107,10 @@ class PlayerSettingsDataStore @Inject constructor(
                 AUDIO_AMPLIFICATION_DB_MAX
             )
         }
+    }
+
+    suspend fun setNightModeEnabled(enabled: Boolean) {
+        store().edit { prefs -> prefs[nightModeEnabledKey] = enabled }
     }
 
     suspend fun setCenterMixLevelDb(db: Int) {

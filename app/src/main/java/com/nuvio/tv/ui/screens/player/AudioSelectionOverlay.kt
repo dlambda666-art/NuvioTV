@@ -66,6 +66,8 @@ internal fun AudioSelectionOverlay(
     centerMixLevelDb: Int,
     isCenterMixAvailable: Boolean,
     persistAmplification: Boolean,
+    nightModeEnabled: Boolean = false,
+    onNightModeChange: (Boolean) -> Unit = {},
     onTrackSelected: (Int) -> Unit,
     onAudioDelayChange: (Int) -> Unit,
     onAmplificationChange: (Int) -> Unit,
@@ -203,6 +205,8 @@ internal fun AudioSelectionOverlay(
                         centerMixLevelDb = centerMixLevelDb,
                         isCenterMixAvailable = isCenterMixAvailable,
                         persistAmplification = persistAmplification,
+                        nightModeEnabled = nightModeEnabled,
+                        onNightModeChange = onNightModeChange,
                         delayMinusFocusRequester = delayMinusFocusRequester,
                         delayPlusFocusRequester = delayPlusFocusRequester,
                         ampMinusFocusRequester = ampMinusFocusRequester,
@@ -374,6 +378,8 @@ private fun AudioControlsContent(
     centerMixLevelDb: Int,
     isCenterMixAvailable: Boolean,
     persistAmplification: Boolean,
+    nightModeEnabled: Boolean = false,
+    onNightModeChange: (Boolean) -> Unit = {},
     delayMinusFocusRequester: FocusRequester,
     delayPlusFocusRequester: FocusRequester,
     ampMinusFocusRequester: FocusRequester,
@@ -387,6 +393,7 @@ private fun AudioControlsContent(
     onCenterMixLevelChange: (Int) -> Unit,
     onPersistAmplificationChange: (Boolean) -> Unit
 ) {
+    val nightModeFocusRequester = remember { FocusRequester() }
     val currentDelayMs = audioDelayMs.coerceIn(AUDIO_DELAY_MIN_MS, AUDIO_DELAY_MAX_MS)
     val canDecreaseDelay = currentDelayMs > AUDIO_DELAY_MIN_MS
     val canIncreaseDelay = currentDelayMs < AUDIO_DELAY_MAX_MS
@@ -580,6 +587,7 @@ private fun AudioControlsContent(
                     .focusProperties {
                         left = persistLeftFocusRequester
                         up = persistUpFocusRequester
+                        down = nightModeFocusRequester
                     },
                 colors = CardDefaults.colors(
                     containerColor = if (persistAmplification) NuvioTheme.colors.Secondary else Color.Transparent,
@@ -606,6 +614,45 @@ private fun AudioControlsContent(
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (persistAmplification) NuvioTheme.colors.OnSecondary else Color.White,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
+                )
+            }
+
+            // 666TV : mode nuit (explosions baissées, voix et chuchotements remontés).
+            Card(
+                onClick = { onNightModeChange(!nightModeEnabled) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(nightModeFocusRequester)
+                    .focusProperties {
+                        left = persistLeftFocusRequester
+                        up = persistFocusRequester
+                    },
+                colors = CardDefaults.colors(
+                    containerColor = if (nightModeEnabled) NuvioTheme.colors.Secondary else Color.Transparent,
+                    focusedContainerColor = if (nightModeEnabled) NuvioTheme.colors.Secondary else Color.Transparent
+                ),
+                shape = CardDefaults.shape(RoundedCornerShape(NuvioTheme.radii.md)),
+                border = CardDefaults.border(
+                    border = Border(
+                        border = BorderStroke(NuvioTheme.spacing.xxs, Color.Transparent),
+                        shape = RoundedCornerShape(NuvioTheme.radii.md)
+                    ),
+                    focusedBorder = Border(
+                        border = NuvioTheme.focusRing.border(NuvioTheme.spacing.xxs),
+                        shape = RoundedCornerShape(NuvioTheme.radii.md)
+                    )
+                ),
+                scale = CardDefaults.scale(focusedScale = 1f, pressedScale = 1f)
+            ) {
+                Text(
+                    text = if (nightModeEnabled) {
+                        "🌙 Mode nuit : oui (explosions baissées, voix remontées)"
+                    } else {
+                        "🌙 Mode nuit : non"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (nightModeEnabled) NuvioTheme.colors.OnSecondary else Color.White,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
                 )
             }

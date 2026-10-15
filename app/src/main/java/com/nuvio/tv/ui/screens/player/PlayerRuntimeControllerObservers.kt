@@ -353,9 +353,11 @@ internal fun PlayerRuntimeController.observeSubtitleSettings() {
                             resolvedInternalPlayerEngine != InternalPlayerEngine.MVP_PLAYER,
                     persistAudioAmplification = settings.persistAudioAmplification,
                     audioAmplificationDb = resolvedAudioAmplificationDb,
-                    centerMixLevelDb = resolvedCenterMixLevelDb
+                    centerMixLevelDb = resolvedCenterMixLevelDb,
+                    nightModeEnabled = settings.nightModeEnabled
                 )
             }
+            nightModeProcessor.setEnabled(settings.nightModeEnabled)
 
             if (resolvedAudioAmplificationDb != currentState.audioAmplificationDb) {
                 applyAudioAmplification(resolvedAudioAmplificationDb)

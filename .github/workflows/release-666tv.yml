@@ -1,0 +1,128 @@
+name: Publier 666TV (mise à jour dans l'appli)
+
+# 666TV : à chaque mise sur la branche principale, on construit l'APK signé et on le
+# publie comme « release » GitHub. L'appli 666TV (Paramètres → À propos → Mises à jour)
+# la voit et propose de l'installer directement sur la Shield.
+on:
+  push:
+    branches: [stable-1.0.0-fr]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-666tv
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Construire et publier 666TV
+    runs-on: ubuntu-latest
+
+    env:
+      NUVIO_SUPABASE_URL: https://api.nuvio.tv
+      NUVIO_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgxNTIxMzQ2LCJleHAiOjE5MzkyMDEzNDZ9.tmQaj682pwzehpqlgCDMnySOqiUvpgRbrE43T4VJpDI
+      NUVIO_SUPABASE_FALLBACK_URL: https://api-two.nuvioapp.space
+      TV_LOGIN_WEB_BASE_URL: https://nuvio.tv/tv-login
+      DEVICE_LOGIN_WEB_BASE_URL: https://nuvio.tv/link
+      # Clé TMDB de l'app (bandes-annonces, enrichissement TMDB). Sans elle,
+      # BuildConfig.TMDB_API_KEY est vide et tous les appels TMDB de l'app échouent.
+      TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+      # Passer l'intro : IntroDB est public, lecture sans cle.
+      INTRODB_API_URL: https://api.introdb.app/
+      # Synchro Trakt : cles de ton appli perso sur trakt.tv (facultatif).
+      TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
+      TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Prepare local.properties
+        shell: bash
+        run: |
+          cat > local.properties <<EOF
+          NUVIO_SUPABASE_URL=${NUVIO_SUPABASE_URL}
+          NUVIO_SUPABASE_ANON_KEY=${NUVIO_SUPABASE_ANON_KEY}
+          NUVIO_SUPABASE_FALLBACK_URL=${NUVIO_SUPABASE_FALLBACK_URL}
+          TV_LOGIN_WEB_BASE_URL=${TV_LOGIN_WEB_BASE_URL}
+          DEVICE_LOGIN_WEB_BASE_URL=${DEVICE_LOGIN_WEB_BASE_URL}
+          TMDB_API_KEY=${TMDB_API_KEY}
+          INTRODB_API_URL=${INTRODB_API_URL}
+          TRAKT_CLIENT_ID=${TRAKT_CLIENT_ID}
+          TRAKT_CLIENT_SECRET=${TRAKT_CLIENT_SECRET}
+          EOF
+          if [ -z "${TMDB_API_KEY}" ]; then
+            echo "::error::Secret TMDB_API_KEY manquant (Settings > Secrets and variables > Actions) : sans lui, bandes-annonces et TMDB ne marchent pas dans l'app."
+            exit 1
+          fi
+
+      - name: Prepare release signing key
+        env:
+          NUVIO_KEYSTORE_BASE64: ${{ secrets.NUVIO_KEYSTORE_BASE64 }}
+          NUVIO_KEYSTORE_PASSWORD: ${{ secrets.NUVIO_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          if [ -z "$NUVIO_KEYSTORE_BASE64" ] || [ -z "$NUVIO_KEYSTORE_PASSWORD" ]; then
+            echo "::error::Secrets NUVIO_KEYSTORE_BASE64 et/ou NUVIO_KEYSTORE_PASSWORD manquants (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          printf '%s' "$NUVIO_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/nuviotv-fr.jks"
+          {
+            echo "NUVIO_RELEASE_STORE_FILE=$RUNNER_TEMP/nuviotv-fr.jks"
+            echo "NUVIO_RELEASE_KEY_ALIAS=nuviotv-fr"
+            echo "NUVIO_RELEASE_KEY_PASSWORD=$NUVIO_KEYSTORE_PASSWORD"
+            echo "NUVIO_RELEASE_STORE_PASSWORD=$NUVIO_KEYSTORE_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Numéro de version
+        id: version
+        shell: bash
+        run: |
+          echo "name=1.0.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "code=$((1062 + GITHUB_RUN_NUMBER))" >> "$GITHUB_OUTPUT"
+
+      - name: Build fullRelease
+        run: |
+          ./gradlew \
+            -Ptv666VersionName=${{ steps.version.outputs.name }} \
+            -Ptv666VersionCode=${{ steps.version.outputs.code }} \
+            :app:assembleFullRelease \
+            --stacktrace
+
+      - name: Publier la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.name }}"
+          PREV=$(git describe --tags --abbrev=0 --match 'v1.0.*' 2>/dev/null || true)
+          {
+            echo "666TV $VERSION"
+            echo
+            if [ -n "$PREV" ]; then
+              git log --no-merges --format='- %s' "$PREV"..HEAD
+            else
+              git log --no-merges --format='- %s' -15
+            fi
+          } > notes.md
+          mkdir -p dist
+          for f in app/build/outputs/apk/full/release/*.apk; do
+            base=$(basename "$f" .apk)
+            cp "$f" "dist/666TV-${VERSION}-${base#app-full-}.apk"
+          done
+          ls -la dist
+          gh release create "v${VERSION}" dist/*.apk \
+            --title "666TV ${VERSION}" \
+            --notes-file notes.md \
+            --target "${GITHUB_SHA}"

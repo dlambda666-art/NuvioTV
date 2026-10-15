@@ -104,8 +104,10 @@ android {
         applicationId = "com.nuvio.tv"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1062
-        versionName = "1.0.0"
+        // 666TV : la publication automatique (release-666tv.yml) fixe la version
+        // (-Ptv666VersionName / -Ptv666VersionCode) pour que l'appli voie les mises à jour.
+        versionCode = (project.findProperty("tv666VersionCode") as String?)?.toIntOrNull() ?: 1062
+        versionName = (project.findProperty("tv666VersionName") as String?) ?: "1.0.0"
 
         buildConfigField("String", "PARENTAL_GUIDE_API_URL", "\"${localProperties.getProperty("PARENTAL_GUIDE_API_URL", "")}\"")
         buildConfigField("String", "INTRODB_API_URL", "\"${localProperties.getProperty("INTRODB_API_URL", "")}\"")
@@ -145,7 +147,8 @@ android {
         buildConfigField("String", "SENTRY_DSN", buildConfigString(sentryDsn))
 
         // In-app updater (GitHub Releases)
-        buildConfigField("String", "GITHUB_OWNER", "\"NuvioMedia\"")
+        // 666TV : mises à jour depuis le dépôt de 666TV, jamais depuis le Nuvio officiel.
+        buildConfigField("String", "GITHUB_OWNER", "\"dlambda666-art\"")
         buildConfigField("String", "GITHUB_REPO", "\"NuvioTV\"")
     }
 
