@@ -281,8 +281,9 @@ android {
         abi {
             isEnable = !buildingAppBundle
             reset()
-            // 666TV : les Shield (Pro et tube) sont en ARM 64 bits ; rien d'autre à compiler.
-            include("arm64-v8a")
+            // 666TV : ARM 64 bits (Shield) + ARM 32 bits (box Strong UHD et autres box Android TV
+            // dont le système est en 32 bits). Plus de x86 (PC) ni d'APK universel.
+            include("arm64-v8a", "armeabi-v7a")
             isUniversalApk = false
         }
     }
