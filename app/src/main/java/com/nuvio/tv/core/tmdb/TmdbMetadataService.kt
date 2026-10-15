@@ -1339,8 +1339,21 @@ class TmdbMetadataService(
 
                 val englishTitlesById = englishCreditTitlesById(englishCredits)
 
+                // 666TV : pas de bio en français sur TMDB → l'introduction Wikipédia en français.
+                val frenchWikipediaBio = if (person.biography.isNullOrBlank() && normalizedLanguage.startsWith("fr")) {
+                    runCatching {
+                        tmdbApi.getPersonExternalIds(personId, TMDB_API_KEY).body()?.wikidataId
+                    }.getOrNull()
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { FrenchWikipediaBio.fetch(it) }
+                } else {
+                    null
+                }
+
                 // If biography is empty and language is not English, fetch English fallback
-                val biography = if (person.biography.isNullOrBlank() && normalizedLanguage != "en") {
+                val biography = if (frenchWikipediaBio != null) {
+                    frenchWikipediaBio
+                } else if (person.biography.isNullOrBlank() && normalizedLanguage != "en") {
                     englishPerson?.biography
                 } else {
                     person.biography

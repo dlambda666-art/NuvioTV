@@ -141,6 +141,13 @@ interface TmdbApi {
         @Query("language") language: String? = null
     ): Response<TmdbPersonResponse>
 
+    // 666TV : pour retrouver la bio en français sur Wikipédia (via Wikidata).
+    @GET("person/{person_id}/external_ids")
+    suspend fun getPersonExternalIds(
+        @Path("person_id") personId: Int,
+        @Query("api_key") apiKey: String
+    ): Response<TmdbPersonExternalIdsResponse>
+
     @GET("person/{person_id}/combined_credits")
     suspend fun getPersonCombinedCredits(
         @Path("person_id") personId: Int,
@@ -297,6 +304,12 @@ data class TmdbFindResult(
     @Json(name = "title") val title: String? = null,
     @Json(name = "name") val name: String? = null,
     @Json(name = "media_type") val mediaType: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class TmdbPersonExternalIdsResponse(
+    @Json(name = "id") val id: Int,
+    @Json(name = "wikidata_id") val wikidataId: String? = null
 )
 
 @JsonClass(generateAdapter = true)
