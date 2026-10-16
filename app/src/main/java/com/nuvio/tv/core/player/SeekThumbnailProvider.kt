@@ -49,9 +49,44 @@ class SeekThumbnailProvider {
                             ?.let { Bitmap.createScaledBitmap(it, WIDTH, HEIGHT, true) }
                     }
                 }.onFailure { Log.d(TAG, "frame failed at ${timeUs / 1000}ms: ${it.message}") }.getOrNull()
+                if (frame != null && isStuckFrame(frame, bucket)) {
+                    // Le fichier ne se laisse pas parcourir (enregistrement TV, MKV sans index…) :
+                    // on renvoie toujours la même image. Mieux vaut ne rien montrer qu'une image fausse.
+                    Log.d(TAG, "same frame at different positions: thumbnails disabled for this stream")
+                    failedUrl = url
+                    cache.evictAll()
+                    return@withLock null
+                }
                 frame?.also { cache.put(bucket, it) }
             }
         }
+    }
+
+    private var lastSignature: LongArray? = null
+    private var lastSignatureBucket: Long = -1
+    private var stuckCount = 0
+
+    /** Empreinte grossière de l'image (8×8 niveaux de gris). */
+    private fun signature(bitmap: Bitmap): LongArray {
+        val small = Bitmap.createScaledBitmap(bitmap, 8, 8, true)
+        return LongArray(64) { i ->
+            val c = small.getPixel(i % 8, i / 8)
+            (((c shr 16) and 0xFF) * 3L + ((c shr 8) and 0xFF) * 6L + (c and 0xFF)) / 10L
+        }
+    }
+
+    /** Vrai si la même image revient pour des positions éloignées (≥ 1 min), deux fois de suite. */
+    private fun isStuckFrame(frame: Bitmap, bucket: Long): Boolean {
+        val sig = runCatching { signature(frame) }.getOrNull() ?: return false
+        val previous = lastSignature
+        val far = lastSignatureBucket >= 0 && kotlin.math.abs(bucket - lastSignatureBucket) >= 6
+        if (previous != null && far) {
+            val diff = sig.indices.sumOf { kotlin.math.abs(sig[it] - previous[it]) } / 64.0
+            stuckCount = if (diff < 3.0) stuckCount + 1 else 0
+        }
+        lastSignature = sig
+        lastSignatureBucket = bucket
+        return stuckCount >= 2
     }
 
     private fun open(url: String, headers: Map<String, String>): MediaMetadataRetriever? {
@@ -72,6 +107,9 @@ class SeekThumbnailProvider {
         retriever = null
         openedUrl = url
         cache.evictAll()
+        lastSignature = null
+        lastSignatureBucket = -1
+        stuckCount = 0
     }
 
     suspend fun release() = withContext(dispatcher) {
