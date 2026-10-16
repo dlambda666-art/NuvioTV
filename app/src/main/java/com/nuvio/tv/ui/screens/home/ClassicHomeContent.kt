@@ -926,6 +926,8 @@ internal fun MetaPreview.toClassicFocusArtwork(useBackdrop: Boolean): ClassicFoc
 }
 
 private fun ContinueWatchingItem.toClassicFocusArtwork(useBackdrop: Boolean): ClassicFocusArtwork {
+    // 666TV : fond fixe sur « Continuer à regarder ».
+    if (useBackdrop) return ClassicFocusArtwork(imageUrl = COLLECTIONS_BACKDROP_666, seed = "666tv-collections")
     return when (this) {
         is ContinueWatchingItem.InProgress -> ClassicFocusArtwork(
             imageUrl = if (useBackdrop) {
