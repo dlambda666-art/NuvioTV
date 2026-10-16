@@ -1161,6 +1161,10 @@ private fun PlaybackNavHost(
             )
         }
 
+        composable(Screen.LiveTv.route) {
+            com.nuvio.tv.ui.screens.livetv.LiveTvScreen()
+        }
+
         composable(Screen.Calendar.route) {
             com.nuvio.tv.ui.screens.calendar.CalendarScreen(
                 onOpenEpisode = { seriesId, addonBaseUrl, season, episode ->

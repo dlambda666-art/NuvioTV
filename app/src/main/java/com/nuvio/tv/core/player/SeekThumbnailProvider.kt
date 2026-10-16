@@ -62,8 +62,8 @@ class SeekThumbnailProvider {
         }
     }
 
-    private var lastSignature: LongArray? = null
-    private var lastSignatureBucket: Long = -1
+    private var firstSignature: LongArray? = null
+    private var firstSignatureBucket: Long = -1
     private var stuckCount = 0
 
     /** Empreinte grossière de l'image (8×8 niveaux de gris). */
@@ -75,17 +75,24 @@ class SeekThumbnailProvider {
         }
     }
 
-    /** Vrai si la même image revient pour des positions éloignées (≥ 1 min), deux fois de suite. */
+    /**
+     * Vrai si la toute première image revient pour deux autres positions, à au moins
+     * 20 s d'écart (petits sauts de 10 s compris) : le fichier ne se laisse pas parcourir.
+     */
     private fun isStuckFrame(frame: Bitmap, bucket: Long): Boolean {
         val sig = runCatching { signature(frame) }.getOrNull() ?: return false
-        val previous = lastSignature
-        val far = lastSignatureBucket >= 0 && kotlin.math.abs(bucket - lastSignatureBucket) >= 6
-        if (previous != null && far) {
-            val diff = sig.indices.sumOf { kotlin.math.abs(sig[it] - previous[it]) } / 64.0
-            stuckCount = if (diff < 3.0) stuckCount + 1 else 0
+        val first = firstSignature
+        if (first == null) {
+            firstSignature = sig; firstSignatureBucket = bucket
+            return false
         }
-        lastSignature = sig
-        lastSignatureBucket = bucket
+        if (first.isEmpty()) return false   // déjà vérifié : le fichier se parcourt bien
+        if (kotlin.math.abs(bucket - firstSignatureBucket) < 2) return false
+        val diff = sig.indices.sumOf { kotlin.math.abs(sig[it] - first[it]) } / 64.0
+        if (diff < 3.0) stuckCount++ else if (stuckCount == 0) {
+            // Le fichier se parcourt normalement : on ne surveille plus.
+            firstSignature = LongArray(0)
+        }
         return stuckCount >= 2
     }
 
@@ -107,8 +114,8 @@ class SeekThumbnailProvider {
         retriever = null
         openedUrl = url
         cache.evictAll()
-        lastSignature = null
-        lastSignatureBucket = -1
+        firstSignature = null
+        firstSignatureBucket = -1
         stuckCount = 0
     }
 
