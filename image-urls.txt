@@ -1,4 +1,10 @@
-genre1_horreur.png=https://i.postimg.cc/PrRXbjxT/images.png
-genre2_frankenstream.png=https://i.postimg.cc/FKYdvQR5/file-0000000089d88246aac718fd7cd7557a.png
-genre3_nouveaute_old.png=https://i.postimg.cc/g0hvcfM4/png-transparent-cinema-film-moveis-logo-film-art-film.png
-genre4_comingsoon_old.png=https://i.postimg.cc/cLGKrgcd/coming-soon-banner-design-template-6f68949c1a62d27c9ad37c8993b821d1-screen.png
+netflix.jpg=https://ultramax.vip/images/scott-streaming/streaming-netflix.jpg
+netflix.gif=https://ultramax.vip/images/netflix.gif
+prime.jpg=https://ultramax.vip/images/scott-streaming/streaming-prime-video.jpg
+prime.gif=https://ultramax.vip/images/Prime.gif
+hbo.jpg=https://ultramax.vip/images/scott-streaming/streaming-hbo-max.jpg
+hbo.gif=https://ultramax.vip/images/HBO.gif
+shudder.jpg=https://ultramax.vip/images/scott-streaming/streaming-shudder.jpg
+shudder.gif=https://ultramax.vip/images/Shudder.gif
+canal.png=https://i.postimg.cc/sf00sWZ2/file-000000002b4081f48d1a2370d1f6e4ad.png
+canal.gif=https://i.postimg.cc/q7VvYgLd/canal-plus.gif
