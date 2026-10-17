@@ -1,10 +1,8 @@
 name: Récupérer des images
 on:
-  workflow_dispatch:
-    inputs:
-      urls:
-        description: "Une ligne par image : nom=url (séparées par des espaces)"
-        required: true
+  push:
+    branches: [assets-dl]
+    paths: [image-urls.txt]
 permissions:
   contents: write
 jobs:
@@ -13,11 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Télécharger
-        env:
-          URLS: ${{ inputs.urls }}
         run: |
           mkdir -p downloaded-images
-          for pair in $URLS; do
+          for pair in $(cat image-urls.txt); do
             name="${pair%%=*}"; url="${pair#*=}"
             curl -fsSL -A "Mozilla/5.0" -o "downloaded-images/$name" "$url" && echo "ok $name" || echo "::error::échec $name"
           done

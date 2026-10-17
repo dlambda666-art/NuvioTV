@@ -1,0 +1,4 @@
+genre1_horreur.png=https://i.postimg.cc/PrRXbjxT/images.png
+genre2_frankenstream.png=https://i.postimg.cc/FKYdvQR5/file-0000000089d88246aac718fd7cd7557a.png
+genre3_nouveaute_old.png=https://i.postimg.cc/g0hvcfM4/png-transparent-cinema-film-moveis-logo-film-art-film.png
+genre4_comingsoon_old.png=https://i.postimg.cc/cLGKrgcd/coming-soon-banner-design-template-6f68949c1a62d27c9ad37c8993b821d1-screen.png
