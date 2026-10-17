@@ -714,8 +714,7 @@ internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
 
     val (computedHomeRows, nextGridItems) = withContext(Dispatchers.Default) {
         val computedHomeRows = buildList {
-            // 666TV : « À venir » en tête de l'accueil.
-            calendarUpcomingRow?.let { add(HomeRow.Catalog(it)) }
+            // 666TV : la rangée « À venir » n'est plus sur l'accueil — le programme est dans « Calendrier » (menu de gauche).
             // 666TV : « Top 10 VF de la semaine » (sorties vidéo uniquement, jamais de CAM).
             topTenVfRow?.let { add(HomeRow.Catalog(it)) }
             val displayRowsByKey = displayRows.associateBy { it.legacyKey() }

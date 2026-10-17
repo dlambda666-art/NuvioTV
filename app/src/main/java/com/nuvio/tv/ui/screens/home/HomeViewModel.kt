@@ -345,7 +345,6 @@ class HomeViewModel @Inject constructor(
         }
 
         observeStartupAuthNotice()
-        observeCalendarUpcomingRow()
         observeTopTenVfRow()
         viewModelScope.launch {
             profileManager.activeProfileReady.first { it }
