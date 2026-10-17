@@ -1,10 +1,1 @@
-netflix.jpg=https://ultramax.vip/images/scott-streaming/streaming-netflix.jpg
-netflix.gif=https://ultramax.vip/images/netflix.gif
-prime.jpg=https://ultramax.vip/images/scott-streaming/streaming-prime-video.jpg
-prime.gif=https://ultramax.vip/images/Prime.gif
-hbo.jpg=https://ultramax.vip/images/scott-streaming/streaming-hbo-max.jpg
-hbo.gif=https://ultramax.vip/images/HBO.gif
-shudder.jpg=https://ultramax.vip/images/scott-streaming/streaming-shudder.jpg
-shudder.gif=https://ultramax.vip/images/Shudder.gif
-canal.png=https://i.postimg.cc/sf00sWZ2/file-000000002b4081f48d1a2370d1f6e4ad.png
-canal.gif=https://i.postimg.cc/q7VvYgLd/canal-plus.gif
+nouveaute_logo.png=https://i.postimg.cc/zGRWHP6w/file-00000000be6082109c3a39a21b487a75.png
