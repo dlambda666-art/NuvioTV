@@ -5,6 +5,7 @@ package com.nuvio.tv.ui.screens.player
 import com.nuvio.tv.ui.theme.NuvioTheme
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -197,7 +198,12 @@ internal fun AudioSelectionOverlay(
                         onTrackSelected = onTrackSelected
                     )
                 }
-                Column(modifier = Modifier.width(268.dp)) {
+                // 666TV : la colonne défile, pour atteindre « Garder » et le Mode nuit.
+                Column(
+                    modifier = Modifier
+                        .width(268.dp)
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                ) {
                     AudioControlsContent(
                         audioDelayMs = audioDelayMs,
                         audioAmplificationDb = audioAmplificationDb,
