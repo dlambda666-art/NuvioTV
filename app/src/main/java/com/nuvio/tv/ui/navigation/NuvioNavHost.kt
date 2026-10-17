@@ -224,6 +224,17 @@ private fun PlaybackNavHost(
                         )
                     )
                 },
+                onPlayFromHome = { itemId, itemType, addonBaseUrl ->
+                    // 666TV : bouton « Lecture VF » de l'accueil — lance directement la lecture.
+                    navController.navigate(
+                        Screen.Detail.createRoute(
+                            itemId = itemId,
+                            itemType = itemType,
+                            addonBaseUrl = addonBaseUrl,
+                            playOnLoad = true
+                        )
+                    )
+                },
                 onContinueWatchingClick = onContinueWatchingClick@{ item ->
                     if (!playbackAvailability.canStream(item)) {
                         Toast.makeText(context, R.string.playback_unavailable_message, Toast.LENGTH_SHORT).show()

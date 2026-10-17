@@ -284,6 +284,33 @@ class TmdbService @Inject constructor(
     fun apiKey(): String = TMDB_API_KEY
 
     /**
+     * 666TV : films les plus populaires du moment parmi ceux déjà sortis en vidéo
+     * (VOD, Blu-ray) en France. Les films seulement au cinéma — donc en CAM/TS —
+     * n'ont pas cette date et ne passent jamais.
+     */
+    suspend fun popularDigitalReleasesFr(): List<com.nuvio.tv.data.remote.api.TmdbDiscoverResult> =
+        withContext(Dispatchers.IO) {
+            val today = java.time.LocalDate.now()
+            val results = mutableListOf<com.nuvio.tv.data.remote.api.TmdbDiscoverResult>()
+            for (page in 1..2) {
+                val body = runCatching {
+                    tmdbApi.discoverDigitalReleases(
+                        apiKey = TMDB_API_KEY,
+                        language = "fr-FR",
+                        region = "FR",
+                        releaseDateGte = today.minusDays(150).toString(),
+                        releaseDateLte = today.toString(),
+                        voteCountGte = 20,
+                        page = page
+                    ).body()
+                }.getOrNull() ?: break
+                results += body.results.orEmpty()
+                if ((body.totalPages ?: 1) <= page) break
+            }
+            results.distinctBy { it.id }
+        }
+
+    /**
      * Fetches backdrop and poster URLs from TMDB for the given IMDB ID.
      * Returns null if the IMDB ID doesn't start with "tt" or if TMDB has no data.
      * Results are NOT cached here — callers should persist what they need.

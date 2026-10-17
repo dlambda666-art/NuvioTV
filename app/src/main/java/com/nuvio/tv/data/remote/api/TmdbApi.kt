@@ -211,6 +211,20 @@ interface TmdbApi {
         @Query("without_watch_providers") withoutWatchProviders: String? = null
     ): Response<TmdbDiscoverResponse>
 
+    /** 666TV : films sortis en vidéo (VOD / Blu-ray) dans une région — jamais les sorties cinéma seules. */
+    @GET("discover/movie")
+    suspend fun discoverDigitalReleases(
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String? = null,
+        @Query("region") region: String,
+        @Query("with_release_type") withReleaseType: String = "4|5",
+        @Query("release_date.gte") releaseDateGte: String,
+        @Query("release_date.lte") releaseDateLte: String,
+        @Query("sort_by") sortBy: String = "popularity.desc",
+        @Query("vote_count.gte") voteCountGte: Int? = null,
+        @Query("page") page: Int = 1
+    ): Response<TmdbDiscoverResponse>
+
     @GET("discover/tv")
     suspend fun discoverTv(
         @Query("api_key") apiKey: String,

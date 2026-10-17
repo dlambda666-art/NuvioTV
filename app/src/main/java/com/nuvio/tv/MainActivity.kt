@@ -79,6 +79,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
@@ -1528,7 +1529,16 @@ private fun LegacySidebarScaffold(
                                 .align(Alignment.TopStart)
                                 .fillMaxWidth()
                         ) {
-                            Spacer(modifier = Modifier.height(30.dp))
+                            // 666TV : le bouclier ensanglanté en haut du menu.
+                            Spacer(modifier = Modifier.height(6.dp))
+                            androidx.compose.foundation.Image(
+                                painter = androidx.compose.ui.res.painterResource(R.drawable.sidebar_shield_666),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .align(Alignment.CenterHorizontally)
+                                    .size(72.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
                             if (showProfileSelector && activeProfileName.isNotEmpty()) {
                                 var isProfileFocused by remember { mutableStateOf(false) }
                                 val profileItemShape = NuvioTheme.shapes.navItem
@@ -1696,6 +1706,9 @@ private fun LegacySidebarScaffold(
     }
 }
 
+private val Blood666 = Color(0xFFA10614)
+private val Blood666Bright = Color(0xFFC3121F)
+
 @Composable
 private fun LegacySidebarButton(
     label: String,
@@ -1710,35 +1723,32 @@ private fun LegacySidebarButton(
     val itemShape = NuvioTheme.shapes.navItem
     val backgroundColor by animateColorAsState(
         targetValue = when {
-            isFocused -> NuvioTheme.colors.FocusBackground
-            expanded && selected -> NuvioTheme.colors.Secondary
+            // 666TV : rouge sang pour l'élément actif, rouge vif quand il a le focus.
+            isFocused -> Blood666Bright
+            expanded && selected -> Blood666
             else -> Color.Transparent
         },
         label = "legacySidebarItemBackground"
     )
     val contentColor by animateColorAsState(
         targetValue = when {
-            isFocused -> NuvioTheme.colors.TextPrimary
-            expanded && selected -> NuvioTheme.colors.OnSecondary
+            isFocused -> Color.White
+            expanded && selected -> Color(0xFFF2EFE9)
             else -> NuvioTheme.colors.TextSecondary
         },
         label = "legacySidebarItemContent"
     )
     val iconTint by animateColorAsState(
         targetValue = when {
-            isFocused -> NuvioTheme.colors.TextPrimary
-            expanded && selected -> NuvioTheme.colors.OnSecondary
-            selected -> NuvioTheme.colors.Secondary
+            isFocused -> Color.White
+            expanded && selected -> Color(0xFFF2EFE9)
+            selected -> Blood666Bright
             !expanded -> NuvioTheme.colors.TextTertiary
             else -> NuvioTheme.colors.TextSecondary
         },
         label = "legacySidebarItemIconTint"
     )
-    val selectedCollapsedIconBrush = if (selected && !expanded) {
-        NuvioTheme.palette.accentBrush()
-    } else {
-        null
-    }
+    val selectedCollapsedIconBrush: Brush? = null
     val itemScale by animateFloatAsState(
         targetValue = if (isFocused && expanded) 1.1f else 1f,
         animationSpec = tween(durationMillis = NuvioMotion.tokens.durations.fast, easing = NuvioMotion.tokens.easings.standard),
@@ -1755,7 +1765,15 @@ private fun LegacySidebarButton(
                 transformOrigin = TransformOrigin.Center
             }
             .focusProperties { canFocus = expanded }
-            .onFocusChanged { isFocused = it.hasFocus },
+            .onFocusChanged { isFocused = it.hasFocus }
+            .then(
+                if (isFocused || (expanded && selected)) Modifier.shadow(
+                    elevation = if (isFocused) 18.dp else 10.dp,
+                    shape = itemShape,
+                    ambientColor = Blood666Bright,
+                    spotColor = Blood666Bright
+                ) else Modifier
+            ),
         colors = CardDefaults.colors(
             containerColor = backgroundColor,
             focusedContainerColor = backgroundColor,

@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyListState
@@ -124,6 +126,7 @@ fun ModernHomeContent(
     trailerPreviewUrls: Map<String, String> = emptyMap(),
     trailerPreviewAudioUrls: Map<String, String> = emptyMap(),
     onNavigateToDetail: (String, String, String) -> Unit,
+    onPlayFromHome: (String, String, String) -> Unit = onNavigateToDetail,
     onContinueWatchingClick: (ContinueWatchingItem) -> Unit,
     onContinueWatchingStartFromBeginning: (ContinueWatchingItem) -> Unit = {},
     onContinueWatchingPlayManually: (ContinueWatchingItem) -> Unit = {},
@@ -1054,7 +1057,7 @@ fun ModernHomeContent(
             val heroMetadataModifier = remember(rowHorizontalPadding, rowsViewportHeight) {
                 Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = rowHorizontalPadding, end = NuvioTheme.spacing.xxxl, bottom = NuvioTheme.spacing.none + rowsViewportHeight + NuvioTheme.spacing.lg)
+                    .padding(start = rowHorizontalPadding, end = NuvioTheme.spacing.xxxl, bottom = NuvioTheme.spacing.none + rowsViewportHeight + NuvioTheme.spacing.lg + HERO_666_PLAY_BUTTON_SPACE)
                     .fillMaxWidth(MODERN_HERO_TEXT_WIDTH_FRACTION)
             }
 
@@ -1078,6 +1081,38 @@ fun ModernHomeContent(
                     }
                 },
                 modifier = heroMetadataModifier
+            )
+
+            // 666TV : bouton « ▶ Lecture VF » sous le bandeau. Joignable en remontant depuis la
+            // première rangée ; la touche Lecture de la télécommande fait la même chose partout.
+            val latestOnPlayFromHome by rememberUpdatedState(onPlayFromHome)
+            val latestOnContinueWatchingClick by rememberUpdatedState(onContinueWatchingClick)
+            val playFocusedSelection: () -> Boolean = remember {
+                {
+                    when (val payload = focusedCatalogSelection.value?.payload) {
+                        is ModernPayload.Catalog -> if (payload.itemId.startsWith("__placeholder_")) false else {
+                            latestOnPlayFromHome(payload.itemId, payload.itemType, payload.addonBaseUrl)
+                            true
+                        }
+                        is ModernPayload.ContinueWatching -> {
+                            latestOnContinueWatchingClick(payload.item)
+                            true
+                        }
+                        else -> false
+                    }
+                }
+            }
+            val heroPlayPayload = focusedCatalogSelection.value?.payload
+            val heroPlayVisible = ((heroPlayPayload is ModernPayload.Catalog && !heroPlayPayload.itemId.startsWith("__placeholder_")) ||
+                heroPlayPayload is ModernPayload.ContinueWatching) &&
+                !(heroSceneStateLambda().fullScreenBackdrop && shouldPlayTrailerLambda() && heroTrailerRenderedLambda())
+            Hero666PlayButton(
+                visible = heroPlayVisible,
+                label = if (heroPlayPayload is ModernPayload.ContinueWatching) "Reprendre en VF" else "Lecture VF",
+                onClick = { playFocusedSelection() },
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = rowHorizontalPadding, bottom = rowsViewportHeight + NuvioTheme.spacing.sm)
             )
 
             val latestOnFocusedRowKeyChanged by rememberUpdatedState(onFocusedRowKeyChanged)
@@ -1199,6 +1234,11 @@ fun ModernHomeContent(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .onFocusChanged { contentHasFocus.value = it.hasFocus }
+                    .onPreviewKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown &&
+                            (event.key == Key.MediaPlay || event.key == Key.MediaPlayPause)
+                        ) playFocusedSelection() else false
+                    }
             )
     }
 
@@ -1259,4 +1299,61 @@ private fun ModernHeroSection(
         onTrailerEnded = onTrailerEnded,
         onFirstFrameRendered = onFirstFrameRendered,
     )
+}
+
+
+/** 666TV : place réservée sous le bandeau pour le bouton « ▶ Lecture VF ». */
+private val HERO_666_PLAY_BUTTON_SPACE = 52.dp
+
+@Composable
+private fun Hero666PlayButton(
+    visible: Boolean,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (!visible) return
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+    val blood = androidx.compose.ui.graphics.Color(0xFFC3121F)
+    val bloodDark = androidx.compose.ui.graphics.Color(0xFF8A0010)
+    androidx.tv.material3.Surface(
+        onClick = onClick,
+        modifier = modifier.height(42.dp),
+        shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(shape),
+        colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
+            containerColor = bloodDark.copy(alpha = 0.85f),
+            focusedContainerColor = blood,
+            contentColor = androidx.compose.ui.graphics.Color(0xFFF2EFE9),
+            focusedContentColor = androidx.compose.ui.graphics.Color.White
+        ),
+        border = androidx.tv.material3.ClickableSurfaceDefaults.border(
+            focusedBorder = androidx.tv.material3.Border(
+                border = androidx.compose.foundation.BorderStroke(2.dp, androidx.compose.ui.graphics.Color(0xFF49DD89)),
+                shape = shape
+            )
+        ),
+        glow = androidx.tv.material3.ClickableSurfaceDefaults.glow(
+            focusedGlow = androidx.tv.material3.Glow(elevationColor = blood, elevation = 12.dp)
+        ),
+        scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(focusedScale = 1.06f)
+    ) {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.padding(horizontal = 18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+        ) {
+            androidx.compose.foundation.layout.Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+            )
+        }
+    }
 }

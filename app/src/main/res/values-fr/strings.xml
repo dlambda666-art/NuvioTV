@@ -147,8 +147,8 @@
     <string name="cw_new_season">Nouvelle saison</string>
     <string name="cw_resume">Reprendre</string>
     <string name="cw_percent_watched">%1$d%% regardé</string>
-    <string name="cw_hours_min_left">%1$dh %2$dm restantes</string>
-    <string name="cw_min_left">%1$dm restantes</string>
+    <string name="cw_hours_min_left">Il reste %1$dh%2$02d</string>
+    <string name="cw_min_left">Il reste %1$d min</string>
     <string name="cw_almost_done">Presque terminé</string>
     <string name="cw_airs_date">Diffusion le %1$s</string>
     <string name="cw_airs_today">Diffusion aujourd’hui</string>
@@ -1168,7 +1168,7 @@
     <string name="player_ends_at">Fin à %1$s</string>
     <string name="player_via">via %1$s</string>
     <!-- Season/episode code shown in player UI (e.g. S01E02). %1$d = season, %2$d = episode. -->
-    <string name="season_episode_format">S%1$d E%2$d</string>
+    <string name="season_episode_format">S%1$02dE%2$02d</string>
     <string name="player_subtitle_delay">Délai des sous-titres</string>
     <string name="player_error_title">Erreur de lecture</string>
     <string name="player_go_back">Retour</string>

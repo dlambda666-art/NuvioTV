@@ -1071,14 +1071,7 @@ private fun ContinueWatchingCardText(
     titleMarqueeActive: Boolean,
     episodeTitle: String?
 ) {
-    if (episodeStr != null) {
-        Text(
-            text = episodeStr,
-            style = MaterialTheme.typography.labelMedium,
-            color = NuvioTheme.colors.TextPrimary
-        )
-    }
-
+    // 666TV : le titre de la série, puis « S01E05 · Titre de l'épisode » sur une seule ligne.
     FocusMarqueeText(
         text = titleText,
         focused = titleMarqueeActive,
@@ -1086,9 +1079,13 @@ private fun ContinueWatchingCardText(
         color = NuvioTheme.colors.TextPrimary
     )
 
-    episodeTitle?.let { title ->
+    val episodeLine = listOfNotNull(
+        episodeStr?.takeIf { it.isNotBlank() },
+        episodeTitle?.takeIf { it.isNotBlank() }
+    ).joinToString(" · ")
+    if (episodeLine.isNotEmpty()) {
         Text(
-            text = title,
+            text = episodeLine,
             style = MaterialTheme.typography.bodySmall,
             color = NuvioTheme.extendedColors.textSecondary,
             maxLines = 1,

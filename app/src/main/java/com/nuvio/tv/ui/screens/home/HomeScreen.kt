@@ -79,6 +79,7 @@ private const val HOME_STABLE_GATE_TIMEOUT_MS = 5_000L
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     onNavigateToDetail: (String, String, String) -> Unit,
+    onPlayFromHome: (String, String, String) -> Unit = onNavigateToDetail,
     onContinueWatchingClick: (ContinueWatchingItem) -> Unit = { item ->
         onNavigateToDetail(
             when (item) {
@@ -159,6 +160,7 @@ fun HomeScreen(
     }
 
     val onNavigateToDetailStable = remember(onNavigateToDetail) { onNavigateToDetail }
+    val onPlayFromHomeStable = remember(onPlayFromHome) { onPlayFromHome }
     val onContinueWatchingClickStable = remember(onContinueWatchingClick) { onContinueWatchingClick }
     val onContinueWatchingStartFromBeginningStable = remember(onContinueWatchingStartFromBeginning) { onContinueWatchingStartFromBeginning }
     val onContinueWatchingPlayManuallyStable = remember(onContinueWatchingPlayManually) { onContinueWatchingPlayManually }
@@ -398,6 +400,7 @@ fun HomeScreen(
                                 viewModel = viewModel,
                                 uiState = uiState,
                                 onNavigateToDetail = onNavigateToDetailStable,
+                                onPlayFromHome = onPlayFromHomeStable,
                                 onContinueWatchingClick = onContinueWatchingClickStable,
                                 onContinueWatchingStartFromBeginning = onContinueWatchingStartFromBeginningStable,
                                 onContinueWatchingPlayManually = onContinueWatchingPlayManuallyStable,
@@ -632,6 +635,7 @@ private fun ModernHomeRoute(
     viewModel: HomeViewModel,
     uiState: HomeUiState,
     onNavigateToDetail: (String, String, String) -> Unit,
+    onPlayFromHome: (String, String, String) -> Unit,
     onContinueWatchingClick: (ContinueWatchingItem) -> Unit,
     onContinueWatchingStartFromBeginning: (ContinueWatchingItem) -> Unit,
     onContinueWatchingPlayManually: (ContinueWatchingItem) -> Unit,
@@ -686,6 +690,7 @@ private fun ModernHomeRoute(
         trailerPreviewUrls = viewModel.trailerPreviewUrls,
         trailerPreviewAudioUrls = viewModel.trailerPreviewAudioUrls,
         onNavigateToDetail = onNavigateToDetail,
+        onPlayFromHome = onPlayFromHome,
         onContinueWatchingClick = onContinueWatchingClick,
         onContinueWatchingStartFromBeginning = onContinueWatchingStartFromBeginning,
         onContinueWatchingPlayManually = onContinueWatchingPlayManually,

@@ -36,10 +36,14 @@ internal fun isTopTenRowTitle(title: String?): Boolean =
 /** Part du chiffre laissée visible avant que l'affiche ne le recouvre. */
 private const val RANK_VISIBLE_FRACTION = 0.8f
 
-private val RankFill = Color(0xFF0B0E14)
-private val RankOutline = Brush.verticalGradient(
-    listOf(Color(0xFFE6E9EF), Color(0xFF8A919C))
+// 666TV : chiffres couleur sang, contour rouge vif et halo.
+private val RankFill = Brush.verticalGradient(
+    listOf(Color(0xFFA10614), Color(0xFF5A000A))
 )
+private val RankOutline = Brush.verticalGradient(
+    listOf(Color(0xFFFF3A45), Color(0xFFC3121F))
+)
+private val RankGlow = Color(0x8CC3121F)
 
 private fun rankFontHeight(cardHeight: Dp): Dp = cardHeight * 0.88f
 
@@ -76,7 +80,7 @@ internal fun TopTenRankedItem(
             maxLines = 1
         )
     }
-    val strokePx = with(density) { 2.5.dp.toPx() }
+    val strokePx = with(density) { 3.dp.toPx() }
     val offset = topTenRankOffset(rank, cardHeight)
     val numberWidth = with(density) { layout.size.width.toDp() }
 
@@ -88,7 +92,14 @@ internal fun TopTenRankedItem(
         ) {
             // Base du chiffre posée sur le bas de l'affiche.
             val topLeft = Offset(0f, size.height - layout.firstBaseline)
-            drawText(layout, color = RankFill, topLeft = topLeft)
+            // Halo : contour épais et transparent sous le chiffre.
+            drawText(
+                textLayoutResult = layout,
+                color = RankGlow,
+                topLeft = topLeft,
+                drawStyle = Stroke(width = strokePx * 5f)
+            )
+            drawText(textLayoutResult = layout, brush = RankFill, topLeft = topLeft)
             drawText(
                 textLayoutResult = layout,
                 brush = RankOutline,

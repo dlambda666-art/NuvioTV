@@ -716,6 +716,8 @@ internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
         val computedHomeRows = buildList {
             // 666TV : « À venir » en tête de l'accueil.
             calendarUpcomingRow?.let { add(HomeRow.Catalog(it)) }
+            // 666TV : « Top 10 VF de la semaine » (sorties vidéo uniquement, jamais de CAM).
+            topTenVfRow?.let { add(HomeRow.Catalog(it)) }
             val displayRowsByKey = displayRows.associateBy { it.legacyKey() }
             // Build a lookup of placeholder descriptors by key for lazy catalogs
             val placeholdersByKey = synchronized(catalogStateLock) {
