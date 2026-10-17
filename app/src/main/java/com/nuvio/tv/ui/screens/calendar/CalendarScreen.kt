@@ -94,6 +94,21 @@ fun CalendarScreen(
             }
         }
 
+        // 666TV : prochains UFC numérotés.
+        if (state.ufc.isNotEmpty()) {
+            item(key = "ufc_title") { SectionTitle("🥊 Prochains UFC numérotés") }
+            items(state.ufc, key = { "ufc_" + it.name }) { ev ->
+                val local = ev.start.atZone(zone)
+                Text(
+                    text = "${ev.name}  —  ${UFC_DAY_FORMAT.format(local).replaceFirstChar { it.uppercase() }}" +
+                        if (local.hour == 0 && local.minute == 0) "" else ", ${TIME_FORMAT.format(local)}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = NuvioTheme.colors.TextPrimary,
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
+            }
+        }
+
         if (!state.isLoading && state.recent.isEmpty() && state.upcoming.isEmpty()) {
             item(key = "empty") {
                 Text(
@@ -288,6 +303,7 @@ private fun SmallButton(text: String, onClick: () -> Unit, modifier: Modifier = 
 
 private val DAY_FORMAT = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRENCH)
 private val TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm", Locale.FRENCH)
+private val UFC_DAY_FORMAT = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRENCH)
 
 private fun dayLabel(day: LocalDate, today: LocalDate): String = when (day) {
     today -> "Aujourd'hui"

@@ -22,12 +22,14 @@ data class CalendarUiState(
     val followedCount: Int = 0,
     val recent: List<CalendarEpisode> = emptyList(),
     val upcoming: List<CalendarEpisode> = emptyList(),
-    val vf: Map<String, VfState> = emptyMap()
+    val vf: Map<String, VfState> = emptyMap(),
+    val ufc: List<com.nuvio.tv.core.calendar.UfcEvent> = emptyList()
 )
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
-    private val repository: CalendarRepository
+    private val repository: CalendarRepository,
+    private val ufcRepository: com.nuvio.tv.core.calendar.UfcScheduleRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CalendarUiState())
@@ -53,6 +55,10 @@ class CalendarViewModel @Inject constructor(
 
     private fun load(force: Boolean) {
         loadJob?.cancel()
+        viewModelScope.launch {
+            val ufc = runCatching { ufcRepository.upcomingNumbered() }.getOrDefault(emptyList())
+            _state.update { it.copy(ufc = ufc) }
+        }
         loadJob = viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             var episodes = runCatching { repository.episodes(force = force) }.getOrDefault(emptyList())
