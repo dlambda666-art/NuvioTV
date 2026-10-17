@@ -3,36 +3,40 @@ package com.nuvio.tv.ui.screens.home
 import com.nuvio.tv.BuildConfig
 import com.nuvio.tv.R
 import com.nuvio.tv.domain.model.Collection
-import java.text.Normalizer
 
 /**
- * 666TV : images de tuiles intégrées à l'appli. Elles remplacent l'image de couverture
- * des tuiles reconnues par leur nom, sans dépendre d'un lien internet.
+ * 666TV : images de tuiles intégrées à l'appli. Chaque tuile est reconnue par le lien de
+ * son image actuelle et reçoit l'image embarquée : plus de dépendance à internet.
  * (Affichage seulement : les réglages des collections ne sont pas modifiés.)
  */
-private data class BundledTile(val keywords: List<String>, val coverRes: Int)
+private data class BundledArt(
+    /** Morceau unique du lien d'image d'origine (couverture). */
+    val coverUrlKey: String,
+    val coverRes: Int? = null,
+    val focusGifRes: Int? = null,
+    val titleLogoRes: Int? = null
+)
 
-private val BUNDLED_TILES = listOf(
-    BundledTile(listOf("pop corn", "popcorn", "nouveaute"), R.drawable.tile_popcorn_666),
-    BundledTile(listOf("coming soon", "bientot", "prochainement", "a venir"), R.drawable.tile_coming_soon_666)
+private val BUNDLED_ART = listOf(
+    BundledArt("PrRXbjxT", coverRes = R.drawable.tile_horreur_666),
+    BundledArt("FKYdvQR5", coverRes = R.drawable.tile_frankenstream_666),
+    BundledArt("g0hvcfM4", coverRes = R.drawable.tile_popcorn_666),
+    BundledArt("cLGKrgcd", coverRes = R.drawable.tile_coming_soon_666)
 )
 
 private fun resUri(res: Int) = "android.resource://${BuildConfig.APPLICATION_ID}/$res"
-
-private fun normalize(text: String): String =
-    Normalizer.normalize(text, Normalizer.Form.NFD)
-        .replace(Regex("\\p{M}+"), "")
-        .lowercase()
-        .replace(Regex("\\s+"), " ")
-        .trim()
 
 internal fun applyBundled666Art(collections: List<Collection>): List<Collection> =
     collections.map { collection ->
         collection.copy(
             folders = collection.folders.map { folder ->
-                val name = normalize(folder.title)
-                val tile = BUNDLED_TILES.firstOrNull { tile -> tile.keywords.any { name.contains(it) } }
-                if (tile == null) folder else folder.copy(coverImageUrl = resUri(tile.coverRes))
+                val cover = folder.coverImageUrl.orEmpty()
+                val art = BUNDLED_ART.firstOrNull { cover.contains(it.coverUrlKey) }
+                if (art == null) folder else folder.copy(
+                    coverImageUrl = art.coverRes?.let(::resUri) ?: folder.coverImageUrl,
+                    focusGifUrl = art.focusGifRes?.let(::resUri) ?: folder.focusGifUrl,
+                    titleLogoUrl = art.titleLogoRes?.let(::resUri) ?: folder.titleLogoUrl
+                )
             }
         )
     }
