@@ -466,6 +466,12 @@ fun HomeScreen(
             isWatched = movieWatchedStatus[statusKey] == true,
             isWatchedPending = statusKey in uiState.movieWatchedPending,
             onDismiss = { posterOptionsTarget = null },
+            onPlay = if (isMovie || isSeries) {
+                {
+                    onPlayFromHome(item.id, item.apiType, selectedPoster.addonBaseUrl)
+                    posterOptionsTarget = null
+                }
+            } else null,
             onDetails = {
                 onNavigateToDetail(item.id, item.apiType, selectedPoster.addonBaseUrl)
                 posterOptionsTarget = null
@@ -727,6 +733,7 @@ private fun HomePosterOptionsDialog(
     isWatched: Boolean,
     isWatchedPending: Boolean,
     onDismiss: () -> Unit,
+    onPlay: (() -> Unit)? = null,
     onDetails: () -> Unit,
     onToggleLibrary: () -> Unit,
     onToggleWatched: () -> Unit
@@ -742,11 +749,28 @@ private fun HomePosterOptionsDialog(
         title = title,
         subtitle = stringResource(R.string.home_poster_dialog_subtitle)
     ) {
+        // 666TV : « ▶ Lecture VF » en premier, accessible depuis n'importe quelle affiche (appui long sur OK).
+        if (onPlay != null) {
+            Button(
+                onClick = onPlay,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(primaryFocusRequester),
+                colors = ButtonDefaults.colors(
+                    containerColor = androidx.compose.ui.graphics.Color(0xFF8A0010),
+                    contentColor = androidx.compose.ui.graphics.Color(0xFFF2EFE9),
+                    focusedContainerColor = androidx.compose.ui.graphics.Color(0xFFC3121F),
+                    focusedContentColor = androidx.compose.ui.graphics.Color.White
+                )
+            ) {
+                Text("▶  Lecture VF")
+            }
+        }
         Button(
             onClick = onDetails,
             modifier = Modifier
                 .fillMaxWidth()
-                .focusRequester(primaryFocusRequester),
+                .then(if (onPlay == null) Modifier.focusRequester(primaryFocusRequester) else Modifier),
             colors = ButtonDefaults.colors(
                 containerColor = NuvioTheme.colors.BackgroundCard,
                 contentColor = NuvioTheme.colors.TextPrimary

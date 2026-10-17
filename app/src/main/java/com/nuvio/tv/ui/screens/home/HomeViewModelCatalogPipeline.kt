@@ -51,7 +51,7 @@ internal fun HomeViewModel.observeCollectionsPipeline() {
             .collectLatest { collections ->
                 // Deduplicate by collection ID (keep last occurrence) to prevent
                 // duplicate LazyColumn keys when users import overlapping collections.
-                collectionsCache = collections.associateBy { it.id }.values.toList()
+                collectionsCache = applyBundled666Art(collections.associateBy { it.id }.values.toList())
                 rebuildCatalogOrder(addonsCache)
                 scheduleUpdateCatalogRows()
             }

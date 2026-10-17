@@ -1090,9 +1090,20 @@ fun ModernHomeContent(
             // première rangée ; la touche Lecture de la télécommande fait la même chose partout.
             val latestOnPlayFromHome by rememberUpdatedState(onPlayFromHome)
             val latestOnContinueWatchingClick by rememberUpdatedState(onContinueWatchingClick)
+            // L'élément ciblé se lit dans la rangée active (le « Continuer à regarder » ne
+            // remplit pas la sélection de catalogue, d'où le bouton qui n'apparaissait pas).
+            val latestCarouselRows by rememberUpdatedState(carouselRows)
+            val currentHeroPlayPayload: () -> ModernPayload? = remember {
+                {
+                    val key = activeRowKey.value
+                    latestCarouselRows.list.firstOrNull { it.key == key }
+                        ?.items?.list?.getOrNull(activeItemIndex.intValue)?.payload
+                        ?: focusedCatalogSelection.value?.payload
+                }
+            }
             val playFocusedSelection: () -> Boolean = remember {
                 {
-                    when (val payload = focusedCatalogSelection.value?.payload) {
+                    when (val payload = currentHeroPlayPayload()) {
                         is ModernPayload.Catalog -> if (payload.itemId.startsWith("__placeholder_")) false else {
                             latestOnPlayFromHome(payload.itemId, payload.itemType, payload.addonBaseUrl)
                             true
@@ -1105,7 +1116,7 @@ fun ModernHomeContent(
                     }
                 }
             }
-            val heroPlayPayload = focusedCatalogSelection.value?.payload
+            val heroPlayPayload = currentHeroPlayPayload()
             val heroPlayVisible = ((heroPlayPayload is ModernPayload.Catalog && !heroPlayPayload.itemId.startsWith("__placeholder_")) ||
                 heroPlayPayload is ModernPayload.ContinueWatching) &&
                 !(heroSceneStateLambda().fullScreenBackdrop && shouldPlayTrailerLambda() && heroTrailerRenderedLambda())

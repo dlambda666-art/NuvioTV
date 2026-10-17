@@ -149,15 +149,6 @@ internal fun ModernSidebarBlurPanel(
             )
             .padding(horizontal = NuvioTheme.spacing.md, vertical = NuvioTheme.spacing.lg - NuvioTheme.spacing.xxs)
     ) {
-        // 666TV : le bouclier ensanglanté en haut du menu.
-        androidx.compose.foundation.Image(
-            painter = androidx.compose.ui.res.painterResource(R.drawable.sidebar_shield_666),
-            contentDescription = null,
-            alpha = sidebarLabelAlpha,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .size(64.dp)
-        )
         if (showProfileSelector && activeProfileName.isNotEmpty()) {
             Box(
                 modifier = Modifier
