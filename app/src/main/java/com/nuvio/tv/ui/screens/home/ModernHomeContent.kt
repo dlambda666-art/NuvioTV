@@ -734,7 +734,8 @@ fun ModernHomeContent(
                     // 666TV : fond fixe sur « Continuer à regarder », « Tes séries » et les collections.
                     val fixed666Backdrop = activeCarouselItem?.payload is ModernPayload.ContinueWatching ||
                         activeCarouselItem?.payload is ModernPayload.CollectionFolder ||
-                        activeRowKeyVal?.startsWith(CALENDAR_ROW_ADDON_ID + "_") == true
+                        (activeRowKeyVal?.startsWith(CALENDAR_ROW_ADDON_ID + "_") == true ||
+                            activeRowKeyVal?.startsWith(TOP_TEN_VF_ROW_ADDON_ID + "_") == true)
                     val heroBackdrop = if (fixed666Backdrop) COLLECTIONS_BACKDROP_666 else firstNonBlank(
                         resolvedHero?.backdrop,
                         resolvedHero?.imageUrl,
