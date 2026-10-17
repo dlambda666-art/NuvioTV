@@ -138,7 +138,15 @@ jobs:
             --tests 'com.nuvio.tv.ui.screens.player.SourceFailoverRulesTest' \
             --tests 'com.nuvio.tv.domain.model.ThemeAccessTest' \
             :app:assembleFullRelease \
-            --stacktrace
+            --stacktrace 2>&1 | tee build.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            # Erreurs de compilation remontées en annotations (lisibles sans les journaux).
+            grep -E '^e: |FAILED|error:|What went wrong' -A2 build.log | head -40 | while IFS= read -r line; do
+              echo "::error::${line}"
+            done
+          fi
+          exit $status
 
       - name: Verify generated APKs
         shell: bash
