@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
@@ -1107,8 +1108,12 @@ fun ModernHomeContent(
             val heroPlayVisible = ((heroPlayPayload is ModernPayload.Catalog && !heroPlayPayload.itemId.startsWith("__placeholder_")) ||
                 heroPlayPayload is ModernPayload.ContinueWatching) &&
                 !(heroSceneStateLambda().fullScreenBackdrop && shouldPlayTrailerLambda() && heroTrailerRenderedLambda())
+            val heroPlayFocusRequester = remember { FocusRequester() }
+            val heroPlayVisibleState = rememberUpdatedState(heroPlayVisible)
             Hero666PlayButton(
                 visible = heroPlayVisible,
+                focusRequester = heroPlayFocusRequester,
+                onMoveDown = { runCatching { contentFocusRequester.requestFocus() } },
                 label = if (heroPlayPayload is ModernPayload.ContinueWatching) "Reprendre en VF" else "Lecture VF",
                 onClick = { playFocusedSelection() },
                 modifier = Modifier
@@ -1238,7 +1243,17 @@ fun ModernHomeContent(
                     .onPreviewKeyEvent { event ->
                         if (event.type == KeyEventType.KeyDown &&
                             (event.key == Key.MediaPlay || event.key == Key.MediaPlayPause)
-                        ) playFocusedSelection() else false
+                        ) return@onPreviewKeyEvent playFocusedSelection()
+                        // 666TV : « haut » depuis la première rangée monte sur le bouton Lecture VF.
+                        if (event.type == KeyEventType.KeyDown &&
+                            event.key == Key.DirectionUp &&
+                            heroPlayVisibleState.value &&
+                            activeRowKey.value != null &&
+                            activeRowKey.value == carouselRows.list.firstOrNull()?.key
+                        ) {
+                            return@onPreviewKeyEvent runCatching { heroPlayFocusRequester.requestFocus() }.isSuccess
+                        }
+                        false
                     }
             )
     }
@@ -1309,6 +1324,8 @@ private val HERO_666_PLAY_BUTTON_SPACE = 52.dp
 @Composable
 private fun Hero666PlayButton(
     visible: Boolean,
+    focusRequester: FocusRequester,
+    onMoveDown: () -> Unit,
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -1319,7 +1336,15 @@ private fun Hero666PlayButton(
     val bloodDark = androidx.compose.ui.graphics.Color(0xFF8A0010)
     androidx.tv.material3.Surface(
         onClick = onClick,
-        modifier = modifier.height(42.dp),
+        modifier = modifier
+            .height(42.dp)
+            .focusRequester(focusRequester)
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
+                    onMoveDown()
+                    true
+                } else false
+            },
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(shape),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
             containerColor = bloodDark.copy(alpha = 0.85f),

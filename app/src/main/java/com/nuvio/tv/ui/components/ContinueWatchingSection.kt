@@ -802,8 +802,8 @@ fun ContinueWatchingCard(
                 }
 
                 // Remaining time badge - hide progress labels in poster style (only show next-up/new episode badges)
-                val showBadgeInPoster = progress == null
-                if (!isPosterStyle || showBadgeInPoster) {
+                // 666TV : « Il reste X min » aussi sur les affiches.
+                if (true) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
