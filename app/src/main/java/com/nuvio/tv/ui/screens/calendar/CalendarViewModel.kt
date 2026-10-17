@@ -42,7 +42,10 @@ class CalendarViewModel @Inject constructor(
         load(force = false)
     }
 
-    fun refresh() = load(force = true)
+    fun refresh() {
+        repository.clearVfNegativeCache()
+        load(force = true)
+    }
 
     fun toggleBell(seriesId: String) {
         viewModelScope.launch { repository.toggleBell(seriesId) }

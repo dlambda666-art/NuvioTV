@@ -44,7 +44,9 @@ data class CalendarEpisode(
     val episode: Int,
     val title: String?,
     val airInstant: Instant,
-    val addonBaseUrl: String?
+    val addonBaseUrl: String?,
+    /** Identifiant de l'épisode chez aiometadata (tt…:saison:épisode), comme à la lecture. */
+    val videoId: String? = null
 ) {
     val key: String get() = "$seriesId:$season:$episode"
     val code: String get() = "S%02dE%02d".format(season, episode)
@@ -174,12 +176,16 @@ class CalendarRepository @Inject constructor(
                 episode = episode,
                 title = video.title.takeIf { it.isNotBlank() && !it.equals("Episode $episode", ignoreCase = true) },
                 airInstant = instant,
-                addonBaseUrl = seed.addonBaseUrl
+                addonBaseUrl = seed.addonBaseUrl,
+                videoId = video.id.takeIf { it.isNotBlank() }
             )
         }
         episodeCache[seed.id] = CachedEpisodes(System.currentTimeMillis(), episodes)
         return episodes
     }
+
+    /** « Actualiser » : on revérifie tout de suite les épisodes marqués « pas encore de VF ». */
+    fun clearVfNegativeCache() = vfNegativeCache.clear()
 
     /** VF déjà trouvée (mémorisée) pour cet épisode ? */
     suspend fun knownVf(): Set<String> = store().data.first()[vfFoundKey].orEmpty()
@@ -209,15 +215,25 @@ class CalendarRepository @Inject constructor(
             .map { it.second }
         if (checkers.isEmpty()) return@withContext VfState.NO_CHECKER
         val found = vfSemaphore.withPermit {
-            val tmdbId = runCatching { tmdbService.ensureTmdbId(episode.seriesId, "series") }.getOrNull()
-                ?: return@withPermit false
+            // Même demande qu'à l'ouverture de l'épisode : id TMDB, sinon id IMDb (WWE, UFC…),
+            // et la même numérotation saison/épisode.
+            val videoId = episode.videoId ?: "${episode.seriesId}:${episode.season}:${episode.episode}"
+            val tmdbId = runCatching { tmdbService.ensureTmdbId(videoId, "series") }.getOrNull()
+            val imdbBase = videoId.substringBefore(":").takeIf { Regex("^tt\\d+$", RegexOption.IGNORE_CASE).matches(it) }
+            val requestId = tmdbId ?: imdbBase ?: return@withPermit false
+            val (pluginSeason, pluginEpisode) = com.nuvio.tv.core.plugin.resolvePluginSeasonEpisode(
+                videoId = videoId,
+                season = episode.season,
+                episode = episode.episode
+            )
             checkers.any { scraper ->
                 runCatching {
                     val results = withTimeoutOrNull(30_000) {
-                        pluginManager.executeScraper(scraper, tmdbId, "tv", episode.season, episode.episode)
+                        pluginManager.executeScraper(scraper, requestId, "tv", pluginSeason, pluginEpisode)
                     }.orEmpty()
                     results.any { result ->
-                        result.url.isNotBlank() && result.name?.contains("diagnostic", ignoreCase = true) != true
+                        (result.url.isNotBlank() || !result.infoHash.isNullOrBlank()) &&
+                            result.name?.contains("diagnostic", ignoreCase = true) != true
                     }
                 }.onFailure { Log.d(TAG, "VF check ${scraper.id} failed for ${episode.key}: ${it.message}") }
                     .getOrDefault(false)
@@ -281,6 +297,6 @@ class CalendarRepository @Inject constructor(
         const val MAX_SERIES = 120
         const val MAX_REMEMBERED = 400
         const val META_TTL_MS = 6L * 60 * 60 * 1000
-        const val VF_NEGATIVE_TTL_MS = 3L * 60 * 60 * 1000
+        const val VF_NEGATIVE_TTL_MS = 30L * 60 * 1000
     }
 }
