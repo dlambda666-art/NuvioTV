@@ -1239,8 +1239,9 @@ open class MainActivity : ComponentActivity() {
                             startupLoadingState.complete = true
                         }
                     }
+                    // 666TV : l'écran d'ouverture animé est toujours affiché.
                     val showSplash = shouldShowStartupSplash(
-                        enabled = startupSplashEnabled,
+                        enabled = true || startupSplashEnabled,
                         complete = startupLoadingState.complete,
                         destination = startupDestination
                     )
