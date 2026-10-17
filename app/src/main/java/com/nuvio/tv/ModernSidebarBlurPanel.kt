@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -148,6 +149,15 @@ internal fun ModernSidebarBlurPanel(
             )
             .padding(horizontal = NuvioTheme.spacing.md, vertical = NuvioTheme.spacing.lg - NuvioTheme.spacing.xxs)
     ) {
+        // 666TV : le bouclier ensanglanté en haut du menu.
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(R.drawable.sidebar_shield_666),
+            contentDescription = null,
+            alpha = sidebarLabelAlpha,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .size(64.dp)
+        )
         if (showProfileSelector && activeProfileName.isNotEmpty()) {
             Box(
                 modifier = Modifier
@@ -225,6 +235,9 @@ internal fun ModernSidebarBlurPanel(
     }
 }
 
+private val Sidebar666Blood = Color(0xFFA10614)
+private val Sidebar666BloodBright = Color(0xFFC3121F)
+
 @Composable
 private fun SidebarNavigationItem(
     label: String,
@@ -242,11 +255,12 @@ private fun SidebarNavigationItem(
     val colors = NuvioTheme.colors
     val shape = RoundedCornerShape(NuvioRadii.tokens.full)
     val palette = NuvioTheme.palette
-    val accentColor = palette.secondary
+    // 666TV : élément actif rouge sang, rouge vif avec halo quand il a le focus.
+    val accentColor = Color(0xFFF2EFE9)
     val backgroundColorTarget = when {
-        isFocused && selected -> accentColor.copy(alpha = 0.28f)
-        isFocused -> Color.White.copy(alpha = 0.12f)
-        selected -> accentColor.copy(alpha = 0.15f)
+        isFocused && selected -> Sidebar666BloodBright
+        isFocused -> Sidebar666BloodBright.copy(alpha = 0.55f)
+        selected -> Sidebar666Blood
         else -> Color.Transparent
     }
     val animatedBackgroundColor by animateColorAsState(
@@ -268,7 +282,7 @@ private fun SidebarNavigationItem(
     )
     val contentColor = if (selected && !isFocused) contentColorTarget else animatedContentColor
 
-    val iconBrush = if (selected) palette.accentBrush() else null
+    val iconBrush: Brush? = null
     val iconTintTarget = when {
         selected -> Color.White
         isFocused -> colors.TextPrimary
@@ -298,7 +312,15 @@ private fun SidebarNavigationItem(
                 isFocused = it.hasFocus
                 onFocusChanged(it.hasFocus)
             }
-            .focusProperties { canFocus = focusEnabled },
+            .focusProperties { canFocus = focusEnabled }
+            .then(
+                if (isFocused || selected) Modifier.shadow(
+                    elevation = if (isFocused) 18.dp else 10.dp,
+                    shape = shape,
+                    ambientColor = Sidebar666BloodBright,
+                    spotColor = Sidebar666BloodBright
+                ) else Modifier
+            ),
         colors = CardDefaults.colors(
             containerColor = backgroundColor,
             focusedContainerColor = backgroundColor,

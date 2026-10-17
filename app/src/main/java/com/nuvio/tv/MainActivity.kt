@@ -2296,6 +2296,8 @@ private fun CollapsedSidebarPill(
                     }
                 )
                 .background(brush = pillBackgroundBrush, shape = pillShape)
+                // 666TV : liseré rouge sang autour de la pastille du menu replié.
+                .border(width = 1.5.dp, color = Blood666Bright.copy(alpha = 0.85f), shape = pillShape)
         ) {
             Row(
                 modifier = Modifier
