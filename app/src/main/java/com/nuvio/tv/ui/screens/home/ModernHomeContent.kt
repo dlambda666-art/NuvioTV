@@ -1269,8 +1269,10 @@ fun ModernHomeContent(
                         false
                     }
             )
+        com.nuvio.tv.ui.components.Dust666Overlay(Modifier.fillMaxSize())
     }
 
+    val dustScope = rememberCoroutineScope()
     val selectedOptionsItem = optionsItem.value
     if (selectedOptionsItem != null) {
         ContinueWatchingOptionsDialog(
@@ -1282,13 +1284,16 @@ fun ModernHomeContent(
                 pendingRowFocusKey.value = if (targetIndex != null) "continue_watching" else null
                 pendingRowFocusIndex.value = targetIndex
                 pendingRowFocusNonce.intValue++
-                onRemoveContinueWatching(
-                    selectedOptionsItem.contentId(),
-                    selectedOptionsItem.season(),
-                    selectedOptionsItem.episode(),
-                    selectedOptionsItem is ContinueWatchingItem.NextUp
-                )
                 optionsItem.value = null
+                // 666TV : la carte part en poussière vers le haut avant de disparaître.
+                com.nuvio.tv.ui.components.Dust666.dissolve(dustScope, selectedOptionsItem.contentId()) {
+                    onRemoveContinueWatching(
+                        selectedOptionsItem.contentId(),
+                        selectedOptionsItem.season(),
+                        selectedOptionsItem.episode(),
+                        selectedOptionsItem is ContinueWatchingItem.NextUp
+                    )
+                }
             },
             onDetails = {
                 onNavigateToDetail(selectedOptionsItem.contentId(), selectedOptionsItem.contentType(), "")

@@ -2,6 +2,7 @@
 
 package com.nuvio.tv.ui.screens.home
 
+import com.nuvio.tv.ui.components.dust666Source
 import com.nuvio.tv.ui.theme.NuvioTheme
 
 import android.view.KeyEvent as AndroidKeyEvent
@@ -203,6 +204,7 @@ private fun ModernContinueWatchingRowItem(
         cornerRadius = continueWatchingCornerRadius,
         isFocused = isCardFocused,
         modifier = modifier
+            .dust666Source(item.contentId())
             .focusRequester(requester)
             .onFocusChanged {
                 isCardFocused = it.isFocused
