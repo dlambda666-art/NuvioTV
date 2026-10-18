@@ -41,14 +41,23 @@ class SeekThumbnailProvider {
                 cache.get(bucket)?.let { return@withLock it }
                 val mmr = retriever ?: open(url, headers) ?: return@withLock null
                 val timeUs = (bucket * BUCKET_MS + BUCKET_MS / 2) * 1000L
-                val frame = runCatching {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                        mmr.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, WIDTH, HEIGHT)
-                    } else {
-                        mmr.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-                            ?.let { Bitmap.createScaledBitmap(it, WIDTH, HEIGHT, true) }
+                var frame = grab(mmr, timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                // 666TV : image toute noire (souvent en 4K HDR / Dolby Vision, que la Shield ne sait
+                // pas « photographier ») : on réessaie un peu plus loin, puis on n'affiche plus rien.
+                if (frame != null && isBlack(frame)) {
+                    frame = grab(mmr, timeUs + 4_000_000L, MediaMetadataRetriever.OPTION_NEXT_SYNC)
+                        ?.takeUnless { isBlack(it) }
+                    if (frame == null) {
+                        blackCount++
+                        if (blackCount >= 2) {
+                            Log.d(TAG, "black frames only: thumbnails disabled for this stream")
+                            failedUrl = url
+                            cache.evictAll()
+                        }
+                        return@withLock null
                     }
-                }.onFailure { Log.d(TAG, "frame failed at ${timeUs / 1000}ms: ${it.message}") }.getOrNull()
+                }
+                if (frame != null) blackCount = 0
                 if (frame != null && isStuckFrame(frame, bucket)) {
                     // Le fichier ne se laisse pas parcourir (enregistrement TV, MKV sans index…) :
                     // on renvoie toujours la même image. Mieux vaut ne rien montrer qu'une image fausse.
@@ -60,6 +69,22 @@ class SeekThumbnailProvider {
                 frame?.also { cache.put(bucket, it) }
             }
         }
+    }
+
+    private var blackCount = 0
+
+    private fun grab(mmr: MediaMetadataRetriever, timeUs: Long, option: Int): Bitmap? = runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            mmr.getScaledFrameAtTime(timeUs, option, WIDTH, HEIGHT)
+        } else {
+            mmr.getFrameAtTime(timeUs, option)?.let { Bitmap.createScaledBitmap(it, WIDTH, HEIGHT, true) }
+        }
+    }.onFailure { Log.d(TAG, "frame failed at ${timeUs / 1000}ms: ${it.message}") }.getOrNull()
+
+    /** Vrai si l'image est (presque) entièrement noire. */
+    private fun isBlack(bitmap: Bitmap): Boolean {
+        val sig = runCatching { signature(bitmap) }.getOrNull() ?: return false
+        return sig.average() < 10.0 && (sig.maxOrNull() ?: 0L) < 28L
     }
 
     private var firstSignature: LongArray? = null
@@ -117,6 +142,7 @@ class SeekThumbnailProvider {
         firstSignature = null
         firstSignatureBucket = -1
         stuckCount = 0
+        blackCount = 0
     }
 
     suspend fun release() = withContext(dispatcher) {
