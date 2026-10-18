@@ -51,9 +51,9 @@ private data class LiveTvApp(
     val storeQuery: String
 )
 
+// 666TV : un seul raccourci, Orange TV (toutes les chaînes de l'abonnement, RTLplay et Auvio inclus).
 private val LIVE_TV_APPS = listOf(
-    LiveTvApp("RTLplay", "RTL-TVI · Club RTL · Plug RTL", listOf("rtlplay", "rtl play"), "RTLplay"),
-    LiveTvApp("Auvio", "La Une · Tipik · La Trois", listOf("auvio"), "RTBF Auvio")
+    LiveTvApp("Orange TV", "Toutes tes chaînes · RTLplay et Auvio inclus", listOf("orange tv", "orange"), "Orange TV Belgium")
 )
 
 private data class InstalledApp(val packageName: String, val banner: Drawable?)
@@ -102,7 +102,7 @@ fun LiveTvScreen() {
             color = NuvioTheme.colors.TextPrimary
         )
         Text(
-            text = "Les chaînes belges en direct et en replay, dans leurs applis officielles.",
+            text = "Tes chaînes en direct et en replay, dans ton appli Orange TV.",
             style = MaterialTheme.typography.bodySmall,
             color = NuvioTheme.colors.TextSecondary
         )
