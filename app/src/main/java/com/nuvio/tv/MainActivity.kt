@@ -1244,6 +1244,18 @@ open class MainActivity : ComponentActivity() {
                                     delay(6L * 60L * 60L * 1000L)
                                 }
                             }
+                            // 666TV : double glas quand la bannière apparaît (jamais pendant la lecture).
+                            val bellContext = LocalContext.current
+                            LaunchedEffect(calendarVfAnnouncements) {
+                                if (calendarVfAnnouncements.isEmpty() || currentRoute?.startsWith("player/") == true) return@LaunchedEffect
+                                runCatching {
+                                    android.media.MediaPlayer.create(bellContext, R.raw.bell_vf_666)?.apply {
+                                        setVolume(0.8f, 0.8f)
+                                        setOnCompletionListener { it.release() }
+                                        start()
+                                    }
+                                }
+                            }
                             if (calendarVfAnnouncements.isNotEmpty() && currentRoute?.startsWith("player/") != true) {
                                 com.nuvio.tv.ui.screens.calendar.CalendarVfBanner(
                                     episodes = calendarVfAnnouncements,
