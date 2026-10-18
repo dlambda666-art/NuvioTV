@@ -115,7 +115,11 @@ internal fun PlayerRuntimeController.updateAvailableTracks(tracks: Tracks) {
                     }
                     val baseName = format.label ?: langDisplay ?: context.getString(com.nuvio.tv.R.string.player_track_audio_fallback, audioTracks.size + 1)
                     val suffix = listOfNotNull(codecName, channelLayout).joinToString(" ")
-                    val displayName = if (suffix.isNotEmpty()) "$baseName ($suffix)" else baseName
+                    // 666TV (idée de Nuvio Arc) : commentaire et audiodescription signalés, VFQ repérée.
+                    val roleLabel = audioRoleLabel666(format.roleFlags, baseName)
+                    val variantLabel = frenchVariantLabel666(format.language, baseName)
+                    val labelled = listOfNotNull(baseName, variantLabel, roleLabel).joinToString(" · ")
+                    val displayName = if (suffix.isNotEmpty()) "$labelled ($suffix)" else labelled
 
                     audioTracks.add(
                         TrackInfo(
@@ -1937,5 +1941,30 @@ internal fun PlayerRuntimeController.applySubtitlePreferences(preferred: String,
         builder.setIgnoredTextSelectionFlags(newFlags)
 
         player.trackSelectionParameters = builder.build()
+    }
+}
+
+
+/** 666TV : « Commentaire » / « Audiodescription » si le fichier marque la piste et que son nom ne le dit pas déjà. */
+internal fun audioRoleLabel666(roleFlags: Int, name: String): String? {
+    val lower = name.lowercase()
+    return when {
+        (roleFlags and C.ROLE_FLAG_COMMENTARY) != 0 &&
+            listOf("comment", "coment", "komment").none { lower.contains(it) } -> "Commentaire"
+        (roleFlags and C.ROLE_FLAG_DESCRIBES_VIDEO) != 0 &&
+            listOf("descri", "narrat", " ad", "(ad", "[ad").none { lower.contains(it) } -> "Audiodescription"
+        else -> null
+    }
+}
+
+/** 666TV : VFQ (québécoise) ou VFF (France) quand la langue de la piste le précise et que le nom ne le dit pas. */
+internal fun frenchVariantLabel666(language: String?, name: String): String? {
+    val lang = language?.lowercase()?.replace('_', '-') ?: return null
+    val lower = name.lowercase()
+    if (listOf("vfq", "vff", "vfi", "québ", "queb", "canad", "france").any { lower.contains(it) }) return null
+    return when {
+        lang == "fr-ca" -> "VFQ"
+        lang == "fr-fr" -> "VFF"
+        else -> null
     }
 }
