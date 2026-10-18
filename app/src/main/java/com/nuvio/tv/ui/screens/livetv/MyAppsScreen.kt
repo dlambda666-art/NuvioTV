@@ -28,6 +28,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -53,7 +56,23 @@ private val Green666 = Color(0xFF49DD89)
 private val Blood666 = Color(0xFFC3121F)
 private val BloodHi666 = Color(0xFFFF3A45)
 
-private data class ShieldApp(val label: String, val launch: Intent, val icon: Drawable?, val banner: Drawable?)
+private data class ShieldApp(val label: String, val launch: Intent, val icon: Drawable?, val banner: Drawable?) {
+    val key: String get() = launch.`package` ?: launch.component?.packageName ?: label
+}
+
+private const val ORDER_PREFS = "666tv_mes_applis"
+private fun loadOrder(context: Context): List<String> =
+    context.getSharedPreferences(ORDER_PREFS, Context.MODE_PRIVATE).getString("order", null)
+        ?.split('|')?.filter { it.isNotBlank() } ?: emptyList()
+private fun saveOrder(context: Context, keys: List<String>) {
+    context.getSharedPreferences(ORDER_PREFS, Context.MODE_PRIVATE).edit().putString("order", keys.joinToString("|")).apply()
+}
+/** Ordre choisi par l'utilisateur d'abord, puis les nouvelles applis par ordre alphabétique. */
+private fun applyOrder(apps: List<ShieldApp>, order: List<String>): List<ShieldApp> {
+    val byKey = apps.associateBy { it.key }
+    val ordered = order.mapNotNull { byKey[it] }
+    return ordered + apps.filter { it.key !in order }
+}
 
 /** Plaques d'horreur (pierre, bois, rouille, écailles) posées sous chaque appli. */
 private val PLATES = listOf(
@@ -103,7 +122,10 @@ private fun loadApps(context: Context): List<ShieldApp> {
 fun MyAppsScreen() {
     val context = LocalContext.current
     var apps by remember { mutableStateOf<List<ShieldApp>?>(null) }
-    LaunchedEffect(Unit) { apps = withContext(Dispatchers.IO) { loadApps(context) } }
+    LaunchedEffect(Unit) { apps = withContext(Dispatchers.IO) { applyOrder(loadApps(context), loadOrder(context)) } }
+    // Appui long sur OK : l'appli « se décolle » et se déplace avec les flèches ; OK ou Retour pour la poser.
+    var movingKey by remember { mutableStateOf<String?>(null) }
+    val tileFocus = remember { mutableMapOf<String, FocusRequester>() }
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(apps) { if (!apps.isNullOrEmpty()) runCatching { firstFocus.requestFocus() } }
 
@@ -129,7 +151,8 @@ fun MyAppsScreen() {
             color = Blood666
         )
         Text(
-            text = "Toutes les applis de ta Shield, hors raccourcis TV en direct",
+            text = if (movingKey != null) "Déplace l'appli avec les flèches, puis OK pour la poser"
+            else "Toutes les applis de ta Shield · appui long sur OK pour changer l'ordre",
             style = MaterialTheme.typography.bodyMedium,
             color = Color(0xFFC8C3BE)
         )
@@ -141,11 +164,45 @@ fun MyAppsScreen() {
             verticalArrangement = Arrangement.spacedBy(14.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            itemsIndexed(list, key = { _, app -> app.label + app.launch.`package` }) { index, app ->
+            itemsIndexed(list, key = { _, app -> app.key }) { index, app ->
+                val fr = tileFocus.getOrPut(app.key) { FocusRequester() }
+                val moving = movingKey == app.key
+                LaunchedEffect(index, moving) { if (moving) runCatching { fr.requestFocus() } }
                 AppTile(
                     app = app,
                     plateRes = plateFor(index),
-                    modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
+                    moving = moving,
+                    modifier = Modifier
+                        .focusRequester(fr)
+                        .then(if (index == 0) Modifier.focusRequester(firstFocus) else Modifier)
+                        .onPreviewKeyEvent { event ->
+                            if (!moving) return@onPreviewKeyEvent false
+                            if (event.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent true
+                            // Répétitions du OK maintenu (l'appui long qui vient de lancer le déplacement) : ignorées.
+                            if (event.nativeKeyEvent.repeatCount > 0 &&
+                                (event.key == androidx.compose.ui.input.key.Key.DirectionCenter || event.key == androidx.compose.ui.input.key.Key.Enter)
+                            ) return@onPreviewKeyEvent true
+                            val delta = when (event.key) {
+                                androidx.compose.ui.input.key.Key.DirectionLeft -> -1
+                                androidx.compose.ui.input.key.Key.DirectionRight -> 1
+                                androidx.compose.ui.input.key.Key.DirectionUp -> -4
+                                androidx.compose.ui.input.key.Key.DirectionDown -> 4
+                                else -> 0
+                            }
+                            if (delta != 0) {
+                                val target = (index + delta).coerceIn(0, list.lastIndex)
+                                if (target != index) {
+                                    val newList = list.toMutableList().apply { add(target, removeAt(index)) }
+                                    apps = newList
+                                    saveOrder(context, newList.map { it.key })
+                                }
+                                return@onPreviewKeyEvent true
+                            }
+                            // OK, Entrée ou Retour : on pose l'appli.
+                            movingKey = null
+                            true
+                        },
+                    onLongClick = { movingKey = app.key },
                     onClick = {
                         runCatching { context.startActivity(Intent(app.launch).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
                     }
@@ -157,12 +214,13 @@ fun MyAppsScreen() {
 }
 
 @Composable
-private fun AppTile(app: ShieldApp, plateRes: Int, modifier: Modifier, onClick: () -> Unit) {
+private fun AppTile(app: ShieldApp, plateRes: Int, moving: Boolean, modifier: Modifier, onLongClick: () -> Unit, onClick: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(12.dp)
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Surface(
             onClick = onClick,
+            onLongClick = onLongClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
@@ -174,10 +232,10 @@ private fun AppTile(app: ShieldApp, plateRes: Int, modifier: Modifier, onClick: 
             ),
             border = ClickableSurfaceDefaults.border(
                 border = Border.None,
-                focusedBorder = Border(BorderStroke(3.dp, BloodHi666), shape = shape)
+                focusedBorder = Border(BorderStroke(if (moving) 5.dp else 3.dp, if (moving) Green666 else BloodHi666), shape = shape)
             ),
             glow = ClickableSurfaceDefaults.glow(focusedGlow = Glow(elevationColor = Blood666, elevation = 14.dp)),
-            scale = ClickableSurfaceDefaults.scale(focusedScale = 1.06f)
+            scale = ClickableSurfaceDefaults.scale(focusedScale = if (moving) 1.12f else 1.06f)
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Image(

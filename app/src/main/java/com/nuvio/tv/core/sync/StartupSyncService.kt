@@ -577,9 +577,10 @@ class StartupSyncService @Inject constructor(
                 pluginManager.isSyncingFromRemote = true
                 try {
                     val remotePlugins = pluginSyncService.getRemoteRepoUrls().getOrElse { throw it }
+                    // 666TV : la synchro du compte n'efface jamais un plugin installé sur la Shield.
                     pluginManager.reconcileWithRemoteRepoUrls(
                         remotePlugins = remotePlugins,
-                        removeMissingLocal = true
+                        removeMissingLocal = false
                     )
                     Log.d(TAG, "Pulled ${remotePlugins.size} plugin repos from remote for profile $profileId")
                 } catch (e: Exception) {
@@ -675,7 +676,7 @@ class StartupSyncService @Inject constructor(
             val remotePlugins = pluginSyncService.getRemoteRepoUrls().getOrElse { throw it }
             pluginManager.reconcileWithRemoteRepoUrls(
                 remotePlugins = remotePlugins,
-                removeMissingLocal = true
+                removeMissingLocal = false
             )
             Log.d(TAG, "Realtime plugins pull reconciled ${remotePlugins.size} repos for profile $profileId")
         } catch (e: Exception) {
