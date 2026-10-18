@@ -21,7 +21,7 @@ private val BUNDLED_ART = listOf(
     BundledArt("PrRXbjxT", coverRes = R.drawable.tile_horreur_666),
     BundledArt("FKYdvQR5", coverRes = R.drawable.tile_frankenstream_666),
     BundledArt("g0hvcfM4", coverRes = R.drawable.tile_popcorn_666, titleLogoRes = R.drawable.title_nouveaute_vf_666),
-    BundledArt("cLGKrgcd", coverRes = R.drawable.tile_coming_soon_666),
+    BundledArt("cLGKrgcd", coverRes = R.drawable.tile_coming_soon_666, titleLogoRes = R.drawable.title_prochainement_666),
     // Services de streaming : image néon + animation au survol.
     BundledArt("streaming-netflix", coverRes = R.drawable.tile_netflix_666, focusGifRes = R.raw.anim_netflix_666),
     BundledArt("streaming-prime-video", coverRes = R.drawable.tile_prime_666, focusGifRes = R.raw.anim_prime_666),

@@ -220,6 +220,8 @@ interface TmdbApi {
         @Query("with_watch_monetization_types") withWatchMonetizationTypes: String = "flatrate",
         @Query("air_date.gte") airDateGte: String,
         @Query("air_date.lte") airDateLte: String,
+        @Query("first_air_date.gte") firstAirDateGte: String? = null,
+        @Query("without_genres") withoutGenres: String? = null,
         @Query("sort_by") sortBy: String = "popularity.desc",
         @Query("vote_count.gte") voteCountGte: Int? = null,
         @Query("page") page: Int = 1

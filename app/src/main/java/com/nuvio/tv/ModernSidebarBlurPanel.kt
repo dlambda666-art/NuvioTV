@@ -261,10 +261,10 @@ private fun SidebarNavigationItem(
     )
     val backgroundColor = if (selected && !isFocused) backgroundColorTarget else animatedBackgroundColor
 
+    // 666TV : texte vert, blanc sur le rouge du focus ou de l'élément actif.
     val contentColorTarget = when {
-        selected -> accentColor
-        isFocused -> colors.TextPrimary
-        else -> colors.text.onOverlay
+        selected || isFocused -> Color.White
+        else -> Color(0xFF49DD89)
     }
     val animatedContentColor by animateColorAsState(
         targetValue = contentColorTarget,
@@ -275,9 +275,8 @@ private fun SidebarNavigationItem(
 
     val iconBrush: Brush? = null
     val iconTintTarget = when {
-        selected -> Color.White
-        isFocused -> colors.TextPrimary
-        else -> colors.text.onOverlay
+        selected || isFocused -> Color.White
+        else -> Color(0xFF49DD89)
     }
     val animatedIconTint by animateColorAsState(
         targetValue = iconTintTarget,

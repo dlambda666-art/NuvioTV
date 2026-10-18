@@ -120,10 +120,8 @@ internal fun isFlatSettingsStyle(): Boolean = NuvioTheme.settingsUiStyle != Sett
 
 @Composable
 @androidx.compose.runtime.ReadOnlyComposable
-internal fun settingsFocusFillColor(): Color = when (NuvioTheme.settingsUiStyle) {
-    SettingsUiStyle.HORIZON -> NuvioTheme.colors.TextPrimary.copy(alpha = 0.1f)
-    else -> NuvioTheme.colors.FocusBackground
-}
+// 666TV : le focus des réglages est rouge sang, comme le menu de gauche.
+internal fun settingsFocusFillColor(): Color = androidx.compose.ui.graphics.Color(0xFFA10614).copy(alpha = 0.85f)
 
 @Composable
 @androidx.compose.runtime.ReadOnlyComposable
@@ -341,11 +339,11 @@ internal fun SettingsRailButton(
         } else {
             CardDefaults.border(
                 border = if (isSelected) Border(
-                    border = NuvioTheme.focusRing.border(NuvioTheme.spacing.hairline),
+                    border = androidx.compose.foundation.BorderStroke(NuvioTheme.spacing.hairline, androidx.compose.ui.graphics.Color(0xFFA10614)),
                     shape = RoundedCornerShape(SettingsPillRadius)
                 ) else Border.None,
                 focusedBorder = Border(
-                    border = NuvioTheme.focusRing.border(NuvioTheme.spacing.xxs),
+                    border = androidx.compose.foundation.BorderStroke(NuvioTheme.spacing.xxs, androidx.compose.ui.graphics.Color(0xFFC3121F)),
                     shape = RoundedCornerShape(SettingsPillRadius)
                 )
             )
@@ -377,7 +375,7 @@ internal fun SettingsRailButton(
                                 .height(16.dp)
                                 .clip(RoundedCornerShape(SettingsPillRadius))
                                 .background(
-                                    if (isSelected) NuvioTheme.colors.Secondary else Color.Transparent
+                                    if (isSelected) androidx.compose.ui.graphics.Color(0xFFC3121F) else Color.Transparent
                                 )
                         )
                         Spacer(modifier = Modifier.width(NuvioTheme.spacing.md))
@@ -389,14 +387,14 @@ internal fun SettingsRailButton(
                             modifier = Modifier.size(18.dp),
                             contentScale = ContentScale.Fit,
                             colorFilter = ColorFilter.tint(
-                                if (isSelected || isFocused) NuvioTheme.colors.TextPrimary else NuvioTheme.colors.TextSecondary
+                                if (isFocused) androidx.compose.ui.graphics.Color.White else if (isSelected) androidx.compose.ui.graphics.Color(0xFF49DD89) else androidx.compose.ui.graphics.Color(0xFF49DD89).copy(alpha = 0.75f)
                             )
                         )
                     } else if (icon != null) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            tint = if (isSelected || isFocused) NuvioTheme.colors.TextPrimary else NuvioTheme.colors.TextSecondary,
+                            tint = if (isFocused) androidx.compose.ui.graphics.Color.White else if (isSelected) androidx.compose.ui.graphics.Color(0xFF49DD89) else androidx.compose.ui.graphics.Color(0xFF49DD89).copy(alpha = 0.75f),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -411,7 +409,7 @@ internal fun SettingsRailButton(
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = if (isSelected || isFocused) FontWeight.SemiBold else FontWeight.Medium
                         ),
-                        color = if (isSelected || isFocused) NuvioTheme.colors.TextPrimary else NuvioTheme.colors.TextSecondary,
+                        color = if (isFocused) androidx.compose.ui.graphics.Color.White else if (isSelected) androidx.compose.ui.graphics.Color(0xFF49DD89) else androidx.compose.ui.graphics.Color(0xFF49DD89).copy(alpha = 0.75f),
                     )
                 }
 
@@ -450,9 +448,10 @@ internal fun SettingsTopBarTab(
     }
     val contentColor by animateColorAsState(
         targetValue = when {
-            isFocused -> NuvioTheme.colors.OnSecondary
-            isSelected -> NuvioTheme.colors.TextPrimary
-            else -> NuvioTheme.colors.TextSecondary
+            // 666TV : onglets en vert, blanc sur le focus rouge.
+            isFocused -> androidx.compose.ui.graphics.Color.White
+            isSelected -> androidx.compose.ui.graphics.Color(0xFF49DD89)
+            else -> androidx.compose.ui.graphics.Color(0xFF49DD89).copy(alpha = 0.75f)
         },
         animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
         label = "topBarTabContentColor"
@@ -477,14 +476,14 @@ internal fun SettingsTopBarTab(
             },
         colors = CardDefaults.colors(
             containerColor = if (isSelected) {
-                NuvioTheme.colors.Secondary.copy(alpha = 0.18f)
+                androidx.compose.ui.graphics.Color(0xFFA10614).copy(alpha = 0.25f)
             } else {
                 Color.Transparent
             },
             focusedContainerColor = if (glideIndicator) {
                 Color.Transparent
             } else {
-                NuvioTheme.colors.Secondary
+                androidx.compose.ui.graphics.Color(0xFFC3121F)
             }
         ),
         border = CardDefaults.border(border = Border.None, focusedBorder = Border.None),

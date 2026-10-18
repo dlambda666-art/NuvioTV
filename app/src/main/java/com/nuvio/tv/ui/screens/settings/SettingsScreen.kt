@@ -581,7 +581,7 @@ fun SettingsScreen(
                                     )
                                     .graphicsLayer { alpha = pillAlpha }
                                     .clip(RoundedCornerShape(SettingsPillRadius))
-                                    .background(NuvioTheme.colors.Secondary)
+                                    .background(androidx.compose.ui.graphics.Color(0xFFC3121F))
                             )
                         }
                         LazyRow(

@@ -1735,7 +1735,7 @@ private fun LegacySidebarButton(
         targetValue = when {
             isFocused -> Color.White
             expanded && selected -> Color(0xFFF2EFE9)
-            else -> NuvioTheme.colors.TextSecondary
+            else -> Color(0xFF49DD89)
         },
         label = "legacySidebarItemContent"
     )
@@ -1744,8 +1744,8 @@ private fun LegacySidebarButton(
             isFocused -> Color.White
             expanded && selected -> Color(0xFFF2EFE9)
             selected -> Blood666Bright
-            !expanded -> NuvioTheme.colors.TextTertiary
-            else -> NuvioTheme.colors.TextSecondary
+            !expanded -> Color(0xFF49DD89).copy(alpha = 0.7f)
+            else -> Color(0xFF49DD89)
         },
         label = "legacySidebarItemIconTint"
     )

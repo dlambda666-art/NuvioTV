@@ -299,6 +299,9 @@ class TmdbService @Inject constructor(
                         watchRegion = "FR",
                         airDateGte = today.minusDays(30).toString(),
                         airDateLte = today.toString(),
+                        // Séries lancées ces 5 dernières années ; sans soaps, talk-shows, infos ni télé-réalité.
+                        firstAirDateGte = today.minusYears(5).toString(),
+                        withoutGenres = "10763,10764,10766,10767",
                         voteCountGte = 20,
                         page = page
                     ).body()
