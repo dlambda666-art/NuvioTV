@@ -363,6 +363,13 @@ open class MainActivity : ComponentActivity() {
 
         PluginRuntimeHooks.onActivityCreate(this)
 
+        // 666TV : 666TV s'ouvre tout seul quand la TV s'allume (droit « par-dessus les autres applis »).
+        com.nuvio.tv.core.wake.WakeLaunch666.start(this)
+        if (intent?.getBooleanExtra(com.nuvio.tv.core.wake.WakeLaunch666.EXTRA_WAKE, false) == true) {
+            com.nuvio.tv.core.wake.WakeLaunch666.notifyWake()
+        }
+        askOverlayPermissionOnce()
+
         window?.decorView?.post {
             val snapshot = com.nuvio.tv.core.player.DisplayCapabilities.detect(this)
             com.nuvio.tv.core.player.DisplayCapabilities.logSummary(snapshot)
@@ -1239,8 +1246,18 @@ open class MainActivity : ComponentActivity() {
                             startupLoadingState.complete = true
                         }
                     }
+                    // 666TV : au réveil de la Shield, l'ouverture (pentagramme + orage) se rejoue ~4 s.
+                    val wakeNonce by com.nuvio.tv.core.wake.WakeLaunch666.wakeNonce.collectAsState()
+                    var wakeSplashActive by remember { mutableStateOf(false) }
+                    LaunchedEffect(wakeNonce) {
+                        if (wakeNonce > 0) {
+                            wakeSplashActive = true
+                            kotlinx.coroutines.delay(4_000L)
+                            wakeSplashActive = false
+                        }
+                    }
                     // 666TV : l'écran d'ouverture animé est toujours affiché.
-                    val showSplash = shouldShowStartupSplash(
+                    val showSplash = wakeSplashActive || shouldShowStartupSplash(
                         enabled = true || startupSplashEnabled,
                         complete = startupLoadingState.complete,
                         destination = startupDestination
@@ -1304,8 +1321,31 @@ open class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun askOverlayPermissionOnce() {
+        if (com.nuvio.tv.core.wake.WakeLaunch666.canAutoLaunch(this)) return
+        val prefs = getSharedPreferences("666tv_wake", MODE_PRIVATE)
+        if (prefs.getBoolean("overlay_asked", false)) return
+        prefs.edit().putBoolean("overlay_asked", true).apply()
+        Toast.makeText(
+            this,
+            "Pour que 666TV s'ouvre quand la TV s'allume : autorise « Afficher par-dessus d'autres applis »",
+            Toast.LENGTH_LONG
+        ).show()
+        runCatching {
+            startActivity(
+                Intent(
+                    android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    android.net.Uri.parse("package:$packageName")
+                )
+            )
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        if (intent.getBooleanExtra(com.nuvio.tv.core.wake.WakeLaunch666.EXTRA_WAKE, false)) {
+            com.nuvio.tv.core.wake.WakeLaunch666.notifyWake()
+        }
         setIntent(intent)
         captureDeepLinkIntent(intent)
         captureLaunchIntent(intent)

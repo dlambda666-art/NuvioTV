@@ -63,6 +63,24 @@ fun StartupSplashScreen(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
+    val context = LocalContext.current
+    // 666TV : un éclair (sans claquement) et le tonnerre qui roule, comme un jumpscare.
+    val flash = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        runCatching {
+            android.media.MediaPlayer.create(context, R.raw.thunder_666)?.apply {
+                setVolume(0.85f, 0.85f)
+                setOnCompletionListener { it.release() }
+                start()
+            }
+        }
+        kotlinx.coroutines.delay(90)
+        flash.snapTo(0.6f)
+        flash.animateTo(0f, tween(180))
+        kotlinx.coroutines.delay(70)
+        flash.snapTo(0.4f)
+        flash.animateTo(0f, tween(420))
+    }
     val logoWidth = with(density) { SPLASH_WORDMARK_WIDTH_PX.toDp() }
     val logoHeight = with(density) { SPLASH_WORDMARK_HEIGHT_PX.toDp() }
 
@@ -226,6 +244,13 @@ fun StartupSplashScreen(
                     drawCircle(color = Color(0xFFFF3A45), radius = 3.5.dp.toPx(), center = tip)
                 }
             }
+        }
+        if (flash.value > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFDDE6FF).copy(alpha = flash.value))
+            )
         }
     }
 }
