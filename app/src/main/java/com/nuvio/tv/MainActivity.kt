@@ -1244,7 +1244,7 @@ open class MainActivity : ComponentActivity() {
                                     delay(6L * 60L * 60L * 1000L)
                                 }
                             }
-                            // 666TV : double glas quand la bannière apparaît (jamais pendant la lecture).
+                            // 666TV : cri quand la bannière apparaît (jamais pendant la lecture).
                             val bellContext = LocalContext.current
                             LaunchedEffect(calendarVfAnnouncements) {
                                 if (calendarVfAnnouncements.isEmpty() || currentRoute?.startsWith("player/") == true) return@LaunchedEffect
