@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -188,16 +189,17 @@ internal fun ModernSidebarBlurPanel(
 
         Spacer(modifier = Modifier.height(NuvioTheme.spacing.lg))
 
+        // 666TV : la liste défile si elle ne tient pas, Paramètres reste toujours accessible.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
+                .weight(1f)
+                .verticalScroll(androidx.compose.foundation.rememberScrollState()),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Column(
-                modifier = Modifier.offset(y = (-12).dp),
-                verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.sm - NuvioTheme.spacing.xxs)
+                verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.xxs)
             ) {
                 drawerItems.forEachIndexed { index, item ->
                     key(item.route) {
