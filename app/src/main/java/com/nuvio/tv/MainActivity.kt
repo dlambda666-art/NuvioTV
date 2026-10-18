@@ -859,6 +859,18 @@ open class MainActivity : ComponentActivity() {
                         else -> Screen.LayoutSelection.route
                     }
                     val navController = rememberNavController()
+                    // 666TV : bouton Accueil de la télécommande → retour à l'accueil de 666TV.
+                    val homeNonce by com.nuvio.tv.core.wake.WakeLaunch666.homeNonce.collectAsState()
+                    LaunchedEffect(homeNonce) {
+                        if (homeNonce > 0) {
+                            runCatching {
+                                navController.navigate(Screen.Home.route) {
+                                    popUpTo(navController.graph.id) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                        }
+                    }
                     var optimisticRoute by remember { mutableStateOf<String?>(null) }
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val actualRoute = navBackStackEntry?.destination?.route
@@ -1265,18 +1277,6 @@ open class MainActivity : ComponentActivity() {
                         }
                     }
                     // 666TV : au réveil de la Shield, l'ouverture (pentagramme + orage) se rejoue ~4 s.
-                    // 666TV : bouton Accueil de la télécommande → retour à l'accueil de 666TV.
-                    val homeNonce by com.nuvio.tv.core.wake.WakeLaunch666.homeNonce.collectAsState()
-                    LaunchedEffect(homeNonce) {
-                        if (homeNonce > 0) {
-                            runCatching {
-                                navController.navigate(Screen.Home.route) {
-                                    popUpTo(navController.graph.id) { inclusive = true }
-                                    launchSingleTop = true
-                                }
-                            }
-                        }
-                    }
                     val wakeNonce by com.nuvio.tv.core.wake.WakeLaunch666.wakeNonce.collectAsState()
                     var wakeSplashActive by remember { mutableStateOf(false) }
                     LaunchedEffect(wakeNonce) {
