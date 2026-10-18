@@ -53,7 +53,22 @@ private val Green666 = Color(0xFF49DD89)
 private val Blood666 = Color(0xFFC3121F)
 private val BloodHi666 = Color(0xFFFF3A45)
 
-private data class ShieldApp(val label: String, val launch: Intent, val banner: Drawable?, val isBanner: Boolean)
+private data class ShieldApp(val label: String, val launch: Intent, val icon: Drawable?, val banner: Drawable?)
+
+/** Plaques d'horreur (pierre, bois, rouille, écailles) posées sous chaque appli. */
+private val PLATES = listOf(
+    listOf(com.nuvio.tv.R.drawable.plate_666_pierre_1, com.nuvio.tv.R.drawable.plate_666_pierre_2, com.nuvio.tv.R.drawable.plate_666_pierre_3),
+    listOf(com.nuvio.tv.R.drawable.plate_666_bois_1, com.nuvio.tv.R.drawable.plate_666_bois_2, com.nuvio.tv.R.drawable.plate_666_bois_3),
+    listOf(com.nuvio.tv.R.drawable.plate_666_rouille_1, com.nuvio.tv.R.drawable.plate_666_rouille_2, com.nuvio.tv.R.drawable.plate_666_rouille_3),
+    listOf(com.nuvio.tv.R.drawable.plate_666_ecailles_1, com.nuvio.tv.R.drawable.plate_666_ecailles_2, com.nuvio.tv.R.drawable.plate_666_ecailles_3)
+)
+
+/** Deux voisines (à côté ou au-dessus) n'ont jamais la même matière. */
+private fun plateFor(index: Int): Int {
+    val row = index / 4
+    val texture = (index + row) % 4
+    return PLATES[texture][row % 3]
+}
 
 private val HIDDEN_LABELS = listOf("orange", "tizentube", "tizen tube", "tduk", "cache cleaner", "accueil d'android tv")
 
@@ -72,14 +87,14 @@ private fun loadApps(context: Context): List<ShieldApp> {
             val launch = pm.getLeanbackLaunchIntentForPackage(pkg) ?: pm.getLaunchIntentForPackage(pkg) ?: return@forEach
             val banner = runCatching { info.activityInfo.loadBanner(pm) }.getOrNull()
                 ?: runCatching { pm.getApplicationBanner(pkg) }.getOrNull()
-            val icon = if (banner == null) runCatching { info.loadIcon(pm) }.getOrNull() else null
-            found[pkg] = ShieldApp(label, launch, banner ?: icon, banner != null)
+            val icon = runCatching { pm.getApplicationIcon(pkg) }.getOrNull()
+            found[pkg] = ShieldApp(label, launch, icon, banner)
         }
     }
     val settings = Intent(android.provider.Settings.ACTION_SETTINGS)
     val list = found.values.sortedBy { it.label.lowercase() }.toMutableList()
     if (list.none { it.label.contains("Paramètres", true) || it.label.contains("Settings", true) }) {
-        list.add(0, ShieldApp("Paramètres Shield", settings, null, false))
+        list.add(0, ShieldApp("Paramètres Shield", settings, null, null))
     }
     return list
 }
@@ -92,6 +107,15 @@ fun MyAppsScreen() {
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(apps) { if (!apps.isNullOrEmpty()) runCatching { firstFocus.requestFocus() } }
 
+    Box(modifier = Modifier.fillMaxSize()) {
+    // Ton fond horreur, assombri, derrière les plaques.
+    Image(
+        painter = androidx.compose.ui.res.painterResource(com.nuvio.tv.R.drawable.fond_collections_666),
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        alpha = 0.22f,
+        modifier = Modifier.fillMaxSize()
+    )
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -120,6 +144,7 @@ fun MyAppsScreen() {
             itemsIndexed(list, key = { _, app -> app.label + app.launch.`package` }) { index, app ->
                 AppTile(
                     app = app,
+                    plateRes = plateFor(index),
                     modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
                     onClick = {
                         runCatching { context.startActivity(Intent(app.launch).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
@@ -128,10 +153,11 @@ fun MyAppsScreen() {
             }
         }
     }
+    }
 }
 
 @Composable
-private fun AppTile(app: ShieldApp, modifier: Modifier, onClick: () -> Unit) {
+private fun AppTile(app: ShieldApp, plateRes: Int, modifier: Modifier, onClick: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(12.dp)
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -143,28 +169,36 @@ private fun AppTile(app: ShieldApp, modifier: Modifier, onClick: () -> Unit) {
                 .onFocusChanged { focused = it.hasFocus },
             shape = ClickableSurfaceDefaults.shape(shape),
             colors = ClickableSurfaceDefaults.colors(
-                containerColor = Color(0xFF1A1F1D),
-                focusedContainerColor = Color(0xFF1A1F1D)
+                containerColor = Color(0xFF0C0F0E),
+                focusedContainerColor = Color(0xFF0C0F0E)
             ),
             border = ClickableSurfaceDefaults.border(
-                border = Border(BorderStroke(1.dp, Color(0xFF2C3330)), shape = shape),
+                border = Border.None,
                 focusedBorder = Border(BorderStroke(3.dp, BloodHi666), shape = shape)
             ),
             glow = ClickableSurfaceDefaults.glow(focusedGlow = Glow(elevationColor = Blood666, elevation = 14.dp)),
             scale = ClickableSurfaceDefaults.scale(focusedScale = 1.06f)
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Image(
+                    painter = androidx.compose.ui.res.painterResource(plateRes),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                // Le logo de l'appli au centre de la plaque (sinon sa bannière en petit, sinon ses initiales).
                 val bitmap = remember(app) {
-                    app.banner?.let { d ->
-                        runCatching { if (app.isBanner) d.toBitmap(320, 180) else d.toBitmap(128, 128) }.getOrNull()
+                    (app.icon ?: app.banner)?.let { d ->
+                        runCatching { if (app.icon != null) d.toBitmap(160, 160) else d.toBitmap(320, 180) }.getOrNull()
                     }
                 }
                 if (bitmap != null) {
                     Image(
                         bitmap = bitmap.asImageBitmap(),
                         contentDescription = app.label,
-                        contentScale = if (app.isBanner) ContentScale.Crop else ContentScale.Fit,
-                        modifier = if (app.isBanner) Modifier.fillMaxSize() else Modifier.fillMaxSize().padding(18.dp)
+                        contentScale = ContentScale.Fit,
+                        modifier = if (app.icon != null) Modifier.fillMaxSize().padding(vertical = 22.dp)
+                        else Modifier.fillMaxSize().padding(horizontal = 36.dp, vertical = 30.dp)
                     )
                 } else {
                     Text(
