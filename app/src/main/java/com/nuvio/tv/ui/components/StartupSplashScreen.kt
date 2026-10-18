@@ -67,28 +67,41 @@ fun StartupSplashScreen(
     // 666TV : un éclair (sans claquement) et le tonnerre qui roule, comme un jumpscare.
     val flash = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(0f) }
     // Le tonnerre gronde tant que l'écran d'ouverture est affiché, puis s'éteint en douceur.
-    androidx.compose.runtime.DisposableEffect(Unit) {
-        val player = runCatching {
+    // Il s'arrête aussi si 666TV passe en arrière-plan, et au plus tard après 15 s.
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        var player: android.media.MediaPlayer? = runCatching {
             android.media.MediaPlayer.create(context, R.raw.thunder_666)?.apply {
                 isLooping = true
                 setVolume(0.85f, 0.85f)
                 start()
             }
         }.getOrNull()
-        onDispose {
-            player?.let { mp ->
-                val handler = android.os.Handler(android.os.Looper.getMainLooper())
-                var step = 0
-                val fade = object : Runnable {
-                    override fun run() {
-                        step++
-                        val v = (0.85f * (1f - step / 10f)).coerceAtLeast(0f)
-                        runCatching { mp.setVolume(v, v) }
-                        if (step < 10) handler.postDelayed(this, 60) else runCatching { mp.stop(); mp.release() }
-                    }
+        fun fadeOut() {
+            val mp = player ?: return
+            player = null
+            var step = 0
+            val fade = object : Runnable {
+                override fun run() {
+                    step++
+                    val v = (0.85f * (1f - step / 10f)).coerceAtLeast(0f)
+                    runCatching { mp.setVolume(v, v) }
+                    if (step < 10) handler.postDelayed(this, 60) else runCatching { mp.stop(); mp.release() }
                 }
-                handler.post(fade)
             }
+            handler.post(fade)
+        }
+        val cap = Runnable { fadeOut() }
+        handler.postDelayed(cap, 15_000L)
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) fadeOut()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            handler.removeCallbacks(cap)
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            fadeOut()
         }
     }
     androidx.compose.runtime.LaunchedEffect(Unit) {
