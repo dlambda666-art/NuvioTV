@@ -66,14 +66,32 @@ fun StartupSplashScreen(
     val context = LocalContext.current
     // 666TV : un éclair (sans claquement) et le tonnerre qui roule, comme un jumpscare.
     val flash = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(0f) }
-    androidx.compose.runtime.LaunchedEffect(Unit) {
-        runCatching {
+    // Le tonnerre gronde tant que l'écran d'ouverture est affiché, puis s'éteint en douceur.
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        val player = runCatching {
             android.media.MediaPlayer.create(context, R.raw.thunder_666)?.apply {
+                isLooping = true
                 setVolume(0.85f, 0.85f)
-                setOnCompletionListener { it.release() }
                 start()
             }
+        }.getOrNull()
+        onDispose {
+            player?.let { mp ->
+                val handler = android.os.Handler(android.os.Looper.getMainLooper())
+                var step = 0
+                val fade = object : Runnable {
+                    override fun run() {
+                        step++
+                        val v = (0.85f * (1f - step / 10f)).coerceAtLeast(0f)
+                        runCatching { mp.setVolume(v, v) }
+                        if (step < 10) handler.postDelayed(this, 60) else runCatching { mp.stop(); mp.release() }
+                    }
+                }
+                handler.post(fade)
+            }
         }
+    }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(90)
         flash.snapTo(0.6f)
         flash.animateTo(0f, tween(180))
