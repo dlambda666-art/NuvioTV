@@ -88,17 +88,18 @@ fun StartupSplashScreen(
         animationSpec = infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "splashGlow"
     )
+    // 0..1 : goutte de gauche, 1..2 : goutte de droite (à tour de rôle).
     val drop by transition.animateFloat(
         initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing)),
+        targetValue = 2f,
+        animationSpec = infiniteRepeatable(tween(2800, easing = LinearEasing)),
         label = "splashDrop"
     )
-    val spin by transition.animateFloat(
+    val penta by transition.animateFloat(
         initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
-        label = "splashSpin"
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing)),
+        label = "splashPenta"
     )
 
     Box(modifier = modifier.fillMaxSize().background(Splash666Bg)) {
@@ -148,7 +149,7 @@ fun StartupSplashScreen(
             verticalArrangement = Arrangement.Center
         ) {
             // Espace symétrique à l'anneau, pour que le logo reste pile au centre comme au lancement.
-            Spacer(modifier = Modifier.height(72.dp))
+            Spacer(modifier = Modifier.height(96.dp))
             Box(
                 modifier = Modifier
                     .size(width = logoWidth, height = logoHeight)
@@ -162,14 +163,16 @@ fun StartupSplashScreen(
                     contentDescription = stringResource(R.string.cd_nuvio_logo),
                     modifier = Modifier.fillMaxSize()
                 )
-                // Goutte de sang qui tombe sous le bouclier.
+                // Gouttes de sang : une coulure à gauche, puis une à droite.
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    val x = size.width * 0.118f
-                    val startY = size.height * 0.86f
+                    val left = drop < 1f
+                    val p = if (left) drop else drop - 1f
+                    val x = size.width * (if (left) 0.119f else 0.204f)
+                    val startY = size.height * (if (left) 0.89f else 0.80f)
                     val fall = size.height * 0.55f
-                    val y = startY + fall * drop * drop
+                    val y = startY + fall * p * p
                     val r = size.height * 0.03f
-                    val alpha = (1f - drop).coerceIn(0f, 1f)
+                    val alpha = (1f - p).coerceIn(0f, 1f)
                     drawOval(
                         color = Splash666BloodDark.copy(alpha = alpha),
                         topLeft = Offset(x - r, y - r * 1.3f),
@@ -178,16 +181,50 @@ fun StartupSplashScreen(
                 }
             }
             Spacer(modifier = Modifier.height(32.dp))
-            Canvas(modifier = Modifier.size(40.dp)) {
-                val stroke = 4.dp.toPx()
-                drawCircle(color = Splash666Blood.copy(alpha = 0.18f), style = Stroke(width = stroke))
-                drawArc(
-                    color = Splash666Blood,
-                    startAngle = spin,
-                    sweepAngle = 110f,
-                    useCenter = false,
-                    style = Stroke(width = stroke, cap = StrokeCap.Round)
+            // Pentagramme inversé qui se trace tout seul, puis s'efface.
+            Canvas(modifier = Modifier.size(64.dp)) {
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val r = size.minDimension * 0.40f
+                val pts = (0..5).map { i ->
+                    val a = Math.PI + i * 144.0 * Math.PI / 180.0
+                    Offset(cx + (r * Math.sin(a)).toFloat(), cy - (r * Math.cos(a)).toFloat())
+                }
+                val frac = (penta / 0.75f).coerceAtMost(1f)
+                val alpha = if (penta < 0.85f) 1f else (1f - (penta - 0.85f) / 0.15f).coerceIn(0f, 1f)
+                drawCircle(
+                    color = Splash666Blood.copy(alpha = 0.35f),
+                    radius = r + 5.dp.toPx(),
+                    center = Offset(cx, cy),
+                    style = Stroke(width = 1.5.dp.toPx())
                 )
+                val seg = (0 until 5).map { (pts[it + 1] - pts[it]).getDistance() }
+                var remaining = seg.sum() * frac
+                val path = androidx.compose.ui.graphics.Path().apply { moveTo(pts[0].x, pts[0].y) }
+                var tip = pts[0]
+                for (k in 0 until 5) {
+                    if (remaining <= 0f) break
+                    val a = pts[k]
+                    val b = pts[k + 1]
+                    val t = (remaining / seg[k]).coerceAtMost(1f)
+                    tip = Offset(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
+                    path.lineTo(tip.x, tip.y)
+                    remaining -= seg[k]
+                }
+                // Halo puis trait.
+                drawPath(
+                    path,
+                    color = Splash666Blood.copy(alpha = 0.35f * alpha),
+                    style = Stroke(width = 9.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+                )
+                drawPath(
+                    path,
+                    color = Splash666Blood.copy(alpha = alpha),
+                    style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+                )
+                if (frac < 1f) {
+                    drawCircle(color = Color(0xFFFF3A45), radius = 3.5.dp.toPx(), center = tip)
+                }
             }
         }
     }
