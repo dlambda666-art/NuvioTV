@@ -220,6 +220,30 @@ class PluginDataStore @Inject constructor(
         }
     }
 
+    // 666TV : copie de secours des réglages des plugins, gardée sur la Shield uniquement.
+    // Si un plugin revient « non configuré » (réglage disparu), sa config est restaurée d'ici.
+    private fun backupFile(): File {
+        val pid = effectiveProfileId()
+        return File(context.noBackupFilesDir, if (pid == 1) "plugin_settings_666.json" else "plugin_settings_666_p$pid.json")
+    }
+
+    private fun readBackup(): Map<String, Map<String, Any>> = runCatching {
+        val f = backupFile()
+        if (!f.exists()) return emptyMap()
+        @Suppress("UNCHECKED_CAST")
+        moshi.adapter<Map<String, Map<String, Any>>>(settingsMapType).fromJson(f.readText()) ?: emptyMap()
+    }.getOrDefault(emptyMap())
+
+    private fun writeBackup(all: Map<String, Map<String, Any>>) {
+        runCatching {
+            val merged = readBackup().toMutableMap().apply { putAll(all) }
+            val f = backupFile()
+            val tmp = File(f.parentFile, f.name + ".tmp")
+            tmp.writeText(moshi.adapter<Map<String, Map<String, Any>>>(settingsMapType).toJson(merged))
+            tmp.renameTo(f)
+        }
+    }
+
     // Per-scraper settings
     suspend fun getScraperSettings(scraperId: String): Map<String, Any> {
         val prefs = store().data.first()
@@ -231,6 +255,15 @@ class PluginDataStore @Inject constructor(
                 emptyMap()
             }
         } ?: emptyMap()
+
+        if (!allSettings.containsKey(scraperId)) {
+            val saved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { readBackup() }[scraperId]
+            if (!saved.isNullOrEmpty()) {
+                android.util.Log.i("PluginDataStore", "666TV : réglages de $scraperId restaurés depuis la copie de secours")
+                setScraperSettings(scraperId, saved)
+                return saved
+            }
+        }
 
         @Suppress("UNCHECKED_CAST")
         return allSettings[scraperId] as? Map<String, Any> ?: emptyMap()
@@ -254,5 +287,6 @@ class PluginDataStore @Inject constructor(
         store().edit { p ->
             p[scraperSettingsKey] = json
         }
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { writeBackup(allSettings) }
     }
 }
