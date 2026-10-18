@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.asImageBitmap
@@ -48,12 +49,14 @@ private data class LiveTvApp(
     val title: String,
     val channels: String,
     val labelMatches: List<String>,
-    val storeQuery: String
+    val storeQuery: String,
+    /** 666TV : image de tuile intégrée (sinon la bannière de l'appli). */
+    val tileRes: Int? = null
 )
 
 // 666TV : un seul raccourci, Orange TV (toutes les chaînes de l'abonnement, RTLplay et Auvio inclus).
 private val LIVE_TV_APPS = listOf(
-    LiveTvApp("Orange TV", "Toutes tes chaînes · RTLplay et Auvio inclus", listOf("orange tv", "orange"), "Orange TV Belgium")
+    LiveTvApp("Orange TV", "Toutes tes chaînes · RTLplay et Auvio inclus", listOf("orange tv", "orange"), "Orange TV Belgium", tileRes = com.nuvio.tv.R.drawable.tile_live_tv_666)
 )
 
 private data class InstalledApp(val packageName: String, val banner: Drawable?)
@@ -152,7 +155,16 @@ private fun LiveTvCard(
                 val bitmap = remember(installed) {
                     installed?.banner?.let { runCatching { it.toBitmap(640, 360) }.getOrNull() }
                 }
-                if (bitmap != null) {
+                if (app.tileRes != null) {
+                    Image(
+                        painter = androidx.compose.ui.res.painterResource(app.tileRes),
+                        contentDescription = app.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(10.dp))
+                    )
+                } else if (bitmap != null) {
                     Image(
                         bitmap = bitmap.asImageBitmap(),
                         contentDescription = app.title,
