@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -57,7 +58,8 @@ private data class LiveTvApp(
 // 666TV : un seul raccourci, Orange TV (toutes les chaînes de l'abonnement, RTLplay et Auvio inclus).
 private val LIVE_TV_APPS = listOf(
     LiveTvApp("Orange TV", "Toutes tes chaînes · RTLplay et Auvio inclus", listOf("orange tv", "orange"), "Orange TV Belgium", tileRes = com.nuvio.tv.R.drawable.tile_live_tv_666),
-    LiveTvApp("TizenTube", "YouTube sans pub", listOf("tizentube", "tizen tube"), "TizenTube", tileRes = com.nuvio.tv.R.drawable.tile_tizentube_666)
+    LiveTvApp("TizenTube", "YouTube sans pub", listOf("tizentube", "tizen tube"), "TizenTube", tileRes = com.nuvio.tv.R.drawable.tile_tizentube_666),
+    LiveTvApp("Cache Cleaner", "Vide le cache des applis", listOf("tduk", "cache cleaner"), "TDUK App Cache Cleaner", tileRes = com.nuvio.tv.R.drawable.tile_cache_cleaner_666)
 )
 
 private data class InstalledApp(val packageName: String, val banner: Drawable?)
@@ -111,13 +113,13 @@ fun LiveTvScreen() {
             color = NuvioTheme.colors.TextSecondary
         )
         Spacer(Modifier.height(NuvioTheme.spacing.sm))
-        Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             LIVE_TV_APPS.forEachIndexed { index, app ->
                 LiveTvCard(
                     app = app,
                     installed = installed[index],
                     onClick = { launch(context, app, installed[index]) },
-                    modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier
+                    modifier = Modifier.weight(1f).then(if (index == 0) Modifier.focusRequester(firstFocus) else Modifier)
                 )
             }
         }
@@ -134,7 +136,7 @@ private fun LiveTvCard(
     val shape = RoundedCornerShape(16.dp)
     Surface(
         onClick = onClick,
-        modifier = modifier.width(360.dp),
+        modifier = modifier,
         colors = ClickableSurfaceDefaults.colors(
             containerColor = NuvioTheme.colors.BackgroundCard,
             focusedContainerColor = NuvioTheme.colors.BackgroundElevated
@@ -150,7 +152,7 @@ private fun LiveTvCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
+                    .aspectRatio(16f / 9f),
                 contentAlignment = Alignment.Center
             ) {
                 val bitmap = remember(installed) {
