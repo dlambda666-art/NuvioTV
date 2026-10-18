@@ -717,6 +717,7 @@ internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
             // 666TV : la rangée « À venir » n'est plus sur l'accueil — le programme est dans « Calendrier » (menu de gauche).
             // 666TV : « Top 10 VF de la semaine » (sorties vidéo uniquement, jamais de CAM).
             topTenVfRow?.let { add(HomeRow.Catalog(it)) }
+            topTenSeriesVfRow?.let { add(HomeRow.Catalog(it)) }
             val displayRowsByKey = displayRows.associateBy { it.legacyKey() }
             // Build a lookup of placeholder descriptors by key for lazy catalogs
             val placeholdersByKey = synchronized(catalogStateLock) {

@@ -226,6 +226,7 @@ class HomeViewModel @Inject constructor(
     @Volatile
     internal var calendarUpcomingRow: com.nuvio.tv.domain.model.CatalogRow? = null
     internal var topTenVfRow: com.nuvio.tv.domain.model.CatalogRow? = null
+    internal var topTenSeriesVfRow: com.nuvio.tv.domain.model.CatalogRow? = null
     internal var hasRenderedFirstCatalog = false
     internal val catalogLoadSemaphore = Semaphore(MAX_CATALOG_LOAD_CONCURRENCY)
     internal var pendingCatalogLoads = 0

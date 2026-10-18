@@ -27,12 +27,18 @@ internal fun HomeViewModel.observeTopTenVfRow() {
                 topTenVfRow = row
                 scheduleUpdateCatalogRows()
             }
+            val seriesRow = runCatching { buildTopTenSeriesVfRow() }.getOrNull()
+            if (seriesRow != null && seriesRow != topTenSeriesVfRow) {
+                topTenSeriesVfRow = seriesRow
+                scheduleUpdateCatalogRows()
+            }
             delay(if (row == null) 5L * 60L * 1000L else 12L * 60L * 60L * 1000L)
         }
     }
 }
 
 internal const val TOP_TEN_VF_ROW_ADDON_ID = "666tv.top10vf"
+internal const val TOP_TEN_SERIES_VF_ROW_ADDON_ID = "666tv.top10series"
 
 private suspend fun HomeViewModel.buildTopTenVfRow(): CatalogRow? {
     val candidates = tmdbService.popularDigitalReleasesFr()
@@ -69,6 +75,50 @@ private suspend fun HomeViewModel.buildTopTenVfRow(): CatalogRow? {
         catalogId = "top10-vf",
         catalogName = "🔥 Top 10 VF de la semaine",
         type = ContentType.MOVIE,
+        items = items,
+        hasMore = false
+    )
+}
+
+/**
+ * 666TV : « Top 10 séries VF de la semaine » — séries en cours de diffusion (épisode ces
+ * 30 derniers jours) et disponibles sur une plateforme de streaming en France.
+ */
+private suspend fun HomeViewModel.buildTopTenSeriesVfRow(): CatalogRow? {
+    val candidates = tmdbService.popularStreamingSeriesFr()
+        .filter { !it.posterPath.isNullOrBlank() }
+        .take(16)
+    if (candidates.isEmpty()) return null
+    val items = kotlinx.coroutines.coroutineScope {
+        candidates.map { show ->
+            async {
+                val imdbId = runCatching { tmdbService.tmdbToImdb(show.id, "series") }.getOrNull()
+                    ?.takeIf { it.startsWith("tt") }
+                    ?: return@async null
+                MetaPreview(
+                    id = imdbId,
+                    type = ContentType.SERIES,
+                    name = show.name ?: show.originalName ?: return@async null,
+                    poster = "https://image.tmdb.org/t/p/w500${show.posterPath}",
+                    posterShape = PosterShape.POSTER,
+                    background = show.backdropPath?.let { "https://image.tmdb.org/t/p/w1280$it" },
+                    logo = null,
+                    description = show.overview?.takeIf { it.isNotBlank() },
+                    releaseInfo = show.firstAirDate?.take(4),
+                    imdbRating = show.voteAverage?.takeIf { it > 0 }?.toFloat(),
+                    genres = emptyList()
+                )
+            }
+        }.awaitAll()
+    }.filterNotNull().distinctBy { it.id }.take(TOP_TEN_MAX_RANK)
+    if (items.size < 3) return null
+    return CatalogRow(
+        addonId = TOP_TEN_SERIES_VF_ROW_ADDON_ID,
+        addonName = "666TV",
+        addonBaseUrl = "",
+        catalogId = "top10-series-vf",
+        catalogName = "🔥 Top 10 séries VF de la semaine",
+        type = ContentType.SERIES,
         items = items,
         hasMore = false
     )

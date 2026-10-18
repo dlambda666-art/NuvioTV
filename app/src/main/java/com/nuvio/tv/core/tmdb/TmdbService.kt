@@ -284,6 +284,32 @@ class TmdbService @Inject constructor(
     fun apiKey(): String = TMDB_API_KEY
 
     /**
+     * 666TV : séries les plus populaires du moment parmi celles disponibles sur une
+     * plateforme de streaming en France et qui ont eu un épisode ces 30 derniers jours.
+     */
+    suspend fun popularStreamingSeriesFr(): List<com.nuvio.tv.data.remote.api.TmdbDiscoverResult> =
+        withContext(Dispatchers.IO) {
+            val today = java.time.LocalDate.now()
+            val results = mutableListOf<com.nuvio.tv.data.remote.api.TmdbDiscoverResult>()
+            for (page in 1..2) {
+                val body = runCatching {
+                    tmdbApi.discoverStreamingSeries(
+                        apiKey = TMDB_API_KEY,
+                        language = "fr-FR",
+                        watchRegion = "FR",
+                        airDateGte = today.minusDays(30).toString(),
+                        airDateLte = today.toString(),
+                        voteCountGte = 20,
+                        page = page
+                    ).body()
+                }.getOrNull() ?: break
+                results += body.results.orEmpty()
+                if ((body.totalPages ?: 1) <= page) break
+            }
+            results.distinctBy { it.id }
+        }
+
+    /**
      * 666TV : films les plus populaires du moment parmi ceux déjà sortis en vidéo
      * (VOD, Blu-ray) en France. Les films seulement au cinéma — donc en CAM/TS —
      * n'ont pas cette date et ne passent jamais.
