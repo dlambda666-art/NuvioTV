@@ -31,6 +31,17 @@ object WakeLaunch666 {
 
     fun notifyWake() { _wakeNonce.value = _wakeNonce.value + 1 }
 
+    private val _homeNonce = MutableStateFlow(0)
+    /** Augmente à chaque appui sur le bouton Accueil quand 666TV est le launcher. */
+    val homeNonce: StateFlow<Int> = _homeNonce
+    fun notifyHome() { _homeNonce.value = _homeNonce.value + 1 }
+
+    fun isDefaultHome(context: Context): Boolean = runCatching {
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        context.packageManager.resolveActivity(home, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+            ?.activityInfo?.packageName == context.packageName
+    }.getOrDefault(false)
+
     fun canAutoLaunch(context: Context): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context)
 

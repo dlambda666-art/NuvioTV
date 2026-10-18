@@ -1172,6 +1172,9 @@ private fun PlaybackNavHost(
             )
         }
 
+        composable(Screen.MyApps.route) {
+            com.nuvio.tv.ui.screens.livetv.MyAppsScreen()
+        }
         composable(Screen.LiveTv.route) {
             com.nuvio.tv.ui.screens.livetv.LiveTvScreen()
         }

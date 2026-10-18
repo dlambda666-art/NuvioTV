@@ -51,6 +51,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.LiveTv
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
@@ -369,6 +370,15 @@ open class MainActivity : ComponentActivity() {
             com.nuvio.tv.core.wake.WakeLaunch666.notifyWake()
         }
         askOverlayPermissionOnce()
+        // 666TV : en launcher, Retour sur l'accueil ne ferme pas l'appli.
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (com.nuvio.tv.core.wake.WakeLaunch666.isDefaultHome(this@MainActivity)) return
+                isEnabled = false
+                onBackPressedDispatcher.onBackPressed()
+                isEnabled = true
+            }
+        })
 
         window?.decorView?.post {
             val snapshot = com.nuvio.tv.core.player.DisplayCapabilities.detect(this)
@@ -1027,6 +1037,7 @@ open class MainActivity : ComponentActivity() {
                             add(Screen.Library.route)
                             add(Screen.Calendar.route)
                             add(Screen.LiveTv.route)
+                            add(Screen.MyApps.route)
                             add(Screen.Settings.route)
                             if (discoverLocation == DiscoverLocation.IN_SIDEBAR) {
                                 add(Screen.Discover.route)
@@ -1090,6 +1101,13 @@ open class MainActivity : ComponentActivity() {
                                     route = Screen.LiveTv.route,
                                     label = "TV en direct",
                                     icon = Icons.Default.LiveTv
+                                )
+                            )
+                            add(
+                                DrawerItem(
+                                    route = Screen.MyApps.route,
+                                    label = "Mes applis",
+                                    icon = Icons.Default.Apps
                                 )
                             )
                             add(
@@ -1247,6 +1265,18 @@ open class MainActivity : ComponentActivity() {
                         }
                     }
                     // 666TV : au réveil de la Shield, l'ouverture (pentagramme + orage) se rejoue ~4 s.
+                    // 666TV : bouton Accueil de la télécommande → retour à l'accueil de 666TV.
+                    val homeNonce by com.nuvio.tv.core.wake.WakeLaunch666.homeNonce.collectAsState()
+                    LaunchedEffect(homeNonce) {
+                        if (homeNonce > 0) {
+                            runCatching {
+                                navController.navigate(Screen.Home.route) {
+                                    popUpTo(navController.graph.id) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                        }
+                    }
                     val wakeNonce by com.nuvio.tv.core.wake.WakeLaunch666.wakeNonce.collectAsState()
                     var wakeSplashActive by remember { mutableStateOf(false) }
                     LaunchedEffect(wakeNonce) {
@@ -1345,6 +1375,9 @@ open class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         if (intent.getBooleanExtra(com.nuvio.tv.core.wake.WakeLaunch666.EXTRA_WAKE, false)) {
             com.nuvio.tv.core.wake.WakeLaunch666.notifyWake()
+        }
+        if (intent.hasCategory(Intent.CATEGORY_HOME)) {
+            com.nuvio.tv.core.wake.WakeLaunch666.notifyHome()
         }
         setIntent(intent)
         captureDeepLinkIntent(intent)
