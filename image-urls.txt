@@ -1,1 +1,6 @@
-nouveaute_logo2.png=https://i.postimg.cc/zf4Xs7YP/file-000000003d308243a751cc19e1088124.png
+Creepster.ttf=https://raw.githubusercontent.com/google/fonts/main/ofl/creepster/Creepster-Regular.ttf
+Nosifer.ttf=https://raw.githubusercontent.com/google/fonts/main/ofl/nosifer/Nosifer-Regular.ttf
+MetalMania.ttf=https://raw.githubusercontent.com/google/fonts/main/ofl/metalmania/MetalMania-Regular.ttf
+Butcherman.ttf=https://raw.githubusercontent.com/google/fonts/main/ofl/butcherman/Butcherman-Regular.ttf
+Eater.ttf=https://raw.githubusercontent.com/google/fonts/main/ofl/eater/Eater-Regular.ttf
+Cinzel.ttf=https://raw.githubusercontent.com/google/fonts/main/ofl/cinzel/Cinzel%5Bwght%5D.ttf
