@@ -47,6 +47,8 @@ class UpdateViewModel @Inject constructor(
     val uiState: StateFlow<UpdateUiState> = _uiState.asStateFlow()
     private var updateCheckJob: Job? = null
 
+    private var lastAutoCheckMs = 0L
+
     init {
         viewModelScope.launch {
             val enabled = updatePreferences.updateBannerEnabled.first()
@@ -59,8 +61,36 @@ class UpdateViewModel @Inject constructor(
             }
             if (enabled && !BuildConfig.IS_DEBUG_BUILD) {
                 checkForUpdates(force = false, showNoUpdateFeedback = false)
+                lastAutoCheckMs = System.currentTimeMillis()
             }
         }
+        // 666TV : 666TV sert d'écran d'accueil et ne redémarre presque jamais. On revérifie
+        // donc toutes les 6 h, et au réveil de la Shield / retour à l'accueil (au plus 1 fois / 30 min).
+        if (!BuildConfig.IS_DEBUG_BUILD) {
+            viewModelScope.launch {
+                while (true) {
+                    kotlinx.coroutines.delay(6 * 60 * 60 * 1000L)
+                    autoCheck666(minGapMs = 0L)
+                }
+            }
+            viewModelScope.launch {
+                kotlinx.coroutines.flow.merge(
+                    com.nuvio.tv.core.wake.WakeLaunch666.wakeNonce,
+                    com.nuvio.tv.core.wake.WakeLaunch666.homeNonce
+                ).collect { nonce -> if (nonce > 0) autoCheck666(minGapMs = 30 * 60 * 1000L) }
+            }
+        }
+    }
+
+    private fun autoCheck666(minGapMs: Long) {
+        val st = _uiState.value
+        if (!st.updateBannerEnabled || st.isChecking || st.isDownloading ||
+            st.isUpdateAvailable || st.downloadedApkPath != null
+        ) return
+        val now = System.currentTimeMillis()
+        if (now - lastAutoCheckMs < minGapMs) return
+        lastAutoCheckMs = now
+        checkForUpdates(force = false, showNoUpdateFeedback = false)
     }
 
     fun checkForUpdates(force: Boolean, showNoUpdateFeedback: Boolean) {
