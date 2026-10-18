@@ -2,6 +2,7 @@
 
 package com.nuvio.tv.ui.screens
 
+import com.nuvio.tv.ui.components.cemetery666
 import com.nuvio.tv.ui.theme.NuvioTheme
 
 import androidx.activity.compose.BackHandler
@@ -192,6 +193,7 @@ fun CatalogSeeAllScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .cemetery666()
             .padding(vertical = NuvioTheme.spacing.xl)
     ) {
         Row(
@@ -228,7 +230,7 @@ fun CatalogSeeAllScreen(
             Box(modifier = Modifier.fillMaxSize()) {
                 LazyVerticalGrid(
                     state = gridState,
-                    columns = GridCells.Adaptive(minSize = posterCardStyle.width),
+                    columns = GridCells.Adaptive(minSize = com.nuvio.tv.ui.components.Tomb666.portrait(posterCardStyle.width)),
                     modifier = Modifier.dpadRepeatThrottle(),
                     contentPadding = PaddingValues(
                         start = NuvioTheme.spacing.xxxl,

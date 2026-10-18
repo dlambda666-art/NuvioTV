@@ -3,6 +3,7 @@
 package com.nuvio.tv.ui.screens.home
 
 import com.nuvio.tv.ui.components.dust666Source
+import com.nuvio.tv.ui.components.tomb666
 import com.nuvio.tv.ui.theme.NuvioTheme
 
 import android.view.KeyEvent as AndroidKeyEvent
@@ -1241,7 +1242,8 @@ private fun ModernCarouselCard(
             !landscapeLogoLoadFailed
     var longPressTriggered by remember { mutableStateOf(false) }
     val longPressKeyTracker = rememberLongPressKeyTracker()
-    val backgroundCardColor = NuvioTheme.colors.BackgroundCard
+    val tomb666 = com.nuvio.tv.ui.components.Tomb666.enabled
+    val backgroundCardColor = if (tomb666) Color.Transparent else NuvioTheme.colors.BackgroundCard
     val focusRingBorder = NuvioTheme.focusRing.border(NuvioTheme.spacing.xxs)
     val titleMedium = MaterialTheme.typography.titleMedium
     val backgroundPainter = remember(backgroundCardColor) { ColorPainter(backgroundCardColor) }
@@ -1265,7 +1267,7 @@ private fun ModernCarouselCard(
             shape = cardShape
         )
     }
-    val effectiveFocusedBorder = if (isFastScrolling) transparentFocusBorder else focusedBorder
+    val effectiveFocusedBorder = if (isFastScrolling || tomb666) transparentFocusBorder else focusedBorder
     val noFocusGlow = remember { CardDefaults.glow(focusedGlow = Glow.None) }
     val cardGlow = when (payload) {
         is ModernPayload.CollectionFolder -> rememberArtworkBackedCardGlow(
@@ -1275,7 +1277,7 @@ private fun ModernCarouselCard(
         )
         else -> noFocusGlow
     }
-    val effectiveCardGlow = if (isFastScrolling) noFocusGlow else cardGlow
+    val effectiveCardGlow = if (isFastScrolling || tomb666) noFocusGlow else cardGlow
     val titleStyle = remember(titleMedium) {
         titleMedium.copy(fontWeight = FontWeight.Medium)
     }
@@ -1348,11 +1350,14 @@ private fun ModernCarouselCard(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .tomb666(landscape = animatedCardWidth > cardHeight, focused = isFocused)
                     .clip(cardShape)
-                    .nuvioCardDepth(
-                        shape = cardShape,
-                        surface = CardDepthSurface.POSTERS,
-                        style = cardDepthStyle
+                    .then(
+                        if (tomb666) Modifier else Modifier.nuvioCardDepth(
+                            shape = cardShape,
+                            surface = CardDepthSurface.POSTERS,
+                            style = cardDepthStyle
+                        )
                     )
             ) {
                 val mediaLayerModifier = remember(hasLandscapeLogo) {

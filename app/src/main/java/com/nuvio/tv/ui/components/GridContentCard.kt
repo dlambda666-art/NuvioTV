@@ -76,6 +76,12 @@ fun GridContentCard(
     onLongPress: (() -> Unit)? = null,
     onFocused: () -> Unit = {}
 ) {
+    // 666TV : case agrandie pour la tombe.
+    @Suppress("NAME_SHADOWING")
+    val posterCardStyle = if (Tomb666.enabled) posterCardStyle.copy(
+        width = Tomb666.portrait(posterCardStyle.width),
+        height = Tomb666.portrait(posterCardStyle.height)
+    ) else posterCardStyle
     val cardShape = remember(posterCardStyle.cornerRadius) { RoundedCornerShape(posterCardStyle.cornerRadius) }
     val cardDepthStyle = LocalCardDepthStyle.current
     val density = LocalDensity.current
@@ -167,7 +173,7 @@ fun GridContentCard(
                 containerColor = androidx.compose.ui.graphics.Color.Transparent,
                 focusedContainerColor = androidx.compose.ui.graphics.Color.Transparent
             ),
-            border = CardDefaults.border(
+            border = if (Tomb666.enabled) CardDefaults.border(focusedBorder = Border.None) else CardDefaults.border(
                 focusedBorder = Border(
                     border = NuvioTheme.focusRing.border(posterCardStyle.focusedBorderWidth),
                     shape = cardShape
@@ -178,11 +184,14 @@ fun GridContentCard(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .tomb666(landscape = item.posterShape == PosterShape.LANDSCAPE, focused = isFocused)
                     .clip(cardShape)
-                    .nuvioCardDepth(
-                        shape = cardShape,
-                        surface = depthSurface,
-                        style = cardDepthStyle
+                    .then(
+                        if (Tomb666.enabled) Modifier else Modifier.nuvioCardDepth(
+                            shape = cardShape,
+                            surface = depthSurface,
+                            style = cardDepthStyle
+                        )
                     )
             ) {
                 val context = LocalContext.current

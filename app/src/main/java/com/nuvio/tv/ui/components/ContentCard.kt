@@ -113,13 +113,13 @@ fun ContentCard(
     val cardShape = remember(posterCardStyle.cornerRadius) { RoundedCornerShape(posterCardStyle.cornerRadius) }
     val cardDepthStyle = LocalCardDepthStyle.current
     val baseCardWidth = when (item.posterShape) {
-        PosterShape.POSTER -> posterCardStyle.width
+        PosterShape.POSTER -> Tomb666.portrait(posterCardStyle.width)
         PosterShape.LANDSCAPE -> 260.dp
         PosterShape.SQUARE -> 170.dp
     }
     val baseCardHeight = when (item.posterShape) {
-        PosterShape.POSTER -> posterCardStyle.height
-        PosterShape.LANDSCAPE -> 148.dp
+        PosterShape.POSTER -> Tomb666.portrait(posterCardStyle.height)
+        PosterShape.LANDSCAPE -> Tomb666.landscapeHeight(148.dp)
         PosterShape.SQUARE -> 170.dp
     }
     val expandedCardWidth = baseCardHeight * BACKDROP_ASPECT_RATIO
@@ -357,7 +357,7 @@ fun ContentCard(
                 containerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent
             ),
-            border = CardDefaults.border(
+            border = if (Tomb666.enabled) CardDefaults.border(focusedBorder = Border.None) else CardDefaults.border(
                 focusedBorder = Border(
                     border = NuvioTheme.focusRing.border(posterCardStyle.focusedBorderWidth),
                     shape = cardShape
@@ -369,11 +369,14 @@ fun ContentCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(baseCardHeight)
+                    .tomb666(landscape = item.posterShape == PosterShape.LANDSCAPE, focused = isFocused && !isBackdropExpanded)
                     .clip(cardShape)
-                    .nuvioCardDepth(
-                        shape = cardShape,
-                        surface = CardDepthSurface.POSTERS,
-                        style = cardDepthStyle
+                    .then(
+                        if (Tomb666.enabled) Modifier else Modifier.nuvioCardDepth(
+                            shape = cardShape,
+                            surface = CardDepthSurface.POSTERS,
+                            style = cardDepthStyle
+                        )
                     )
             ) {
                 val isPlaceholderItem = imageUrl == PLACEHOLDER_IMAGE_URL

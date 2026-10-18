@@ -630,27 +630,29 @@ fun ModernHomeContent(
         }
     }
 
-    val portraitBaseWidth = uiState.posterCardWidthDp.dp
-    val portraitBaseHeight = uiState.posterCardHeightDp.dp
+    // 666TV : tombes plus grandes que les affiches, on agrandit les cases.
+    val portraitBaseWidth = com.nuvio.tv.ui.components.Tomb666.portrait(uiState.posterCardWidthDp.dp)
+    val portraitBaseHeight = com.nuvio.tv.ui.components.Tomb666.portrait(uiState.posterCardHeightDp.dp)
+    val landscapeBaseWidth = uiState.posterCardWidthDp.dp
     val portraitModernPosterScale = 1.08f
     val landscapeModernPosterScale = 1.34f
     val portraitCatalogCardWidth = portraitBaseWidth * 0.84f * portraitModernPosterScale
     val portraitCatalogCardHeight = portraitBaseHeight * 0.84f * portraitModernPosterScale
-    val landscapeCatalogCardWidth = portraitBaseWidth * 1.24f * landscapeModernPosterScale
-    val landscapeCatalogCardHeight = landscapeCatalogCardWidth / 1.77f
+    val landscapeCatalogCardWidth = landscapeBaseWidth * 1.24f * landscapeModernPosterScale
+    val landscapeCatalogCardHeight = com.nuvio.tv.ui.components.Tomb666.landscapeHeight(landscapeCatalogCardWidth / 1.77f)
     // Poster style reuses the portrait catalog dimensions so its artwork matches the catalogs below it.
     val continueWatchingStyle = uiState.continueWatchingCardStyle
     val continueWatchingScale = 1.34f
     val continueWatchingCardWidth = when (continueWatchingStyle) {
         ContinueWatchingCardStyle.POSTER -> portraitCatalogCardWidth
         // Wide still scales with the poster width setting so it matches the rest of the row.
-        ContinueWatchingCardStyle.WIDE -> portraitBaseWidth * 2.1f
-        ContinueWatchingCardStyle.CARD -> portraitBaseWidth * 1.24f * continueWatchingScale
+        ContinueWatchingCardStyle.WIDE -> landscapeBaseWidth * 2.1f
+        ContinueWatchingCardStyle.CARD -> landscapeBaseWidth * 1.24f * continueWatchingScale
     }
     val continueWatchingCardHeight = when (continueWatchingStyle) {
         ContinueWatchingCardStyle.POSTER -> portraitCatalogCardHeight
         ContinueWatchingCardStyle.WIDE -> continueWatchingCardWidth * WIDE_CARD_HEIGHT_RATIO
-        ContinueWatchingCardStyle.CARD -> continueWatchingCardWidth / 1.77f
+        ContinueWatchingCardStyle.CARD -> com.nuvio.tv.ui.components.Tomb666.landscapeHeight(continueWatchingCardWidth / 1.77f)
     }
 
     val localConfiguration = LocalConfiguration.current

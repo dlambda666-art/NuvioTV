@@ -649,7 +649,7 @@ fun ContinueWatchingCard(
             focusedContainerColor = Color.Transparent
         ),
         // With text under the artwork the card border would ring the text too, so the artwork draws its own.
-        border = if (textBelowArtwork) {
+        border = if (textBelowArtwork || Tomb666.enabled) {
             CardDefaults.border(focusedBorder = Border.None)
         } else {
             CardDefaults.border(
@@ -693,7 +693,7 @@ fun ContinueWatchingCard(
             return@Card
         }
         Column(
-            modifier = if (textBelowArtwork) {
+            modifier = if (textBelowArtwork || Tomb666.enabled) {
                 Modifier
             } else {
                 Modifier.nuvioCardDepth(
@@ -708,8 +708,10 @@ fun ContinueWatchingCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(imageHeight)
+                    // 666TV : plaque tombale (carte en largeur) ou tombe debout (style affiche).
+                    .tomb666(landscape = !textBelowArtwork, focused = isFocused)
                     .then(
-                        if (textBelowArtwork) {
+                        if (textBelowArtwork && !Tomb666.enabled) {
                             Modifier.nuvioCardDepth(
                                 shape = cwClipShape,
                                 surface = CardDepthSurface.CONTINUE_WATCHING,
@@ -721,7 +723,7 @@ fun ContinueWatchingCard(
                     )
                     .clip(cwClipShape)
                     .then(
-                        if (textBelowArtwork && isFocused) {
+                        if (textBelowArtwork && isFocused && !Tomb666.enabled) {
                             Modifier.border(
                                 border = NuvioTheme.focusRing.border(NuvioTheme.spacing.xxs),
                                 shape = cwClipShape

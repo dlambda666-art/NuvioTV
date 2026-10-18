@@ -928,6 +928,18 @@ fun LayoutSettingsContent(
                     focusRequester = posterCardStyleHeaderFocus,
                     onFocused = { focusedSection = LayoutSettingsSection.POSTER_CARD_STYLE }
                 ) {
+                    // 666TV : affiches dans des pierres tombales.
+                    val tombContext = androidx.compose.ui.platform.LocalContext.current
+                    CompactToggleRow(
+                        title = "Pierres tombales 666",
+                        subtitle = "Affiches dans des tombes, plaques pour « Continuer à regarder », fond cimetière sur les catégories",
+                        checked = com.nuvio.tv.ui.components.Tomb666.enabled,
+                        onToggle = {
+                            com.nuvio.tv.ui.components.Tomb666.setEnabled(tombContext, !com.nuvio.tv.ui.components.Tomb666.enabled)
+                        },
+                        onFocused = { focusedSection = LayoutSettingsSection.POSTER_CARD_STYLE }
+                    )
+                    Spacer(modifier = Modifier.height(NuvioTheme.spacing.md))
                     PosterCardStyleControls(
                         widthDp = uiState.posterCardWidthDp,
                         cornerRadiusDp = uiState.posterCardCornerRadiusDp,
