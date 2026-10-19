@@ -146,6 +146,18 @@ function streamHeaders(s) {
 }
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
+// 666TV : vrai si le flux annonce un AUTRE épisode (ex. S01E01 alors qu'on demande S01E05).
+function episodeMismatch(text, season, episode) {
+    var re = /\bS(\d{1,2})[ ._-]?E(\d{1,3})(?:[ ._-]?(?:-|E)[ ._-]?E?(\d{1,3}))?/ig;
+    var m, any = false, s = parseInt(season, 10), e = parseInt(episode, 10);
+    while ((m = re.exec(text))) {
+        any = true;
+        var a = parseInt(m[2], 10), b = m[3] ? parseInt(m[3], 10) : a;
+        if (parseInt(m[1], 10) === s && e >= a && e <= Math.max(a, b)) return false;
+    }
+    return any;
+}
+
 async function getStreams(tmdbId, mediaType, season, episode) {
     var base = addonBase();
     if (!base) {
@@ -165,13 +177,14 @@ async function getStreams(tmdbId, mediaType, season, episode) {
 
     var found = [];
     var seen = {};
-    var dropped = { noUrl: 0, notCached: 0, lang: 0, quality: 0 };
+    var dropped = { noUrl: 0, notCached: 0, lang: 0, quality: 0, ep: 0 };
     streams.forEach(function (s) {
         if (!s || !s.url || !/^https?:\/\//i.test(s.url)) { dropped.noUrl++; return; }
         var hints = s.behaviorHints || {};
         var filename = hints.filename || '';
         var text = [s.name, s.title, s.description, filename].filter(Boolean).join('\n');
         if (NOT_CACHED.test(String(s.name || ''))) { dropped.notCached++; return; }
+        if (isTv && episodeMismatch(text, season, episode)) { dropped.ep++; return; }
         var lang = frenchLabel(text);
         if (!lang) { dropped.lang++; return; }
         var quality = qualityOf(text);
@@ -190,7 +203,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     });
     console.log(ADDON_NAME + '666 : ' + streams.length + ' flux reçus, ' + found.length + ' gardés (écartés : ' +
         dropped.noUrl + ' sans lien, ' + dropped.notCached + ' pas en cache, ' + dropped.lang + ' pas VF, ' +
-        dropped.quality + ' < 1080p)');
+        dropped.quality + ' < 1080p, ' + dropped.ep + ' autre épisode)');
 
     if (!found.length) {
         var first = streams[0] || {};
