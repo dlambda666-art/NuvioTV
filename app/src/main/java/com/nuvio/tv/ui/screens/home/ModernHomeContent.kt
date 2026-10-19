@@ -1276,6 +1276,23 @@ fun ModernHomeContent(
         com.nuvio.tv.ui.components.Dust666Overlay(Modifier.fillMaxSize())
         // 666TV : heure + météo, et « Reprendre » au réveil (accueil seulement).
         if (forcedBackdrop666 == null) {
+            val dreamContext = androidx.compose.ui.platform.LocalContext.current
+            LaunchedEffect(uiState.continueWatchingItems) {
+                val items = uiState.continueWatchingItems
+                if (items.isEmpty()) return@LaunchedEffect
+                val posters = items.mapNotNull {
+                    when (it) {
+                        is ContinueWatchingItem.InProgress -> it.progress.poster
+                        is ContinueWatchingItem.NextUp -> it.info.poster
+                    }
+                }
+                val label = when (val f = items.first()) {
+                    is ContinueWatchingItem.InProgress -> f.progress.name +
+                        (if (f.progress.season != null && f.progress.episode != null) " · S%02dE%02d".format(f.progress.season, f.progress.episode) else "")
+                    is ContinueWatchingItem.NextUp -> f.info.name + " · S%02dE%02d".format(f.info.season, f.info.episode)
+                }
+                com.nuvio.tv.core.dream.Dream666Data.save(dreamContext, posters, label)
+            }
             HomeClock666(Modifier.align(Alignment.TopEnd).padding(top = 18.dp, end = 30.dp))
             ResumeOnWake666(
                 items = uiState.continueWatchingItems,
