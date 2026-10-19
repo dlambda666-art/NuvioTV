@@ -119,6 +119,8 @@ internal fun findRelocatedItemIndex(
 @Composable
 fun ModernHomeContent(
     uiState: HomeUiState,
+    /** 666TV : fond imposé (ex. cimetière dans une collection ouverte). */
+    forcedBackdrop666: String? = null,
     modernPresentation: ModernHomePresentationState = ModernHomePresentationState(),
     focusState: HomeScreenFocusState,
     enrichingItemId: String? = null,
@@ -739,7 +741,7 @@ fun ModernHomeContent(
                         (activeRowKeyVal?.startsWith(CALENDAR_ROW_ADDON_ID + "_") == true ||
                             activeRowKeyVal?.startsWith(TOP_TEN_VF_ROW_ADDON_ID + "_") == true ||
                             activeRowKeyVal?.startsWith(TOP_TEN_SERIES_VF_ROW_ADDON_ID + "_") == true)
-                    val heroBackdrop = if (fixed666Backdrop) COLLECTIONS_BACKDROP_666 else firstNonBlank(
+                    val heroBackdrop = if (forcedBackdrop666 != null) forcedBackdrop666 else if (fixed666Backdrop) COLLECTIONS_BACKDROP_666 else firstNonBlank(
                         resolvedHero?.backdrop,
                         resolvedHero?.imageUrl,
                         resolvedHero?.poster,

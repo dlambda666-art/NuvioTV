@@ -693,5 +693,9 @@ internal fun ContinueWatchingItem.episode(): Int? {
 }
 
 /** 666TV : fond fixe des collections, image intégrée à l'appli (res/drawable-nodpi). */
+/** 666TV : fond cimetière (collections ouvertes, avec les pierres tombales). */
+internal val CEMETERY_BACKDROP_666: String =
+    "android.resource://${com.nuvio.tv.BuildConfig.APPLICATION_ID}/${com.nuvio.tv.R.drawable.bg_cimetiere_666}"
+
 internal val COLLECTIONS_BACKDROP_666: String =
     "android.resource://${com.nuvio.tv.BuildConfig.APPLICATION_ID}/${com.nuvio.tv.R.drawable.fond_collections_666}"

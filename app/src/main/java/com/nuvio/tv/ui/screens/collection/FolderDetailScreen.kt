@@ -970,6 +970,9 @@ private fun FollowLayoutContent(
         }
         HomeLayout.MODERN -> ModernHomeContent(
             uiState = homeState,
+            forcedBackdrop666 = if (com.nuvio.tv.ui.components.Tomb666.enabled) {
+                com.nuvio.tv.ui.screens.home.CEMETERY_BACKDROP_666
+            } else null,
             modernPresentation = homeState.modernHomePresentation,
             focusState = focusState,
             enrichingItemId = enrichingItemId,
