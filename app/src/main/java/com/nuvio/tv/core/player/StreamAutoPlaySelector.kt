@@ -58,6 +58,33 @@ object StreamAutoPlaySelector {
 
 
 
+    private val SXE = Regex("""(?i)\bS(\d{1,2})[ ._-]?E(\d{1,3})(?:[ ._-]?(?:-|E)[ ._-]?E?(\d{1,3}))?""")
+    private val NXN = Regex("""(?i)\b(\d{1,2})x(\d{2,3})\b""")
+
+    /**
+     * 666TV : 0 = le flux annonce bien l'épisode demandé, 1 = rien d'indiqué (pack, ou source
+     * qui n'écrit pas l'épisode), 2 = le flux annonce un AUTRE épisode → à éviter en lecture auto.
+     */
+    fun episodeRank(stream: Stream, season: Int?, episode: Int?): Int {
+        if (season == null || episode == null) return 0
+        val text = listOfNotNull(stream.name, stream.title, stream.description, stream.behaviorHints?.filename)
+            .joinToString(" ")
+        val found = ArrayList<Triple<Int, Int, Int>>()
+        SXE.findAll(text).forEach { m ->
+            val s = m.groupValues[1].toIntOrNull() ?: return@forEach
+            val e1 = m.groupValues[2].toIntOrNull() ?: return@forEach
+            val e2 = m.groupValues[3].toIntOrNull() ?: e1
+            found += Triple(s, e1, maxOf(e1, e2))
+        }
+        NXN.findAll(text).forEach { m ->
+            val s = m.groupValues[1].toIntOrNull() ?: return@forEach
+            val e = m.groupValues[2].toIntOrNull() ?: return@forEach
+            found += Triple(s, e, e)
+        }
+        if (found.isEmpty()) return 1
+        return if (found.any { (s, a, b) -> s == season && episode in a..b }) 0 else 2
+    }
+
     private fun isUncertainFrench(stream: Stream): Boolean =
         listOf(stream.name, stream.title, stream.description).any { it?.contains("VF ?") == true }
 
@@ -71,9 +98,15 @@ object StreamAutoPlaySelector {
         selectedPlugins: Set<String>,
         preferredBingeGroup: String? = null,
         preferBingeGroupInSelection: Boolean = false,
-        bingeGroupOnly: Boolean = false
+        bingeGroupOnly: Boolean = false,
+        season: Int? = null,
+        episode: Int? = null
     ): Stream? {
         if (streams.isEmpty()) return null
+        // 666TV : jamais de lecture auto d'un flux qui annonce un autre épisode.
+        val epStreams = streams.filter { episodeRank(it, season, episode) < 2 }
+        @Suppress("NAME_SHADOWING")
+        val streams = if (epStreams.isNotEmpty()) epStreams else streams
 
         val effectiveSource = if (!AppFeaturePolicy.pluginsEnabled && source == StreamAutoPlaySource.ENABLED_PLUGINS_ONLY) {
             StreamAutoPlaySource.INSTALLED_ADDONS_ONLY
@@ -122,6 +155,7 @@ object StreamAutoPlaySelector {
                 .filter { isPlayable(it) }
                 .sortedWith(
                     compareBy<Stream> { if (isUncertainFrench(it)) 1 else 0 }
+                        .thenBy { episodeRank(it, season, episode) }
                         .thenByDescending { it.qualityValue }
                 )
                 .firstOrNull()

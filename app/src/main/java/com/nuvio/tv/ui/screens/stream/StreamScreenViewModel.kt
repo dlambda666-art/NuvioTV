@@ -519,7 +519,9 @@ class StreamScreenViewModel @Inject constructor(
                         selectedAddons = playerSettings.streamAutoPlaySelectedAddons,
                         selectedPlugins = playerSettings.streamAutoPlaySelectedPlugins,
                         preferredBingeGroup = persistedBingeGroup,
-                        preferBingeGroupInSelection = persistedBingeGroup != null
+                        preferBingeGroupInSelection = persistedBingeGroup != null,
+                        season = season,
+                        episode = episode
                     )
                 }
                 if (selectedAutoPlayStream != null) {
@@ -716,7 +718,9 @@ class StreamScreenViewModel @Inject constructor(
                                     selectedPlugins = playerSettings.streamAutoPlaySelectedPlugins,
                                     preferredBingeGroup = persistedBingeGroup,
                                     preferBingeGroupInSelection = true,
-                                    bingeGroupOnly = true
+                                    bingeGroupOnly = true,
+                                    season = season,
+                                    episode = episode
                                 )
                                 if (earlyMatch != null) {
                                     resolvedAutoPlayTarget = true
