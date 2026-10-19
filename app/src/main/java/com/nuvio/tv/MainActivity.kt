@@ -363,6 +363,7 @@ open class MainActivity : ComponentActivity() {
         com.nuvio.tv.ui.components.Tomb666.init(this)
         com.nuvio.tv.core.tools.Light666.init(this)
         com.nuvio.tv.core.tools.Clock666.init(this)
+        com.nuvio.tv.core.tools.PhoneLink666.init(this)
         run {
             val appCtx = applicationContext
             Thread { com.nuvio.tv.core.tools.Backup666.autoBackupIfDue(appCtx) }.apply { priority = Thread.MIN_PRIORITY }.start()
@@ -880,6 +881,15 @@ open class MainActivity : ComponentActivity() {
                                     launchSingleTop = true
                                 }
                             }
+                        }
+                    }
+                    // 666TV : un titre envoyé depuis le téléphone → on ouvre la recherche.
+                    val phoneRequest by com.nuvio.tv.core.tools.PhoneLink666.requests.collectAsState()
+                    LaunchedEffect(phoneRequest) {
+                        if (phoneRequest != null &&
+                            navController.currentBackStackEntry?.destination?.route != Screen.Search.route
+                        ) {
+                            runCatching { navController.navigate(Screen.Search.route) { launchSingleTop = true } }
                         }
                     }
                     var optimisticRoute by remember { mutableStateOf<String?>(null) }

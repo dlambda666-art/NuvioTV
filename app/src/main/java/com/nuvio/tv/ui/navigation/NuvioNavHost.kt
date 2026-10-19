@@ -16,6 +16,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -1133,6 +1134,14 @@ private fun PlaybackNavHost(
         composable(Screen.Search.route) { backStackEntry ->
             val searchViewModel: com.nuvio.tv.ui.screens.search.SearchViewModel =
                 androidx.hilt.navigation.compose.hiltViewModel(backStackEntry)
+            // 666TV : titre tapé sur le téléphone.
+            val phoneRequest by com.nuvio.tv.core.tools.PhoneLink666.requests.collectAsState()
+            LaunchedEffect(phoneRequest) {
+                val req = phoneRequest ?: return@LaunchedEffect
+                searchViewModel.onEvent(com.nuvio.tv.ui.screens.search.SearchEvent.QueryChanged(req.query))
+                searchViewModel.onEvent(com.nuvio.tv.ui.screens.search.SearchEvent.SubmitSearch)
+                com.nuvio.tv.core.tools.PhoneLink666.consume(req)
+            }
             SearchScreen(
                 viewModel = searchViewModel,
                 onNavigateToDetail = { itemId, itemType, addonBaseUrl ->

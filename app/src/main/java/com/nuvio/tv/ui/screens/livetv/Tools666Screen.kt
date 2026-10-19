@@ -272,6 +272,18 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 )
             }
             item {
+                val addr = remember { com.nuvio.tv.core.tools.PhoneLink666.address(context) }
+                ActionRow(
+                    "Envoyer depuis le téléphone : " + if (com.nuvio.tv.core.tools.PhoneLink666.enabled) "activé" else "désactivé",
+                    if (com.nuvio.tv.core.tools.PhoneLink666.enabled && addr != null)
+                        "Sur ton téléphone (même Wi-Fi), ouvre $addr et tape un titre"
+                    else "Tape un titre sur ton téléphone, la recherche s'ouvre sur la TV",
+                    onClick = {
+                        com.nuvio.tv.core.tools.PhoneLink666.setEnabled(context, !com.nuvio.tv.core.tools.PhoneLink666.enabled)
+                    }
+                )
+            }
+            item {
                 ActionRow(
                     "Pierres tombales : " + if (com.nuvio.tv.ui.components.Tomb666.enabled) "activées" else "désactivées",
                     "Affiches dans les tombes, fond cimetière",
