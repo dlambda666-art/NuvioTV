@@ -115,11 +115,16 @@ private fun loadApps(context: Context): List<ShieldApp> {
     if (list.none { it.label.contains("Paramètres", true) || it.label.contains("Settings", true) }) {
         list.add(0, ShieldApp("Paramètres Shield", settings, null, null))
     }
+    // 666TV : outils maison (état, sauvegarde, mode léger…), toujours en premier.
+    list.add(0, ShieldApp(TOOLS_LABEL, Intent(TOOLS_ACTION).setPackage(context.packageName), null, null))
     return list
 }
 
+private const val TOOLS_LABEL = "Outils 666"
+private const val TOOLS_ACTION = "com.nuvio.tv.OUTILS_666"
+
 @Composable
-fun MyAppsScreen() {
+fun MyAppsScreen(onOpenTools: () -> Unit = {}) {
     val context = LocalContext.current
     var apps by remember { mutableStateOf<List<ShieldApp>?>(null) }
     LaunchedEffect(Unit) { apps = withContext(Dispatchers.IO) { applyOrder(loadApps(context), loadOrder(context)) } }
@@ -204,7 +209,8 @@ fun MyAppsScreen() {
                         },
                     onLongClick = { movingKey = app.key },
                     onClick = {
-                        runCatching { context.startActivity(Intent(app.launch).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                        if (app.launch.action == TOOLS_ACTION) onOpenTools()
+                        else runCatching { context.startActivity(Intent(app.launch).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
                     }
                 )
             }

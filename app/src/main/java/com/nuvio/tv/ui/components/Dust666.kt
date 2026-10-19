@@ -58,6 +58,7 @@ object Dust666 {
 
     /** Lance l'effet sur la carte [key], puis [onRemove] (le vrai retrait). */
     fun dissolve(scope: CoroutineScope, key: String, onRemove: () -> Unit) {
+        if (com.nuvio.tv.core.tools.Light666.active) { onRemove(); return }  // 666TV : mode léger
         val src = sources[key]
         if (src == null) { onRemove(); return }
         scope.launch {

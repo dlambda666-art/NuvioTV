@@ -1274,6 +1274,15 @@ fun ModernHomeContent(
                     }
             )
         com.nuvio.tv.ui.components.Dust666Overlay(Modifier.fillMaxSize())
+        // 666TV : heure + météo, et « Reprendre » au réveil (accueil seulement).
+        if (forcedBackdrop666 == null) {
+            HomeClock666(Modifier.align(Alignment.TopEnd).padding(top = 18.dp, end = 30.dp))
+            ResumeOnWake666(
+                items = uiState.continueWatchingItems,
+                onResume = onContinueWatchingClick,
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 22.dp)
+            )
+        }
     }
 
     val dustScope = rememberCoroutineScope()

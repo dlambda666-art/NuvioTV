@@ -1176,6 +1176,7 @@ private fun ModernCarouselCard(
     val focusGifUrl = when {
         payload == null -> null
         !payload.focusGifEnabled -> null
+        com.nuvio.tv.core.tools.Light666.active -> null  // 666TV : mode léger
         isFocused -> payload.focusGifUrl
         else -> null
     }

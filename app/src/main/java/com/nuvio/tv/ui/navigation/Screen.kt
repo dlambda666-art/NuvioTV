@@ -141,6 +141,7 @@ sealed class Screen(val route: String) {
     data object Calendar : Screen("calendar")
     data object LiveTv : Screen("live_tv")
     data object MyApps : Screen("my_apps")
+    data object Tools666 : Screen("tools_666")
     data object Settings : Screen("settings")
     data object Tracking : Screen("trakt")
     data object TmdbSettings : Screen("tmdb_settings")

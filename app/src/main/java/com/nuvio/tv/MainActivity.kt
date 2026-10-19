@@ -358,6 +358,12 @@ open class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         com.nuvio.tv.ui.components.Tomb666.init(this)
+        com.nuvio.tv.core.tools.Light666.init(this)
+        com.nuvio.tv.core.tools.Clock666.init(this)
+        run {
+            val appCtx = applicationContext
+            Thread { com.nuvio.tv.core.tools.Backup666.autoBackupIfDue(appCtx) }.apply { priority = Thread.MIN_PRIORITY }.start()
+        }
         isFirstResumeAfterCreate = true
         window?.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
 
