@@ -79,7 +79,7 @@ private class Dream666View(context: Context) : View(context) {
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val clockPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(235, 235, 235); typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        color = Color.rgb(76, 195, 107); typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         textAlign = Paint.Align.CENTER; setShadowLayer(14f, 0f, 4f, Color.BLACK)
     }
     private val smallPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -99,6 +99,8 @@ private class Dream666View(context: Context) : View(context) {
     private var nextBolt = start + 6_000L + rng.nextLong(8_000L)
     private var boltAt = 0L
     private var bolt: Path? = null
+    // Nuages sombres qui filent en haut du ciel.
+    private val clouds = List(9) { floatArrayOf(rng.nextFloat() * 1.3f, 0.03f + rng.nextFloat() * 0.25f, 0.12f + rng.nextFloat() * 0.18f, 0.6f + rng.nextFloat() * 0.8f) }
     private val puffs = List(14) { floatArrayOf(rng.nextFloat(), 0.62f + rng.nextFloat() * 0.38f, 0.15f + rng.nextFloat() * 0.25f, 0.2f + rng.nextFloat() * 0.8f) }
 
     private val tick = object : Runnable {
@@ -174,9 +176,19 @@ private class Dream666View(context: Context) : View(context) {
             paint.alpha = 255
         }
 
+        // Nuages qui passent.
+        for (c in clouds) {
+            val x = ((c[0] + t * 0.018f * c[3]) % 1.6f - 0.3f) * w
+            val y = c[1] * h
+            val r = c[2] * w
+            fogPaint.shader = android.graphics.RadialGradient(
+                x, y, r, Color.argb(if (light) 55 else 85, 40, 44, 52), Color.TRANSPARENT, Shader.TileMode.CLAMP
+            )
+            canvas.drawOval(x - r * 1.6f, y - r * 0.55f, x + r * 1.6f, y + r * 0.55f, fogPaint)
+        }
         // Brouillard qui dérive en bas de l'écran.
         for (pf in puffs) {
-            val x = ((pf[0] + t * 0.004f * pf[3]) % 1.2f - 0.1f) * w
+            val x = ((pf[0] + t * 0.03f * pf[3]) % 1.4f - 0.2f) * w
             val y = pf[1] * h
             val r = pf[2] * w
             fogPaint.shader = android.graphics.RadialGradient(

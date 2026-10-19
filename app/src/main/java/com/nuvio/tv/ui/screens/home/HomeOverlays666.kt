@@ -69,7 +69,7 @@ fun HomeClock666(modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(end = 14.dp)
                 )
             }
-            Text(time, style = TextStyle(fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color.White, shadow = shadow666))
+            Text(time, style = TextStyle(fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4CC36B), shadow = shadow666))
         }
         Text(day, style = TextStyle(fontSize = 13.sp, color = Color(0xFFC8C3BE), shadow = shadow666))
     }
