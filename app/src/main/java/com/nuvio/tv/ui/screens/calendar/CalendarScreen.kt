@@ -335,13 +335,14 @@ fun CalendarVfBanner(episodes: List<CalendarEpisode>, modifier: Modifier = Modif
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
-            text = "🔔 Nouveau en VF",
+            text = if (episodes.all { it.seriesId.startsWith("sport:") }) "🥊 C'est l'heure du combat" else "🔔 Nouveau en VF",
             style = MaterialTheme.typography.titleMedium,
             color = NuvioTheme.colors.TextPrimary
         )
         episodes.take(4).forEach { ep ->
             Text(
-                text = "🇫🇷 ${ep.seriesName} · ${ep.code}",
+                text = if (ep.seriesId.startsWith("sport:")) "🥊 ${ep.seriesName} · ${ep.title.orEmpty()}"
+                else "🇫🇷 ${ep.seriesName} · ${ep.code}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = NuvioTheme.colors.TextPrimary,
                 maxLines = 1,

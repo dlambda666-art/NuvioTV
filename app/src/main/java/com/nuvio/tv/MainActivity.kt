@@ -269,6 +269,9 @@ open class MainActivity : ComponentActivity() {
     lateinit var calendarRepository: com.nuvio.tv.core.calendar.CalendarRepository
 
     @Inject
+    lateinit var ufcScheduleRepository666: com.nuvio.tv.core.calendar.UfcScheduleRepository
+
+    @Inject
     lateinit var experienceModeDataStore: ExperienceModeDataStore
 
     @Inject
@@ -1242,7 +1245,8 @@ open class MainActivity : ComponentActivity() {
                                 delay(20_000L)
                                 while (true) {
                                     val found = runCatching { calendarRepository.newVfEpisodesToAnnounce() }
-                                        .getOrDefault(emptyList())
+                                        .getOrDefault(emptyList()) +
+                                        runCatching { ufcToAnnounce666(ufcScheduleRepository666) }.getOrDefault(emptyList())
                                     if (found.isNotEmpty()) {
                                         calendarVfAnnouncements = found
                                         delay(15_000L)
@@ -2543,3 +2547,35 @@ object LocaleCache {
     @Volatile
     var localeTag: String = UNSET
 }
+
+/**
+ * 666TV : le lendemain d'un UFC numéroté (gala de la nuit), on l'annonce une fois,
+ * avec la cloche et le cri, comme un nouvel épisode VF.
+ */
+private suspend fun android.content.Context.ufcToAnnounce666(
+    repo: com.nuvio.tv.core.calendar.UfcScheduleRepository
+): List<com.nuvio.tv.core.calendar.CalendarEpisode> {
+    val prefs = getSharedPreferences("666tv_sport", android.content.Context.MODE_PRIVATE)
+    val done = prefs.getStringSet("announced", emptySet()).orEmpty()
+    val now = java.time.Instant.now()
+    val events = repo.upcomingNumbered(limit = 3).filter { ev ->
+        // Le gala commence la nuit : on l'annonce 6 h après le début, pendant 2 jours.
+        val ready = ev.start.plusSeconds(6L * 3600)
+        !now.isBefore(ready) && now.isBefore(ready.plusSeconds(48L * 3600)) && ev.name !in done
+    }
+    if (events.isEmpty()) return emptyList()
+    prefs.edit().putStringSet("announced", (done + events.map { it.name }).toList().takeLast(30).toSet()).apply()
+    return events.map { ev ->
+        com.nuvio.tv.core.calendar.CalendarEpisode(
+            seriesId = "sport:" + ev.name,
+            seriesName = ev.name,
+            poster = null,
+            season = 0,
+            episode = 0,
+            title = "Le gala de cette nuit",
+            airInstant = ev.start,
+            addonBaseUrl = null
+        )
+    }
+}
+
