@@ -209,14 +209,14 @@ private class Dream666View(context: Context) : View(context) {
         // Heure, date, météo.
         val d = Date(now)
         clockPaint.textSize = h * 0.13f
-        canvas.drawText(SimpleDateFormat("HH:mm", Locale.FRANCE).format(d), w / 2 + driftX, h * 0.2f + driftY, clockPaint)
+        canvas.drawText(SimpleDateFormat("HH:mm", Locale.FRANCE).format(d), w / 2, h * 0.2f, clockPaint)
         smallPaint.textSize = h * 0.033f
         val wx = weather?.let { "${it.tempC}°  ·  " } ?: ""
-        canvas.drawText(wx + SimpleDateFormat("EEEE d MMMM", Locale.FRANCE).format(d), w / 2 + driftX, h * 0.27f + driftY, smallPaint)
+        canvas.drawText(wx + SimpleDateFormat("EEEE d MMMM", Locale.FRANCE).format(d), w / 2, h * 0.27f, smallPaint)
 
         if (label.isNotBlank()) {
             labelPaint.textSize = h * 0.032f
-            canvas.drawText("$label — reprends quand tu veux", w / 2 + driftX, h * 0.93f + driftY, labelPaint)
+            canvas.drawText("$label — reprends quand tu veux", w / 2, h * 0.93f, labelPaint)
         }
     }
 

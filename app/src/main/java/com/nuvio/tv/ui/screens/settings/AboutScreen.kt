@@ -173,6 +173,15 @@ fun AboutSettingsContent(
                                 trailingIcon = Icons.Default.ChevronRight,
                                 onClick = onNavigateToLicensesAttributions
                             )
+
+                            // 666TV : ton logo, à la place de l'ancienne signature.
+                            Spacer(modifier = Modifier.height(NuvioTheme.spacing.md))
+                            androidx.compose.foundation.Image(
+                                painter = androidx.compose.ui.res.painterResource(R.drawable.splash_logo_666),
+                                contentDescription = "666TV",
+                                modifier = Modifier.width(300.dp).height(180.dp)
+                            )
+                            Spacer(modifier = Modifier.height(NuvioTheme.spacing.md))
                         }
                     }
                 }

@@ -444,12 +444,13 @@ private fun SidebarProfileItem(
         Spacer(modifier = Modifier.width(SidebarProfileContentGap))
         AutoResizeText(
             text = profileName,
-            color = colors.text.onOverlay,
+            // 666TV : ton nom en Creepster vert.
+            color = com.nuvio.tv.ui.components.Font666.Green,
             modifier = Modifier
                 .weight(1f)
                 .graphicsLayer { alpha = labelAlpha },
-            style = androidx.tv.material3.MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.SemiBold
+            style = com.nuvio.tv.ui.components.Font666.horror(
+                androidx.tv.material3.MaterialTheme.typography.titleLarge, 1.1f
             )
         )
     }

@@ -250,6 +250,10 @@ fun StartupSplashScreen(
                 Image(
                     painter = painterResource(R.drawable.splash_penta_666),
                     contentDescription = null,
+                    // 666TV : un peu plus sombre, pour qu'il ressorte sur la lave.
+                    colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+                        androidx.compose.ui.graphics.ColorMatrix().apply { setToScale(0.62f, 0.55f, 0.55f, 1f) }
+                    ),
                     modifier = Modifier.fillMaxSize().graphicsLayer { rotationZ = spin }
                 )
             }

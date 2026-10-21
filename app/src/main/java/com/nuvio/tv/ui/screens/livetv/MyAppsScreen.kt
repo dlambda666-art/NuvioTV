@@ -151,9 +151,8 @@ fun MyAppsScreen(onOpenTools: () -> Unit = {}) {
     ) {
         Text(
             text = "MES APPLIS",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Black,
-            color = Blood666
+            style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.headlineLarge, 1.15f),
+            color = com.nuvio.tv.ui.components.Font666.Green
         )
         Text(
             text = if (movingKey != null) "Déplace l'appli avec les flèches, puis OK pour la poser"
@@ -276,9 +275,9 @@ private fun AppTile(app: ShieldApp, plateRes: Int, moving: Boolean, modifier: Mo
         }
         Text(
             text = app.label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = if (focused) Color.White else Green666,
+            style = if (focused) MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+            else com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.bodyMedium, 1.15f),
+            color = if (focused) Color.White else com.nuvio.tv.ui.components.Font666.Green,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )

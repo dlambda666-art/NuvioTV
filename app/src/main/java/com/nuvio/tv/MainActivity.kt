@@ -1683,11 +1683,13 @@ private fun LegacySidebarScaffold(
                                         Spacer(modifier = Modifier.width(profileGapAfterAvatar))
                                         Text(
                                             text = activeProfileName,
-                                            color = if (isProfileFocused) NuvioTheme.colors.TextPrimary else NuvioTheme.colors.TextSecondary,
+                                            color = if (isProfileFocused) NuvioTheme.colors.TextPrimary else com.nuvio.tv.ui.components.Font666.Green,
+                                            style = if (isProfileFocused) androidx.tv.material3.LocalTextStyle.current
+                                            else com.nuvio.tv.ui.components.Font666.horror(androidx.tv.material3.LocalTextStyle.current, 1.25f),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                             textAlign = TextAlign.Start,
-                                            fontWeight = FontWeight.SemiBold
+                                            fontWeight = if (isProfileFocused) FontWeight.SemiBold else null
                                         )
                                     }
                                 }
