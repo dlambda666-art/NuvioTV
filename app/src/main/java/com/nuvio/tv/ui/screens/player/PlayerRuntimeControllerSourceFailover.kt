@@ -67,11 +67,39 @@ private fun PlayerRuntimeController.currentSourceRequestKey(): String? {
     }
 }
 
+/** 666TV : message quand le fichier n'a aucune piste française (déclenche le lien suivant). */
+internal const val NO_FRENCH_AUDIO_666 = "Aucune piste audio française dans ce fichier"
+
+private fun TrackInfo.isFrench666(): Boolean {
+    val lang = language?.lowercase()?.trim().orEmpty()
+    if (lang.startsWith("fr")) return true
+    val n = name.lowercase()
+    return Regex("fran[cç]ais|french|\\bvf[fqi2]?\\b|truefrench").containsMatchIn(n)
+}
+
+private fun TrackInfo.knownOtherLanguage666(): Boolean {
+    val lang = language?.lowercase()?.trim().orEmpty()
+    return lang.isNotEmpty() && lang !in setOf("und", "unknown", "mul", "zxx", "mis") && !isFrench666()
+}
+
 /** À appeler une fois à la création du lecteur. */
 internal fun PlayerRuntimeController.observeSourceFailover() {
     scope.launch {
         _uiState.map { it.error }.distinctUntilChanged().collect { error ->
             if (error != null) maybeFailoverToNextSource(error)
+        }
+    }
+    // 666TV : « VF » annoncée mais aucune piste française dans le fichier → lien suivant.
+    scope.launch {
+        var checkedFor: String? = null
+        _uiState.map { it.currentStreamUrl to it.audioTracks }.distinctUntilChanged().collect { (url, tracks) ->
+            if (url.isNullOrBlank() || tracks.isEmpty() || url == checkedFor) return@collect
+            if (contentType.equals("cloud", ignoreCase = true)) return@collect
+            checkedFor = url
+            if (tracks.none { it.isFrench666() } && tracks.all { it.knownOtherLanguage666() }) {
+                Log.i(PlayerRuntimeController.TAG, "No French audio track (${tracks.joinToString { it.language.orEmpty() }}) → next link")
+                _uiState.update { it.copy(error = NO_FRENCH_AUDIO_666) }
+            }
         }
     }
 }
@@ -103,7 +131,8 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
                 isBuffering = true,
                 showLoadingOverlay = it.loadingOverlayEnabled,
                 showStreamSourceIndicator = true,
-                streamSourceIndicatorText = "Lien indisponible : recherche du suivant…"
+                streamSourceIndicatorText = if (error == NO_FRENCH_AUDIO_666) "Pas de VF dans ce fichier : recherche du suivant…"
+                    else "Lien indisponible : recherche du suivant…"
             )
         }
 
@@ -146,7 +175,7 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
         _uiState.update {
             it.copy(
                 showStreamSourceIndicator = true,
-                streamSourceIndicatorText = "Lien indisponible → $name"
+                streamSourceIndicatorText = if (error == NO_FRENCH_AUDIO_666) "Pas de VF → $name" else "Lien indisponible → $name"
             )
         }
         hideStreamSourceIndicatorJob = scope.launch {

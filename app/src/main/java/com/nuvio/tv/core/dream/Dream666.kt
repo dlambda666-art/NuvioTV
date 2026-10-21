@@ -178,7 +178,7 @@ private class Dream666View(context: Context) : View(context) {
 
         // Nuages qui passent.
         for (c in clouds) {
-            val x = ((c[0] + t * 0.018f * c[3]) % 1.6f - 0.3f) * w
+            val x = ((c[0] + t * 0.06f * c[3]) % 1.6f - 0.3f) * w
             val y = c[1] * h
             val r = c[2] * w
             fogPaint.shader = android.graphics.RadialGradient(
@@ -188,7 +188,7 @@ private class Dream666View(context: Context) : View(context) {
         }
         // Brouillard qui dérive en bas de l'écran.
         for (pf in puffs) {
-            val x = ((pf[0] + t * 0.03f * pf[3]) % 1.4f - 0.2f) * w
+            val x = ((pf[0] + t * 0.08f * pf[3]) % 1.4f - 0.2f) * w
             val y = pf[1] * h
             val r = pf[2] * w
             fogPaint.shader = android.graphics.RadialGradient(

@@ -179,6 +179,16 @@ private fun resolveDetailReturnEpisodeFocusTarget(
     return orderedEpisodes[matchedIndex]
 }
 
+/** 666TV : vrai si la date de diffusion de l'épisode est encore à venir (plus de 12 h). */
+internal fun Video.notYetAired666(): Boolean {
+    val raw = released?.takeIf { it.isNotBlank() } ?: return false
+    val instant = runCatching { java.time.Instant.parse(raw) }.getOrNull()
+        ?: runCatching { java.time.OffsetDateTime.parse(raw).toInstant() }.getOrNull()
+        ?: runCatching { java.time.LocalDate.parse(raw.take(10)).atStartOfDay(java.time.ZoneOffset.UTC).toInstant() }.getOrNull()
+        ?: return false
+    return instant.isAfter(java.time.Instant.now().plusSeconds(12L * 3600))
+}
+
 private fun resolveHeroPlaybackVideo(
     meta: Meta,
     nextToWatch: NextToWatch?,
@@ -528,6 +538,11 @@ fun MetaDetailsScreen(
                     formatDetailYearRange(meta.releaseInfo)
                 }
                 val playEpisode: (Video) -> Unit = playEpisode@{ video ->
+                    // 666TV : un épisode pas encore diffusé ne lance rien (sinon un vieux fichier).
+                    if (video.notYetAired666()) {
+                        Toast.makeText(context, "Pas encore sorti : cet épisode n'a pas encore été diffusé", Toast.LENGTH_LONG).show()
+                        return@playEpisode
+                    }
                     if (!playbackAvailability.canStream(meta.apiType, video.id, meta.id, video)) {
                         Toast.makeText(context, R.string.playback_unavailable_message, Toast.LENGTH_SHORT).show()
                         return@playEpisode

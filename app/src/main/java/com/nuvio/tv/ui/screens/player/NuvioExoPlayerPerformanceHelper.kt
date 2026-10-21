@@ -67,7 +67,9 @@ object NuvioExoPlayerPerformanceHelper {
     var bufferForPlaybackMs: Int = 3_000
 
     @Volatile
-    var bufferForPlaybackAfterRebufferMs: Int = 3_000
+    // 666TV : après un trou de chargement, on attend 8 s de réserve (au lieu de 3) avant de
+    // repartir, sinon en 4K ça recoupe toutes les quelques secondes.
+    var bufferForPlaybackAfterRebufferMs: Int = 8_000
 
     @Volatile
     var backBufferMs: Int = DEFAULT_NUVIO_BACK_BUFFER_MS
@@ -95,7 +97,7 @@ object NuvioExoPlayerPerformanceHelper {
         minBufferMs = if (customBuffers) bufferSettings.minBufferMs else DEFAULT_NUVIO_MIN_BUFFER_MS
         maxBufferMs = if (customBuffers) bufferSettings.maxBufferMs else DEFAULT_NUVIO_MAX_BUFFER_MS
         bufferForPlaybackMs = if (customBuffers) bufferSettings.bufferForPlaybackMs else 3_000
-        bufferForPlaybackAfterRebufferMs = if (customBuffers) bufferSettings.bufferForPlaybackAfterRebufferMs else 3_000
+        bufferForPlaybackAfterRebufferMs = if (customBuffers) bufferSettings.bufferForPlaybackAfterRebufferMs else 8_000
         backBufferMs = if (customBuffers) bufferSettings.backBufferDurationMs else DEFAULT_NUVIO_BACK_BUFFER_MS
 
         val safeLimitMb = getSafeNativeMemoryLimitMb(context)
@@ -302,13 +304,16 @@ object NuvioExoPlayerPerformanceHelper {
                 .setBackBuffer(backBufferMs, true)
                 .build()
         } else {
+            // 666TV : 100 Mo = à peine 13 s de 4K. On prend une réserve à la taille de la Shield
+            // (≈ 250 Mo sur la tube, 400 Mo sur la Pro) pour que la pause / reprise tienne.
+            val targetMb = context?.let { getSafeNativeMemoryLimitMb(it).coerceIn(100, 400) } ?: 100
             DefaultLoadControl.Builder()
-                .setTargetBufferBytes(100 * 1024 * 1024)
+                .setTargetBufferBytes(targetMb * 1024 * 1024)
                 .setBufferDurationsMs(
                     DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
-                    70_000,
+                    120_000,
                     DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
-                    5_000
+                    8_000
                 )
                 .build()
         }
