@@ -163,6 +163,27 @@ fun StartupSplashScreen(
         animationSpec = infiniteRepeatable(tween(4_000, easing = LinearEasing)),
         label = "splashSmoke"
     )
+    // Les deux gouttes de sang (bouclier puis 666), tour à tour.
+    val drip by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(3_200, easing = LinearEasing)),
+        label = "splashDrip"
+    )
+    // Fumée des volcans, qui monte franchement.
+    val plumeT by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(2_600, easing = LinearEasing)),
+        label = "splashPlume"
+    )
+    val plumes = androidx.compose.runtime.remember {
+        val r = java.util.Random(13)
+        // cratère (x, y en fraction de l'écran), puis 10 bouffées chacune : décalage, dérive
+        listOf(0.768f to 0.35f, 0.284f to 0.39f).map { (cx, cy) ->
+            Triple(cx, cy, List(10) { floatArrayOf(it / 10f + r.nextFloat() * 0.05f, (r.nextFloat() - 0.3f)) })
+        }
+    }
     val puffs = androidx.compose.runtime.remember {
         val r = java.util.Random(666)
         List(18) { floatArrayOf(r.nextFloat(), r.nextFloat(), 0.08f + r.nextFloat() * 0.12f, 0.6f + r.nextFloat() * 0.9f) }
@@ -201,6 +222,26 @@ fun StartupSplashScreen(
                 topLeft = Offset(w * 0.36f, h * 0.06f),
                 size = Size(w * 0.34f, h * 0.56f)
             )
+            // Fumée qui sort des volcans.
+            plumes.forEach { (cx, cy, list) ->
+                list.forEach { pf ->
+                    val prog = (plumeT + pf[0]) % 1f
+                    val rise = prog * h * 0.3f
+                    val x = w * cx + pf[1] * prog * w * 0.06f + kotlin.math.sin((prog * 9f + pf[0] * 20f).toDouble()).toFloat() * w * 0.004f
+                    val y = h * cy - rise
+                    val r = w * (0.012f + prog * 0.05f)
+                    val a = (if (prog < 0.15f) prog / 0.15f else 1f - (prog - 0.15f) / 0.85f) * 0.75f
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(Color(0xFF1C1715).copy(alpha = a), Color(0xFF2A2220).copy(alpha = a * 0.5f), Color.Transparent),
+                            center = Offset(x, y),
+                            radius = r
+                        ),
+                        radius = r,
+                        center = Offset(x, y)
+                    )
+                }
+            }
             puffs.forEach { p ->
                 val prog = (smokeT * p[3] + p[1]) % 1f
                 val x = w * (p[0] + kotlin.math.sin((prog * 6.28f + p[0] * 10f).toDouble()).toFloat() * 0.02f)
@@ -256,6 +297,41 @@ fun StartupSplashScreen(
                     ),
                     modifier = Modifier.fillMaxSize().graphicsLayer { rotationZ = spin }
                 )
+            }
+        }
+        // Gouttes de sang : une du bouclier, puis une du 666.
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            listOf(Triple(0.405f, 0.615f, 0.655f), Triple(0.585f, 0.555f, 0.6f)).forEachIndexed { i, (fx, y0, y1) ->
+                val ph = (drip - i * 0.5f + 1f) % 1f * 2f   // 0..1 : sa demi-période, >1 : repos
+                if (ph > 1f) return@forEachIndexed
+                val x = w * fx
+                val top = h * y0
+                val rMax = w * (if (i == 0) 0.0058f else 0.0047f)
+                val blood = Color(0xFF7D000C)
+                if (ph < 0.45f) {
+                    // la goutte grossit au bord
+                    val g = ph / 0.45f
+                    val r = rMax * (0.4f + 0.6f * g)
+                    drawCircle(blood, r, Offset(x, top + r * g))
+                } else if (ph < 0.85f) {
+                    // elle tombe, de plus en plus vite
+                    val f = (ph - 0.45f) / 0.4f
+                    val y = top + (h * y1 - top) * f * f
+                    drawLine(blood.copy(alpha = 0.8f), Offset(x, top), Offset(x, y - rMax), strokeWidth = rMax * 0.5f * (1f - f) + 1f, cap = StrokeCap.Round)
+                    drawOval(blood, Offset(x - rMax, y - rMax), Size(rMax * 2f, rMax * 2.4f))
+                    drawCircle(Color(0xAAFF8C8C), rMax * 0.25f, Offset(x - rMax * 0.35f, y - rMax * 0.2f))
+                } else {
+                    // ploc dans la flaque
+                    val f = (ph - 0.85f) / 0.15f
+                    drawOval(
+                        blood.copy(alpha = 1f - f),
+                        Offset(x - rMax * (1f + f * 3f), h * y1 - rMax * 0.4f),
+                        Size(rMax * 2f * (1f + f * 3f), rMax * 0.8f),
+                        style = Stroke(width = rMax * 0.4f)
+                    )
+                }
             }
         }
         if (flash.value > 0f) {
