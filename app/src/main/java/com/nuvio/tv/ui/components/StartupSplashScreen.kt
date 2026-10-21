@@ -295,17 +295,10 @@ fun StartupSplashScreen(
                 modifier = Modifier
                     .size(w * 0.16f)
                     .offset(x = w * 0.5f - w * 0.08f, y = h * 0.835f - w * 0.08f)
-                    .background(
-                        Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.9f), Color.Black.copy(alpha = 0.6f), Color.Transparent))
-                    )
             ) {
                 Image(
                     painter = painterResource(R.drawable.splash_penta_666),
                     contentDescription = null,
-                    // 666TV : un peu plus sombre, pour qu'il ressorte sur la lave.
-                    colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(
-                        androidx.compose.ui.graphics.ColorMatrix().apply { setToScale(0.42f, 0.34f, 0.34f, 1f) }
-                    ),
                     modifier = Modifier.fillMaxSize().graphicsLayer { rotationZ = spin }
                 )
             }
