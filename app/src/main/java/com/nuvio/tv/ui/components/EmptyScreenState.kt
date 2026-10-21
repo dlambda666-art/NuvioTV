@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.coerceAtMost
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
@@ -35,20 +36,15 @@ fun EmptyScreenState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(80.dp),
-                tint = NuvioTheme.colors.TextTertiary
-            )
-            Spacer(modifier = Modifier.height(NuvioTheme.spacing.xl))
-        }
+        // 666TV : une tombe « R.I.P. » à la place de l'icône.
+        @Suppress("UNUSED_VARIABLE") val unusedIcon = icon
+        RipTomb666(height = (height * 0.4f).coerceAtMost(170.dp))
+        Spacer(modifier = Modifier.height(NuvioTheme.spacing.lg))
 
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            color = NuvioTheme.colors.TextPrimary
+            style = Font666.horror(MaterialTheme.typography.headlineSmall, 1.2f),
+            color = Font666.Green
         )
 
         if (subtitle != null) {

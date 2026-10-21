@@ -1104,7 +1104,7 @@
 
     <!-- StreamScreen -->
     <string name="stream_retry">Réessayer</string>
-    <string name="stream_no_streams">Aucun flux trouvé</string>
+    <string name="stream_no_streams">Aucun flux VF trouvé</string>
     <string name="stream_no_streams_hint">Essayez d’installer plus d’addons pour trouver des flux</string>
     <string name="stream_finding_source">Recherche de la source du flux</string>
     <string name="stream_type_torrent">Torrent</string>

@@ -1004,17 +1004,19 @@ private fun EmptyState() {
         verticalArrangement = Arrangement.Center,
         modifier = Modifier.padding(NuvioTheme.spacing.xxl)
     ) {
+        com.nuvio.tv.ui.components.RipTomb666(height = 170.dp)
+        Spacer(modifier = Modifier.height(NuvioTheme.spacing.lg))
         Text(
-            text = stringResource(R.string.stream_no_streams),
-            style = MaterialTheme.typography.bodyLarge,
-            color = NuvioTheme.extendedColors.textSecondary,
+            text = "Aucun flux VF trouvé",
+            style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.headlineMedium, 1.2f),
+            color = com.nuvio.tv.ui.components.Font666.Green,
             textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(NuvioTheme.spacing.md))
 
         Text(
-            text = stringResource(R.string.stream_no_streams_hint),
+            text = "Rien n'est encore sorti en VF ici. Réessaie plus tard.",
             style = MaterialTheme.typography.bodyMedium,
             color = NuvioTheme.extendedColors.textSecondary,
             textAlign = TextAlign.Center

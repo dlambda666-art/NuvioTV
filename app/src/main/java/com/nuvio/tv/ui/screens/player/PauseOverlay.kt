@@ -71,6 +71,24 @@ fun PauseOverlay(
 ) {
     var selectedCastMember by remember { mutableStateOf<MetaCastMember?>(null) }
 
+    // 666TV : léger voile rouge sang sur les bords pendant la pause.
+    androidx.compose.animation.AnimatedVisibility(
+        visible = visible,
+        enter = androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.fadeOut(),
+        modifier = modifier
+    ) {
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            drawRect(
+                androidx.compose.ui.graphics.Brush.radialGradient(
+                    colors = listOf(Color.Transparent, Color.Transparent, Color(0x99460006)),
+                    center = center,
+                    radius = size.maxDimension * 0.62f
+                )
+            )
+        }
+    }
+
     PlayerOverlayScaffold(
         visible = visible,
         onDismiss = onClose,
@@ -133,11 +151,8 @@ private fun PauseOverlayClock(modifier: Modifier = Modifier) {
 
     Text(
         text = formatter.format(Date(nowMillis)),
-        style = MaterialTheme.typography.headlineSmall.copy(
-            fontWeight = FontWeight.Normal,
-            fontSize = 34.sp
-        ),
-        color = Color.White.copy(alpha = 0.95f),
+        style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.headlineSmall).copy(fontSize = 40.sp),
+        color = com.nuvio.tv.ui.components.Font666.Green,
         modifier = modifier
     )
 }
@@ -162,8 +177,8 @@ private fun PauseMetadataView(
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.pause_you_are_watching),
-                style = MaterialTheme.typography.bodyLarge,
-                color = NuvioTheme.colors.TextTertiary
+                style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.titleLarge),
+                color = com.nuvio.tv.ui.components.Font666.Green
             )
 
             Spacer(modifier = Modifier.height(NuvioTheme.spacing.md))
@@ -186,8 +201,8 @@ private fun PauseMetadataView(
                 } else {
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = Color.White,
+                        style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.headlineLarge, 1.6f),
+                        color = com.nuvio.tv.ui.components.Font666.Green,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -195,8 +210,8 @@ private fun PauseMetadataView(
             } else {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = Color.White,
+                    style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.headlineLarge, 1.6f),
+                    color = com.nuvio.tv.ui.components.Font666.Green,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -247,8 +262,8 @@ private fun PauseMetadataView(
 
                 Text(
                     text = stringResource(R.string.pause_cast_label),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = NuvioTheme.colors.TextTertiary
+                    style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.titleMedium),
+                    color = com.nuvio.tv.ui.components.Font666.Green
                 )
 
                 Spacer(modifier = Modifier.height(NuvioTheme.spacing.md))
