@@ -21,8 +21,13 @@ var CAM_RELEASE = /\b(?:HD[ ._-]?)?CAM(?:[ ._-]?RIP)?\b|\b(?:HD[ ._-]?)?TS\b|\bT
 // lien qui lance un téléchargement sur le debrid au lieu de lire tout de suite
 var NOT_CACHED = /⬇️|⏳|\bnot[ ._-]?cached\b|\buncached\b|\bnon[ ._-]?en[ ._-]?cache\b|\bdownload(?:ing)?\b|\[(?:RD|AD|TB|PM|DL)[ ._-]?download\]/i;
 
+// autre doublage annoncé (polonais, italien…) : un « MULTI » sans mot français est alors suspect
+var OTHER_DUB = /\b(?:POLISH|PLDUB|PL|LEKTOR|DUBBING|ITA|ITALIAN|GER|GERMAN|DEUTSCH|SPANISH|CASTELLANO|LATINO|RUS|RUSSIAN|UKR|HUN|CZE|CZECH|TUR|TURKISH|POR|PORTUGUESE|HINDI|TAMIL)\b|🇵🇱|🇮🇹|🇩🇪|🇪🇸|🇷🇺|🇺🇦|🇹🇷|🇵🇹|🇧🇷|🇭🇺|🇨🇿|🇲🇽/i;
+
 function frenchLabel(text) {
     if (SUBTITLE_ONLY.test(text) || CAM_RELEASE.test(text)) return null;
+    // 666TV : MULTI / drapeau sans mot français + un autre doublage (ex. polonais) → pas VF.
+    if (!FRENCH_AUDIO.test(text) && OTHER_DUB.test(text)) return null;
     if (/\bVFQ\b/i.test(text)) return 'VFQ';
     if (/\bVFF\b|\bTRUE[ ._-]*FRENCH\b/i.test(text)) return 'VFF';
     if (/\bVF2\b/i.test(text)) return 'VF2';
@@ -146,6 +151,35 @@ function streamHeaders(s) {
 }
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
+// 666TV : date de diffusion de l'épisode (TMDB), pour les émissions datées (WWE, talk-shows…)
+async function episodeAirDate(tmdbId, season, episode) {
+    if (typeof TMDB_API_KEY === 'undefined' || !TMDB_API_KEY) return null;
+    var id = String(tmdbId || '').replace(/^tmdb:/i, '');
+    var key = encodeURIComponent(TMDB_API_KEY);
+    if (/^tt\d+$/i.test(id)) {
+        var f = await getJson('https://api.themoviedb.org/3/find/' + id + '?external_source=imdb_id&api_key=' + key, 'TMDB');
+        id = f && f.tv_results && f.tv_results[0] ? String(f.tv_results[0].id) : '';
+    }
+    if (!/^\d+$/.test(id)) return null;
+    var ep = await getJson('https://api.themoviedb.org/3/tv/' + id + '/season/' + season + '/episode/' + episode + '?api_key=' + key, 'TMDB');
+    return ep && ep.air_date ? ep.air_date : null;
+}
+
+// 666TV : vrai si le nom du fichier porte une date (2026.10.06) qui n'est pas celle de l'épisode (± 1 jour)
+function dateMismatch(text, airDate) {
+    if (!airDate) return false;
+    var target = Date.parse(airDate + 'T00:00:00Z');
+    if (isNaN(target)) return false;
+    var re = /\b(20\d\d)[ ._-](\d\d)[ ._-](\d\d)\b/g, m, any = false;
+    while ((m = re.exec(text))) {
+        var d = Date.parse(m[1] + '-' + m[2] + '-' + m[3] + 'T00:00:00Z');
+        if (isNaN(d)) continue;
+        any = true;
+        if (Math.abs(d - target) <= 36 * 3600 * 1000) return false;
+    }
+    return any;
+}
+
 // 666TV : vrai si le flux annonce un AUTRE épisode (ex. S01E01 alors qu'on demande S01E05).
 function episodeMismatch(text, season, episode) {
     var re = /\bS(\d{1,2})[ ._-]?E(\d{1,3})(?:[ ._-]?(?:-|E)[ ._-]?E?(\d{1,3}))?/ig;
@@ -172,6 +206,12 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         return diagnostic(tmdbId, ['Adresse OK (' + privateHost(base) + ')', 'id IMDb introuvable pour ' + tmdbId, LAST_ERROR]);
     }
     var sid = isTv ? imdbId + ':' + season + ':' + episode : imdbId;
+    var airDate = isTv ? await episodeAirDate(tmdbId, season, episode) : null;
+    // 666TV : épisode pas encore diffusé → rien (sinon on lance un vieux fichier).
+    if (airDate && Date.parse(airDate + 'T00:00:00Z') > Date.now() + 24 * 3600 * 1000) {
+        console.log(ADDON_NAME + '666 : épisode pas encore diffusé (' + airDate + ')');
+        return [];
+    }
     var data = await getJson(base + '/stream/' + (isTv ? 'series' : 'movie') + '/' + sid + '.json', ADDON_NAME);
     var streams = (data && data.streams) || [];
 
@@ -184,7 +224,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         var filename = hints.filename || '';
         var text = [s.name, s.title, s.description, filename].filter(Boolean).join('\n');
         if (NOT_CACHED.test(String(s.name || ''))) { dropped.notCached++; return; }
-        if (isTv && episodeMismatch(text, season, episode)) { dropped.ep++; return; }
+        if (isTv && (episodeMismatch(text, season, episode) || dateMismatch(text, airDate))) { dropped.ep++; return; }
         var lang = frenchLabel(text);
         if (!lang) { dropped.lang++; return; }
         var quality = qualityOf(text);

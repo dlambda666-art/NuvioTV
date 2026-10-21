@@ -20,8 +20,12 @@ var MULTI = /\bMULTI(?:[ ._-]*(?:VFF|VFQ|VF2|TRUEFRENCH|FRENCH))?\b/i;
 var FRENCH_FLAG = /🇫🇷/;
 var CAM_RELEASE = /\b(?:HD[ ._-]?)?CAM(?:[ ._-]?RIP)?\b|\b(?:HD[ ._-]?)?TS\b|\bTELE[ ._-]?SYNC\b|\b(?:HD[ ._-]?)?TC\b|\bTELE[ ._-]?CINE\b|\bMD\b|\bMICRO[ ._-]?DUBBED\b|\bSCR(?:EENER)?\b/i;
 
+// autre doublage annoncé (polonais, italien…) : un « MULTI » sans mot français est alors suspect
+var OTHER_DUB = /\b(?:POLISH|PLDUB|PL|LEKTOR|DUBBING|ITA|ITALIAN|GER|GERMAN|DEUTSCH|SPANISH|CASTELLANO|LATINO|RUS|RUSSIAN|UKR|HUN|CZE|CZECH|TUR|TURKISH|POR|PORTUGUESE|HINDI|TAMIL)\b|🇵🇱|🇮🇹|🇩🇪|🇪🇸|🇷🇺|🇺🇦|🇹🇷|🇵🇹|🇧🇷|🇭🇺|🇨🇿|🇲🇽/i;
+
 function frenchLabel(text) {
     if (SUBTITLE_ONLY.test(text) || CAM_RELEASE.test(text)) return null;
+    if (!FRENCH_AUDIO.test(text) && OTHER_DUB.test(text)) return null;
     if (/\bVFQ\b/i.test(text)) return 'VFQ';
     if (/\bVFF\b|\bTRUE[ ._-]*FRENCH\b/i.test(text)) return 'VFF';
     if (/\bVF2\b/i.test(text)) return 'VF2';
