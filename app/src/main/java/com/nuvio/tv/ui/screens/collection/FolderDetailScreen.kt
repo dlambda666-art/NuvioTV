@@ -348,7 +348,7 @@ private fun TabbedGridContent(
                         ) {
                             Text(
                                 text = if (tab.isAllTab) stringResource(R.string.collections_tab_all) else tab.label,
-                                style = MaterialTheme.typography.labelLarge
+                                style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.titleMedium)
                             )
                             if (uiState.catalogTypeSuffixEnabled && tab.typeLabel.isNotBlank()) {
                                 val localizedType = when {

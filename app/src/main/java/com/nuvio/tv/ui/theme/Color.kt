@@ -128,7 +128,7 @@ class NuvioColorScheme(
     val OnSecondary = palette.onSecondary
     val OnSecondaryVariant = palette.onSecondaryVariant
 
-    val TextPrimary = NuvioPrimitives.white
+    val TextPrimary = androidx.compose.ui.graphics.Color(0xFF5BE36B) // 666TV : texte en vert
     val TextSecondary = NuvioPrimitives.neutral400
     val TextTertiary = NuvioPrimitives.neutral600
     val TextDisabled = NuvioPrimitives.neutral700
@@ -283,7 +283,7 @@ object NuvioColors {
     val Primary = NuvioPrimitives.neutral500
     val PrimaryVariant = NuvioPrimitives.neutral650
     val OnPrimary = NuvioPrimitives.white
-    val TextPrimary = NuvioPrimitives.white
+    val TextPrimary = androidx.compose.ui.graphics.Color(0xFF5BE36B) // 666TV : texte en vert
     val TextSecondary = NuvioPrimitives.neutral400
     val TextTertiary = NuvioPrimitives.neutral600
     val TextDisabled = NuvioPrimitives.neutral700

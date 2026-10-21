@@ -1683,7 +1683,7 @@ private fun LegacySidebarScaffold(
                                         Spacer(modifier = Modifier.width(profileGapAfterAvatar))
                                         Text(
                                             text = activeProfileName,
-                                            color = if (isProfileFocused) NuvioTheme.colors.TextPrimary else com.nuvio.tv.ui.components.Font666.Green,
+                                            color = if (isProfileFocused) androidx.compose.ui.graphics.Color.White else com.nuvio.tv.ui.components.Font666.Green,
                                             style = if (isProfileFocused) androidx.tv.material3.LocalTextStyle.current
                                             else com.nuvio.tv.ui.components.Font666.horror(androidx.tv.material3.LocalTextStyle.current, 1.25f),
                                             maxLines = 1,

@@ -88,6 +88,13 @@ fun buildNuvioTypography(fontFamily: FontFamily): Typography = Typography(
         lineHeight = 32.sp,
         letterSpacing = 0.sp
     ),
+    headlineSmall = TextStyle(
+        fontFamily = Creepster666Family, // 666TV : sous-titres de rangées en Creepster
+        fontWeight = FontWeight.Normal,
+        fontSize = 22.sp,
+        lineHeight = 30.sp,
+        letterSpacing = 0.4.sp
+    ),
     titleLarge = TextStyle(
         fontFamily = Creepster666Family, // 666TV : titres en Creepster
         fontWeight = FontWeight.Medium,
