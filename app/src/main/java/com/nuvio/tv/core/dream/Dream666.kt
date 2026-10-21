@@ -79,8 +79,10 @@ private class Dream666View(context: Context) : View(context) {
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val clockPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(76, 195, 107); typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        textAlign = Paint.Align.CENTER; setShadowLayer(14f, 0f, 4f, Color.BLACK)
+        color = Color.rgb(91, 227, 107)
+        typeface = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, R.font.creepster_666) }.getOrNull()
+            ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        textAlign = Paint.Align.CENTER; setShadowLayer(18f, 0f, 0f, Color.rgb(31, 175, 58))
     }
     private val smallPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.rgb(205, 205, 205); textAlign = Paint.Align.CENTER; setShadowLayer(10f, 0f, 3f, Color.BLACK)

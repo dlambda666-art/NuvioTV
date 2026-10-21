@@ -374,7 +374,10 @@ private fun SidebarNavigationItem(
 
         AutoResizeText(
             text = label,
-            color = contentColor,
+            // 666TV : police horreur verte, sauf au focus (police normale, en blanc).
+            color = if (isFocused) contentColor else com.nuvio.tv.ui.components.Font666.Green,
+            style = if (isFocused) androidx.tv.material3.LocalTextStyle.current
+            else com.nuvio.tv.ui.components.Font666.horror(androidx.tv.material3.LocalTextStyle.current),
             modifier = Modifier
                 .weight(1f)
                 .graphicsLayer { alpha = labelAlpha }

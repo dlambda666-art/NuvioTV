@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -112,8 +113,18 @@ fun StartupSplashScreen(
         flash.snapTo(0.4f)
         flash.animateTo(0f, tween(420))
     }
-    val logoWidth = with(density) { SPLASH_WORDMARK_WIDTH_PX.toDp() }
-    val logoHeight = with(density) { SPLASH_WORDMARK_HEIGHT_PX.toDp() }
+    // 666TV : éclairs qui reviennent de temps en temps pendant le chargement.
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(2_200)
+        while (true) {
+            flash.snapTo(0.45f)
+            flash.animateTo(0f, tween(220))
+            kotlinx.coroutines.delay(80)
+            flash.snapTo(0.3f)
+            flash.animateTo(0f, tween(480))
+            kotlinx.coroutines.delay(2_500L + (Math.random() * 3_000).toLong())
+        }
+    }
 
     val transition = rememberInfiniteTransition(label = "splash666")
     val beat by transition.animateFloat(
@@ -123,157 +134,114 @@ fun StartupSplashScreen(
             animation = keyframes {
                 durationMillis = 1200
                 1f at 0
-                1.045f at 140 using FastOutSlowInEasing
+                1.035f at 140 using FastOutSlowInEasing
                 1f at 300
-                1.03f at 440 using FastOutSlowInEasing
+                1.02f at 440 using FastOutSlowInEasing
                 1f at 640
             }
         ),
         label = "splashBeat"
     )
-    val glow by transition.animateFloat(
-        initialValue = 0.25f,
-        targetValue = 0.6f,
-        animationSpec = infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "splashGlow"
+    // Les yeux du diable s'allument et s'éteignent doucement.
+    val eyes by transition.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "splashEyes"
     )
-    // 0..1 : goutte de gauche, 1..2 : goutte de droite (à tour de rôle).
-    val drop by transition.animateFloat(
+    // Le pentagramme tourne lentement : c'est le « chargement ».
+    val spin by transition.animateFloat(
         initialValue = 0f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(tween(2800, easing = LinearEasing)),
-        label = "splashDrop"
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(6_000, easing = LinearEasing)),
+        label = "splashSpin"
     )
-    val penta by transition.animateFloat(
+    // Fumée qui monte vite (0..1 en boucle).
+    val smokeT by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing)),
-        label = "splashPenta"
+        animationSpec = infiniteRepeatable(tween(4_000, easing = LinearEasing)),
+        label = "splashSmoke"
     )
+    val puffs = androidx.compose.runtime.remember {
+        val r = java.util.Random(666)
+        List(18) { floatArrayOf(r.nextFloat(), r.nextFloat(), 0.08f + r.nextFloat() * 0.12f, 0.6f + r.nextFloat() * 0.9f) }
+    }
 
     Box(modifier = modifier.fillMaxSize().background(Splash666Bg)) {
-        if (!profileBackgroundUrl.isNullOrBlank()) {
-            val imageData: Any = if (profileBackgroundUrl.startsWith("file:")) {
-                java.io.File(java.net.URI(profileBackgroundUrl))
-            } else {
-                profileBackgroundUrl
-            }
-            val request = ImageRequest.Builder(LocalContext.current)
-                .data(imageData)
-                .crossfade(false)
-            if (backgroundCacheKey != null) {
-                request.memoryCacheKey(backgroundCacheKey)
-                    .diskCacheKey(backgroundCacheKey)
-                    .placeholderMemoryCacheKey(backgroundCacheKey)
-            }
-            AsyncImage(
-                model = request.build(),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        }
-
-        // Lueur verte 666 dans le coin bas droit, halo rouge qui pulse derrière le logo.
+        Image(
+            painter = painterResource(R.drawable.splash_bg_666),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        // Yeux qui brûlent + fumée qui monte.
         Canvas(modifier = Modifier.fillMaxSize()) {
-            drawRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(Splash666Green.copy(alpha = 0.22f), Color.Transparent),
-                    center = Offset(size.width, size.height),
-                    radius = size.maxDimension * 0.6f
+            val w = size.width
+            val h = size.height
+            listOf(806f / 1672f, 951f / 1672f).forEach { fx ->
+                val c = Offset(w * fx, h * (284f / 941f))
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color(0xFFFFE08A).copy(alpha = 0.95f * eyes), Color(0xFFFF9A1F).copy(alpha = 0.45f * eyes), Color.Transparent),
+                        center = c,
+                        radius = w * 0.03f
+                    ),
+                    radius = w * 0.03f,
+                    center = c
                 )
-            )
-            drawRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(Splash666Blood.copy(alpha = glow * 0.55f), Color.Transparent),
-                    center = Offset(size.width / 2f, size.height / 2f),
-                    radius = size.minDimension * 0.55f
+            }
+            puffs.forEach { p ->
+                val prog = (smokeT * p[3] + p[1]) % 1f
+                val x = w * (p[0] + kotlin.math.sin((prog * 6.28f + p[0] * 10f).toDouble()).toFloat() * 0.02f)
+                val y = h * (1.1f - prog * 1.25f)
+                val r = w * p[2] * (0.7f + prog * 0.6f)
+                val a = (kotlin.math.sin((prog * Math.PI).toFloat())) * 0.55f
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color(0xFF241A17).copy(alpha = a), Color.Transparent),
+                        center = Offset(x, y),
+                        radius = r
+                    ),
+                    radius = r,
+                    center = Offset(x, y)
                 )
-            )
+            }
         }
-
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Espace symétrique à l'anneau, pour que le logo reste pile au centre comme au lancement.
-            Spacer(modifier = Modifier.height(96.dp))
+        androidx.compose.foundation.layout.BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val w = maxWidth
+            val h = maxHeight
+            // Bouclier
+            Image(
+                painter = painterResource(R.drawable.splash_shield_666),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(w * 0.23f)
+                    .offset(x = w * 0.36f - w * 0.115f, y = h * 0.50f - w * 0.115f)
+                    .graphicsLayer { scaleX = beat; scaleY = beat }
+            )
+            // Logo 666TV
+            Image(
+                painter = painterResource(R.drawable.splash_logo_666),
+                contentDescription = stringResource(R.string.cd_nuvio_logo),
+                modifier = Modifier
+                    .size(width = w * 0.28f, height = w * 0.28f * 0.603f)
+                    .offset(x = w * 0.49f, y = h * 0.47f - w * 0.28f * 0.603f / 2f)
+            )
+            // Pentagramme qui tourne, avec un halo sombre derrière pour le détacher de la lave.
             Box(
                 modifier = Modifier
-                    .size(width = logoWidth, height = logoHeight)
-                    .graphicsLayer {
-                        scaleX = beat
-                        scaleY = beat
-                    }
+                    .size(w * 0.15f)
+                    .offset(x = w * 0.5f - w * 0.075f, y = h * 0.735f)
+                    .background(
+                        Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.75f), Color.Transparent))
+                    )
             ) {
                 Image(
-                    painter = painterResource(R.drawable.splash_wordmark_666),
-                    contentDescription = stringResource(R.string.cd_nuvio_logo),
-                    modifier = Modifier.fillMaxSize()
+                    painter = painterResource(R.drawable.splash_penta_666),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize().graphicsLayer { rotationZ = spin }
                 )
-                // Gouttes de sang : une coulure à gauche, puis une à droite.
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val left = drop < 1f
-                    val p = if (left) drop else drop - 1f
-                    val x = size.width * (if (left) 0.119f else 0.204f)
-                    val startY = size.height * (if (left) 0.89f else 0.80f)
-                    val fall = size.height * 0.55f
-                    val y = startY + fall * p * p
-                    val r = size.height * 0.03f
-                    val alpha = (1f - p).coerceIn(0f, 1f)
-                    drawOval(
-                        color = Splash666BloodDark.copy(alpha = alpha),
-                        topLeft = Offset(x - r, y - r * 1.3f),
-                        size = Size(r * 2f, r * 2.6f)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(32.dp))
-            // Pentagramme inversé qui se trace tout seul, puis s'efface.
-            Canvas(modifier = Modifier.size(64.dp)) {
-                val cx = size.width / 2f
-                val cy = size.height / 2f
-                val r = size.minDimension * 0.40f
-                val pts = (0..5).map { i ->
-                    val a = Math.PI + i * 144.0 * Math.PI / 180.0
-                    Offset(cx + (r * Math.sin(a)).toFloat(), cy - (r * Math.cos(a)).toFloat())
-                }
-                val frac = (penta / 0.75f).coerceAtMost(1f)
-                val alpha = if (penta < 0.85f) 1f else (1f - (penta - 0.85f) / 0.15f).coerceIn(0f, 1f)
-                drawCircle(
-                    color = Splash666Blood.copy(alpha = 0.35f),
-                    radius = r + 5.dp.toPx(),
-                    center = Offset(cx, cy),
-                    style = Stroke(width = 1.5.dp.toPx())
-                )
-                val seg = (0 until 5).map { (pts[it + 1] - pts[it]).getDistance() }
-                var remaining = seg.sum() * frac
-                val path = androidx.compose.ui.graphics.Path().apply { moveTo(pts[0].x, pts[0].y) }
-                var tip = pts[0]
-                for (k in 0 until 5) {
-                    if (remaining <= 0f) break
-                    val a = pts[k]
-                    val b = pts[k + 1]
-                    val t = (remaining / seg[k]).coerceAtMost(1f)
-                    tip = Offset(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
-                    path.lineTo(tip.x, tip.y)
-                    remaining -= seg[k]
-                }
-                // Halo puis trait.
-                drawPath(
-                    path,
-                    color = Splash666Blood.copy(alpha = 0.35f * alpha),
-                    style = Stroke(width = 9.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
-                )
-                drawPath(
-                    path,
-                    color = Splash666Blood.copy(alpha = alpha),
-                    style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
-                )
-                if (frac < 1f) {
-                    drawCircle(color = Color(0xFFFF3A45), radius = 3.5.dp.toPx(), center = tip)
-                }
             }
         }
         if (flash.value > 0f) {

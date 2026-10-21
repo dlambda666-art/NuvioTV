@@ -69,7 +69,15 @@ fun HomeClock666(modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(end = 14.dp)
                 )
             }
-            Text(time, style = TextStyle(fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4CC36B), shadow = shadow666))
+            Text(
+                time,
+                style = TextStyle(
+                    fontSize = 38.sp,
+                    fontFamily = com.nuvio.tv.ui.components.Font666.Creepster,
+                    color = com.nuvio.tv.ui.components.Font666.Green,
+                    shadow = Shadow(Color(0xCC1FAF3A), Offset.Zero, 10f)
+                )
+            )
         }
         Text(day, style = TextStyle(fontSize = 13.sp, color = Color(0xFFC8C3BE), shadow = shadow666))
     }

@@ -206,8 +206,8 @@ internal fun SettingsBrandPanel(
             Spacer(modifier = Modifier.width(NuvioTheme.spacing.md))
             Text(
                 text = stringResource(R.string.nav_settings),
-                style = MaterialTheme.typography.titleLarge,
-                color = titleColor
+                style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.titleLarge, 1.25f),
+                color = com.nuvio.tv.ui.components.Font666.Green
             )
         }
 
@@ -408,8 +408,8 @@ internal fun SettingsRailButton(
                         focused = isFocused,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = if (isSelected || isFocused) FontWeight.SemiBold else FontWeight.Medium
-                        ),
-                        color = if (isFocused) androidx.compose.ui.graphics.Color.White else if (isSelected) androidx.compose.ui.graphics.Color(0xFF49DD89) else androidx.compose.ui.graphics.Color(0xFF49DD89).copy(alpha = 0.75f),
+                        ).let { if (isFocused) it else com.nuvio.tv.ui.components.Font666.horror(it) },
+                        color = if (isFocused) androidx.compose.ui.graphics.Color.White else if (isSelected) com.nuvio.tv.ui.components.Font666.Green else com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.8f),
                     )
                 }
 
@@ -516,8 +516,8 @@ internal fun SettingsTopBarTab(
                 text = title,
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = if (isSelected || isFocused) FontWeight.SemiBold else FontWeight.Medium
-                ),
-                color = contentColor,
+                ).let { if (isFocused) it else com.nuvio.tv.ui.components.Font666.horror(it) },
+                color = if (isFocused) contentColor else com.nuvio.tv.ui.components.Font666.Green,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
