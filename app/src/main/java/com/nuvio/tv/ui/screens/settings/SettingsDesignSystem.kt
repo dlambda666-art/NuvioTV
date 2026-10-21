@@ -540,8 +540,9 @@ internal fun SettingsDetailHeader(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = NuvioTheme.colors.TextPrimary
+                // 666TV : en-tête en Creepster vert
+                style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.headlineMedium, 1.2f),
+                color = com.nuvio.tv.ui.components.Font666.Green
             )
             Box(
                 modifier = Modifier
@@ -564,8 +565,9 @@ internal fun SettingsDetailHeader(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = NuvioTheme.colors.TextPrimary
+                // 666TV : en-tête en Creepster vert
+                style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.headlineLarge, 1.2f),
+                color = com.nuvio.tv.ui.components.Font666.Green
             )
             Text(
                 text = subtitle,
