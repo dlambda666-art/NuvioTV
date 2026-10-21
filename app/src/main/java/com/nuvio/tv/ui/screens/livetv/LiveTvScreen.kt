@@ -103,9 +103,9 @@ fun LiveTvScreen() {
         verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.md)
     ) {
         Text(
-            text = "TV en direct",
-            style = MaterialTheme.typography.headlineMedium,
-            color = NuvioTheme.colors.TextPrimary
+            text = "TV EN DIRECT",
+            style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.headlineLarge, 1.15f),
+            color = com.nuvio.tv.ui.components.Font666.Green
         )
         Text(
             text = "Tes chaînes avec Orange TV, et YouTube sans pub avec TizenTube.",
@@ -184,9 +184,8 @@ private fun LiveTvCard(
             Spacer(Modifier.height(12.dp))
             Text(
                 text = app.title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = NuvioTheme.colors.TextPrimary
+                style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.titleLarge),
+                color = com.nuvio.tv.ui.components.Font666.Green
             )
             Text(
                 text = app.channels,
