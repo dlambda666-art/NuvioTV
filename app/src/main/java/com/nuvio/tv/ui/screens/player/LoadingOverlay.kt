@@ -204,7 +204,7 @@ fun LoadingOverlay(
                         Text(
                             text = title,
                             style = MaterialTheme.typography.headlineMedium,
-                            color = Color.White,
+                            color = com.nuvio.tv.ui.components.Font666.Green,
                             textAlign = TextAlign.Center,
                             maxLines = 2,
                             modifier = Modifier
@@ -254,7 +254,7 @@ fun LoadingOverlay(
                                     Text(
                                         text = loadingMessage,
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = Color.White.copy(alpha = 0.72f),
+                                        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.72f),
                                         textAlign = TextAlign.Center,
                                         maxLines = 2,
                                         modifier = Modifier.fillMaxWidth()
@@ -274,7 +274,7 @@ fun LoadingOverlay(
                                     .width(240.dp)
                                     .height(NuvioTheme.spacing.xs)
                                     .background(
-                                        color = Color.White.copy(alpha = 0.2f),
+                                        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.2f),
                                         shape = RoundedCornerShape(NuvioTheme.radii.xxs)
                                     )
                             ) {
@@ -283,7 +283,7 @@ fun LoadingOverlay(
                                         .fillMaxWidth(animatedProgress)
                                         .height(NuvioTheme.spacing.xs)
                                         .background(
-                                            color = Color.White.copy(alpha = 0.85f),
+                                            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.85f),
                                             shape = RoundedCornerShape(NuvioTheme.radii.xxs)
                                         )
                                 )

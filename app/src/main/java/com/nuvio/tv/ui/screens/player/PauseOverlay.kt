@@ -237,7 +237,7 @@ private fun PauseMetadataView(
                 Text(
                     text = episodeTitle.localizeEpisodeTitle(context),
                     style = MaterialTheme.typography.titleLarge,
-                    color = Color.White,
+                    color = com.nuvio.tv.ui.components.Font666.Green,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = NuvioTheme.spacing.md)
@@ -297,7 +297,7 @@ private fun CastChip(
         Text(
             text = member.name,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White,
+            color = com.nuvio.tv.ui.components.Font666.Green,
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -358,7 +358,7 @@ private fun CastDetailView(
                 Text(
                     text = member.name,
                     style = MaterialTheme.typography.headlineMedium,
-                    color = Color.White,
+                    color = com.nuvio.tv.ui.components.Font666.Green,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis

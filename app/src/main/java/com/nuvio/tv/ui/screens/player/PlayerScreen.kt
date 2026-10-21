@@ -2158,7 +2158,7 @@ private fun PlayerControlsOverlay(
                     Text(
                         text = displayName,
                         style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White,
+                        color = com.nuvio.tv.ui.components.Font666.Green,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -2181,7 +2181,7 @@ private fun PlayerControlsOverlay(
                         Text(
                             text = episodeInfo,
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color.White.copy(alpha = 0.9f),
+                            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.9f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -2197,7 +2197,7 @@ private fun PlayerControlsOverlay(
                                 Text(
                                     text = yearText,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.White.copy(alpha = 0.68f)
+                                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.68f)
                                 )
                             }
 
@@ -2209,7 +2209,7 @@ private fun PlayerControlsOverlay(
                                 Text(
                                     text = stringResource(R.string.player_via, (uiState.currentStreamName ?: "").replace("\n", " · ")),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.White.copy(alpha = 0.68f),
+                                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.68f),
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -2470,7 +2470,7 @@ private fun PlayerControlsTimeTextHost(viewModel: PlayerViewModel) {
     Text(
         text = timeText,
         style = MaterialTheme.typography.bodyMedium,
-        color = Color.White.copy(alpha = 0.9f)
+        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.9f)
     )
 }
 
@@ -2505,7 +2505,7 @@ private fun ReportControlButton(
             Text(
                 text = reportId.orEmpty(),
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White,
+                color = com.nuvio.tv.ui.components.Font666.Green,
                 maxLines = 1,
                 modifier = Modifier
                     .background(Color.Black.copy(alpha = 0.78f), RoundedCornerShape(5.dp))
@@ -2573,7 +2573,7 @@ private fun ControlButton(
         colors = IconButtonDefaults.colors(
             containerColor = Color.Transparent,
             focusedContainerColor = Color.White,
-            contentColor = Color.White,
+            contentColor = com.nuvio.tv.ui.components.Font666.Green,
             focusedContentColor = Color.Black
         ),
         shape = IconButtonDefaults.shape(shape = CircleShape)
@@ -2776,7 +2776,7 @@ private fun SeekOverlay(
                 Text(
                     text = "${formatTime(currentPosition)} / ${formatTime(duration)}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.9f)
+                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.9f)
                 )
             }
         }
@@ -2834,13 +2834,13 @@ private fun PlayerClockOverlay(
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
             ),
-            color = Color.White.copy(alpha = 0.96f)
+            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.96f)
         )
         if (!isLive) {
             Text(
                 text = stringResource(R.string.player_ends_at, endTimeText),
                 style = MaterialTheme.typography.bodyMedium.copy(fontSize = 10.sp),
-                color = Color.White.copy(alpha = 0.78f)
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.78f)
             )
         }
     }
@@ -2929,7 +2929,7 @@ private fun AspectRatioIndicator(text: String) {
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold
             ),
-            color = Color.White
+            color = com.nuvio.tv.ui.components.Font666.Green
         )
     }
 }
@@ -2948,7 +2948,7 @@ private fun StreamSourceIndicator(text: String) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-            color = Color.White,
+            color = com.nuvio.tv.ui.components.Font666.Green,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -2980,7 +2980,7 @@ private fun PlayerEngineSwitchIndicator(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = Color.White
+                color = com.nuvio.tv.ui.components.Font666.Green
             )
         }
 
@@ -2989,7 +2989,7 @@ private fun PlayerEngineSwitchIndicator(
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.92f),
+            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.92f),
             textAlign = TextAlign.Center
         )
     }
@@ -3033,13 +3033,13 @@ private fun SubtitleDelayOverlay(
             Text(
                 text = stringResource(R.string.player_subtitle_delay),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                color = Color.White
+                color = com.nuvio.tv.ui.components.Font666.Green
             )
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 Text(
                     text = formatSubtitleDelay(subtitleDelayMs),
                     style = MaterialTheme.typography.titleLarge,
-                    color = Color.White.copy(alpha = 0.95f)
+                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.95f)
                 )
             }
         }
@@ -3126,7 +3126,7 @@ private fun SubtitleDelayOverlay(
                     Text(
                         text = stringResource(R.string.subtitle_delay_reset),
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                        color = Color.White,
+                        color = com.nuvio.tv.ui.components.Font666.Green,
                         textAlign = TextAlign.Center,
                         maxLines = 1
                     )
@@ -3162,7 +3162,7 @@ private fun SubtitleDelayOverlay(
                     Text(
                         text = stringResource(R.string.player_sync_line),
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                        color = Color.White,
+                        color = com.nuvio.tv.ui.components.Font666.Green,
                         textAlign = TextAlign.Center,
                         maxLines = 1
                     )
@@ -3224,7 +3224,7 @@ private fun LoadingIssueReportAction(
         Text(
             text = reportMessage,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.86f),
+            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.86f),
             textAlign = TextAlign.Center
         )
         DialogButton(
@@ -3301,13 +3301,13 @@ private fun ErrorOverlay(
             Text(
                 text = stringResource(R.string.player_error_title),
                 style = MaterialTheme.typography.headlineMedium,
-                color = Color.White
+                color = com.nuvio.tv.ui.components.Font666.Green
             )
 
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White.copy(alpha = 0.7f),
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = NuvioTheme.spacing.xxl)
             )
@@ -3695,7 +3695,7 @@ private fun PlayerBufferingIndicator(
                 Text(
                     text = torrentBufferingMessage,
                     style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.8f)
+                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.8f)
                 )
                 if (torrentBufferingProgress > 0f) {
                     Spacer(modifier = Modifier.height(NuvioTheme.spacing.sm))
@@ -3704,7 +3704,7 @@ private fun PlayerBufferingIndicator(
                             .width(200.dp)
                             .height(3.dp)
                             .background(
-                                color = Color.White.copy(alpha = 0.2f),
+                                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.2f),
                                 shape = RoundedCornerShape(NuvioTheme.radii.xxs)
                             )
                     ) {
@@ -3713,7 +3713,7 @@ private fun PlayerBufferingIndicator(
                                 .fillMaxWidth(torrentBufferingProgress.coerceIn(0f, 1f))
                                 .height(3.dp)
                                 .background(
-                                    color = Color.White.copy(alpha = 0.85f),
+                                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.85f),
                                     shape = RoundedCornerShape(NuvioTheme.radii.xxs)
                                 )
                         )

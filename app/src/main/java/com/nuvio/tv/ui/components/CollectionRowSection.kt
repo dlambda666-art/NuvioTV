@@ -363,7 +363,7 @@ private fun FolderCard(
                     Text(
                         text = folder.title,
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.White,
+                        color = com.nuvio.tv.ui.components.Font666.Green,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.Center

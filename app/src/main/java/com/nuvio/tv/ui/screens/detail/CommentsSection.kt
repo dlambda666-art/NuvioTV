@@ -839,7 +839,7 @@ fun CommentOverlay(
                     text = stringResource(R.string.detail_comments_back_hint),
                     modifier = Modifier.padding(start = 18.dp),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.34f)
+                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.34f)
                 )
             }
         }
@@ -890,7 +890,7 @@ private fun CommentOverlayContent(
         Text(
             text = stringResource(R.string.detail_comments_title),
             style = MaterialTheme.typography.titleMedium,
-            color = Color.White.copy(alpha = 0.82f)
+            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.82f)
         )
 
         Column(
@@ -903,7 +903,7 @@ private fun CommentOverlayContent(
                 Text(
                     text = review.authorDisplayName,
                     style = MaterialTheme.typography.titleLarge,
-                    color = Color.White,
+                    color = com.nuvio.tv.ui.components.Font666.Green,
                     fontWeight = FontWeight.SemiBold
                 )
                 review.authorUsername
@@ -912,7 +912,7 @@ private fun CommentOverlayContent(
                         Text(
                             text = "@$username",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.62f)
+                            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.62f)
                         )
                     }
                 if (overlayLabels.isNotEmpty()) {
@@ -965,7 +965,7 @@ private fun CommentOverlayContent(
                 Text(
                     text = commentText,
                     style = commentStyle.copy(textDirection = commentText.contentTextDirection()),
-                    color = Color.White,
+                    color = com.nuvio.tv.ui.components.Font666.Green,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -976,20 +976,20 @@ private fun CommentOverlayContent(
                 Text(
                     text = stringResource(R.string.detail_comments_likes, review.likes),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.56f)
+                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.56f)
                 )
                 if (review.hasSpoilerContent && !isSpoilerRevealed) {
                     Text(
                         text = stringResource(R.string.detail_comments_reveal_spoiler_hint),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.62f)
+                        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.62f)
                     )
                 }
                 if (isLoadingNext) {
                     Text(
                         text = "...",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.42f)
+                        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.42f)
                     )
                 }
             }
@@ -1014,7 +1014,7 @@ private fun OverlayMetaRow(labels: List<String>) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White.copy(alpha = 0.72f)
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.72f)
             )
         }
     }

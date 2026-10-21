@@ -186,14 +186,14 @@ private fun AutoPlayBody(
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
             Text(
                 text = stringResource(R.string.next_episode_label),
-                color = Color.White.copy(alpha = 0.8f),
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.8f),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
             )
             Spacer(modifier = Modifier.height(NuvioTheme.spacing.xxs))
             Text(
                 text = nextEpisodeDisplayLabel(nextEpisode),
-                color = Color.White,
+                color = com.nuvio.tv.ui.components.Font666.Green,
                 fontSize = 14.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -273,14 +273,14 @@ private fun StillWatchingBody(
         ) {
             Text(
                 text = stringResource(R.string.still_watching_title),
-                color = Color.White.copy(alpha = 0.8f),
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.8f),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
             )
             Spacer(modifier = Modifier.height(NuvioTheme.spacing.xxs))
             Text(
                 text = nextEpisodeDisplayLabel(nextEpisode),
-                color = Color.White,
+                color = com.nuvio.tv.ui.components.Font666.Green,
                 fontSize = 14.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -421,7 +421,7 @@ private fun NextEpisodeThumbnail(
 private fun NextEpisodeStatusLine(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
-        color = Color.White.copy(alpha = 0.78f),
+        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.78f),
         fontSize = 11.sp,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,

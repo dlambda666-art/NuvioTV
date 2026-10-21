@@ -558,7 +558,7 @@ private fun EpisodeCard(
         typography.labelSmall.copy(
             fontWeight = FontWeight.SemiBold,
             letterSpacing = cardMetrics.episodeBadgeLetterSpacing,
-            color = Color.White.copy(alpha = 0.9f)
+            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.9f)
         )
     }
     val titleStyle = remember(typography, cardMetrics) {
@@ -574,7 +574,7 @@ private fun EpisodeCard(
     }
     val descriptionStyle = remember(typography, cardMetrics) {
         typography.bodySmall.copy(
-            color = Color.White.copy(alpha = 0.9f),
+            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.9f),
             lineHeight = cardMetrics.descriptionLineHeight,
             shadow = Shadow(
                 color = Color.Black,

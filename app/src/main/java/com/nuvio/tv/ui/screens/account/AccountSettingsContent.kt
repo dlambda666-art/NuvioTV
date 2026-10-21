@@ -296,7 +296,7 @@ private fun ProfileSyncRow(profile: ProfileSyncStats) {
         ) {
             Text(
                 text = profile.profileName.firstOrNull()?.uppercase() ?: "?",
-                color = Color.White,
+                color = com.nuvio.tv.ui.components.Font666.Green,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             )

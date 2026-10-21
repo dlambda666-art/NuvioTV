@@ -159,7 +159,7 @@ fun LayoutSelectionScreen(
                     Text(
                         text = stringResource(R.string.layout_selection_continue),
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White
+                        color = com.nuvio.tv.ui.components.Font666.Green
                     )
                 }
             }

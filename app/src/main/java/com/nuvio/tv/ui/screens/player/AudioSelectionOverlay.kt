@@ -170,7 +170,7 @@ internal fun AudioSelectionOverlay(
             Text(
                 text = stringResource(R.string.audio_dialog_title),
                 style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
+                color = com.nuvio.tv.ui.components.Font666.Green,
                 modifier = Modifier.padding(bottom = NuvioTheme.spacing.sm)
             )
 
@@ -249,7 +249,7 @@ private fun AudioTracksContent(
         Text(
             text = stringResource(R.string.audio_lang_default),
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.White.copy(alpha = 0.7f),
+            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.7f),
             modifier = Modifier.padding(top = NuvioTheme.spacing.sm, bottom = NuvioTheme.spacing.md)
         )
         return
@@ -689,14 +689,14 @@ private fun AdjustmentSection(
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.92f)
+            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.92f)
         )
 
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Text(
                 text = valueText,
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White
+                color = com.nuvio.tv.ui.components.Font666.Green
             )
         }
 
@@ -727,7 +727,7 @@ private fun AdjustmentSection(
         Text(
             text = helperText,
             style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.66f)
+            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.66f)
         )
     }
 }

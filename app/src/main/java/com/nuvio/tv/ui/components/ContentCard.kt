@@ -513,7 +513,7 @@ fun ContentCard(
                                 text = item.name,
                                 focused = isFocused,
                                 style = MaterialTheme.typography.titleMedium,
-                                color = Color.White,
+                                color = com.nuvio.tv.ui.components.Font666.Green,
                             )
                         }
                     }

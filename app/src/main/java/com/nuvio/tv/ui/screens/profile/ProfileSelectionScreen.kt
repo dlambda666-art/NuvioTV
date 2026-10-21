@@ -610,7 +610,7 @@ fun ProfileSelectionScreen(
                         .background(Color.Black.copy(alpha = 0.78f))
                         .border(
                             width = NuvioTheme.spacing.hairline,
-                            color = Color.White.copy(alpha = 0.14f),
+                            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.14f),
                             shape = RoundedCornerShape(999.dp)
                         )
                         .padding(horizontal = NuvioTheme.spacing.xl, vertical = 14.dp)
@@ -1202,7 +1202,7 @@ private fun ProfileCard(
                 ) {
                     Text(
                         text = "\u2605",
-                        color = Color.White,
+                        color = com.nuvio.tv.ui.components.Font666.Green,
                         fontSize = if (compact) 12.sp else 14.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
@@ -1462,7 +1462,7 @@ private fun CreateProfileOverlay(
             ) {
                 Text(
                     text = stringResource(R.string.profile_create_title),
-                    color = Color.White,
+                    color = com.nuvio.tv.ui.components.Font666.Green,
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -1814,7 +1814,7 @@ private fun EditProfileOverlay(
                     )
                     Text(
                         text = profile.name,
-                        color = Color.White,
+                        color = com.nuvio.tv.ui.components.Font666.Green,
                         fontSize = 30.sp,
                         fontWeight = FontWeight.Black
                     )
@@ -2522,7 +2522,7 @@ private fun ProfileNameField(
                 .focusRequester(focusRequester)
                 .onFocusChanged { isFocused = it.isFocused },
             textStyle = TextStyle(
-                color = Color.White,
+                color = com.nuvio.tv.ui.components.Font666.Green,
                 fontSize = 16.sp
             ),
             singleLine = true,

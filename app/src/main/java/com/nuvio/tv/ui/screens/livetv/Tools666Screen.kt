@@ -315,7 +315,7 @@ private fun ActionRow(title: String, subtitle: String?, modifier: Modifier = Mod
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Color(0x33000000),
             focusedContainerColor = Blood,
-            contentColor = Color.White,
+            contentColor = com.nuvio.tv.ui.components.Font666.Green,
             focusedContentColor = Color.White
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.01f)

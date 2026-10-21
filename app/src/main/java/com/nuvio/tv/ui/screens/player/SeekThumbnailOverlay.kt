@@ -91,7 +91,7 @@ internal fun SeekThumbnailOverlay(
             Text(
                 text = formatThumbTime(position),
                 style = MaterialTheme.typography.titleSmall,
-                color = Color.White,
+                color = com.nuvio.tv.ui.components.Font666.Green,
                 modifier = Modifier
                     .padding(top = 6.dp)
                     .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(6.dp))

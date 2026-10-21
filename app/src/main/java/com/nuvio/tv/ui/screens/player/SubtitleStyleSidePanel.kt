@@ -121,7 +121,7 @@ internal fun SubtitleStyleSidePanel(
                 Text(
                     text = stringResource(R.string.subtitle_style_title),
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = com.nuvio.tv.ui.components.Font666.Green
                 )
             }
         }
@@ -236,7 +236,7 @@ internal fun SubtitleStyleSidePanel(
                             Text(
                                 text = stringResource(R.string.subtitle_style_color),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White.copy(alpha = 0.7f)
+                                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.7f)
                             )
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.sm)) {
@@ -293,7 +293,7 @@ internal fun SubtitleStyleSidePanel(
                         Text(
                             text = stringResource(R.string.subtitle_style_reset),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.8f),
+                            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.8f),
                             modifier = Modifier.padding(horizontal = NuvioTheme.spacing.lg, vertical = 10.dp)
                         )
                     }
@@ -326,7 +326,7 @@ private fun SubtitleStyleSection(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.8f)
+                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.8f)
                 )
             }
         }
@@ -353,7 +353,7 @@ private fun SubtitleStyleSettingRow(
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White,
+                color = com.nuvio.tv.ui.components.Font666.Green,
                 modifier = Modifier.padding(bottom = 6.dp)
             )
         }
@@ -378,7 +378,7 @@ private fun SubtitleStyleStepperButton(
         colors = IconButtonDefaults.colors(
             containerColor = Color.White.copy(alpha = 0.16f),
             focusedContainerColor = Color.White.copy(alpha = 0.28f),
-            contentColor = Color.White,
+            contentColor = com.nuvio.tv.ui.components.Font666.Green,
             focusedContentColor = Color.White
         ),
         shape = IconButtonDefaults.shape(shape = RoundedCornerShape(10.dp))
@@ -400,7 +400,7 @@ private fun SubtitleStyleValueDisplay(text: String) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
-            color = Color.White,
+            color = com.nuvio.tv.ui.components.Font666.Green,
             maxLines = 1,
             softWrap = false
         )

@@ -72,14 +72,14 @@ fun NextEpisodeEndPromptOverlay(
             Text(
                 text = stringResource(R.string.player_next_episode_prompt_title),
                 style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.SemiBold),
-                color = Color.White,
+                color = com.nuvio.tv.ui.components.Font666.Green,
                 textAlign = TextAlign.Center
             )
 
             Text(
                 text = stringResource(R.string.player_next_episode_prompt_message),
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White.copy(alpha = 0.72f),
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.72f),
                 textAlign = TextAlign.Center
             )
 
@@ -88,14 +88,14 @@ fun NextEpisodeEndPromptOverlay(
             Text(
                 text = stringResource(R.string.next_episode_label),
                 style = MaterialTheme.typography.labelLarge,
-                color = Color.White.copy(alpha = 0.46f),
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.46f),
                 textAlign = TextAlign.Center
             )
 
             Text(
                 text = nextEpisodeText,
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Medium),
-                color = Color.White.copy(alpha = 0.88f),
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.88f),
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis

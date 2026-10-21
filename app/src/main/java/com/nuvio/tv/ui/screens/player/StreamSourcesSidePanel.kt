@@ -323,7 +323,7 @@ internal fun StreamSourcesSidePanel(
                     Text(
                         text = uiState.sourceStreamsError,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.85f)
+                        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.85f)
                     )
                 }
 
@@ -331,7 +331,7 @@ internal fun StreamSourcesSidePanel(
                     Text(
                         text = stringResource(R.string.sources_no_streams),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.7f)
                     )
                 }
 

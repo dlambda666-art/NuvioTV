@@ -229,7 +229,7 @@ fun SynopsisOverlay(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.headlineSmall,
-                    color = Color.White,
+                    color = com.nuvio.tv.ui.components.Font666.Green,
                     fontWeight = FontWeight.SemiBold
                 )
 
@@ -254,14 +254,14 @@ fun SynopsisOverlay(
                                 val scrollbarX = size.width - 6.dp.toPx()
 
                                 drawLine(
-                                    color = Color.White.copy(alpha = 0.07f),
+                                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.07f),
                                     start = Offset(scrollbarX, trackInset),
                                     end = Offset(scrollbarX, viewportHeight - trackInset),
                                     strokeWidth = 1.dp.toPx(),
                                     cap = StrokeCap.Round
                                 )
                                 drawLine(
-                                    color = Color.White.copy(alpha = 0.30f),
+                                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.30f),
                                     start = Offset(scrollbarX, thumbTop),
                                     end = Offset(scrollbarX, thumbTop + thumbHeight),
                                     strokeWidth = 2.5.dp.toPx(),
@@ -296,7 +296,7 @@ fun SynopsisOverlay(
                         style = MaterialTheme.typography.bodyLarge.copy(
                             textDirection = description.contentTextDirection()
                         ),
-                        color = Color.White.copy(alpha = 0.92f),
+                        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.92f),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(end = NuvioTheme.spacing.lg)
@@ -306,7 +306,7 @@ fun SynopsisOverlay(
                 Text(
                     text = stringResource(R.string.hero_synopsis_dismiss_hint),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.4f)
+                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.4f)
                 )
             }
         }

@@ -142,18 +142,18 @@ fun ParentalGuideOverlay(
                     Text(
                         text = warning.label,
                         fontSize = 11.sp,
-                        color = Color.White.copy(alpha = 0.85f),
+                        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.85f),
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
                         text = " · ",
                         fontSize = 11.sp,
-                        color = Color.White.copy(alpha = 0.4f),
+                        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.4f),
                     )
                     Text(
                         text = warning.severity,
                         fontSize = 11.sp,
-                        color = Color.White.copy(alpha = 0.5f),
+                        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.5f),
                     )
                 }
             }

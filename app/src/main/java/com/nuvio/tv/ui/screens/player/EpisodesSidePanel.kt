@@ -392,7 +392,7 @@ private fun EpisodeStreamsView(
             Text(
                 text = uiState.episodeStreamsError,
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White.copy(alpha = 0.85f)
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.85f)
             )
         }
 
@@ -400,7 +400,7 @@ private fun EpisodeStreamsView(
             Text(
                 text = stringResource(R.string.episodes_panel_no_streams),
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White.copy(alpha = 0.7f)
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.7f)
             )
         }
 
@@ -549,7 +549,7 @@ private fun EpisodesListView(
             Text(
                 text = uiState.episodesError,
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White.copy(alpha = 0.85f)
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.85f)
             )
         }
 
@@ -557,7 +557,7 @@ private fun EpisodesListView(
             Text(
                 text = stringResource(R.string.episodes_panel_no_episodes),
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White.copy(alpha = 0.7f)
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.7f)
             )
         }
 
@@ -817,7 +817,7 @@ private fun EpisodeItem(
                         Text(
                             text = episodeCode,
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White
+                            color = com.nuvio.tv.ui.components.Font666.Green
                         )
                     }
                 }

@@ -272,7 +272,7 @@ private fun VfChip(state: VfState) {
             .background(color)
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        Text(text = text, style = MaterialTheme.typography.labelLarge, color = Color.White)
+        Text(text = text, style = MaterialTheme.typography.labelLarge, color = com.nuvio.tv.ui.components.Font666.Green)
     }
 }
 

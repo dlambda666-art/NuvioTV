@@ -400,7 +400,7 @@ internal fun EpisodeOptionsOverlay(
                                 Text(
                                     text = rating,
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = Color.White.copy(alpha = 0.72f)
+                                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.72f)
                                 )
                             }
                         }
@@ -409,7 +409,7 @@ internal fun EpisodeOptionsOverlay(
                     Text(
                         text = title,
                         style = if (isNoneStyle) MaterialTheme.typography.displayLarge else titleStyle,
-                        color = Color.White,
+                        color = com.nuvio.tv.ui.components.Font666.Green,
                         maxLines = if (isNoneStyle) 3 else Int.MAX_VALUE,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -422,7 +422,7 @@ internal fun EpisodeOptionsOverlay(
                             } else {
                                 descriptionStyle
                             }).copy(textDirection = description.contentTextDirection()),
-                            color = Color.White.copy(alpha = 0.72f),
+                            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.72f),
                             maxLines = if (isNoneStyle) 8 else Int.MAX_VALUE,
                             overflow = TextOverflow.Ellipsis
                         )

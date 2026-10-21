@@ -268,7 +268,7 @@ private fun AppTile(app: ShieldApp, plateRes: Int, moving: Boolean, modifier: Mo
                         text = app.label.split(" ").take(2).joinToString("") { it.take(1) }.uppercase(),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Black,
-                        color = Color.White
+                        color = com.nuvio.tv.ui.components.Font666.Green
                     )
                 }
             }

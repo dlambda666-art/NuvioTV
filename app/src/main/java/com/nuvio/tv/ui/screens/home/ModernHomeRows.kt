@@ -1472,7 +1472,7 @@ private fun ModernCarouselCard(
                     Text(
                         text = item.title,
                         style = titleStyle,
-                        color = Color.White,
+                        color = com.nuvio.tv.ui.components.Font666.Green,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier

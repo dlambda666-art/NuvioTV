@@ -504,19 +504,19 @@ private fun ConnectedTrackingAccountContent(
         Text(
             text = connectedLabel,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.White,
+            color = com.nuvio.tv.ui.components.Font666.Green,
             fontWeight = FontWeight.SemiBold
         )
         Text(
             text = connectedDescription,
             style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.76f)
+            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.76f)
         )
         if (!tokenRefreshText.isNullOrBlank()) {
             Text(
                 text = tokenRefreshText,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.6f)
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.6f)
             )
         }
     }
@@ -591,7 +591,7 @@ private fun SimklSyncInfoContent(
     Text(
         text = stringResource(R.string.simkl_sync_info_title),
         style = MaterialTheme.typography.titleLarge,
-        color = Color.White,
+        color = com.nuvio.tv.ui.components.Font666.Green,
         fontWeight = FontWeight.SemiBold
     )
     Text(
@@ -600,22 +600,22 @@ private fun SimklSyncInfoContent(
             SIMKL_AUTOMATIC_REFRESH_INTERVAL_MINUTES
         ),
         style = MaterialTheme.typography.bodyMedium,
-        color = Color.White.copy(alpha = 0.78f)
+        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.78f)
     )
     Text(
         text = stringResource(R.string.simkl_sync_info_activity),
         style = MaterialTheme.typography.bodyMedium,
-        color = Color.White.copy(alpha = 0.78f)
+        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.78f)
     )
     Text(
         text = stringResource(R.string.simkl_sync_info_manual),
         style = MaterialTheme.typography.bodyMedium,
-        color = Color.White.copy(alpha = 0.78f)
+        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.78f)
     )
     Text(
         text = stringResource(R.string.simkl_sync_info_library_statuses),
         style = MaterialTheme.typography.bodyMedium,
-        color = Color.White.copy(alpha = 0.78f)
+        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.78f)
     )
     if (browserError) {
         TrackingBrandMessage(
@@ -734,7 +734,7 @@ private fun TrackingBrandFooterButton(
         colors = ButtonDefaults.colors(
             containerColor = Color.Transparent,
             focusedContainerColor = Color.White.copy(alpha = 0.18f),
-            contentColor = Color.White.copy(alpha = 0.84f),
+            contentColor = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.84f),
             focusedContentColor = Color.White,
             disabledContainerColor = Color.Transparent,
             disabledContentColor = Color.White.copy(alpha = 0.38f)
@@ -848,7 +848,7 @@ private fun TraktConnectedStatsStrip(
         Text(
             text = stringResource(R.string.trakt_cached_label),
             style = MaterialTheme.typography.labelMedium,
-            color = Color.White.copy(alpha = 0.6f)
+            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.6f)
         )
         Box(
             modifier = Modifier
@@ -868,14 +868,14 @@ private fun TraktConnectedStatsStrip(
                     Text(
                         text = value,
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
+                        color = com.nuvio.tv.ui.components.Font666.Green,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(NuvioTheme.spacing.xxs))
                     Text(
                         text = labels[index],
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.76f),
+                        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.76f),
                         textAlign = TextAlign.Center
                     )
                 }

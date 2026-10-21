@@ -478,7 +478,7 @@ internal fun SubtitleSelectionOverlay(
             Text(
                 text = stringResource(R.string.subtitle_dialog_title),
                 style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
+                color = com.nuvio.tv.ui.components.Font666.Green,
                 modifier = Modifier.padding(bottom = NuvioTheme.spacing.md)
             )
 
@@ -877,13 +877,13 @@ private fun SubtitleStyleRail(
                         Text(
                             text = stringResource(R.string.subtitle_tab_delay),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White
+                            color = com.nuvio.tv.ui.components.Font666.Green
                         )
                         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                             Text(
                                 text = formatSubtitleDelay(subtitleDelayMs),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.7f)
+                                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.7f)
                             )
                         }
                     }
@@ -1047,7 +1047,7 @@ private fun SubtitleStyleRail(
                     Text(
                         text = stringResource(R.string.subtitle_reset_defaults),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White,
+                        color = com.nuvio.tv.ui.components.Font666.Green,
                         modifier = Modifier.padding(horizontal = NuvioTheme.spacing.md, vertical = 10.dp)
                     )
                 }
@@ -1366,7 +1366,7 @@ private fun OverlaySectionCard(
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White
+            color = com.nuvio.tv.ui.components.Font666.Green
         )
         content()
     }
@@ -1407,7 +1407,7 @@ private fun StepperRow(
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White
+                color = com.nuvio.tv.ui.components.Font666.Green
             )
         }
         StepperButton(
@@ -1475,7 +1475,7 @@ private fun StepperButton(
         colors = IconButtonDefaults.colors(
             containerColor = Color.White.copy(alpha = 0.08f),
             focusedContainerColor = Color.White.copy(alpha = 0.14f),
-            contentColor = Color.White,
+            contentColor = com.nuvio.tv.ui.components.Font666.Green,
             focusedContentColor = Color.White
         ),
         shape = IconButtonDefaults.shape(shape = RoundedCornerShape(NuvioTheme.radii.md)),

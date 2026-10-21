@@ -601,7 +601,7 @@ internal fun AddonMessageOverlay(
                     Text(
                         text = visibleMessage,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White
+                        color = com.nuvio.tv.ui.components.Font666.Green
                     )
                 }
             }

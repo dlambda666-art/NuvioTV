@@ -159,7 +159,7 @@ private fun SyncPromptPanel(
         Text(
             text = stringResource(R.string.subtitle_timing_press_sync),
             style = MaterialTheme.typography.headlineSmall,
-            color = Color.White
+            color = com.nuvio.tv.ui.components.Font666.Green
         )
 
         Card(
@@ -175,7 +175,7 @@ private fun SyncPromptPanel(
             Text(
                 text = stringResource(R.string.subtitle_timing_sync_button),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = Color.White,
+                color = com.nuvio.tv.ui.components.Font666.Green,
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = NuvioTheme.spacing.md)
             )
         }
@@ -227,14 +227,14 @@ private fun CueSelectionPanel(
                     stringResource(R.string.subtitle_timing_capturing)
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.9f)
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.9f)
             )
 
             if (selectedAddonSubtitle != null) {
                 Text(
                     text = Subtitle.languageCodeToName(selectedAddonSubtitle.lang),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.68f)
+                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.68f)
                 )
             }
         }
@@ -280,7 +280,7 @@ private fun CueSelectionPanel(
                     Text(
                         text = stringResource(R.string.subtitle_timing_loading),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -291,7 +291,7 @@ private fun CueSelectionPanel(
             Text(
                 text = stringResource(R.string.subtitle_timing_no_lines_found),
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.72f)
+                color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.72f)
             )
             return
         }
@@ -322,7 +322,7 @@ private fun CueSelectionPanel(
         Text(
             text = stringResource(R.string.subtitle_timing_press_back_cancel),
             style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.55f)
+            color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.55f)
         )
     }
 }

@@ -139,7 +139,7 @@ private fun StreamInfoContent(data: StreamInfoData) {
                     Text(
                         text = data.addonName,
                         style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White,
+                        color = com.nuvio.tv.ui.components.Font666.Green,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -279,7 +279,7 @@ private fun InfoItem(label: String, value: String?, modifier: Modifier = Modifie
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
-            color = Color.White,
+            color = com.nuvio.tv.ui.components.Font666.Green,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )

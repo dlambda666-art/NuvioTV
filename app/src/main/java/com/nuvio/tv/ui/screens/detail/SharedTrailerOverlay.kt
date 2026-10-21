@@ -199,12 +199,12 @@ fun SharedTrailerOverlay(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge,
-                    color = Color.White
+                    color = com.nuvio.tv.ui.components.Font666.Green
                 )
                 Text(
                     text = stringResource(R.string.hero_press_back_trailer),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.82f)
+                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.82f)
                 )
             }
 
@@ -228,7 +228,7 @@ fun SharedTrailerOverlay(
                     Text(
                         text = errorMessage,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White
+                        color = com.nuvio.tv.ui.components.Font666.Green
                     )
                     Button(onClick = onRetry) {
                         Text(text = stringResource(R.string.action_retry))
@@ -314,7 +314,7 @@ fun TrailerSeekOverlay(
                 Text(
                     text = "${formatPlaybackTime(currentPosition)} / ${formatPlaybackTime(duration)}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.9f)
+                    color = com.nuvio.tv.ui.components.Font666.Green.copy(alpha = 0.9f)
                 )
             }
         }

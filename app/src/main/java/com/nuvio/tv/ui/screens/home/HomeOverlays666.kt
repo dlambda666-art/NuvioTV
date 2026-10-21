@@ -130,7 +130,7 @@ fun ResumeOnWake666(
             colors = ClickableSurfaceDefaults.colors(
                 containerColor = Color(0xCC1A0003),
                 focusedContainerColor = Color(0xFFA10614),
-                contentColor = Color.White,
+                contentColor = com.nuvio.tv.ui.components.Font666.Green,
                 focusedContentColor = Color.White
             )
         ) {
