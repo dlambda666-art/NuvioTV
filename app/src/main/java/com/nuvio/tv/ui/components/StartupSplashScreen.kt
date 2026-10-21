@@ -144,7 +144,7 @@ fun StartupSplashScreen(
     )
     // Les yeux du diable s'allument et s'éteignent doucement.
     val eyes by transition.animateFloat(
-        initialValue = 0.45f,
+        initialValue = 0.75f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "splashEyes"
@@ -202,14 +202,26 @@ fun StartupSplashScreen(
             val h = size.height
             listOf(806f / 1672f, 951f / 1672f).forEach { fx ->
                 val c = Offset(w * fx, h * (284f / 941f))
+                // grand halo orange, puis cœur blanc-jaune qui brûle (en lumière additive)
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(Color(0xFFFFE08A).copy(alpha = 0.95f * eyes), Color(0xFFFF9A1F).copy(alpha = 0.45f * eyes), Color.Transparent),
+                        colors = listOf(Color(0xFFFF8A00).copy(alpha = 0.7f * eyes), Color(0xFFFF5A00).copy(alpha = 0.25f * eyes), Color.Transparent),
                         center = c,
-                        radius = w * 0.02f
+                        radius = w * 0.045f
                     ),
-                    radius = w * 0.02f,
-                    center = c
+                    radius = w * 0.045f,
+                    center = c,
+                    blendMode = androidx.compose.ui.graphics.BlendMode.Plus
+                )
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color.White.copy(alpha = eyes), Color(0xFFFFE08A).copy(alpha = 0.95f * eyes), Color(0xFFFF9A1F).copy(alpha = 0.5f * eyes), Color.Transparent),
+                        center = c,
+                        radius = w * 0.017f
+                    ),
+                    radius = w * 0.017f,
+                    center = c,
+                    blendMode = androidx.compose.ui.graphics.BlendMode.Plus
                 )
             }
             // Voile de fumée sur le visage du diable : on le devine plus qu'on ne le voit.
@@ -269,7 +281,6 @@ fun StartupSplashScreen(
                 modifier = Modifier
                     .size(w * 0.23f)
                     .offset(x = w * 0.415f - w * 0.115f, y = h * 0.43f - w * 0.115f)
-                    .graphicsLayer { scaleX = beat; scaleY = beat }
             )
             // Logo 666TV
             Image(
@@ -293,7 +304,7 @@ fun StartupSplashScreen(
                     contentDescription = null,
                     // 666TV : un peu plus sombre, pour qu'il ressorte sur la lave.
                     colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(
-                        androidx.compose.ui.graphics.ColorMatrix().apply { setToScale(0.62f, 0.55f, 0.55f, 1f) }
+                        androidx.compose.ui.graphics.ColorMatrix().apply { setToScale(0.42f, 0.34f, 0.34f, 1f) }
                     ),
                     modifier = Modifier.fillMaxSize().graphicsLayer { rotationZ = spin }
                 )
@@ -303,7 +314,7 @@ fun StartupSplashScreen(
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
-            listOf(Triple(0.405f, 0.615f, 0.655f), Triple(0.585f, 0.555f, 0.6f)).forEachIndexed { i, (fx, y0, y1) ->
+            listOf(Triple(0.405f, 0.615f, 1.03f), Triple(0.585f, 0.555f, 1.03f)).forEachIndexed { i, (fx, y0, y1) ->
                 val ph = (drip - i * 0.5f + 1f) % 1f * 2f   // 0..1 : sa demi-période, >1 : repos
                 if (ph > 1f) return@forEachIndexed
                 val x = w * fx
@@ -315,16 +326,17 @@ fun StartupSplashScreen(
                     val g = ph / 0.45f
                     val r = rMax * (0.4f + 0.6f * g)
                     drawCircle(blood, r, Offset(x, top + r * g))
-                } else if (ph < 0.85f) {
+                } else if (ph < 0.97f) {
                     // elle tombe, de plus en plus vite
-                    val f = (ph - 0.45f) / 0.4f
+                    val f = (ph - 0.45f) / 0.52f
                     val y = top + (h * y1 - top) * f * f
-                    drawLine(blood.copy(alpha = 0.8f), Offset(x, top), Offset(x, y - rMax), strokeWidth = rMax * 0.5f * (1f - f) + 1f, cap = StrokeCap.Round)
+                    // un filet de sang reste derrière elle
+                    drawLine(blood.copy(alpha = 0.8f * (1f - f * 0.6f)), Offset(x, top), Offset(x, y - rMax), strokeWidth = rMax * 0.45f + 1f, cap = StrokeCap.Round)
                     drawOval(blood, Offset(x - rMax, y - rMax), Size(rMax * 2f, rMax * 2.4f))
                     drawCircle(Color(0xAAFF8C8C), rMax * 0.25f, Offset(x - rMax * 0.35f, y - rMax * 0.2f))
                 } else {
                     // ploc dans la flaque
-                    val f = (ph - 0.85f) / 0.15f
+                    val f = (ph - 0.97f) / 0.03f
                     drawOval(
                         blood.copy(alpha = 1f - f),
                         Offset(x - rMax * (1f + f * 3f), h * y1 - rMax * 0.4f),
