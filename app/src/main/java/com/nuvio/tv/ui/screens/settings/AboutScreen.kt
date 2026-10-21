@@ -120,11 +120,21 @@ fun AboutSettingsContent(
                             Spacer(modifier = Modifier.height(NuvioTheme.spacing.xs))
 
                             // 666TV : le nouveau logo en haut.
-                            androidx.compose.foundation.Image(
-                                painter = androidx.compose.ui.res.painterResource(R.drawable.splash_logo_666),
-                                contentDescription = stringResource(R.string.cd_nuvio_logo),
-                                modifier = Modifier.width(300.dp).height(180.dp)
-                            )
+                            androidx.compose.foundation.layout.Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                androidx.compose.foundation.Image(
+                                    painter = androidx.compose.ui.res.painterResource(R.drawable.splash_shield_666),
+                                    contentDescription = null,
+                                    modifier = Modifier.width(150.dp).height(150.dp)
+                                )
+                                androidx.compose.foundation.Image(
+                                    painter = androidx.compose.ui.res.painterResource(R.drawable.splash_logo_666),
+                                    contentDescription = stringResource(R.string.cd_nuvio_logo),
+                                    modifier = Modifier.width(300.dp).height(180.dp)
+                                )
+                            }
 
                             Text(
                                 text = stringResource(R.string.about_version, BuildConfig.VERSION_NAME),
