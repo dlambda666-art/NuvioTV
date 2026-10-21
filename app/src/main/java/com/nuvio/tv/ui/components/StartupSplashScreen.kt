@@ -185,12 +185,22 @@ fun StartupSplashScreen(
                     brush = Brush.radialGradient(
                         colors = listOf(Color(0xFFFFE08A).copy(alpha = 0.95f * eyes), Color(0xFFFF9A1F).copy(alpha = 0.45f * eyes), Color.Transparent),
                         center = c,
-                        radius = w * 0.03f
+                        radius = w * 0.02f
                     ),
-                    radius = w * 0.03f,
+                    radius = w * 0.02f,
                     center = c
                 )
             }
+            // Voile de fumée sur le visage du diable : on le devine plus qu'on ne le voit.
+            drawOval(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF1A1311).copy(alpha = 0.72f), Color(0xFF1A1311).copy(alpha = 0.35f), Color.Transparent),
+                    center = Offset(w * 0.53f, h * 0.34f),
+                    radius = w * 0.17f
+                ),
+                topLeft = Offset(w * 0.36f, h * 0.06f),
+                size = Size(w * 0.34f, h * 0.56f)
+            )
             puffs.forEach { p ->
                 val prog = (smokeT * p[3] + p[1]) % 1f
                 val x = w * (p[0] + kotlin.math.sin((prog * 6.28f + p[0] * 10f).toDouble()).toFloat() * 0.02f)
@@ -217,7 +227,7 @@ fun StartupSplashScreen(
                 contentDescription = null,
                 modifier = Modifier
                     .size(w * 0.23f)
-                    .offset(x = w * 0.36f - w * 0.115f, y = h * 0.50f - w * 0.115f)
+                    .offset(x = w * 0.415f - w * 0.115f, y = h * 0.43f - w * 0.115f)
                     .graphicsLayer { scaleX = beat; scaleY = beat }
             )
             // Logo 666TV
@@ -225,16 +235,16 @@ fun StartupSplashScreen(
                 painter = painterResource(R.drawable.splash_logo_666),
                 contentDescription = stringResource(R.string.cd_nuvio_logo),
                 modifier = Modifier
-                    .size(width = w * 0.28f, height = w * 0.28f * 0.603f)
-                    .offset(x = w * 0.49f, y = h * 0.47f - w * 0.28f * 0.603f / 2f)
+                    .size(width = w * 0.28f, height = w * 0.28f * 0.601f)
+                    .offset(x = w * 0.53f, y = h * 0.42f - w * 0.28f * 0.601f / 2f)
             )
             // Pentagramme qui tourne, avec un halo sombre derrière pour le détacher de la lave.
             Box(
                 modifier = Modifier
-                    .size(w * 0.15f)
-                    .offset(x = w * 0.5f - w * 0.075f, y = h * 0.735f)
+                    .size(w * 0.16f)
+                    .offset(x = w * 0.5f - w * 0.08f, y = h * 0.835f - w * 0.08f)
                     .background(
-                        Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.75f), Color.Transparent))
+                        Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.9f), Color.Black.copy(alpha = 0.6f), Color.Transparent))
                     )
             ) {
                 Image(
