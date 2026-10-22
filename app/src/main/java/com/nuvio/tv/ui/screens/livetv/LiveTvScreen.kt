@@ -86,7 +86,36 @@ private fun launch(context: Context, app: LiveTvApp, installed: InstalledApp?) {
     val intent = installed?.let {
         pm.getLeanbackLaunchIntentForPackage(it.packageName) ?: pm.getLaunchIntentForPackage(it.packageName)
     } ?: Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=" + Uri.encode(app.storeQuery)))
+    // 666TV : l'appli démarre toujours dans une tâche neuve. Avant, on retrouvait
+    // l'ancienne pile d'écrans d'Orange TV : « Quitter » fermait un écran… et on
+    // restait dans Orange.
+    if (installed != null) intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
     runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    if (installed != null) lastLaunchedPackage666 = installed.packageName
+}
+
+// 666TV : appli lancée depuis TV en direct ; quand on revient sur 666TV, elle est
+// arrêtée si elle tourne encore en arrière-plan (plus d'Orange qui reste ouvert).
+private var lastLaunchedPackage666: String? = null
+
+@Composable
+private fun StopLaunchedAppOnReturn666() {
+    val context = LocalContext.current
+    val owner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(owner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                val pkg = lastLaunchedPackage666 ?: return@LifecycleEventObserver
+                lastLaunchedPackage666 = null
+                runCatching {
+                    val am = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+                    am.killBackgroundProcesses(pkg)
+                }
+            }
+        }
+        owner.lifecycle.addObserver(observer)
+        onDispose { owner.lifecycle.removeObserver(observer) }
+    }
 }
 
 @Composable
@@ -95,6 +124,7 @@ fun LiveTvScreen() {
     val installed = remember { LIVE_TV_APPS.map { findInstalledApp(context, it) } }
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    StopLaunchedAppOnReturn666()
 
     Column(
         modifier = Modifier
