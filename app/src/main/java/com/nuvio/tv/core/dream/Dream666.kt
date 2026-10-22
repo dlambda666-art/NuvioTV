@@ -105,6 +105,79 @@ private class Dream666View(context: Context) : View(context) {
     private val clouds = List(9) { floatArrayOf(rng.nextFloat() * 1.3f, 0.03f + rng.nextFloat() * 0.25f, 0.12f + rng.nextFloat() * 0.18f, 0.6f + rng.nextFloat() * 0.8f) }
     private val puffs = List(14) { floatArrayOf(rng.nextFloat(), 0.62f + rng.nextFloat() * 0.38f, 0.15f + rng.nextFloat() * 0.25f, 0.2f + rng.nextFloat() * 0.8f) }
 
+    // ---- Spectres (sprites sur fond noir, dessinés en lumière additive) ----
+    private val ghostBitmaps: List<Bitmap> = listOf(
+        R.drawable.ghost_666_0, R.drawable.ghost_666_1, R.drawable.ghost_666_2, R.drawable.ghost_666_3
+    ).mapNotNull { res ->
+        runCatching { BitmapFactory.decodeResource(resources, res, BitmapFactory.Options().apply { inScaled = false }) }.getOrNull()
+    }
+    // Sens dans lequel chaque spectre « regarde » (true = vers la gauche).
+    private val ghostFacesLeft = booleanArrayOf(false, true, false, true)
+    private val ghostPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
+        if (android.os.Build.VERSION.SDK_INT >= 29) blendMode = android.graphics.BlendMode.PLUS
+        else xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.ADD)
+    }
+
+    private class Ghost(
+        val sprite: Int, val near: Boolean, val start: Long, val duration: Long,
+        val fromLeft: Boolean, val y: Float, val size: Float, val phase: Float
+    )
+    private val ghosts = mutableListOf<Ghost>()
+    private var nextGhostAt = start + 1_500L
+    private var ghostCount = 0
+
+    private fun spawnGhost(now: Long, h: Float) {
+        if (ghostBitmaps.isEmpty()) return
+        ghostCount++
+        // Un passage sur trois : le grand spectre qui fonce vers nous.
+        val near = ghostCount % 3 == 0 && ghosts.none { it.near }
+        ghosts += if (near) {
+            Ghost(0, true, now, 4_200L + rng.nextLong(1_200L), true, 0.32f, 0f, rng.nextFloat() * 6f)
+        } else {
+            val sprite = 1 + rng.nextInt(ghostBitmaps.size - 1)
+            Ghost(
+                sprite, false, now, 5_000L + rng.nextLong(2_500L), rng.nextBoolean(),
+                0.22f + rng.nextFloat() * 0.25f, h * (0.14f + rng.nextFloat() * 0.14f), rng.nextFloat() * 6f
+            )
+        }
+    }
+
+    private fun drawGhost(canvas: Canvas, g: Ghost, now: Long, w: Float, h: Float, flash: Float) {
+        val bmp = ghostBitmaps.getOrNull(g.sprite) ?: return
+        val p = ((now - g.start).toFloat() / g.duration).coerceIn(0f, 1f)
+        val wave = sin(p * 18f + g.phase)
+        val height: Float
+        val cx: Float
+        val cy: Float
+        val alpha: Float
+        if (g.near) {
+            // Part du fond, grossit vite en venant vers nous et sort par la gauche.
+            val e = p * p
+            height = h * (0.18f + e * 1.5f)
+            cx = w * (0.42f - e * 0.62f)
+            cy = h * (0.36f + e * 0.18f) + wave * h * 0.012f
+            alpha = (if (p < 0.15f) p / 0.15f else if (p > 0.85f) (1f - p) / 0.15f else 1f) * 0.95f
+        } else {
+            height = g.size
+            val x0 = if (g.fromLeft) -0.15f else 1.15f
+            val x1 = if (g.fromLeft) 1.15f else -0.15f
+            cx = w * (x0 + (x1 - x0) * p)
+            cy = h * g.y + wave * h * 0.02f
+            alpha = (if (p < 0.2f) p / 0.2f else if (p > 0.8f) (1f - p) / 0.2f else 1f) * 0.8f
+        }
+        val width = height * bmp.width / bmp.height
+        // Tourné dans le sens de la marche.
+        val movingLeft = if (g.near) true else !g.fromLeft
+        val flip = movingLeft != ghostFacesLeft[g.sprite]
+        ghostPaint.alpha = (255 * (alpha + flash * 0.4f).coerceIn(0f, 1f)).toInt()
+        canvas.save()
+        canvas.translate(cx, cy)
+        canvas.rotate(wave * 3f)
+        if (flip) canvas.scale(-1f, 1f)
+        canvas.drawBitmap(bmp, null, RectF(-width / 2, -height / 2, width / 2, height / 2), ghostPaint)
+        canvas.restore()
+    }
+
     private val tick = object : Runnable {
         override fun run() { invalidate(); handler.postDelayed(this, frameMs) }
     }
@@ -153,6 +226,14 @@ private class Dream666View(context: Context) : View(context) {
         }
         val sinceBolt = now - boltAt
         val flash = if (boltAt > 0 && sinceBolt < 700) (1f - sinceBolt / 700f) else 0f
+
+        // Spectres : apparition, puis les lointains derrière les tombes.
+        ghosts.removeAll { now - it.start > it.duration }
+        if (now >= nextGhostAt && ghosts.size < 2) {
+            spawnGhost(now, h)
+            nextGhostAt = now + 2_000L + rng.nextLong(3_000L)
+        }
+        for (g in ghosts) if (!g.near) drawGhost(canvas, g, now, w, h, flash)
 
         // Tombes avec tes affiches.
         val sizes = floatArrayOf(0.12f, 0.17f, 0.12f)
@@ -205,6 +286,9 @@ private class Dream666View(context: Context) : View(context) {
             paint.color = Color.WHITE; paint.alpha = (90 * flash).toInt(); canvas.drawRect(0f, 0f, w, h, paint)
             paint.alpha = 255
         }
+
+        // Le grand spectre passe devant tout (sauf l'heure).
+        for (g in ghosts) if (g.near) drawGhost(canvas, g, now, w, h, flash)
 
         // Heure, date, météo.
         val d = Date(now)
