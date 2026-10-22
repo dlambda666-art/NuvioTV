@@ -1368,6 +1368,8 @@ open class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // 666TV : arrête Orange TV (ou autre appli de TV en direct) restée en arrière-plan.
+        com.nuvio.tv.ui.screens.livetv.LaunchedApp666.stopIfBackground(this)
         if (::jankStats.isInitialized) jankStats.isTrackingEnabled = true
         memberAccessRepository.refreshIfStale()
         lifecycleScope.launch {

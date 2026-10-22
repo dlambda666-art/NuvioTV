@@ -91,30 +91,22 @@ private fun launch(context: Context, app: LiveTvApp, installed: InstalledApp?) {
     // restait dans Orange.
     if (installed != null) intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
     runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-    if (installed != null) lastLaunchedPackage666 = installed.packageName
+    if (installed != null) LaunchedApp666.pending = installed.packageName
 }
 
-// 666TV : appli lancée depuis TV en direct ; quand on revient sur 666TV, elle est
-// arrêtée si elle tourne encore en arrière-plan (plus d'Orange qui reste ouvert).
-private var lastLaunchedPackage666: String? = null
+// 666TV : appli lancée depuis TV en direct (Orange…). Quand 666TV revient au
+// premier plan — par Retour ou par le bouton Accueil —, elle est arrêtée si
+// elle tourne encore en arrière-plan. Appelé depuis MainActivity.onResume.
+object LaunchedApp666 {
+    @Volatile var pending: String? = null
 
-@Composable
-private fun StopLaunchedAppOnReturn666() {
-    val context = LocalContext.current
-    val owner = androidx.compose.ui.platform.LocalLifecycleOwner.current
-    androidx.compose.runtime.DisposableEffect(owner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                val pkg = lastLaunchedPackage666 ?: return@LifecycleEventObserver
-                lastLaunchedPackage666 = null
-                runCatching {
-                    val am = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-                    am.killBackgroundProcesses(pkg)
-                }
-            }
+    fun stopIfBackground(context: Context) {
+        val pkg = pending ?: return
+        pending = null
+        runCatching {
+            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+            am.killBackgroundProcesses(pkg)
         }
-        owner.lifecycle.addObserver(observer)
-        onDispose { owner.lifecycle.removeObserver(observer) }
     }
 }
 
@@ -124,7 +116,6 @@ fun LiveTvScreen() {
     val installed = remember { LIVE_TV_APPS.map { findInstalledApp(context, it) } }
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
-    StopLaunchedAppOnReturn666()
 
     Column(
         modifier = Modifier
