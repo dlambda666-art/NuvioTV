@@ -192,6 +192,28 @@ function episodeMismatch(text, season, episode) {
     return any;
 }
 
+// 666TV : année et titres du film (via Frank), pour écarter les homonymes
+// (ex. « Kraken » 2026, le film français, contre un vieux « Kraken » avec un vrai kraken).
+async function movieInfo(id) {
+    var info = await getJson(FRANK_URL + '/lookup/movie/' + id, 'lookup');
+    return info && info.year ? { year: Number(info.year), titles: info.titles || [] } : null;
+}
+
+// Vrai si le nom du fichier annonce une autre année (à ±1 an près).
+// Les années qui font partie du titre (« 1998, l'été de nos 18 ans ») ne comptent pas.
+function yearMismatch(text, info) {
+    if (!info || !info.year) return false;
+    var inTitle = (info.titles || []).join(' ');
+    var re = /(?:^|[^0-9])(19[2-9]\d|20[0-4]\d)(?![0-9])/g, m, any = false;
+    while ((m = re.exec(text))) {
+        var y = Number(m[1]);
+        if (inTitle.indexOf(m[1]) >= 0) continue;
+        any = true;
+        if (Math.abs(y - info.year) <= 1) return false;
+    }
+    return any;
+}
+
 async function getStreams(tmdbId, mediaType, season, episode) {
     var base = addonBase();
     if (!base) {
@@ -207,6 +229,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     }
     var sid = isTv ? imdbId + ':' + season + ':' + episode : imdbId;
     var airDate = isTv ? await episodeAirDate(tmdbId, season, episode) : null;
+    var film = isTv ? null : await movieInfo(imdbId);
     // 666TV : épisode pas encore diffusé → rien (sinon on lance un vieux fichier).
     if (airDate && Date.parse(airDate + 'T00:00:00Z') > Date.now() + 24 * 3600 * 1000) {
         console.log(ADDON_NAME + '666 : épisode pas encore diffusé (' + airDate + ')');
@@ -225,6 +248,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         var text = [s.name, s.title, s.description, filename].filter(Boolean).join('\n');
         if (NOT_CACHED.test(String(s.name || ''))) { dropped.notCached++; return; }
         if (isTv && (episodeMismatch(text, season, episode) || dateMismatch(text, airDate))) { dropped.ep++; return; }
+        if (!isTv && yearMismatch(text, film)) { dropped.ep++; return; }
         var lang = frenchLabel(text);
         if (!lang) { dropped.lang++; return; }
         var quality = qualityOf(text);
@@ -243,7 +267,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     });
     console.log(ADDON_NAME + '666 : ' + streams.length + ' flux reçus, ' + found.length + ' gardés (écartés : ' +
         dropped.noUrl + ' sans lien, ' + dropped.notCached + ' pas en cache, ' + dropped.lang + ' pas VF, ' +
-        dropped.quality + ' < 1080p, ' + dropped.ep + ' autre épisode)');
+        dropped.quality + ' < 1080p, ' + dropped.ep + ' autre épisode / autre film)');
 
     if (!found.length) {
         var first = streams[0] || {};
