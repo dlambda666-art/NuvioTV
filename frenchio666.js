@@ -192,11 +192,15 @@ function episodeMismatch(text, season, episode) {
     return any;
 }
 
-// 666TV : année et titres du film (via Frank), pour écarter les homonymes
-// (ex. « Kraken » 2026, le film français, contre un vieux « Kraken » avec un vrai kraken).
-async function movieInfo(id) {
-    var info = await getJson(FRANK_URL + '/lookup/movie/' + id, 'lookup');
-    return info && info.year ? { year: Number(info.year), titles: info.titles || [] } : null;
+// 666TV : UNE seule requête TMDB pour un film (id IMDb, année, titres, dates de
+// sortie en France). Les requêtes du lecteur de plugins passent l'une après
+// l'autre : chaque appel en plus retarde la « Lecture VF ».
+async function movieDetails(tmdbId) {
+    if (typeof TMDB_API_KEY === 'undefined' || !TMDB_API_KEY) return null;
+    var id = String(tmdbId || '').replace(/^tmdb:/i, '');
+    if (!/^\d+$/.test(id)) return null;
+    return await getJson('https://api.themoviedb.org/3/movie/' + id +
+        '?append_to_response=release_dates,external_ids&api_key=' + encodeURIComponent(TMDB_API_KEY), 'TMDB');
 }
 
 // Vrai si le nom du fichier annonce une autre année (à ±1 an près).
@@ -217,16 +221,7 @@ function yearMismatch(text, info) {
 // 666TV : film français encore au cinéma. En France, la VOD n'arrive que 4 mois
 // après la sortie en salle : avant ça, un « fichier » est soit un CAM, soit un
 // homonyme (ex. Kraken avec Gazo, sorti le 30/09/2026, contre le Kraken norvégien).
-async function frenchFilmInCinema(tmdbId) {
-    if (typeof TMDB_API_KEY === 'undefined' || !TMDB_API_KEY) return false;
-    var key = encodeURIComponent(TMDB_API_KEY);
-    var id = String(tmdbId || '').replace(/^tmdb:/i, '');
-    if (/^tt\d+$/i.test(id)) {
-        var f = await getJson('https://api.themoviedb.org/3/find/' + id + '?external_source=imdb_id&api_key=' + key, 'TMDB');
-        id = f && f.movie_results && f.movie_results[0] ? String(f.movie_results[0].id) : '';
-    }
-    if (!/^\d+$/.test(id)) return false;
-    var m = await getJson('https://api.themoviedb.org/3/movie/' + id + '?append_to_response=release_dates&api_key=' + key, 'TMDB');
+function frenchFilmInCinema(m) {
     if (!m || m.original_language !== 'fr') return false;
     var fr = ((m.release_dates && m.release_dates.results) || []).filter(function (r) { return r.iso_3166_1 === 'FR'; })[0];
     var dates = (fr && fr.release_dates) || [];
@@ -249,15 +244,19 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         return diagnostic(tmdbId, ['Adresse absente ou invalide', 'Réglages reçus : ' + (keys || 'aucun'), 'id plugin : ' + (typeof SCRAPER_ID !== 'undefined' ? SCRAPER_ID : '?')]);
     }
     var isTv = mediaType === 'tv' || mediaType === 'series';
-    var imdbId = await resolveImdb(tmdbId, mediaType);
+    var details = isTv ? null : await movieDetails(tmdbId);
+    var imdbId = (details && details.external_ids && details.external_ids.imdb_id) || await resolveImdb(tmdbId, mediaType);
     if (!imdbId) {
         console.log(ADDON_NAME + '666 : id IMDb introuvable pour ' + tmdbId);
         return diagnostic(tmdbId, ['Adresse OK (' + privateHost(base) + ')', 'id IMDb introuvable pour ' + tmdbId, LAST_ERROR]);
     }
     var sid = isTv ? imdbId + ':' + season + ':' + episode : imdbId;
     var airDate = isTv ? await episodeAirDate(tmdbId, season, episode) : null;
-    var film = isTv ? null : await movieInfo(imdbId);
-    if (!isTv && await frenchFilmInCinema(tmdbId || imdbId)) {
+    var film = details ? {
+        year: Number(String(details.release_date || '').slice(0, 4)) || null,
+        titles: [details.title, details.original_title].filter(Boolean)
+    } : null;
+    if (frenchFilmInCinema(details)) {
         console.log(ADDON_NAME + '666 : film français encore au cinéma, pas de VOD avant 4 mois');
         return [];
     }
