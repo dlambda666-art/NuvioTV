@@ -1,0 +1,16 @@
+name: Cas pièges des plugins
+# 666TV : à chaque modification des plugins, on rejoue les pannes déjà rencontrées
+# (anthologie, émission datée, homonyme, film au cinéma…). En cas d'échec, GitHub
+# envoie un mail.
+on:
+  push:
+    branches: [plugins]
+  workflow_dispatch:
+jobs:
+  pieges:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: node tests/pieges.js
