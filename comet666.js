@@ -140,7 +140,9 @@ function decodeEntities(t) {
 function matchesEpisode(title, season, episode) {
     var t = String(title);
     var se = t.match(/\bS(\d{1,2})[ ._-]?E(\d{1,3})\b/i);
-    if (se) return parseInt(se[1], 10) === season && parseInt(se[2], 10) === episode;
+    // 666TV : même épisode dans une autre saison gardé en réserve (séries anthologie,
+    // ex. « Monster: The Lizzie Borden Story S01E05 » pour Monstre S04E05).
+    if (se) return parseInt(se[2], 10) === episode && (parseInt(se[1], 10) === season || (season > 1 && parseInt(se[1], 10) === 1));
     var sOnly = t.match(/\bS(\d{1,2})\b(?![ ._-]?E\d)/i) || t.match(/\bSaison[ ._-]?(\d{1,2})\b/i) || t.match(/\bSeason[ ._-]?(\d{1,2})\b/i);
     if (sOnly) {
         var range = t.match(/\bS(\d{1,2})[ ._-]?-[ ._-]?S?(\d{1,2})\b/i);
@@ -203,6 +205,11 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         return [];
     }
     var found = [];
+    // Vrai si le nom annonce exactement la saison demandée (ou ne dit rien de précis).
+    function exactSeason(t) {
+        var m = String(t.release || t.text || '').match(/\bS(\d{1,2})[ ._-]?E(\d{1,3})\b/i);
+        return !m || parseInt(m[1], 10) === parseInt(season, 10);
+    }
     var lists = [
         await fromStremThru(ids.imdbId, isTv, season, episode),
         await fromTorrentio(ids.imdbId, isTv, season, episode),
@@ -227,6 +234,8 @@ async function getStreams(tmdbId, mediaType, season, episode) {
             found.push(t);
         });
     });
+    // Les fichiers « autre saison » ne servent que s'il n'y a rien d'exact.
+    if (isTv && found.some(exactSeason)) found = found.filter(exactSeason);
     found.sort(function (a, b) {
         // VF sûre d'abord, « MULTi (VF ?) » ensuite
         var c = (a.lang.indexOf('?') >= 0) - (b.lang.indexOf('?') >= 0);

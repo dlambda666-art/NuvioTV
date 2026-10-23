@@ -181,6 +181,17 @@ function dateMismatch(text, airDate) {
 }
 
 // 666TV : vrai si le flux annonce un AUTRE épisode (ex. S01E01 alors qu'on demande S01E05).
+// 666TV : séries anthologie — le même épisode rangé dans une autre saison
+// (« Monster: The Lizzie Borden Story S01E05 » pour Monstre S04E05).
+function otherSeasonSameEpisode(text, season, episode) {
+    var re = /\bS(\d{1,2})[ ._-]?E(\d{1,3})\b/ig, m;
+    while ((m = re.exec(text))) {
+        // seulement « S01 » : une saison d'anthologie numérotée comme une série à part
+        if (parseInt(m[2], 10) === parseInt(episode, 10) && parseInt(m[1], 10) === 1 && parseInt(season, 10) > 1) return true;
+    }
+    return false;
+}
+
 function episodeMismatch(text, season, episode) {
     var re = /\bS(\d{1,2})[ ._-]?E(\d{1,3})(?:[ ._-]?(?:-|E)[ ._-]?E?(\d{1,3}))?/ig;
     var m, any = false, s = parseInt(season, 10), e = parseInt(episode, 10);
@@ -277,7 +288,12 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         var filename = hints.filename || '';
         var text = [s.name, s.title, s.description, filename].filter(Boolean).join('\n');
         if (NOT_CACHED.test(String(s.name || ''))) { dropped.notCached++; return; }
-        if (isTv && (episodeMismatch(text, season, episode) || dateMismatch(text, airDate))) { dropped.ep++; return; }
+        var altSeason = false;
+        if (isTv && dateMismatch(text, airDate)) { dropped.ep++; return; }
+        if (isTv && episodeMismatch(text, season, episode)) {
+            if (parseInt(season, 10) > 1 && otherSeasonSameEpisode(text, season, episode)) altSeason = true;
+            else { dropped.ep++; return; }
+        }
         if (!isTv && yearMismatch(text, film)) { dropped.ep++; return; }
         var lang = frenchLabel(text);
         if (!lang) { dropped.lang++; return; }
@@ -292,12 +308,16 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         found.push({
             url: s.url, release: release, text: text, lang: lang, quality: quality,
             bytes: Number(hints.videoSize) || sizeToBytes(sizeMatch && sizeMatch[1]),
-            headers: streamHeaders(s)
+            headers: streamHeaders(s),
+            altSeason: altSeason
         });
     });
     console.log(ADDON_NAME + '666 : ' + streams.length + ' flux reçus, ' + found.length + ' gardés (écartés : ' +
         dropped.noUrl + ' sans lien, ' + dropped.notCached + ' pas en cache, ' + dropped.lang + ' pas VF, ' +
         dropped.quality + ' < 1080p, ' + dropped.ep + ' autre épisode / autre film)');
+
+    // Les fichiers « autre saison » ne servent que s'il n'y a rien d'exact.
+    if (found.some(function (f) { return !f.altSeason; })) found = found.filter(function (f) { return !f.altSeason; });
 
     if (!found.length) {
         var first = streams[0] || {};
