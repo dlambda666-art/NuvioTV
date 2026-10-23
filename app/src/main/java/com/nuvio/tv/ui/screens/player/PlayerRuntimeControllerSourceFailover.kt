@@ -82,11 +82,32 @@ private fun TrackInfo.knownOtherLanguage666(): Boolean {
     return lang.isNotEmpty() && lang !in setOf("und", "unknown", "mul", "zxx", "mis") && !isFrench666()
 }
 
+/** 666TV : le lien n'a montré aucune image au bout de 35 s (chargement sans fin). */
+internal const val STARTUP_TIMEOUT_666 = "Le lien ne démarre pas"
+private const val STARTUP_TIMEOUT_MS_666 = 35_000L
+
 /** À appeler une fois à la création du lecteur. */
 internal fun PlayerRuntimeController.observeSourceFailover() {
     scope.launch {
         _uiState.map { it.error }.distinctUntilChanged().collect { error ->
             if (error != null) maybeFailoverToNextSource(error)
+        }
+    }
+    // 666TV : un lien qui charge sans jamais démarrer (titre qui pulse sans fin)
+    // passe au lien suivant au bout de 35 s, au lieu de rester bloqué.
+    scope.launch {
+        var watchdog: kotlinx.coroutines.Job? = null
+        _uiState.map { it.currentStreamUrl }.distinctUntilChanged().collect { url ->
+            watchdog?.cancel()
+            if (url.isNullOrBlank()) return@collect
+            watchdog = scope.launch {
+                kotlinx.coroutines.delay(STARTUP_TIMEOUT_MS_666)
+                val state = _uiState.value
+                if (state.currentStreamUrl == url && !hasRenderedFirstFrame && state.error == null && !userPausedManually) {
+                    Log.w(PlayerRuntimeController.TAG, "No first frame after ${STARTUP_TIMEOUT_MS_666}ms → next link")
+                    _uiState.update { it.copy(error = STARTUP_TIMEOUT_666) }
+                }
+            }
         }
     }
     // 666TV : « VF » annoncée mais aucune piste française dans le fichier → lien suivant.
