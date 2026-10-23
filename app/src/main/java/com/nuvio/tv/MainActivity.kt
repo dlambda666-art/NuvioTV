@@ -322,6 +322,9 @@ open class MainActivity : ComponentActivity() {
     @Inject
     lateinit var deepLinkHandler: DeepLinkHandler
 
+    @Inject
+    lateinit var watchProgressRepository666: com.nuvio.tv.domain.repository.WatchProgressRepository
+
     private val pendingDeepLinkUrl = MutableStateFlow<String?>(null)
     private val pendingLaunchIntent = MutableStateFlow<Intent?>(null)
 
@@ -367,6 +370,8 @@ open class MainActivity : ComponentActivity() {
         run {
             val appCtx = applicationContext
             Thread { com.nuvio.tv.core.tools.Backup666.autoBackupIfDue(appCtx) }.apply { priority = Thread.MIN_PRIORITY }.start()
+            // 666TV : « Pour toi, Lambda » — envoie tes visionnages à Frank (démarrage + toutes les 3 h).
+            lifecycleScope.launch { com.nuvio.tv.core.tools.PourToi666.loop(watchProgressRepository666) }
         }
         isFirstResumeAfterCreate = true
         window?.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
