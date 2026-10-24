@@ -255,13 +255,16 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 item(key = "menu_$route") {
                     val moving = movingRoute == route
                     Surface(
-                        onClick = { if (moving) movingRoute = null },
+                        onClick = { },
                         onLongClick = { movingRoute = route },
                         modifier = Modifier
                             .fillMaxWidth()
                             .onPreviewKeyEvent { ev ->
                                 if (!moving) return@onPreviewKeyEvent false
                                 if (ev.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onPreviewKeyEvent true
+                                // L'appui long envoie des répétitions de OK : on les ignore,
+                                // sinon l'onglet est « posé » aussitôt pris.
+                                if (ev.nativeKeyEvent.repeatCount > 0) return@onPreviewKeyEvent true
                                 val delta = when (ev.nativeKeyEvent.keyCode) {
                                     android.view.KeyEvent.KEYCODE_DPAD_UP -> -1
                                     android.view.KeyEvent.KEYCODE_DPAD_DOWN -> 1
@@ -276,7 +279,10 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                                     }
                                     return@onPreviewKeyEvent true
                                 }
-                                movingRoute = null
+                                when (ev.nativeKeyEvent.keyCode) {
+                                    android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_ENTER,
+                                    android.view.KeyEvent.KEYCODE_NUMPAD_ENTER, android.view.KeyEvent.KEYCODE_BACK -> movingRoute = null
+                                }
                                 true
                             },
                         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
