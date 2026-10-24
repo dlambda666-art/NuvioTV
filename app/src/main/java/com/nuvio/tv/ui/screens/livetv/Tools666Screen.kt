@@ -25,6 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -140,6 +141,8 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
     val running by viewModel.running.collectAsState()
     var lastBackup by remember { mutableStateOf(Backup666.lastBackupAt(context)) }
     var busy by remember { mutableStateOf(false) }
+    var menuOrder by remember { mutableStateOf(com.nuvio.tv.core.tools.MenuOrder666.fullOrder()) }
+    var movingRoute by remember { mutableStateOf<String?>(null) }
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         viewModel.runChecks()
@@ -244,6 +247,55 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     runCatching { pickBackup.launch(arrayOf("application/zip", "application/octet-stream", "*/*")) }
                         .onFailure { toast(context, "Pas de sélecteur de fichiers sur cette Shield") }
                 })
+            }
+
+            // ---------- Ordre du menu ----------
+            item { Section("Ordre du menu", "Appui long sur OK sur un onglet, flèches haut/bas pour le déplacer, OK pour le poser") }
+            menuOrder.forEachIndexed { index, route ->
+                item(key = "menu_$route") {
+                    val moving = movingRoute == route
+                    Surface(
+                        onClick = { if (moving) movingRoute = null },
+                        onLongClick = { movingRoute = route },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onPreviewKeyEvent { ev ->
+                                if (!moving) return@onPreviewKeyEvent false
+                                if (ev.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onPreviewKeyEvent true
+                                val delta = when (ev.nativeKeyEvent.keyCode) {
+                                    android.view.KeyEvent.KEYCODE_DPAD_UP -> -1
+                                    android.view.KeyEvent.KEYCODE_DPAD_DOWN -> 1
+                                    else -> 0
+                                }
+                                if (delta != 0) {
+                                    val target = (index + delta).coerceIn(0, menuOrder.lastIndex)
+                                    if (target != index) {
+                                        val list = menuOrder.toMutableList().apply { add(target, removeAt(index)) }
+                                        menuOrder = list
+                                        com.nuvio.tv.core.tools.MenuOrder666.save(context, list)
+                                    }
+                                    return@onPreviewKeyEvent true
+                                }
+                                movingRoute = null
+                                true
+                            },
+                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
+                        colors = ClickableSurfaceDefaults.colors(
+                            containerColor = Color(0x33000000),
+                            focusedContainerColor = if (moving) Color(0xFF1F6F2E) else Blood,
+                            contentColor = com.nuvio.tv.ui.components.Font666.Green,
+                            focusedContentColor = Color.White
+                        ),
+                        scale = ClickableSurfaceDefaults.scale(focusedScale = if (moving) 1.04f else 1.01f)
+                    ) {
+                        Text(
+                            (if (moving) "⇅  " else "${index + 1}.  ") + com.nuvio.tv.core.tools.MenuOrder666.labelOf(route),
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
             }
 
             // ---------- Affichage ----------

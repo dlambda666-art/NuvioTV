@@ -1183,6 +1183,19 @@ private fun SearchInputField(
 ) {
     var isDiscoverButtonFocused by remember { mutableStateOf(false) }
     var isVoiceButtonFocused by remember { mutableStateOf(false) }
+    // 666TV : notre clavier en Creepster à la place de celui de la Shield.
+    var showKeyboard666 by remember { mutableStateOf(false) }
+    if (showKeyboard666) {
+        Keyboard666(
+            query = query,
+            onQueryChanged = onQueryChanged,
+            onSubmit = onSubmit,
+            onDismiss = {
+                showKeyboard666 = false
+                runCatching { searchFocusRequester.requestFocus() }
+            }
+        )
+    }
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     Row(
@@ -1330,9 +1343,11 @@ private fun SearchInputField(
                 .onPreviewKeyEvent { keyEvent ->
                     when (keyEvent.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_ENTER,
-                        KeyEvent.KEYCODE_NUMPAD_ENTER -> {
-                            if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                                onSubmit()
+                        KeyEvent.KEYCODE_NUMPAD_ENTER,
+                        KeyEvent.KEYCODE_DPAD_CENTER -> {
+                            if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_UP) {
+                                keyboardController?.hide()
+                                showKeyboard666 = true
                             }
                             return@onPreviewKeyEvent true
                         }
@@ -1373,6 +1388,9 @@ private fun SearchInputField(
                 }
             ),
             singleLine = true,
+            readOnly = true, // 666TV : le clavier de la Shield ne s'ouvre plus
+            textStyle = com.nuvio.tv.ui.components.Font666.horror(androidx.tv.material3.MaterialTheme.typography.titleLarge, 1.2f)
+                .copy(color = com.nuvio.tv.ui.components.Font666.Green),
             shape = RoundedCornerShape(NuvioTheme.radii.md),
             placeholder = {
                 Text(

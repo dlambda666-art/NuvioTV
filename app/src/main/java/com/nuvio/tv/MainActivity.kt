@@ -367,6 +367,7 @@ open class MainActivity : ComponentActivity() {
         com.nuvio.tv.core.tools.Light666.init(this)
         com.nuvio.tv.core.tools.Clock666.init(this)
         com.nuvio.tv.core.tools.PhoneLink666.init(this)
+        com.nuvio.tv.core.tools.MenuOrder666.init(this)
         run {
             val appCtx = applicationContext
             Thread { com.nuvio.tv.core.tools.Backup666.autoBackupIfDue(appCtx) }.apply { priority = Thread.MIN_PRIORITY }.start()
@@ -1094,7 +1095,8 @@ open class MainActivity : ComponentActivity() {
                         strNavSearch,
                         strNavLibrary,
                         strNavSettings,
-                        discoverLocation
+                        discoverLocation,
+                        com.nuvio.tv.core.tools.MenuOrder666.order
                     ) {
                         buildList {
                             add(
@@ -1155,7 +1157,7 @@ open class MainActivity : ComponentActivity() {
                                     iconRes = R.raw.sidebar_settings
                                 )
                             )
-                        }
+                        }.let { items -> com.nuvio.tv.core.tools.MenuOrder666.sort(items) { it.route } }
                     }
                     val selectedDrawerRoute = drawerItems.firstOrNull { item ->
                         currentRoute == item.route || currentRoute?.startsWith("${item.route}/") == true
