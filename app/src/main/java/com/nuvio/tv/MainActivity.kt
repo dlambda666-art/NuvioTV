@@ -1269,13 +1269,31 @@ open class MainActivity : ComponentActivity() {
                                         delay(15_000L)
                                         calendarVfAnnouncements = emptyList()
                                     }
-                                    delay(6L * 60L * 60L * 1000L)
+                                    // 666TV : vérifié toutes les 20 minutes (avant : 6 h), même
+                                    // quand tu es dans Orange TV ou YouTube.
+                                    delay(20L * 60L * 1000L)
                                 }
                             }
                             // 666TV : cri quand la bannière apparaît (jamais pendant la lecture).
                             val bellContext = LocalContext.current
+                            val bellLifecycle = androidx.compose.ui.platform.LocalLifecycleOwner.current.lifecycle
                             LaunchedEffect(calendarVfAnnouncements) {
                                 if (calendarVfAnnouncements.isEmpty() || currentRoute?.startsWith("player/") == true) return@LaunchedEffect
+                                // 666TV : 666TV est derrière une autre appli (Orange, YouTube…) :
+                                // le cri sonne quand même, avec un message en bas de l'écran.
+                                if (!bellLifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                                    val names = calendarVfAnnouncements.joinToString(", ") { ep ->
+                                        if (ep.seriesId.startsWith("sport:")) ep.seriesName else ep.seriesName + " S" + ep.season + "E" + ep.episode
+                                    }
+                                    val sport = calendarVfAnnouncements.all { it.seriesId.startsWith("sport:") }
+                                    runCatching {
+                                        android.widget.Toast.makeText(
+                                            bellContext.applicationContext,
+                                            if (sport) "🥊 666TV : c'est l'heure du combat — $names" else "🔔 666TV : $names dispo en VF !",
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
                                 runCatching {
                                     android.media.MediaPlayer.create(bellContext, R.raw.bell_vf_666)?.apply {
                                         setVolume(0.8f, 0.8f)
