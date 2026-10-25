@@ -1258,6 +1258,11 @@ open class MainActivity : ComponentActivity() {
                             var calendarVfAnnouncements by remember {
                                 mutableStateOf<List<com.nuvio.tv.core.calendar.CalendarEpisode>>(emptyList())
                             }
+                            // 666TV : ce qui attend d'être annoncé. Rien n'est « consommé » tant
+                            // que tu ne l'as pas vu : pas pendant un film, pas écran éteint.
+                            var pending666 by remember {
+                                mutableStateOf<List<com.nuvio.tv.core.calendar.CalendarEpisode>>(emptyList())
+                            }
                             LaunchedEffect(activeProfile?.id) {
                                 delay(20_000L)
                                 while (true) {
@@ -1265,13 +1270,28 @@ open class MainActivity : ComponentActivity() {
                                         .getOrDefault(emptyList()) +
                                         runCatching { ufcToAnnounce666(ufcScheduleRepository666) }.getOrDefault(emptyList())
                                     if (found.isNotEmpty()) {
-                                        calendarVfAnnouncements = found
-                                        delay(15_000L)
-                                        calendarVfAnnouncements = emptyList()
+                                        pending666 = (pending666 + found).distinctBy { "${it.seriesId}|${it.season}|${it.episode}" }
                                     }
                                     // 666TV : vérifié toutes les 20 minutes (avant : 6 h), même
                                     // quand tu es dans Orange TV ou YouTube.
                                     delay(20L * 60L * 1000L)
+                                }
+                            }
+                            val inPlayer666 = currentRoute?.startsWith("player/") == true
+                            val pendingContext666 = LocalContext.current
+                            LaunchedEffect(pending666, inPlayer666) {
+                                if (pending666.isEmpty() || inPlayer666) return@LaunchedEffect
+                                val power = pendingContext666.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
+                                while (power != null && !power.isInteractive) delay(60_000L)
+                                val shown = pending666
+                                pendingContext666.markSportAnnounced666(shown)
+                                calendarVfAnnouncements = shown
+                                pending666 = emptyList()
+                            }
+                            LaunchedEffect(calendarVfAnnouncements) {
+                                if (calendarVfAnnouncements.isNotEmpty()) {
+                                    delay(15_000L)
+                                    calendarVfAnnouncements = emptyList()
                                 }
                             }
                             // 666TV : cri quand la bannière apparaît (jamais pendant la lecture).
@@ -2601,12 +2621,9 @@ private suspend fun android.content.Context.ufcToAnnounce666(
     val done = prefs.getStringSet("announced", emptySet()).orEmpty()
     val now = java.time.Instant.now()
     val events = repo.upcomingNumbered(limit = 3).filter { ev ->
-        // Le gala commence la nuit : on l'annonce 6 h après le début, pendant 2 jours.
-        val ready = ev.start.plusSeconds(6L * 3600)
-        !now.isBefore(ready) && now.isBefore(ready.plusSeconds(48L * 3600)) && ev.name !in done
+        ufcReplayWindow666(ev.start, now) && ev.name !in done
     }
     if (events.isEmpty()) return emptyList()
-    prefs.edit().putStringSet("announced", (done + events.map { it.name }).toList().takeLast(30).toSet()).apply()
     return events.map { ev ->
         com.nuvio.tv.core.calendar.CalendarEpisode(
             seriesId = "sport:" + ev.name,
@@ -2621,3 +2638,23 @@ private suspend fun android.content.Context.ufcToAnnounce666(
     }
 }
 
+
+/**
+ * 666TV : ESPN donne l'heure des premiers combats (préliminaires). Le combat
+ * principal finit environ 7 h plus tard, puis il faut le temps que la rediffusion
+ * arrive : on annonce 9 h après le début, et pendant 2 jours.
+ * (Avant : 6 h, c'était pendant le combat principal, et l'annonce partait dans le vide.)
+ */
+internal fun ufcReplayWindow666(start: java.time.Instant, now: java.time.Instant): Boolean {
+    val ready = start.plusSeconds(9L * 3600)
+    return !now.isBefore(ready) && now.isBefore(ready.plusSeconds(48L * 3600))
+}
+
+/** 666TV : un gala n'est marqué « annoncé » qu'une fois réellement affiché. */
+private fun android.content.Context.markSportAnnounced666(shown: List<com.nuvio.tv.core.calendar.CalendarEpisode>) {
+    val names = shown.filter { it.seriesId.startsWith("sport:") }.map { it.seriesName }
+    if (names.isEmpty()) return
+    val prefs = getSharedPreferences("666tv_sport", android.content.Context.MODE_PRIVATE)
+    val done = prefs.getStringSet("announced", emptySet()).orEmpty()
+    prefs.edit().putStringSet("announced", (done + names).toList().takeLast(30).toSet()).apply()
+}
