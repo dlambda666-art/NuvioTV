@@ -14,7 +14,9 @@ private data class BundledArt(
     val coverUrlKey: String,
     val coverRes: Int? = null,
     val focusGifRes: Int? = null,
-    val titleLogoRes: Int? = null
+    val titleLogoRes: Int? = null,
+    /** Ou bien : nom de la tuile (sans accents ni majuscules), quand l'image d'origine n'est pas connue. */
+    val titleKey: String? = null
 )
 
 private val BUNDLED_ART = listOf(
@@ -22,6 +24,7 @@ private val BUNDLED_ART = listOf(
     BundledArt("FKYdvQR5", coverRes = R.drawable.tile_frankenstream_666),
     BundledArt("g0hvcfM4", coverRes = R.drawable.tile_popcorn_666, titleLogoRes = R.drawable.title_nouveaute_vf_666),
     BundledArt("cLGKrgcd", coverRes = R.drawable.tile_coming_soon_666, titleLogoRes = R.drawable.title_prochainement_666),
+    BundledArt("\u0000", coverRes = R.drawable.tile_pour_toi_666, titleLogoRes = R.drawable.title_pour_toi_666, titleKey = "pour toi"),
     // Services de streaming : image néon + animation au survol.
     BundledArt("streaming-netflix", coverRes = R.drawable.tile_netflix_666, focusGifRes = R.raw.anim_netflix_666),
     BundledArt("streaming-prime-video", coverRes = R.drawable.tile_prime_666, focusGifRes = R.raw.anim_prime_666),
@@ -37,7 +40,10 @@ internal fun applyBundled666Art(collections: List<Collection>): List<Collection>
         collection.copy(
             folders = collection.folders.map { folder ->
                 val cover = folder.coverImageUrl.orEmpty()
+                val name = java.text.Normalizer.normalize(folder.title, java.text.Normalizer.Form.NFD)
+                    .replace(Regex("\\p{M}+"), "").lowercase()
                 val art = BUNDLED_ART.firstOrNull { cover.contains(it.coverUrlKey) }
+                    ?: BUNDLED_ART.firstOrNull { it.titleKey != null && name.contains(it.titleKey) }
                 if (art == null) folder else folder.copy(
                     coverImageUrl = art.coverRes?.let(::resUri) ?: folder.coverImageUrl,
                     focusGifUrl = art.focusGifRes?.let(::resUri) ?: folder.focusGifUrl,
