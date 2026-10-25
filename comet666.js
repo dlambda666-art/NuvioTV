@@ -327,10 +327,10 @@ async function getStreams(tmdbId, mediaType, season, episode) {
             type: 'torrent'
         };
     });
-    // Bouton « Tester » (Matrix) : une ligne d'état d'AIOSources, sans lien ni clé.
+    // Bouton « Tester » (Matrix) : une ligne d'état d'AIOSources EN PREMIER, sans lien ni clé.
     if (String(tmdbId).replace(/^tmdb:/i, '') === '603' && AIO_DIAG) {
         var kept = found.filter(function (t) { return /^AIOSources/.test(t.source); }).length;
-        shown.push({
+        shown.unshift({
             name: 'Comet666 diagnostic',
             title: ['AIOSources : ' + (!AIO_DIAG.configured ? 'pas de lien enregistré' : AIO_DIAG.valid ? 'lien OK' : 'lien illisible (doit commencer par https://)')]
                 .concat(AIO_DIAG.tries).concat(['VF 1080p/4K gardés : ' + kept]).join('\n'),
