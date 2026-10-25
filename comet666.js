@@ -2,7 +2,7 @@
  * Comet666 — plugin de flux VF pour 666TV.
  * Tourne sur la Shield (QuickJS). Cherche des torrents dans des index publics,
  * ne garde que la VF (pas de VOSTFR seule, pas de version cinéma) et renvoie
- * l'empreinte : c'est l'intégration debrid de 666TV (TorBox) qui fournit le
+ * l'empreinte (index publics + AIOSources, trackers français, si configuré) : c'est l'intégration debrid de 666TV (TorBox) qui fournit le
  * lien. 666TV ne lit jamais un torrent en P2P.
  */
 
@@ -162,22 +162,65 @@ async function getText(url) {
     }
 }
 
-// StremThru : grosse base de torrents, très fournie en releases françaises
-async function fromStremThru(imdbId, isTv, season, episode) {
-    var url = STREMTHRU_URL + '/v0/torznab/api?t=search&imdbid=' + imdbId;
-    var xml = await getText(url);
+// Lecture d'une réponse Torznab (StremThru, AIOSources…)
+function parseTorznab(xml, isTv, season, episode, label) {
     var out = [];
-    var items = xml.split('<item>').slice(1);
-    items.forEach(function (it) {
+    String(xml || '').split('<item>').slice(1).forEach(function (it) {
         var title = decodeEntities((it.match(/<title>([^<]*)<\/title>/) || [])[1]);
-        var hash = (it.match(/name="infohash"\s+value="([0-9a-fA-F]{40})"/) || it.match(/btih:([0-9a-fA-F]{40})/) || [])[1];
+        var hash = (it.match(/name="infohash"\s+value="([0-9a-fA-F]{40})"/) || it.match(/btih:([0-9a-fA-F]{40})/i) || [])[1];
         if (!title || !hash) return;
         if (isTv && !matchesEpisode(title, season, episode)) return;
         var size = Number((it.match(/<size>(\d+)<\/size>/) || [])[1]) || Number((it.match(/name="size"\s+value="(\d+)"/) || [])[1]) || 0;
         var seeders = (it.match(/name="seeders"\s+value="(\d+)"/) || [])[1];
-        out.push({ hash: hash.toLowerCase(), release: title, text: title, bytes: size, seeders: seeders ? parseInt(seeders, 10) : null, source: 'StremThru' });
+        var tracker = decodeEntities((it.match(/<jackettindexer[^>]*>([^<]*)<\/jackettindexer>/) || it.match(/name="(?:indexer|tracker|source)"\s+value="([^"]+)"/) || [])[1] || '');
+        out.push({ hash: hash.toLowerCase(), release: title, text: title, bytes: size, seeders: seeders ? parseInt(seeders, 10) : null, source: label + (tracker ? ' · ' + tracker : '') });
     });
     return out;
+}
+
+// StremThru : grosse base de torrents, très fournie en releases françaises
+async function fromStremThru(imdbId, isTv, season, episode) {
+    var xml = await getText(STREMTHRU_URL + '/v0/torznab/api?t=search&imdbid=' + imdbId);
+    return parseTorznab(xml, isTv, season, episode, 'StremThru');
+}
+
+// AIOSources : trackers français (C411, YggReborn, TR4KER…) via Torznab.
+// Lien et clé collés sur la Shield (Plugins → « Comet666 – mes sources »),
+// jamais dans ce fichier. Formats acceptés : le lien complet avec ?apikey=…,
+// ou « URL  API  CLÉ » séparés par des espaces (tels que la page les donne).
+function aioSourcesBase(raw) {
+    var parts = String(raw || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length || !/^https?:\/\//i.test(parts[0])) return null;
+    var url = parts[0].replace(/\/+$/, '');
+    var key = '';
+    if (parts.length >= 3) {
+        url += '/' + parts[1].replace(/^\/+/, '').replace(/\/+$/, '');
+        key = parts[2];
+    } else if (parts.length === 2) {
+        if (/^\/|^api\b/i.test(parts[1])) url += '/' + parts[1].replace(/^\/+/, '');
+        else key = parts[1];
+    }
+    if (key && !/[?&]apikey=/i.test(url)) url += (url.indexOf('?') >= 0 ? '&' : '?') + 'apikey=' + encodeURIComponent(key);
+    if (!/\/api(?:[/?]|$)/i.test(url) && url.indexOf('?') < 0) url += '/api';
+    else if (!/\/api(?:[/?]|$)/i.test(url)) url = url.replace('?', '/api?');
+    return url;
+}
+
+function aioSourcesSetting() {
+    var s = (typeof SCRAPER_SETTINGS !== 'undefined' && SCRAPER_SETTINGS) ? SCRAPER_SETTINGS : {};
+    return s.url || s.aiosources || '';
+}
+
+async function fromAioSources(imdbId, isTv, season, episode) {
+    var base = aioSourcesBase(aioSourcesSetting());
+    if (!base) return [];
+    var join = base.indexOf('?') >= 0 ? '&' : '?';
+    var digits = String(imdbId).replace(/^tt/i, '');
+    var q = isTv ? 't=tvsearch&imdbid=' + digits + '&season=' + season : 't=movie&imdbid=' + digits;
+    var list = parseTorznab(await getText(base + join + q), isTv, season, episode, 'AIOSources');
+    // Certains serveurs veulent l'id avec « tt »
+    if (!list.length) list = parseTorznab(await getText(base + join + q.replace('imdbid=' + digits, 'imdbid=' + imdbId)), isTv, season, episode, 'AIOSources');
+    return list;
 }
 
 // TorrentsDB : addon public au format Stremio
@@ -211,6 +254,8 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         return !m || parseInt(m[1], 10) === parseInt(season, 10);
     }
     var lists = [
+        // AIOSources d'abord : trackers français, souvent les meilleures releases VF
+        await fromAioSources(ids.imdbId, isTv, season, episode),
         await fromStremThru(ids.imdbId, isTv, season, episode),
         await fromTorrentio(ids.imdbId, isTv, season, episode),
         await fromZilean(ids.imdbId, isTv, season, episode),
@@ -261,4 +306,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     });
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode };
+if (typeof module !== 'undefined' && module.exports) module.exports = { getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _parseTorznab: parseTorznab, _aioSourcesBase: aioSourcesBase };

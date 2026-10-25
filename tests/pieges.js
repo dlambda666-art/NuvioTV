@@ -136,6 +136,28 @@ const cases = [
         if (got !== want) { fails++; console.log(`✗ Comet666 ${t} (S${s}E${e}) → ${got}, attendu ${want}`); }
         else console.log(`✓ Comet666 ${t} (S${s}E${e})`);
     }
+    // Comet666 : AIOSources (Torznab, trackers français)
+    const base = comet._aioSourcesBase;
+    for (const [raw, want] of [
+        ['https://x.example/torznab/abc /api CLE', 'https://x.example/torznab/abc/api?apikey=CLE'],
+        ['https://x.example/torznab/abc/api?apikey=CLE', 'https://x.example/torznab/abc/api?apikey=CLE'],
+        ['', null]
+    ]) {
+        const got = base(raw);
+        if (got !== want) { fails++; console.log(`✗ AIOSources lien « ${raw.replace(/CLE/, '…')} » → ${got}`); }
+        else console.log(`✓ AIOSources lien (${raw ? raw.split(/\s+/).length + ' morceau(x)' : 'vide'})`);
+    }
+    const xml = '<rss><channel><item><title>The.Godfather.1972.MULTi.VFF.1080p</title><size>9000000000</size>' +
+        '<jackettindexer id="c411">C411</jackettindexer><torznab:attr name="infohash" value="0123456789abcdef0123456789abcdef01234567"/>' +
+        '<torznab:attr name="seeders" value="12"/></item>' +
+        '<item><title>Monster.The.Lizzie.Borden.Story.S01E05.MULTi.1080p</title><torznab:attr name="infohash" value="1123456789abcdef0123456789abcdef01234567"/></item>' +
+        '<item><title>Show.S04E01.MULTi.1080p</title><torznab:attr name="infohash" value="2123456789abcdef0123456789abcdef01234567"/></item></channel></rss>';
+    const film = comet._parseTorznab(xml, false, 0, 0, 'AIOSources');
+    if (film.length !== 3 || film[0].source !== 'AIOSources · C411' || film[0].seeders !== 12) { fails++; console.log('✗ AIOSources lecture Torznab'); }
+    else console.log('✓ AIOSources lecture Torznab (+ nom du tracker)');
+    const ep = comet._parseTorznab(xml, true, 4, 5, 'AIOSources');
+    if (ep.length !== 1 || !/Lizzie/.test(ep[0].release)) { fails++; console.log('✗ AIOSources Monstre S4E5 — reçu ' + ep.map(e => e.release).join(' | ')); }
+    else console.log('✓ AIOSources Monstre S4E5 (S01E05, sans S04E01)');
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();
