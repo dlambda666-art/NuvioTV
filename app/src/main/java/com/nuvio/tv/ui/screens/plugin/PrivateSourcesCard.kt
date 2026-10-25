@@ -56,7 +56,10 @@ val PRIVATE_SOURCES = listOf(
     PrivateSource("lumio666", "Lumio"),
     PrivateSource("frenchio666", "Frenchio"),
     PrivateSource("streamfusion666", "StreamFusion"),
-    PrivateSource("wastream666", "Wastream")
+    PrivateSource("wastream666", "Wastream"),
+    // 666TV : index Torznab des trackers français, lu par Comet666.
+    // Coller « URL  API  clé » (séparés par des espaces) ou le lien complet.
+    PrivateSource("comet666", "AIOSources")
 )
 
 const val PRIVATE_SOURCE_URL_KEY = "url"
@@ -98,7 +101,8 @@ internal fun PrivateSourcesCard(
             Spacer(modifier = Modifier.height(NuvioTheme.spacing.xs))
             Text(
                 text = "Colle l'adresse de config (ou du manifest) de chaque addon. " +
-                    "Elle reste sur cet appareil uniquement et n'est jamais affichée.",
+                    "AIOSources : URL, API et clé séparées par un espace. " +
+                    "Tout reste sur cet appareil uniquement et n'est jamais affiché.",
                 style = MaterialTheme.typography.bodySmall,
                 color = NuvioTheme.colors.TextSecondary
             )
