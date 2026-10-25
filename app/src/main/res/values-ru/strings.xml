@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">666TV</string>
+    <string name="app_name">666TVF</string>
     <string name="type_movie">Фильм</string>
     <string name="type_series">Сериал</string>
     <string name="type_unknown">Неизвестно</string>
@@ -2887,7 +2887,7 @@
     <string name="network_error_unknown">Неизвестная ошибка сети</string>
     <string name="network_fast_error_script_path_missing">Отсутствует путь скрипта fast.com</string>
     <string name="network_fast_error_token_missing">Отсутствует токен fast.com</string>
-    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TV)</string>
+    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TVF)</string>
     <string name="torrent_error_add_failed">Не удалось добавить торрент</string>
     <string name="torrent_error_binary_missing">Бинарный файл торрента отсутствует</string>
     <string name="torrent_error_process_died">Процесс торрента завершился</string>

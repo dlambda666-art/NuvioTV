@@ -83,12 +83,12 @@ class WakeLaunchService : Service() {
         val nm = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             nm?.createNotificationChannel(
-                NotificationChannel(CHANNEL, "666TV au réveil", NotificationManager.IMPORTANCE_MIN)
+                NotificationChannel(CHANNEL, "666TVF au réveil", NotificationManager.IMPORTANCE_MIN)
             )
         }
         val notification = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             Notification.Builder(this, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(this))
-            .setContentTitle("666TV")
+            .setContentTitle("666TVF")
             .setContentText("S'ouvre quand la TV s'allume")
             .setSmallIcon(android.R.drawable.ic_media_play)
             .build()

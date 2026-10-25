@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">666TV</string>
+    <string name="app_name">666TVF</string>
     <string name="tv_channel_continue_watching">متابعة المشاهدة</string>
     <string name="type_movies">أفلام</string>
     <string name="type_movie">فيلم</string>
@@ -2484,7 +2484,7 @@
     <string name="network_fast_error_token_missing">fast.com: رمز التحقق (Token) مفقود في الحزمة</string>
 
     <!-- Torrent service / TorrServer binary errors -->
-    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TV)</string>
+    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TVF)</string>
     <string name="torrent_error_add_failed">فشل إضافة ملف التورنت</string>
     <string name="torrent_error_binary_missing">ملف TorrServer التنفيذي غير موجود في %1$s</string>
     <string name="torrent_error_process_died">توقفت عملية TorrServer عند بدء التشغيل (رمز الخروج %1$d)</string>

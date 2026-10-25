@@ -96,7 +96,7 @@ object PhoneLink666 {
                 bringToFront(appContext)
                 page("Envoyé sur la TV ✓", "« ${escape(query)} » — regarde ta TV 😈", showForm = true)
             } else {
-                page("666TV", "Tape un film ou une série, la recherche s'ouvre sur la TV.", showForm = true)
+                page("666TVF", "Tape un film ou une série, la recherche s'ouvre sur la TV.", showForm = true)
             }
             val bytes = body.toByteArray(Charsets.UTF_8)
             val out = s.getOutputStream()

@@ -132,7 +132,7 @@ fun AboutSettingsContent(
                                 androidx.compose.foundation.Image(
                                     painter = androidx.compose.ui.res.painterResource(R.drawable.splash_logo_666),
                                     contentDescription = stringResource(R.string.cd_nuvio_logo),
-                                    modifier = Modifier.width(300.dp).height(180.dp)
+                                    modifier = Modifier.width(330.dp).height(180.dp)
                                 )
                             }
 

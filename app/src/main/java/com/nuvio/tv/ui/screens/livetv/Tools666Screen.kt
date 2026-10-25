@@ -156,7 +156,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 runCatching { context.contentResolver.openInputStream(uri)?.use { Backup666.restore(context, it) } }
                     .getOrNull() == true
             }
-            if (!ok) toast(context, "Ce fichier n'est pas une sauvegarde 666TV")
+            if (!ok) toast(context, "Ce fichier n'est pas une sauvegarde 666TVF")
         }
     }
 
@@ -177,7 +177,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
             }
 
             // ---------- État 666 ----------
-            item { Section("État 666", "Tout ce dont 666TV a besoin pour trouver tes flux") }
+            item { Section("État 666", "Tout ce dont 666TVF a besoin pour trouver tes flux") }
             item {
                 ActionRow(
                     title = if (running) "Vérification en cours…" else "Revérifier",
@@ -230,7 +230,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 })
             }
             item {
-                ActionRow("Restaurer la dernière sauvegarde", "666TV redémarre tout seul ensuite", onClick = {
+                ActionRow("Restaurer la dernière sauvegarde", "666TVF redémarre tout seul ensuite", onClick = {
                     if (busy) return@ActionRow
                     busy = true
                     scope.launch {

@@ -282,13 +282,13 @@ fun StartupSplashScreen(
                     .size(w * 0.23f)
                     .offset(x = w * 0.415f - w * 0.115f, y = h * 0.43f - w * 0.115f)
             )
-            // Logo 666TV
+            // Logo 666TVF
             Image(
                 painter = painterResource(R.drawable.splash_logo_666),
                 contentDescription = stringResource(R.string.cd_nuvio_logo),
                 modifier = Modifier
-                    .size(width = w * 0.28f, height = w * 0.28f * 0.601f)
-                    .offset(x = w * 0.53f, y = h * 0.42f - w * 0.28f * 0.601f / 2f)
+                    .size(width = w * 0.31f, height = w * 0.31f * 0.545f)
+                    .offset(x = w * 0.53f, y = h * 0.42f - w * 0.31f * 0.545f / 2f)
             )
             // Pentagramme qui tourne, avec un halo sombre derrière pour le détacher de la lave.
             Box(

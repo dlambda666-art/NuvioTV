@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">666TV</string>
+    <string name="app_name">666TVF</string>
     <string name="tv_channel_continue_watching">Nadaljuj z ogledom</string>
     <string name="type_movie">Film</string>
     <string name="type_movies">Filmi</string>
@@ -2157,7 +2157,7 @@
     <string name="network_fast_error_token_missing">fast.com: žeton ni najden v paketu</string>
 
     <!-- Torrent service / TorrServer binary errors -->
-    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TV)</string>    
+    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TVF)</string>    
     <string name="torrent_error_add_failed">Torrenta ni bilo mogoče dodati</string>
     <string name="torrent_error_binary_missing">Binarne datoteke TorrServer ni mogoče najti na %1$s</string>
     <string name="torrent_error_process_died">Proces TorrServer se je zaustavil ob zagonu (koda izhoda %1$d)</string>

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">666TV</string>
+    <string name="app_name">666TVF</string>
     <string name="type_movie">Film</string>
     <string name="type_movies">Films</string>
     <string name="type_series">Série</string>
@@ -2317,7 +2317,7 @@
     <string name="network_fast_error_token_missing">fast.com&#160;: jeton introuvable dans le bundle</string>
 
     <!-- Service torrent / erreurs binaire TorrServer -->
-    <string name="torrent_error_p2p_disabled">Lien non disponible sur le debrid (lecture torrent P2P désactivée dans 666TV)</string>
+    <string name="torrent_error_p2p_disabled">Lien non disponible sur le debrid (lecture torrent P2P désactivée dans 666TVF)</string>
     <string name="torrent_error_add_failed">Échec de l’ajout du torrent</string>
     <string name="torrent_error_binary_missing">Binaire TorrServer introuvable à %1$s</string>
     <string name="torrent_error_process_died">Le processus TorrServer s’est arrêté au démarrage (code de sortie %1$d)</string>

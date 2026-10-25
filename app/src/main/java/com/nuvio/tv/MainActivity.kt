@@ -1309,7 +1309,7 @@ open class MainActivity : ComponentActivity() {
                                     runCatching {
                                         android.widget.Toast.makeText(
                                             bellContext.applicationContext,
-                                            if (sport) "🥊 666TV : c'est l'heure du combat — $names" else "🔔 666TV : $names dispo en VF !",
+                                            if (sport) "🥊 666TVF : c'est l'heure du combat — $names" else "🔔 666TVF : $names dispo en VF !",
                                             android.widget.Toast.LENGTH_LONG
                                         ).show()
                                     }
@@ -1439,7 +1439,7 @@ open class MainActivity : ComponentActivity() {
         prefs.edit().putBoolean("overlay_asked", true).apply()
         Toast.makeText(
             this,
-            "Pour que 666TV s'ouvre quand la TV s'allume : autorise « Afficher par-dessus d'autres applis »",
+            "Pour que 666TVF s'ouvre quand la TV s'allume : autorise « Afficher par-dessus d'autres applis »",
             Toast.LENGTH_LONG
         ).show()
         runCatching {

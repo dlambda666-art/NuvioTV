@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">666TV</string>
+    <string name="app_name">666TVF</string>
     <string name="tv_channel_continue_watching">視聴を続ける</string>
     <string name="type_movie">映画</string>
     <string name="type_movies">映画</string>
@@ -2476,7 +2476,7 @@
     <string name="network_fast_error_token_missing">fast.com: トークンがバンドルに見つかりません</string>
 
     <!-- Torrent service / TorrServer binary errors -->
-    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TV)</string>
+    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TVF)</string>
     <string name="torrent_error_add_failed">トレントの追加に失敗しました</string>
     <string name="torrent_error_binary_missing">TorrServerバイナリが %1$s に見つかりません</string>
     <string name="torrent_error_process_died">TorrServerプロセスが起動時に終了しました（終了コード %1$d）</string>

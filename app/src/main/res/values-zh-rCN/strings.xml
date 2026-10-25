@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">666TV</string>
+    <string name="app_name">666TVF</string>
     <string name="tv_channel_continue_watching">继续观看</string>
     <string name="type_movie">电影</string>
     <string name="type_movies">电影</string>
@@ -2547,7 +2547,7 @@
     <string name="network_fast_error_token_missing">fast.com：在 bundle 中找不到令牌</string>
 
     <!-- Torrent 服务 / TorrServer 二进制错误 -->
-    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TV)</string>
+    <string name="torrent_error_p2p_disabled">Link not available on your debrid service (P2P torrent playback is disabled in 666TVF)</string>
     <string name="torrent_error_add_failed">添加 torrent 失败</string>
     <string name="torrent_error_binary_missing">在 %1$s 找不到 TorrServer 二进制</string>
     <string name="torrent_error_process_died">TorrServer 进程在启动时终止 (退出代码 %1$d)</string>
