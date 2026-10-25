@@ -152,14 +152,26 @@ function matchesEpisode(title, season, episode) {
     return /\b(INTEGRALE|COMPLETE|COMPLETA|INT[ÉE]GRALE)\b/i.test(t);
 }
 
+var LAST_TEXT = { status: null, error: '' };
 async function getText(url) {
+    LAST_TEXT = { status: null, error: '' };
     try {
         var res = await fetch(url, {});
-        if (!res || !res.ok) return '';
+        LAST_TEXT.status = res ? res.status : null;
+        if (!res || !res.ok) {
+            try { LAST_TEXT.error = String(await res.text()).slice(0, 160); } catch (e) { }
+            return '';
+        }
         return await res.text();
     } catch (e) {
+        LAST_TEXT.error = String((e && e.message) || e).slice(0, 160);
         return '';
     }
+}
+
+// sans aucune adresse ni clé dans ce qui est affiché
+function scrub(text) {
+    return String(text || '').replace(/(?:https?|stremio):\/\/\S+/gi, '[lien]').replace(/apikey=[^&\s]+/gi, 'apikey=…').replace(/\s+/g, ' ').trim();
 }
 
 // Lecture d'une réponse Torznab (StremThru, AIOSources…)
@@ -190,19 +202,19 @@ async function fromStremThru(imdbId, isTv, season, episode) {
 // ou « URL  API  CLÉ » séparés par des espaces (tels que la page les donne).
 function aioSourcesBase(raw) {
     var parts = String(raw || '').trim().split(/\s+/).filter(Boolean);
-    if (!parts.length || !/^https?:\/\//i.test(parts[0])) return null;
-    var url = parts[0].replace(/\/+$/, '');
-    var key = '';
-    if (parts.length >= 3) {
-        url += '/' + parts[1].replace(/^\/+/, '').replace(/\/+$/, '');
-        key = parts[2];
-    } else if (parts.length === 2) {
-        if (/^\/|^api\b/i.test(parts[1])) url += '/' + parts[1].replace(/^\/+/, '');
-        else key = parts[1];
+    var urls = parts.filter(function (p) { return /^https?:\/\//i.test(p); });
+    if (!urls.length) return null;
+    var paths = parts.filter(function (p) { return /^\//.test(p) || /^api\b/i.test(p); });
+    var keys = parts.filter(function (p) { return urls.indexOf(p) < 0 && paths.indexOf(p) < 0; });
+    // Deux adresses complètes : on garde celle qui contient « api » (ou la plus longue)
+    var url = urls.slice().sort(function (x, y) { return (/api/i.test(y) - /api/i.test(x)) || (y.length - x.length); })[0];
+    url = url.replace(/\/+$/, '');
+    if (paths.length && url.toLowerCase().indexOf(paths[0].replace(/^\/+/, '').replace(/\/+$/, '').toLowerCase()) < 0) {
+        url += '/' + paths[0].replace(/^\/+/, '').replace(/\/+$/, '');
     }
+    var key = keys[0] || '';
     if (key && !/[?&]apikey=/i.test(url)) url += (url.indexOf('?') >= 0 ? '&' : '?') + 'apikey=' + encodeURIComponent(key);
-    if (!/\/api(?:[/?]|$)/i.test(url) && url.indexOf('?') < 0) url += '/api';
-    else if (!/\/api(?:[/?]|$)/i.test(url)) url = url.replace('?', '/api?');
+    if (!/\/api(?:[/?]|$)/i.test(url)) url = url.indexOf('?') >= 0 ? url.replace('?', '/api?') : url + '/api';
     return url;
 }
 
@@ -211,16 +223,27 @@ function aioSourcesSetting() {
     return s.url || s.aiosources || '';
 }
 
+var AIO_DIAG = null;
 async function fromAioSources(imdbId, isTv, season, episode) {
-    var base = aioSourcesBase(aioSourcesSetting());
+    var raw = aioSourcesSetting();
+    var base = aioSourcesBase(raw);
+    AIO_DIAG = { configured: !!raw, valid: !!base, tries: [] };
     if (!base) return [];
     var join = base.indexOf('?') >= 0 ? '&' : '?';
     var digits = String(imdbId).replace(/^tt/i, '');
-    var q = isTv ? 't=tvsearch&imdbid=' + digits + '&season=' + season : 't=movie&imdbid=' + digits;
-    var list = parseTorznab(await getText(base + join + q), isTv, season, episode, 'AIOSources');
-    // Certains serveurs veulent l'id avec « tt »
-    if (!list.length) list = parseTorznab(await getText(base + join + q.replace('imdbid=' + digits, 'imdbid=' + imdbId)), isTv, season, episode, 'AIOSources');
-    return list;
+    var queries = isTv
+        ? ['t=tvsearch&imdbid=' + digits + '&season=' + season, 't=tvsearch&imdbid=' + imdbId + '&season=' + season, 't=search&imdbid=' + imdbId]
+        : ['t=movie&imdbid=' + digits, 't=movie&imdbid=' + imdbId, 't=search&imdbid=' + imdbId];
+    for (var i = 0; i < queries.length; i++) {
+        var xml = await getText(base + join + queries[i]);
+        var items = String(xml).split('<item>').length - 1;
+        var list = parseTorznab(xml, isTv, season, episode, 'AIOSources');
+        AIO_DIAG.tries.push(queries[i].split('&')[0] + ' ' + (queries[i].indexOf('tt') >= 0 ? 'tt' : 'num') + ' → HTTP ' + LAST_TEXT.status + ', ' + items + ' résultat(s)' +
+            (LAST_TEXT.error ? ' (' + scrub(LAST_TEXT.error) + ')' : (!items && xml ? ' [' + scrub(String(xml).slice(0, 120)) + ']' : '')));
+        if (list.length) return list;
+        if (LAST_TEXT.status === 401 || LAST_TEXT.status === 403) break;
+    }
+    return [];
 }
 
 // TorrentsDB : addon public au format Stremio
@@ -289,7 +312,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         if (q) return q;
         return (b.bytes || 0) - (a.bytes || 0);
     });
-    return found.slice(0, MAX_RESULTS).map(function (t) {
+    var shown = found.slice(0, MAX_RESULTS).map(function (t) {
         var line2 = ['🇫🇷 ' + t.lang].concat(extras(t.text)).join(' · ');
         var line3 = [formatSize(t.bytes), t.seeders != null ? '👤 ' + t.seeders : '', t.source].filter(Boolean).join(' · ');
         return {
@@ -304,6 +327,19 @@ async function getStreams(tmdbId, mediaType, season, episode) {
             type: 'torrent'
         };
     });
+    // Bouton « Tester » (Matrix) : une ligne d'état d'AIOSources, sans lien ni clé.
+    if (String(tmdbId).replace(/^tmdb:/i, '') === '603' && AIO_DIAG) {
+        var kept = found.filter(function (t) { return /^AIOSources/.test(t.source); }).length;
+        shown.push({
+            name: 'Comet666 diagnostic',
+            title: ['AIOSources : ' + (!AIO_DIAG.configured ? 'pas de lien enregistré' : AIO_DIAG.valid ? 'lien OK' : 'lien illisible (doit commencer par https://)')]
+                .concat(AIO_DIAG.tries).concat(['VF 1080p/4K gardés : ' + kept]).join('\n'),
+            url: 'https://diagnostic.invalid/aiosources',
+            provider: 'Comet666',
+            type: 'direct'
+        });
+    }
+    return shown;
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _parseTorznab: parseTorznab, _aioSourcesBase: aioSourcesBase };
