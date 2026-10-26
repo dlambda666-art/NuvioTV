@@ -1,7 +1,7 @@
 {
-  "name": "666TV — plugins",
-  "version": "1.2.14",
-  "description": "Plugins perso de 666TV",
+  "name": "666TVF — plugins",
+  "version": "1.2.15",
+  "description": "Plugins perso de 666TVF",
   "author": "Lambda666",
   "scrapers": [
     {
