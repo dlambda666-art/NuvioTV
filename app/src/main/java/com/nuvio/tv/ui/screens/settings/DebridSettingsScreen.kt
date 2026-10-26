@@ -105,6 +105,8 @@ fun DebridSettingsContent(
     // one row that can always take the entry requester.
     val entryOnFirstAccount = !entryOnCloudLibrary && !entryOnDebridToggle
     var activeApiKeyDialog by remember { mutableStateOf<String?>(null) }
+    var showAllDebrid666Dialog by remember { mutableStateOf(false) }
+    val allDebrid666Key by viewModel.allDebridKey.collectAsStateWithLifecycle()
     var activeDeviceAuthDialog by remember { mutableStateOf<String?>(null) }
     var activeStreamPicker by remember { mutableStateOf<DebridStreamPicker?>(null) }
     var showResolverPicker by remember { mutableStateOf(false) }
@@ -231,6 +233,17 @@ fun DebridSettingsContent(
                                 enabled = true
                             )
                         }
+                    }
+
+                    // 666TVF : AllDebrid, roue de secours quand TorBox est en panne
+                    item(key = "debrid_alldebrid666") {
+                        SettingsActionRow(
+                            title = "AllDebrid (secours)",
+                            subtitle = "Prend le relais tout seul quand TorBox ne répond pas ou n'a pas le fichier",
+                            value = if (allDebrid666Key.isNotBlank()) stringResource(R.string.debrid_connected) else stringResource(R.string.debrid_not_set),
+                            onClick = { showAllDebrid666Dialog = true },
+                            enabled = true
+                        )
                     }
 
                     if (uiState.canResolvePlayableLinks) {
@@ -376,6 +389,23 @@ fun DebridSettingsContent(
                 onDismiss = { activeApiKeyDialog = null }
             )
         }
+    }
+
+    if (showAllDebrid666Dialog) {
+        DebridApiKeyDialog(
+            title = stringResource(R.string.debrid_api_key_dialog_title, "AllDebrid"),
+            subtitle = stringResource(R.string.debrid_api_key_dialog_subtitle, "AllDebrid"),
+            placeholder = stringResource(R.string.debrid_api_key_dialog_placeholder, "AllDebrid"),
+            currentValue = allDebrid666Key,
+            viewModel = viewModel,
+            onSave = { value, onSaved -> viewModel.validateAndSaveAllDebrid(value, onSaved) },
+            onSaved = { showAllDebrid666Dialog = false },
+            onClear = {
+                viewModel.validateAndSaveAllDebrid("") {}
+                showAllDebrid666Dialog = false
+            },
+            onDismiss = { showAllDebrid666Dialog = false }
+        )
     }
 
     activeDeviceAuthDialog?.let { providerId ->

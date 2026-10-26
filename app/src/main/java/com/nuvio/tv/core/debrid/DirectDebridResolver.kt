@@ -23,7 +23,8 @@ class DirectDebridResolver @Inject constructor(
     private val torboxResolver: TorboxDirectDebridResolver,
     private val realDebridResolver: RealDebridDirectDebridResolver,
     private val premiumizeResolver: PremiumizeDirectDebridResolver,
-    private val localDebridService: LocalDebridService
+    private val localDebridService: LocalDebridService,
+    private val allDebrid: AllDebrid666
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mutex = Mutex()
@@ -196,7 +197,24 @@ class DirectDebridResolver @Inject constructor(
         ).joinToString("|")
     }
 
+    // 666TVF : TorBox d'abord ; s'il est en panne, trop lent ou n'a pas le fichier,
+    // le même torrent est relancé sur AllDebrid (roue de secours).
     private suspend fun resolveLocalTorrentStream(
+        stream: Stream,
+        season: Int?,
+        episode: Int?
+    ): DirectDebridResolveResult {
+        val primary = kotlinx.coroutines.withTimeoutOrNull(PRIMARY_TIMEOUT_666_MS) {
+            resolveLocalTorrentStreamPrimary(stream, season, episode)
+        } ?: DirectDebridResolveResult.Error
+        if (primary is DirectDebridResolveResult.Success || !allDebrid.isConfigured) return primary
+        val magnet = DebridMagnetBuilder.fromStream(stream) ?: return primary
+        android.util.Log.i("AllDebrid666", "TorBox : ${primary::class.simpleName} → essai AllDebrid")
+        val backup = allDebrid.resolve(magnet, stream.getEffectiveFileIdx(), season, episode)
+        return if (backup is DirectDebridResolveResult.Success) backup else primary
+    }
+
+    private suspend fun resolveLocalTorrentStreamPrimary(
         stream: Stream,
         season: Int?,
         episode: Int?
@@ -258,6 +276,9 @@ class DirectDebridResolver @Inject constructor(
 }
 
 private const val DIRECT_DEBRID_RESOLVE_CACHE_TTL_MS = 15L * 60L * 1000L
+
+// 666TVF : au-delà, TorBox est considéré en panne et AllDebrid prend le relais.
+private const val PRIMARY_TIMEOUT_666_MS = 15_000L
 
 private data class CachedDirectDebridResolve(
     val result: DirectDebridResolveResult.Success,

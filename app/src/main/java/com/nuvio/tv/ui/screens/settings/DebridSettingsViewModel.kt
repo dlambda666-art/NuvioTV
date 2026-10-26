@@ -47,8 +47,32 @@ class DebridSettingsViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val dataStore: DebridSettingsDataStore,
     private val torboxApi: TorboxApi,
-    private val premiumizeApi: PremiumizeApi
+    private val premiumizeApi: PremiumizeApi,
+    private val allDebrid666: com.nuvio.tv.core.debrid.AllDebrid666
 ) : ViewModel() {
+    /** 666TVF : clé AllDebrid (roue de secours de TorBox), stockée sur l'appareil. */
+    val allDebridKey: StateFlow<String> = allDebrid666.apiKey
+
+    fun validateAndSaveAllDebrid(value: String, onSuccess: () -> Unit) {
+        val trimmed = value.trim()
+        if (trimmed.isBlank()) {
+            allDebrid666.saveKey("")
+            onSuccess()
+            return
+        }
+        viewModelScope.launch {
+            _validating.value = true
+            val valid = allDebrid666.validate(trimmed)
+            _validating.value = false
+            if (valid) {
+                allDebrid666.saveKey(trimmed)
+                onSuccess()
+            } else {
+                _validationError.tryEmit(context.getString(R.string.debrid_key_invalid))
+            }
+        }
+    }
+
     private var formatterServer: DebridFormatterConfigServer? = null
     private var logoBytes: ByteArray? = null
 
