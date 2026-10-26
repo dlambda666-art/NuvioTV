@@ -158,6 +158,21 @@ const cases = [
     const ep = comet._parseTorznab(xml, true, 4, 5, 'AIOSources');
     if (ep.length !== 1 || !/Lizzie/.test(ep[0].release)) { fails++; console.log('✗ AIOSources Monstre S4E5 — reçu ' + ep.map(e => e.release).join(' | ')); }
     else console.log('✓ AIOSources Monstre S4E5 (S01E05, sans S04E01)');
+    // AIOSources : recherche par titre — homonymes et autre année écartés
+    const rm = comet._releaseMatches;
+    for (const [rel, titles, year, tv, want] of [
+        ['The.Matrix.1999.MULTi.VFF.2160p', ['Matrix', 'The Matrix'], 1999, false, true],
+        ['Matrix.Trilogy.1999-2003.MULTI.TRUEFRENCH.2160p', ['Matrix', 'The Matrix'], 1999, false, true],
+        ['The.Matrix.Resurrections.2021.MULTi.1080p', ['Matrix', 'The Matrix'], 1999, false, false],
+        ['Kraken.2021.FRENCH.1080p', ['Kraken'], 2026, false, false],
+        ['Le.Parrain.1972.MULTi.1080p', ['Le Parrain', 'The Godfather'], 1972, false, true],
+        ['Monster.The.Lizzie.Borden.Story.S01E05.MULTi', ['Monstre', 'Monster'], 2022, true, true],
+        ['Godzilla.Minus.One.2023.MULTi', ['Le Parrain', 'The Godfather'], 1972, false, false]
+    ]) {
+        const got = rm(rel, titles, year, tv);
+        if (got !== want) { fails++; console.log(`✗ AIOSources titre ${rel} → ${got}, attendu ${want}`); }
+        else console.log(`✓ AIOSources titre ${rel}`);
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();

@@ -224,6 +224,29 @@ function aioSourcesSetting() {
 }
 
 var AIO_DIAG = null;
+function normTitle(t) {
+    var x = String(t || '');
+    try { x = x.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) { }
+    return x.toLowerCase()
+        .replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+// Une release trouvée par recherche texte doit porter le titre (et la bonne année pour un film)
+function releaseMatches(release, titles, year, isTv) {
+    var r = ' ' + normTitle(release) + ' ';
+    var named = titles.some(function (t) { var n = normTitle(t); return n.length >= 2 && r.indexOf(' ' + n + ' ') >= 0; });
+    if (!named) return false;
+    if (isTv || !year) return true;
+    var re = /(?:^|[^0-9])(19[2-9]\d|20[0-4]\d)(?![0-9])/g, m, any = false;
+    var inTitle = titles.join(' ');
+    while ((m = re.exec(release))) {
+        if (inTitle.indexOf(m[1]) >= 0) continue;
+        any = true;
+        if (Math.abs(Number(m[1]) - year) <= 1) return true;
+    }
+    return !any;
+}
+
 async function fromAioSources(imdbId, isTv, season, episode) {
     var raw = aioSourcesSetting();
     var base = aioSourcesBase(raw);
@@ -231,19 +254,33 @@ async function fromAioSources(imdbId, isTv, season, episode) {
     if (!base) return [];
     var join = base.indexOf('?') >= 0 ? '&' : '?';
     var digits = String(imdbId).replace(/^tt/i, '');
-    var queries = isTv
-        ? ['t=tvsearch&imdbid=' + digits + '&season=' + season, 't=tvsearch&imdbid=' + imdbId + '&season=' + season, 't=search&imdbid=' + imdbId]
-        : ['t=movie&imdbid=' + digits, 't=movie&imdbid=' + imdbId, 't=search&imdbid=' + imdbId];
-    for (var i = 0; i < queries.length; i++) {
-        var xml = await getText(base + join + queries[i]);
+    async function ask(q, check) {
+        var xml = await getText(base + join + q);
         var items = String(xml).split('<item>').length - 1;
         var list = parseTorznab(xml, isTv, season, episode, 'AIOSources');
-        AIO_DIAG.codes.push(String(LAST_TEXT.status)); AIO_DIAG.counts.push(items);
-        if (!AIO_DIAG.answer) AIO_DIAG.answer = scrub(LAST_TEXT.error || (!items ? String(xml).slice(0, 200) : ''));
-        AIO_DIAG.tries.push(queries[i].split('&')[0] + ' ' + (queries[i].indexOf('tt') >= 0 ? 'tt' : 'num') + ' → HTTP ' + LAST_TEXT.status + ', ' + items + ' résultat(s)' +
-            (LAST_TEXT.error ? ' (' + scrub(LAST_TEXT.error) + ')' : (!items && xml ? ' [' + scrub(String(xml).slice(0, 120)) + ']' : '')));
+        if (check) list = list.filter(check);
+        AIO_DIAG.codes.push(String(LAST_TEXT.status)); AIO_DIAG.counts.push(items + (check ? '>' + list.length : ''));
+        if (!AIO_DIAG.answer && (LAST_TEXT.error || !items)) AIO_DIAG.answer = scrub(LAST_TEXT.error || String(xml).slice(0, 200));
+        return list;
+    }
+    // 1. par id IMDb
+    var list = await ask(isTv ? 't=tvsearch&imdbid=' + digits + '&season=' + season : 't=movie&imdbid=' + digits);
+    if (list.length || LAST_TEXT.status === 401 || LAST_TEXT.status === 403) return list;
+    // 2. par titre (AIOSources ne connaît pas toujours les id) : titre original puis français
+    var info = await getJson(FRANK_URL + '/lookup/' + (isTv ? 'series' : 'movie') + '/' + imdbId);
+    var titles = ((info && info.titles) || []).filter(Boolean);
+    var year = info && info.year ? Number(info.year) : 0;
+    var check = function (t) { return releaseMatches(t.release, titles, year, isTv); };
+    var tried = {};
+    var order = titles.slice(1, 2).concat(titles.slice(0, 1));   // original, puis français
+    for (var i = 0; i < order.length; i++) {
+        var q = normTitle(order[i]);
+        if (!q || tried[q]) continue;
+        tried[q] = true;
+        var text = isTv ? 't=tvsearch&q=' + encodeURIComponent(q) + '&season=' + season : 't=search&q=' + encodeURIComponent(q + (year ? ' ' + year : ''));
+        list = await ask(text, check);
+        if (!list.length && !isTv && year) list = await ask('t=search&q=' + encodeURIComponent(q), check);
         if (list.length) return list;
-        if (LAST_TEXT.status === 401 || LAST_TEXT.status === 403) break;
     }
     return [];
 }
@@ -346,4 +383,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _parseTorznab: parseTorznab, _aioSourcesBase: aioSourcesBase };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _releaseMatches: releaseMatches, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _parseTorznab: parseTorznab, _aioSourcesBase: aioSourcesBase };
