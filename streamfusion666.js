@@ -105,13 +105,23 @@ function scrub(text) {
 // on renvoie une ligne de diagnostic lisible au lieu d'une liste vide.
 function diagnostic(tmdbId, lines) {
     if (String(tmdbId).replace(/^tmdb:/i, '') !== '603') return [];
-    return [{
-        name: ADDON_NAME + '666 diagnostic',
-        title: lines.filter(Boolean).join('\n'),
-        url: 'https://diagnostic.invalid/' + ADDON_NAME.toLowerCase(),
-        provider: ADDON_NAME + '666',
-        type: 'direct'
-    }];
+    // L'écran de test n'affiche que la 1re ligne des 3 premiers flux :
+    // une entrée par ligne, coupée en morceaux courts.
+    var out = [];
+    lines.filter(Boolean).forEach(function (line) {
+        var text = String(line);
+        while (text.length) {
+            out.push({
+                name: ADDON_NAME + '666 diagnostic',
+                title: text.slice(0, 70),
+                url: 'https://diagnostic.invalid/' + ADDON_NAME.toLowerCase() + '/' + out.length,
+                provider: ADDON_NAME + '666',
+                type: 'direct'
+            });
+            text = text.slice(70);
+        }
+    });
+    return out;
 }
 
 // --- Adresse de l'addon (jamais en clair dans les logs) -------------------
@@ -322,8 +332,8 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     if (!found.length) {
         var first = streams[0] || {};
         return diagnostic(tmdbId, [
-            'Adresse OK (' + privateHost(base) + ') · ' + imdbId,
             data ? streams.length + ' flux reçus de ' + ADDON_NAME : 'Aucune réponse : ' + LAST_ERROR,
+            'Adresse OK (' + privateHost(base) + ') · ' + imdbId,
             'écartés : ' + dropped.noUrl + ' sans lien, ' + dropped.notCached + ' pas en cache, ' + dropped.lang + ' pas VF, ' + dropped.quality + ' < 1080p',
             streams.length ? 'ex. nom : ' + scrub(first.name).slice(0, 80) : '',
             streams.length ? 'ex. titre : ' + scrub([first.title, first.description].filter(Boolean).join(' | ')).slice(0, 200) : '',
