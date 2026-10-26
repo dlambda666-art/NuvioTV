@@ -1,6 +1,6 @@
 {
   "name": "Les 5 cavaliers de l'apocalypse",
-  "version": "1.2.16",
+  "version": "1.2.17",
   "description": "Plugins perso de 666TVF",
   "author": "Lambda666",
   "scrapers": [
@@ -8,7 +8,7 @@
       "id": "comet666",
       "name": "Comet666",
       "description": "Torrents en VF (MULTI, VFF, TRUEFRENCH…), lus via TorBox. Jamais de P2P.",
-      "version": "1.0.9",
+      "version": "1.0.10",
       "filename": "comet666.js",
       "supportedTypes": [
         "movie",

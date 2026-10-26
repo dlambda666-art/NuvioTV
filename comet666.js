@@ -139,6 +139,12 @@ function decodeEntities(t) {
 // Pour une série : l'épisode demandé, la saison entière ou l'intégrale
 function matchesEpisode(title, season, episode) {
     var t = String(title);
+    // pack d'épisodes « S13E01-06 » / « S13E01-E06 » : tous les épisodes de la plage
+    var rangeEp = t.match(/\bS(\d{1,2})[ ._-]?E(\d{1,3})[ ._-]*-[ ._-]*E?(\d{1,3})\b/i);
+    if (rangeEp) {
+        var rs = parseInt(rangeEp[1], 10), ra = parseInt(rangeEp[2], 10), rb = parseInt(rangeEp[3], 10);
+        return rs === season && episode >= ra && episode <= Math.max(ra, rb);
+    }
     var se = t.match(/\bS(\d{1,2})[ ._-]?E(\d{1,3})\b/i);
     // 666TV : même épisode dans une autre saison gardé en réserve (séries anthologie,
     // ex. « Monster: The Lizzie Borden Story S01E05 » pour Monstre S04E05).

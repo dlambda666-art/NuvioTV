@@ -142,13 +142,21 @@ const cases = [
         ['Show.S03E05', 4, 5, false],
         ['Show.S01E06', 1, 5, false],
         ['Show.S04.FRENCH.1080p', 4, 5, true],
-        ['Show.INTEGRALE.FRENCH', 2, 3, true]
+        ['Show.INTEGRALE.FRENCH', 2, 3, true],
+        ['American.Horror.Story.S13E01-06.MULTi.1080p', 13, 5, true],
+        ['American.Horror.Story.S13E01-06.MULTi.1080p', 13, 7, false],
+        ['Show.S02E01-E04.FRENCH', 2, 3, true]
     ];
     for (const [t, s, e, want] of ce) {
         const got = m(t, s, e);
         if (got !== want) { fails++; console.log(`✗ Comet666 ${t} (S${s}E${e}) → ${got}, attendu ${want}`); }
         else console.log(`✓ Comet666 ${t} (S${s}E${e})`);
     }
+    // AHS S13 (26/10) : « MULTi » sans mot français = incertain, signalé « (VF ?) »
+    // (le calendrier 666TVF ne compte pas ces flux comme de la VF).
+    if (comet._frenchLabel('American.Horror.Story.S13E01-06.MULTi.2160p.DSNP.WEB-DL.DD5.1.HEVC-Ralf') !== 'MULTi (VF ?)') {
+        fails++; console.log('✗ AHS S13 MULTi doit rester « (VF ?) »');
+    } else console.log('✓ AHS S13 MULTi marqué « (VF ?) » (non compté par le calendrier)');
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();
