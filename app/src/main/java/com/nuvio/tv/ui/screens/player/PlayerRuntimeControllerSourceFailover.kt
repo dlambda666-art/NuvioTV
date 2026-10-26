@@ -117,6 +117,14 @@ internal fun PlayerRuntimeController.observeSourceFailover() {
             if (url.isNullOrBlank() || tracks.isEmpty() || url == checkedFor) return@collect
             if (contentType.equals("cloud", ignoreCase = true)) return@collect
             checkedFor = url
+            // 666TVF : on dit à Frank ce que contient vraiment ce fichier (VF ou pas) :
+            // il apprend ainsi quels groupes de release « MULTi » ont la VF.
+            val hasFrench666 = tracks.any { it.isFrench666() }
+            val surelyNoFrench666 = !hasFrench666 && tracks.all { it.knownOtherLanguage666() }
+            if (hasFrench666 || surelyNoFrench666) {
+                val release = (currentStreamDescription ?: _uiState.value.currentStreamName).orEmpty().lineSequence().firstOrNull().orEmpty()
+                if (release.isNotBlank()) reportReleaseVerdict666(release, hasFrench666)
+            }
             if (tracks.none { it.isFrench666() } && tracks.all { it.knownOtherLanguage666() }) {
                 Log.i(PlayerRuntimeController.TAG, "No French audio track (${tracks.joinToString { it.language.orEmpty() }}) → next link")
                 _uiState.update { it.copy(error = NO_FRENCH_AUDIO_666) }
@@ -202,6 +210,26 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
         hideStreamSourceIndicatorJob = scope.launch {
             delay(4_000)
             _uiState.update { it.copy(showStreamSourceIndicator = false) }
+        }
+    }
+}
+
+
+/** 666TVF : verdict de lecture envoyé à Frank (nom de release + VF oui/non, rien d'autre). */
+private fun PlayerRuntimeController.reportReleaseVerdict666(release: String, hasFrench: Boolean) {
+    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val body = org.json.JSONObject().put("release", release.take(300)).put("fr", hasFrench).toString()
+            val conn = (java.net.URL("https://lambda666-frankenstream.hf.space/groupes/verdict").openConnection() as java.net.HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                connectTimeout = 8_000
+                readTimeout = 8_000
+                setRequestProperty("Content-Type", "application/json")
+            }
+            conn.outputStream.use { it.write(body.toByteArray()) }
+            conn.responseCode
+            conn.disconnect()
         }
     }
 }
