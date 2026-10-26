@@ -306,6 +306,18 @@ class PluginRuntime @Inject constructor() {
                         }
                     }
 
+                    // 666TVF : WebSocket simple pour les plugins (relais YGG, qui refuse les serveurs
+                    // et n'accepte que les connexions « maison » : la Shield s'y connecte elle-même).
+                    // Envoie un message, rassemble les réponses texte jusqu'à `until` ou le délai.
+                    function("__native_ws") { args ->
+                        val url = args.getOrNull(0)?.toString() ?: ""
+                        val headersJson = args.getOrNull(1)?.toString() ?: "{}"
+                        val send = args.getOrNull(2)?.toString() ?: ""
+                        val until = args.getOrNull(3)?.toString().orEmpty()
+                        val timeoutMs = (args.getOrNull(4)?.toString()?.toDoubleOrNull() ?: 5000.0).toLong().coerceIn(500L, 15_000L)
+                        nativeWebSocket666(url, headersJson, send, until, timeoutMs)
+                    }
+
                     // Define URL parser
                     function("__parse_url") { args ->
                         val urlString = args.getOrNull(0)?.toString() ?: ""
@@ -649,6 +661,40 @@ class PluginRuntime @Inject constructor() {
         return BoundedReadResult(out.toByteArray(), truncated)
     }
 
+    /** 666TVF : voir __native_ws. Bloquant, borné par timeoutMs. */
+    private fun nativeWebSocket666(url: String, headersJson: String, send: String, until: String, timeoutMs: Long): String {
+        val messages = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val done = java.util.concurrent.CountDownLatch(1)
+        var error: String? = null
+        return try {
+            val builder = okhttp3.Request.Builder().url(url)
+            runCatching {
+                @Suppress("UNCHECKED_CAST")
+                val headers = gson.fromJson(headersJson, Map::class.java) as? Map<String, Any?>
+                headers?.forEach { (k, v) -> if (v != null) builder.header(k, v.toString()) }
+            }
+            val socket = httpClient.newWebSocket(builder.build(), object : okhttp3.WebSocketListener() {
+                override fun onOpen(webSocket: okhttp3.WebSocket, response: okhttp3.Response) {
+                    if (send.isNotEmpty()) webSocket.send(send)
+                }
+                override fun onMessage(webSocket: okhttp3.WebSocket, text: String) {
+                    if (messages.size < 500) messages.add(text)
+                    if (until.isNotEmpty() && text.contains(until)) done.countDown()
+                }
+                override fun onFailure(webSocket: okhttp3.WebSocket, t: Throwable, response: okhttp3.Response?) {
+                    error = (response?.code?.let { "HTTP $it " } ?: "") + (t.message ?: "échec")
+                    done.countDown()
+                }
+                override fun onClosed(webSocket: okhttp3.WebSocket, code: Int, reason: String) { done.countDown() }
+            })
+            done.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+            socket.cancel()
+            gson.toJson(mapOf("messages" to messages.toList(), "error" to error))
+        } catch (t: Throwable) {
+            gson.toJson(mapOf("messages" to messages.toList(), "error" to (t.message ?: "échec")))
+        }
+    }
+
     private fun parseUrl(urlString: String): String {
         return try {
             val url = URL(urlString)
@@ -677,6 +723,12 @@ class PluginRuntime @Inject constructor() {
     private fun getStaticPolyfillCode(): String {
         return """
             // Global constants (using globalThis to avoid redeclaration errors)
+            globalThis.wsRequest = function(url, opts) {
+                opts = opts || {};
+                try {
+                    return JSON.parse(__native_ws(url, JSON.stringify(opts.headers || {}), opts.send || '', opts.until || '', opts.timeout || 5000));
+                } catch (e) { return { messages: [], error: String(e) }; }
+            };
             globalThis.SCRAPER_ID = __get_scraper_id();
             globalThis.SCRAPER_SETTINGS = JSON.parse(__get_scraper_settings());
             if (typeof TMDB_API_KEY === 'undefined') {
