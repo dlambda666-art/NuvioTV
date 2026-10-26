@@ -258,10 +258,9 @@ class CalendarRepository @Inject constructor(
                 season = episode.season,
                 episode = episode.episode
             ).first()
-        } == true ||
-            withTimeoutOrNull(3_000) {
-                watchProgressRepository.getEpisodeProgress(episode.seriesId, episode.season, episode.episode).first()
-            } != null
+        } == true
+        // 666TVF : un épisode simplement commencé ne prouve plus rien (AHS S13 : on lance,
+        // c'est du polonais, on arrête). Seul un épisode vu jusqu'au bout compte comme VF.
     }.getOrDefault(false)
 
     private suspend fun rememberVf(episode: CalendarEpisode) {
