@@ -369,6 +369,18 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     // Bouton « Tester » (Matrix) : une ligne d'état d'AIOSources EN PREMIER, sans lien ni clé.
     if (String(tmdbId).replace(/^tmdb:/i, '') === '603' && AIO_DIAG) {
         var kept = found.filter(function (t) { return /^AIOSources/.test(t.source); }).length;
+        // Test seulement : le flux « dernières sorties » (sans recherche) et les catégories annoncées,
+        // pour savoir si AIOSources a quelque chose en cache.
+        if (AIO_DIAG.valid) {
+            var b2 = aioSourcesBase(aioSourcesSetting()), j2 = b2.indexOf('?') >= 0 ? '&' : '?';
+            var latest = await getText(b2 + j2 + 't=search');
+            var latestItems = parseTorznab(latest, false, 0, 0, 'AIOSources');
+            var caps = await getText(b2 + j2 + 't=caps');
+            var searching = (String(caps).match(/<(search|movie-search|tv-search)[^>]*available="yes"[^>]*>/g) || []).map(function (x) {
+                return x.replace(/<|\s.*$/g, '') + '(' + ((x.match(/supportedParams="([^"]*)"/) || [])[1] || '') + ')';
+            }).join(' ');
+            AIO_DIAG.answer = 'derniers ajouts : ' + latestItems.length + (latestItems[0] ? ' ex. ' + latestItems[0].release : '') + ' · ' + (searching || scrub(String(caps).slice(0, 80)));
+        }
         // L'écran de test n'affiche que la 1re ligne des 3 premiers flux : 3 lignes courtes.
         var state = !AIO_DIAG.configured ? 'pas de lien' : AIO_DIAG.valid ? 'lien OK' : 'lien illisible';
         var answer = AIO_DIAG.answer || '(rien)';
