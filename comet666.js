@@ -251,15 +251,51 @@ function releaseMatches(release, titles, year, isTv) {
     return !any;
 }
 
-// YGG sans compte, via le relais public (Frank fait la recherche)
+// YGG sans compte, via le relais public « u2p » (même source que Frenchio).
+// Le relais refuse les serveurs : c'est la Shield qui s'y connecte (wsRequest, 666TVF ≥ 1.0.64).
+// Frank donne les titres (FR + VO) et l'année ; sans wsRequest, Frank tente lui-même.
+var YGG_RELAY = 'wss://u2p.anhkagi.net/';
+function yggEvents(messages) {
+    var out = [];
+    (messages || []).forEach(function (m) {
+        var d; try { d = JSON.parse(m); } catch (e) { return; }
+        if (!d || d[0] !== 'EVENT' || !d[2]) return;
+        var tags = d[2].tags || [], title = null, hash = null, size = 0, seed = null;
+        tags.forEach(function (t) {
+            if (t[0] === 'title') title = t[1];
+            else if (t[0] === 'x') hash = t[1];
+            else if (t[0] === 'size') size = Number(t[1]) || 0;
+            else if (t[0] === 'l' && String(t[1]).indexOf('u2p.seed:') === 0) seed = Number(String(t[1]).split(':')[1]) || null;
+        });
+        if (title && /^[0-9a-fA-F]{40}$/.test(String(hash || ''))) out.push({ title: fixLatin(title), hash: String(hash).toLowerCase(), size: size, seeders: seed });
+    });
+    return out;
+}
+// titres en latin-1 mal décodés (« Ã© » pour « é »)
+function fixLatin(t) {
+    try { return /Ã|Â/.test(t) ? decodeURIComponent(escape(t)) : t; } catch (e) { return t; }
+}
 async function fromYgg(imdbId, isTv, season, episode) {
+    var direct = typeof wsRequest === 'function';
     var data = await getJson(FRANK_URL + '/ygg/' + (isTv ? 'series' : 'movie') + '/' + imdbId +
-        (isTv ? '?season=' + season + '&episode=' + episode : ''));
+        '?' + (isTv ? 'season=' + season + '&episode=' + episode + '&' : '') + (direct ? 'norelay=1' : ''));
     var titles = (data && data.titles) || [];
     var year = data && data.year ? Number(data.year) : 0;
-    var out = [];
-    ((data && data.items) || []).forEach(function (r) {
-        if (!r.hash || !r.title) return;
+    var items = (data && data.items) || [];
+    if (direct) {
+        ((data && data.queries) || []).forEach(function (q) {
+            var r = wsRequest(YGG_RELAY, {
+                headers: { Origin: 'https://www.ygg.re' },
+                send: JSON.stringify(['REQ', 'comet666', { kinds: [2003], search: q, limit: 50 }]),
+                until: '"EOSE"', timeout: 4000
+            });
+            items = items.concat(yggEvents(r && r.messages));
+        });
+    }
+    var out = [], seen = {};
+    items.forEach(function (r) {
+        if (!r.hash || !r.title || seen[r.hash]) return;
+        seen[r.hash] = 1;
         if (!releaseMatches(r.title, titles, year, isTv)) return;
         if (isTv && !matchesEpisode(r.title, season, episode)) return;
         out.push({ hash: String(r.hash).toLowerCase(), release: r.title, text: r.title, bytes: Number(r.size) || 0, seeders: r.seeders || null, source: 'YGG' });
@@ -380,4 +416,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     });
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode };
