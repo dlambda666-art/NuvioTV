@@ -17,13 +17,15 @@ import kotlinx.coroutines.launch
  * liste, dans l'ordre de 666TV (StreamFusion, Frenchio, Lumio, Wastream, Comet).
  * Idée reprise de Nuvio Arc (ysosrs123/NuvioTV-Fork, GPL-3.0), réécrite pour 666TV.
  *
- * - Jamais deux fois le même lien pour un même film / épisode ; 4 essais au maximum.
+ * - Jamais deux fois le même lien pour un même film / épisode ; 6 essais au maximum.
+ * - 666TVF : un lien refusé par le serveur (HTTP 401/403/404/5xx) → les autres liens
+ *   de la même source sont sautés (ils seraient refusés aussi), on passe à la suivante.
  * - Seulement des liens prêts à lire (http/https), jamais de torrent pair-à-pair.
  * - La lecture reprend au même endroit (progression enregistrée avant le changement).
  * - Rien trouvé : le message d'erreur habituel s'affiche.
  */
 internal object SourceFailoverRules {
-    const val MAX_FAILOVERS = 4
+    const val MAX_FAILOVERS = 6
     const val LIST_WAIT_MS = 25_000L
     const val LIST_POLL_MS = 300L
 
@@ -48,8 +50,17 @@ internal object SourceFailoverRules {
     fun selectNext(streams: List<Stream>, tried: Set<String>): Stream? =
         streams.firstOrNull { stream ->
             val key = failoverKey(stream) ?: return@firstOrNull false
-            key !in tried && isPlayable(stream)
+            key !in tried && isPlayable(stream) && sourceKey(stream) !in tried
         }
+
+    /** Clé « toute la source » (ex. Frenchio666), utilisée quand ses liens sont refusés. */
+    fun sourceKey(stream: Stream): String = "source:" + displayName(stream).lowercase()
+
+    fun sourceKey(name: String?): String? = name?.takeIf { it.isNotBlank() }?.let { "source:" + it.lowercase() }
+
+    /** Erreur venant du serveur du lien (refus, introuvable, panne) plutôt que du fichier. */
+    fun isServerRefusal(error: String): Boolean =
+        Regex("HTTP\\s*(40[134]|5\\d\\d)|BAD_HTTP_STATUS", RegexOption.IGNORE_CASE).containsMatchIn(error)
 
     /** Nom affiché : la source (StreamFusion666…) plutôt que le titre formaté (🗣️ 🇫🇷). */
     fun displayName(stream: Stream): String =
@@ -151,6 +162,13 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
     state.currentStreamInfoHash?.lowercase()?.let {
         sourceFailoverTriedKeys += "$it:${state.currentStreamFileIdx ?: -1}"
     }
+    // 666TVF : lien refusé par le serveur → toute cette source est sautée pour ce film / épisode.
+    if (SourceFailoverRules.isServerRefusal(error)) {
+        SourceFailoverRules.sourceKey(state.currentStreamAddonName ?: state.currentStreamName)?.let {
+            Log.i(PlayerRuntimeController.TAG, "Source refused ($error) → skipping $it")
+            sourceFailoverTriedKeys += it
+        }
+    }
 
     sourceFailoverJob = scope.launch {
         // On cache l'erreur pendant qu'on cherche le lien suivant.
@@ -204,7 +222,9 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
         _uiState.update {
             it.copy(
                 showStreamSourceIndicator = true,
-                streamSourceIndicatorText = if (error == NO_FRENCH_AUDIO_666) "Pas de VF → $name" else "Lien indisponible → $name"
+                streamSourceIndicatorText = if (error == NO_FRENCH_AUDIO_666) "Pas de VF → $name"
+                    else if (SourceFailoverRules.isServerRefusal(error)) "Lien refusé par la source → $name"
+                    else "Lien indisponible → $name"
             )
         }
         hideStreamSourceIndicatorJob = scope.launch {

@@ -34,6 +34,13 @@ class PluginHealth666 @Inject constructor(
             val streams = test?.getOrNull()?.first.orEmpty()
             val real = streams.filter { !it.url.contains("diagnostic.invalid") }
             val firstDiag = streams.firstOrNull { it.url.contains("diagnostic.invalid") }?.title?.lineSequence()?.firstOrNull()
+            // 666TVF : la liste ne suffit pas — le 1er lien doit aussi s'ouvrir (Frenchio en 403, 26/10).
+            val refused = real.firstOrNull { it.url.startsWith("http", ignoreCase = true) }?.let { probe(it.url, it.headers) }
+                ?.takeIf { it == -1 || it >= 400 }
+            if (refused != null) {
+                return@map Result(scraper.id, scraper.name, 0,
+                    if (refused == -1) "${real.size} lien(s), mais le 1er ne répond pas" else "${real.size} lien(s), mais refusés (HTTP $refused)")
+            }
             Result(
                 id = scraper.id,
                 name = scraper.name,
@@ -48,6 +55,20 @@ class PluginHealth666 @Inject constructor(
         }
         save(results)
         return results
+    }
+
+    /** Code HTTP de l'ouverture du lien (2 premiers octets seulement), -1 si pas de réponse. */
+    private suspend fun probe(url: String, headers: Map<String, String>?): Int = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val conn = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
+                connectTimeout = 10_000
+                readTimeout = 10_000
+                instanceFollowRedirects = true
+                setRequestProperty("Range", "bytes=0-1")
+                headers?.forEach { (k, v) -> setRequestProperty(k, v) }
+            }
+            try { conn.responseCode } finally { conn.disconnect() }
+        }.getOrDefault(-1)
     }
 
     fun lastRunAt(): Long = prefs.getLong("at", 0L)
