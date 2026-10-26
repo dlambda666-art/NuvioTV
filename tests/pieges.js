@@ -32,6 +32,14 @@ const stream = name => ({ name: 'Test', title: name, url: 'https://cdn.test/' + 
 
 const cases = [
     {
+        nom: 'AHS S13 (26/10) : MULTi d\'un groupe étranger écarté, d\'un groupe français gardé',
+        args: ['tt1844624', 'tv', 13, 1],
+        air: '2026-10-20',
+        streams: ['American.Horror.Story.S13E01.MULTi.2160p.DSNP.WEB-DL.HEVC-Ralf.mkv', 'American.Horror.Story.S13E01.MULTi.1080p.WEB.H264-QTZ.mkv'],
+        groupes: { fr: ['QTZ'], other: ['RALF'] },
+        garde: ['-QTZ'], jette: ['-Ralf']
+    },
+    {
         nom: 'Anthologie : Monstre S04E05 rangé en « S01E05 »',
         args: ['tt13207736', 'tv', 4, 5],
         air: '2026-09-20',
@@ -106,6 +114,7 @@ const cases = [
                 original_language: c.movie.lang, release_date: c.movie.year, title: c.movie.title, original_title: c.movie.title,
                 external_ids: { imdb_id: c.movie.imdb }, release_dates: { results: [{ iso_3166_1: 'FR', release_dates: c.movie.fr }] }
             };
+            if (url.includes('/groupes-vf')) return c.groupes || { fr: [], other: [] };
             if (url.includes('/find/')) return { tv_results: [{ id: 1 }] };
             if (url.startsWith('https://addon.test/cfg/stream/')) return { streams: c.streams.map(stream) };
             return undefined;

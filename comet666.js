@@ -202,6 +202,33 @@ async function fromTorrentsDb(imdbId, isTv, season, episode) {
     return out;
 }
 
+
+// --- 666TVF : « MULTi » d'un groupe français = VF, d'un groupe étranger = écarté ---
+// Liste tenue à jour par Frank (noms de releases vus + lectures des Shield).
+var NOT_GROUP = { MKV: 1, MP4: 1, AVI: 1, X264: 1, X265: 1, H264: 1, H265: 1, HEVC: 1, WEB: 1, WEBDL: 1, WEBRIP: 1, DL: 1, HDR: 1, DV: 1, REMUX: 1, BLURAY: 1, MULTI: 1, FRENCH: 1, VFF: 1, VFQ: 1, VOSTFR: 1, AAC: 1, AC3: 1, DTS: 1, ATMOS: 1, SDR: 1, '1080P': 1, '2160P': 1, '720P': 1, PROPER: 1, REPACK: 1 };
+function releaseGroup(release) {
+    var line = String(release || '').split('\n')[0].trim().replace(/\s*\[[^\]]*\]\s*$/, '').replace(/\.(mkv|mp4|avi|ts|m2ts)$/i, '');
+    var m = line.match(/-([A-Za-z0-9][A-Za-z0-9_]{1,19})$/);
+    if (!m) return null;
+    var g = m[1].toUpperCase();
+    return NOT_GROUP[g] || /^\d+$/.test(g) ? null : g;
+}
+async function settleMulti(items) {
+    if (!items.some(function (t) { return t.lang.indexOf('?') >= 0; })) return items;
+    var data = await getJson(FRANK_URL + '/groupes-vf');
+    if (!data) return items;
+    var fr = {}, other = {};
+    (data.fr || []).forEach(function (g) { fr[g] = 1; });
+    (data.other || []).forEach(function (g) { other[g] = 1; });
+    return items.filter(function (t) {
+        if (t.lang.indexOf('?') < 0) return true;
+        var g = releaseGroup(t.release);
+        if (g && other[g]) return false;          // groupe étranger : pas de VF
+        if (g && fr[g]) t.lang = 'MULTi VF';      // groupe français : VF
+        return true;
+    });
+}
+
 // --- Point d'entrée appelé par 666TV --------------------------------------
 async function getStreams(tmdbId, mediaType, season, episode) {
     var isTv = mediaType === 'tv' || mediaType === 'series';
@@ -242,6 +269,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     });
     // Les fichiers « autre saison » ne servent que s'il n'y a rien d'exact.
     if (isTv && found.some(exactSeason)) found = found.filter(exactSeason);
+    found = await settleMulti(found);
     found.sort(function (a, b) {
         // VF sûre d'abord, « MULTi (VF ?) » ensuite
         var c = (a.lang.indexOf('?') >= 0) - (b.lang.indexOf('?') >= 0);
@@ -267,4 +295,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     });
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode };
