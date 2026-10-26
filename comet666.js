@@ -227,7 +227,7 @@ var AIO_DIAG = null;
 async function fromAioSources(imdbId, isTv, season, episode) {
     var raw = aioSourcesSetting();
     var base = aioSourcesBase(raw);
-    AIO_DIAG = { configured: !!raw, valid: !!base, tries: [] };
+    AIO_DIAG = { configured: !!raw, valid: !!base, tries: [], codes: [], counts: [], answer: '' };
     if (!base) return [];
     var join = base.indexOf('?') >= 0 ? '&' : '?';
     var digits = String(imdbId).replace(/^tt/i, '');
@@ -238,6 +238,8 @@ async function fromAioSources(imdbId, isTv, season, episode) {
         var xml = await getText(base + join + queries[i]);
         var items = String(xml).split('<item>').length - 1;
         var list = parseTorznab(xml, isTv, season, episode, 'AIOSources');
+        AIO_DIAG.codes.push(String(LAST_TEXT.status)); AIO_DIAG.counts.push(items);
+        if (!AIO_DIAG.answer) AIO_DIAG.answer = scrub(LAST_TEXT.error || (!items ? String(xml).slice(0, 200) : ''));
         AIO_DIAG.tries.push(queries[i].split('&')[0] + ' ' + (queries[i].indexOf('tt') >= 0 ? 'tt' : 'num') + ' → HTTP ' + LAST_TEXT.status + ', ' + items + ' résultat(s)' +
             (LAST_TEXT.error ? ' (' + scrub(LAST_TEXT.error) + ')' : (!items && xml ? ' [' + scrub(String(xml).slice(0, 120)) + ']' : '')));
         if (list.length) return list;
@@ -330,13 +332,15 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     // Bouton « Tester » (Matrix) : une ligne d'état d'AIOSources EN PREMIER, sans lien ni clé.
     if (String(tmdbId).replace(/^tmdb:/i, '') === '603' && AIO_DIAG) {
         var kept = found.filter(function (t) { return /^AIOSources/.test(t.source); }).length;
-        shown.unshift({
-            name: 'Comet666 diagnostic',
-            title: ['AIOSources : ' + (!AIO_DIAG.configured ? 'pas de lien enregistré' : AIO_DIAG.valid ? 'lien OK' : 'lien illisible (doit commencer par https://)')]
-                .concat(AIO_DIAG.tries).concat(['VF 1080p/4K gardés : ' + kept]).join('\n'),
-            url: 'https://diagnostic.invalid/aiosources',
-            provider: 'Comet666',
-            type: 'direct'
+        // L'écran de test n'affiche que la 1re ligne des 3 premiers flux : 3 lignes courtes.
+        var state = !AIO_DIAG.configured ? 'pas de lien' : AIO_DIAG.valid ? 'lien OK' : 'lien illisible';
+        var answer = AIO_DIAG.answer || '(rien)';
+        [
+            'AIO ' + state + ' · HTTP ' + (AIO_DIAG.codes.join('/') || '-') + ' · résultats ' + (AIO_DIAG.counts.join('/') || '-') + ' · VF ' + kept,
+            'AIO réponse : ' + answer.slice(0, 55),
+            'AIO suite : ' + (answer.slice(55, 110) || '-')
+        ].reverse().forEach(function (line) {
+            shown.unshift({ name: 'Comet666 diagnostic', title: line, url: 'https://diagnostic.invalid/aiosources', provider: 'Comet666', type: 'direct' });
         });
     }
     return shown;
