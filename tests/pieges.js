@@ -120,6 +120,19 @@ const cases = [
         if (problems.length) { fails++; console.log(`✗ ${c.nom} — ${problems.join(' ; ')} — reçu : ${titles.join(' | ') || 'rien'}`); }
         else console.log(`✓ ${c.nom}`);
     }
+    // Config morte en silence (Wastream, 26/10) : le lien répond mais 0 flux →
+    // au bouton Tester, la 1re ligne doit le dire clairement.
+    {
+        const plugin = loadTemplate(url => {
+            if (url.includes('api.themoviedb.org/3/movie/603')) return { title: 'Matrix', original_title: 'The Matrix', release_date: '1999-03-31', external_ids: { imdb_id: 'tt0133093' }, release_dates: { results: [] } };
+            if (url.startsWith('https://addon.test/cfg/stream/')) return { streams: [] };
+            return undefined;
+        });
+        const out = await plugin.getStreams('603', 'movie');
+        const first = (out[0] && out[0].title) || '';
+        if (!/^0 flux reçus/.test(first)) { fails++; console.log(`✗ Config morte : 1re ligne du test = « ${first} »`); }
+        else console.log('✓ Config morte (0 flux) signalée en 1re ligne du test');
+    }
     // Comet666 : règle saison/épisode
     const comet = require(path.join(__dirname, '..', 'comet666.js'));
     const m = comet._matchesEpisode;
