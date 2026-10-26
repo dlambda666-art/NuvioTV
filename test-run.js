@@ -17,6 +17,21 @@ const plugin = require('./comet666.js');
     try { const r = await fetch(u); const b = await r.text(); report.cases.push({ probe: u.slice(0, 60), status: r.status, len: b.length, head: b.slice(0, 200) }); }
     catch (x) { report.cases.push({ probe: u.slice(0, 60), err: String(x) }); }
   }
+  // sonde du relais YGG (u2p) : avec et sans en-tête Origin
+  for (const withOrigin of [true, false]) {
+    const r = await new Promise(resolve => {
+      const out = { withOrigin, events: 0, sample: [] };
+      let ws;
+      try { const WS = require('ws'); ws = new WS('wss://u2p.anhkagi.net/', withOrigin ? { origin: 'https://www.ygg.re' } : {}); }
+      catch (e) { out.err = String(e); return resolve(out); }
+      const t = setTimeout(() => { try { ws.close(); } catch (_) {} resolve(out); }, 6000);
+      ws.on('open', () => ws.send(JSON.stringify(['REQ', 'probe', { kinds: [2003], search: 'Matrix 1999', limit: 5 }])));
+      ws.on('message', m => { const d = JSON.parse(String(m)); if (d[0] === 'EVENT') { out.events++; const tt = (d[2].tags || []).find(x => x[0] === 'title'); out.sample.push(tt && tt[1]); } if (d[0] === 'EOSE') { clearTimeout(t); ws.close(); resolve(out); } });
+      ws.on('unexpected-response', (req, res) => { out.status = res.statusCode; out.headers = res.headers; });
+      ws.on('error', e => { out.err = String(e.message); clearTimeout(t); resolve(out); });
+    });
+    report.cases.push({ probe: 'ygg-relay', ...r });
+  }
   fs.writeFileSync('test-report.json', JSON.stringify(report, null, 1));
   console.log(JSON.stringify(report).slice(0, 2000));
 })();
