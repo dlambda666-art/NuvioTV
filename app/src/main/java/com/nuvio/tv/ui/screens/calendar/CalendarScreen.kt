@@ -335,13 +335,15 @@ fun CalendarVfBanner(episodes: List<CalendarEpisode>, modifier: Modifier = Modif
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
-            text = if (episodes.all { it.seriesId.startsWith("sport:") }) "🥊 C'est l'heure du combat" else "🔔 Nouveau en VF",
+            text = if (episodes.all { it.seriesId.startsWith("alerte:") }) "⚠️ Plugin en panne"
+            else if (episodes.all { it.seriesId.startsWith("sport:") }) "🥊 C'est l'heure du combat" else "🔔 Nouveau en VF",
             style = MaterialTheme.typography.titleMedium,
             color = NuvioTheme.colors.TextPrimary
         )
         episodes.take(4).forEach { ep ->
             Text(
-                text = if (ep.seriesId.startsWith("sport:")) "🥊 ${ep.seriesName} · ${ep.title.orEmpty()}"
+                text = if (ep.seriesId.startsWith("alerte:")) "⚠️ ${ep.seriesName} · ${ep.title.orEmpty()}"
+                else if (ep.seriesId.startsWith("sport:")) "🥊 ${ep.seriesName} · ${ep.title.orEmpty()}"
                 else "🇫🇷 ${ep.seriesName} · ${ep.code}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = NuvioTheme.colors.TextPrimary,

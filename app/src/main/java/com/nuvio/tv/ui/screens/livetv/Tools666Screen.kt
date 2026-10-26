@@ -71,7 +71,8 @@ data class Health666(val name: String, val detail: String, val ok: Boolean?)
 @HiltViewModel
 class Tools666ViewModel @Inject constructor(
     private val addonRepository: AddonRepository,
-    private val pluginDataStore: PluginDataStore
+    private val pluginDataStore: PluginDataStore,
+    private val pluginHealth: com.nuvio.tv.core.tools.PluginHealth666
 ) : ViewModel() {
     private val _checks = MutableStateFlow<List<Health666>>(emptyList())
     val checks: StateFlow<List<Health666>> = _checks
@@ -110,7 +111,10 @@ class Tools666ViewModel @Inject constructor(
                 }
                 coroutineScopeAll(list)
             }
-            _checks.value = rows
+            // 666TVF : chaque plugin passe le test Matrix sur la Shield (liens de config compris).
+            _checks.value = rows + Health666("Plugins · test Matrix", "en cours (environ 1 min)…", null)
+            val plugins = withContext(Dispatchers.IO) { runCatching { pluginHealth.checkAll() }.getOrDefault(emptyList()) }
+            _checks.value = rows + plugins.map { Health666("Plugin · ${it.name}", it.detail, it.ok) }
             _running.value = false
         }
     }
@@ -204,7 +208,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
             }
             item {
                 Text(
-                    "Les instances de tes addons privés (Lumio, Frenchio…) ne sont pas testées ici : leurs adresses contiennent tes clés.",
+                    "Chaque plugin est testé ici même, avec tes configs (elles ne quittent pas la Shield). Vérification automatique chaque jour : la cloche sonne si l'un d'eux ne renvoie plus rien.",
                     modifier = Modifier.padding(horizontal = 18.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF8F8A85)

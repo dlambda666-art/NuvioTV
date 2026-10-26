@@ -272,6 +272,9 @@ open class MainActivity : ComponentActivity() {
     lateinit var ufcScheduleRepository666: com.nuvio.tv.core.calendar.UfcScheduleRepository
 
     @Inject
+    lateinit var pluginHealth666: com.nuvio.tv.core.tools.PluginHealth666
+
+    @Inject
     lateinit var experienceModeDataStore: ExperienceModeDataStore
 
     @Inject
@@ -1263,12 +1266,31 @@ open class MainActivity : ComponentActivity() {
                             var pending666 by remember {
                                 mutableStateOf<List<com.nuvio.tv.core.calendar.CalendarEpisode>>(emptyList())
                             }
+                            val inPlayerNow666 by androidx.compose.runtime.rememberUpdatedState(currentRoute?.startsWith("player/") == true)
                             LaunchedEffect(activeProfile?.id) {
                                 delay(20_000L)
+                                var loops666 = 0
                                 while (true) {
-                                    val found = runCatching { calendarRepository.newVfEpisodesToAnnounce() }
+                                    var found = runCatching { calendarRepository.newVfEpisodesToAnnounce() }
                                         .getOrDefault(emptyList()) +
                                         runCatching { ufcToAnnounce666(ufcScheduleRepository666) }.getOrDefault(emptyList())
+                                    // 666TVF : une fois par jour, chaque plugin passe le test Matrix ;
+                                    // un plugin tombé à 0 lien est signalé (une fois par panne). Jamais pendant un film.
+                                    // (pas au tout premier tour : on laisse l'appli démarrer tranquille)
+                                    if (loops666++ > 0 && !inPlayerNow666) {
+                                        found = found + runCatching { pluginHealth666.dailyCheckNewlyBroken() }.getOrDefault(emptyList()).map { r ->
+                                            com.nuvio.tv.core.calendar.CalendarEpisode(
+                                                seriesId = "alerte:" + r.id,
+                                                seriesName = r.name,
+                                                poster = null,
+                                                season = 0,
+                                                episode = 0,
+                                                title = r.detail,
+                                                airInstant = java.time.Instant.now(),
+                                                addonBaseUrl = null
+                                            )
+                                        }
+                                    }
                                     if (found.isNotEmpty()) {
                                         pending666 = (pending666 + found).distinctBy { "${it.seriesId}|${it.season}|${it.episode}" }
                                     }
@@ -1303,13 +1325,15 @@ open class MainActivity : ComponentActivity() {
                                 // le cri sonne quand même, avec un message en bas de l'écran.
                                 if (!bellLifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
                                     val names = calendarVfAnnouncements.joinToString(", ") { ep ->
-                                        if (ep.seriesId.startsWith("sport:")) ep.seriesName else ep.seriesName + " S" + ep.season + "E" + ep.episode
+                                        if (ep.seriesId.startsWith("sport:") || ep.seriesId.startsWith("alerte:")) ep.seriesName else ep.seriesName + " S" + ep.season + "E" + ep.episode
                                     }
                                     val sport = calendarVfAnnouncements.all { it.seriesId.startsWith("sport:") }
+                                    val alerte = calendarVfAnnouncements.all { it.seriesId.startsWith("alerte:") }
                                     runCatching {
                                         android.widget.Toast.makeText(
                                             bellContext.applicationContext,
-                                            if (sport) "🥊 666TVF : c'est l'heure du combat — $names" else "🔔 666TVF : $names dispo en VF !",
+                                            if (alerte) "⚠️ 666TVF : $names ne renvoie plus rien — vérifie sa config (Outils 666)"
+                                            else if (sport) "🥊 666TVF : c'est l'heure du combat — $names" else "🔔 666TVF : $names dispo en VF !",
                                             android.widget.Toast.LENGTH_LONG
                                         ).show()
                                     }
