@@ -84,7 +84,7 @@ private fun TrackInfo.knownOtherLanguage666(): Boolean {
 
 /** 666TV : le lien n'a montré aucune image au bout de 35 s (chargement sans fin). */
 internal const val STARTUP_TIMEOUT_666 = "Le lien ne démarre pas"
-private const val STARTUP_TIMEOUT_MS_666 = 35_000L
+private const val STARTUP_TIMEOUT_MS_666 = 25_000L
 
 /** À appeler une fois à la création du lecteur. */
 internal fun PlayerRuntimeController.observeSourceFailover() {
@@ -94,7 +94,7 @@ internal fun PlayerRuntimeController.observeSourceFailover() {
         }
     }
     // 666TV : un lien qui charge sans jamais démarrer (titre qui pulse sans fin)
-    // passe au lien suivant au bout de 35 s, au lieu de rester bloqué.
+    // passe au lien suivant au bout de 25 s, au lieu de rester bloqué.
     scope.launch {
         var watchdog: kotlinx.coroutines.Job? = null
         _uiState.map { it.currentStreamUrl }.distinctUntilChanged().collect { url ->

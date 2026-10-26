@@ -85,7 +85,7 @@ class CalendarRepository @Inject constructor(
     private val vfSemaphore = Semaphore(2)
 
     private val bellsKey = stringSetPreferencesKey("calendar_bells_666")
-    private val vfFoundKey = stringSetPreferencesKey("calendar_vf_found_666")
+    private val vfFoundKey = stringSetPreferencesKey("calendar_vf_found_666_v2") // v2 : VF sûre seulement (on revérifie tout)
     private val notifiedKey = stringSetPreferencesKey("calendar_notified_666")
     private val lastRefreshKey = stringPreferencesKey("calendar_last_refresh_666")
 
@@ -233,7 +233,10 @@ class CalendarRepository @Inject constructor(
                     }.orEmpty()
                     results.any { result ->
                         (result.url.isNotBlank() || !result.infoHash.isNullOrBlank()) &&
-                            result.name?.contains("diagnostic", ignoreCase = true) != true
+                            result.name?.contains("diagnostic", ignoreCase = true) != true &&
+                            // 666TVF : un « MULTi (VF ?) » ne prouve rien (AHS S13 : c'était du polonais).
+                            // Le calendrier n'annonce que de la VF sûre.
+                            !result.title.contains("VF ?") && !result.title.contains("VF?")
                     }
                 }.onFailure { Log.d(TAG, "VF check ${scraper.id} failed for ${episode.key}: ${it.message}") }
                     .getOrDefault(false)
