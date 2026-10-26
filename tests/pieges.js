@@ -166,6 +166,36 @@ const cases = [
     if (comet._frenchLabel('American.Horror.Story.S13E01-06.MULTi.2160p.DSNP.WEB-DL.DD5.1.HEVC-Ralf') !== 'MULTi (VF ?)') {
         fails++; console.log('✗ AHS S13 MULTi doit rester « (VF ?) »');
     } else console.log('✓ AHS S13 MULTi marqué « (VF ?) » (non compté par le calendrier)');
+    // Sources françaises reprises de Frenchio : C411 (avec clé) et YGG (via Frank)
+    {
+        const saved = { fetch: global.fetch, settings: global.SCRAPER_SETTINGS };
+        global.SCRAPER_SETTINGS = { c411: 'CLE' };
+        const xml = '<rss><channel><item><title>The.Matrix.1999.MULTi.VFF.2160p.UHD-QTZ</title><size>5</size><torznab:attr name="infohash" value="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"/></item></channel></rss>';
+        const urls = [];
+        global.fetch = async u => {
+            u = String(u); urls.push(u);
+            const ok = body => ({ ok: true, status: 200, text: async () => typeof body === 'string' ? body : JSON.stringify(body), json: async () => body });
+            if (u.startsWith('https://c411.org/api')) return ok(xml);
+            if (u.includes('/ygg/movie/')) return ok({ titles: ['Matrix', 'The Matrix'], year: 1999, items: [
+                { title: 'The.Matrix.1999.MULTi.TRUEFRENCH.1080p.BluRay-FW', hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', size: 9 },
+                { title: 'The.Matrix.Resurrections.2021.MULTi.VFF.1080p-FW', hash: 'cccccccccccccccccccccccccccccccccccccccc', size: 9 }
+            ] });
+            return { ok: false, status: 404, text: async () => '', json: async () => null };
+        };
+        const out = await comet.getStreams('tt0133093', 'movie');
+        const lines = out.map(x => x.title);
+        const has = k => lines.some(t => t.includes(k));
+        const keyHidden = !out.some(x => JSON.stringify(x).includes('CLE'));
+        if (!has('C411') || !has('· YGG') || has('Resurrections') || !keyHidden || !urls.some(u => u.includes('apikey=CLE'))) {
+            fails++; console.log('✗ Sources françaises : ' + lines.map(t => t.split('\n')[0] + ' / ' + (t.split('\n')[2] || '')).join(' | '));
+        } else console.log('✓ Sources françaises : C411 (clé jamais affichée) + YGG, homonyme Resurrections écarté');
+        global.SCRAPER_SETTINGS = {};
+        urls.length = 0;
+        await comet.getStreams('tt0133093', 'movie');
+        if (urls.some(u => u.includes('c411.org'))) { fails++; console.log('✗ C411 interrogé sans clé'); }
+        else console.log('✓ Sans clé, C411 n\'est pas interrogé');
+        global.fetch = saved.fetch; global.SCRAPER_SETTINGS = saved.settings;
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();

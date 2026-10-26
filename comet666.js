@@ -186,6 +186,87 @@ async function fromStremThru(imdbId, isTv, season, episode) {
     return out;
 }
 
+// --- 666TVF : sources françaises reprises de Frenchio (aymene69/frenchio, MIT) ---
+
+// Lecture d'une réponse Torznab (trackers C411, Tr4ker, Torr9)
+function parseTorznab(xml, isTv, season, episode, label) {
+    var out = [];
+    String(xml || '').split('<item>').slice(1).forEach(function (it) {
+        var title = decodeEntities((it.match(/<title>([^<]*)<\/title>/) || [])[1]);
+        var hash = (it.match(/name="infohash"\s+value="([0-9a-fA-F]{40})"/) || it.match(/btih:([0-9a-fA-F]{40})/i) || [])[1];
+        if (!title || !hash) return;
+        if (isTv && !matchesEpisode(title, season, episode)) return;
+        var size = Number((it.match(/<size>(\d+)<\/size>/) || [])[1]) || Number((it.match(/name="size"\s+value="(\d+)"/) || [])[1]) || 0;
+        var seeders = (it.match(/name="seeders"\s+value="(\d+)"/) || [])[1];
+        out.push({ hash: hash.toLowerCase(), release: title, text: title, bytes: size, seeders: seeders ? parseInt(seeders, 10) : null, source: label });
+    });
+    return out;
+}
+
+function setting(name) {
+    var s = (typeof SCRAPER_SETTINGS !== 'undefined' && SCRAPER_SETTINGS) ? SCRAPER_SETTINGS : {};
+    return String(s[name] || '').trim();
+}
+
+// Trackers français avec ta clé (collée sur la Shield, jamais dans ce fichier)
+var TRACKERS = [
+    { key: 'c411', label: 'C411', base: 'https://c411.org/api' },
+    { key: 'tr4ker', label: 'Tr4ker', base: 'https://tr4ker.net/torznab' },
+    { key: 'torr9', label: 'Torr9', base: 'https://api.torr9.net/api/v1/torznab' }
+];
+
+async function fromTrackers(ids, isTv, season, episode) {
+    var out = [];
+    for (var i = 0; i < TRACKERS.length; i++) {
+        var t = TRACKERS[i];
+        var apikey = setting(t.key);
+        if (!apikey) continue;
+        var q = isTv ? 't=tvsearch&season=' + season : 't=movie';
+        q += '&imdbid=' + ids.imdbId + (ids.tmdbId ? '&tmdbid=' + ids.tmdbId : '');
+        var xml = await getText(t.base + '?' + q + '&apikey=' + encodeURIComponent(apikey));
+        out = out.concat(parseTorznab(xml, isTv, season, episode, t.label));
+    }
+    return out;
+}
+
+function normTitle(t) {
+    var x = String(t || '');
+    try { x = x.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) { }
+    return x.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+// Une release trouvée par recherche texte doit porter le titre (et la bonne année pour un film)
+function releaseMatches(release, titles, year, isTv) {
+    var r = ' ' + normTitle(release) + ' ';
+    var named = titles.some(function (t) { var n = normTitle(t); return n.length >= 2 && r.indexOf(' ' + n + ' ') >= 0; });
+    if (!named) return false;
+    if (isTv || !year) return true;
+    var re = /(?:^|[^0-9])(19[2-9]\d|20[0-4]\d)(?![0-9])/g, m, any = false;
+    var inTitle = titles.join(' ');
+    while ((m = re.exec(release))) {
+        if (inTitle.indexOf(m[1]) >= 0) continue;
+        any = true;
+        if (Math.abs(Number(m[1]) - year) <= 1) return true;
+    }
+    return !any;
+}
+
+// YGG sans compte, via le relais public (Frank fait la recherche)
+async function fromYgg(imdbId, isTv, season, episode) {
+    var data = await getJson(FRANK_URL + '/ygg/' + (isTv ? 'series' : 'movie') + '/' + imdbId +
+        (isTv ? '?season=' + season + '&episode=' + episode : ''));
+    var titles = (data && data.titles) || [];
+    var year = data && data.year ? Number(data.year) : 0;
+    var out = [];
+    ((data && data.items) || []).forEach(function (r) {
+        if (!r.hash || !r.title) return;
+        if (!releaseMatches(r.title, titles, year, isTv)) return;
+        if (isTv && !matchesEpisode(r.title, season, episode)) return;
+        out.push({ hash: String(r.hash).toLowerCase(), release: r.title, text: r.title, bytes: Number(r.size) || 0, seeders: r.seeders || null, source: 'YGG' });
+    });
+    return out;
+}
+
 // TorrentsDB : addon public au format Stremio
 async function fromTorrentsDb(imdbId, isTv, season, episode) {
     var sid = isTv ? imdbId + ':' + season + ':' + episode : imdbId;
@@ -243,7 +324,11 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         var m = String(t.release || t.text || '').match(/\bS(\d{1,2})[ ._-]?E(\d{1,3})\b/i);
         return !m || parseInt(m[1], 10) === parseInt(season, 10);
     }
+    // 666TVF : sources françaises d'abord (trackers avec ta clé, YGG), puis les index publics
+    var tmdbNum = String(tmdbId || '').replace(/^tmdb:/i, '');
     var lists = [
+        await fromTrackers({ imdbId: ids.imdbId, tmdbId: /^\d+$/.test(tmdbNum) ? tmdbNum : null }, isTv, season, episode),
+        await fromYgg(ids.imdbId, isTv, season, episode),
         await fromStremThru(ids.imdbId, isTv, season, episode),
         await fromTorrentio(ids.imdbId, isTv, season, episode),
         await fromZilean(ids.imdbId, isTv, season, episode),
@@ -295,4 +380,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     });
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode };
