@@ -54,7 +54,7 @@ class ShieldTransferViewModel @Inject constructor(
         job = viewModelScope.launch {
             val pin = ShieldTransferCrypto.newPin()
             val bundle = withContext(Dispatchers.Default) {
-                ShieldTransferCrypto.encrypt(service.buildPayload(PRIVATE_SOURCES.map { it.scraperId }), pin)
+                ShieldTransferCrypto.encrypt(service.buildPayload(PRIVATE_SOURCES.map { it.scraperId }.distinct()), pin)
             }
             val started = runCatching {
                 ShieldTransferServer(bundle) {

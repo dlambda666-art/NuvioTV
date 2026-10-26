@@ -51,41 +51,42 @@ class PluginViewModel @Inject constructor(
     fun loadPrivateSources() {
         viewModelScope.launch {
             val hosts = PRIVATE_SOURCES.mapNotNull { source ->
-                val url = pluginDataStore.getScraperSettings(source.scraperId)[PRIVATE_SOURCE_URL_KEY] as? String
-                url?.takeIf { it.isNotBlank() }?.let { source.scraperId to privateSourceHost(it) }
+                val value = pluginDataStore.getScraperSettings(source.scraperId)[source.settingKey] as? String
+                value?.takeIf { it.isNotBlank() }?.let { source.rowId to if (source.isUrl) privateSourceHost(it) else "clé" }
             }.toMap()
             _uiState.update { it.copy(privateSourceHosts = hosts) }
         }
     }
 
-    private fun savePrivateSource(scraperId: String, raw: String) {
-        val label = PRIVATE_SOURCES.firstOrNull { it.scraperId == scraperId }?.label ?: scraperId
-        val url = normalizePrivateSourceUrl(raw)
-        if (url == null) {
-            _uiState.update { it.copy(errorMessage = "$label : adresse invalide (elle doit commencer par https://)") }
+    private fun savePrivateSource(rowId: String, raw: String) {
+        val source = PRIVATE_SOURCES.firstOrNull { it.rowId == rowId } ?: return
+        val label = source.label
+        val value = if (source.isUrl) normalizePrivateSourceUrl(raw) else raw.trim().takeIf { it.isNotBlank() && !it.contains(' ') }
+        if (value == null) {
+            _uiState.update { it.copy(errorMessage = if (source.isUrl) "$label : adresse invalide (elle doit commencer par https://)" else "$label : clé invalide") }
             return
         }
         viewModelScope.launch {
-            val current = pluginDataStore.getScraperSettings(scraperId)
-            pluginDataStore.setScraperSettings(scraperId, current + (PRIVATE_SOURCE_URL_KEY to url))
+            val current = pluginDataStore.getScraperSettings(source.scraperId)
+            pluginDataStore.setScraperSettings(source.scraperId, current + (source.settingKey to value))
             _uiState.update {
                 it.copy(
-                    privateSourceHosts = it.privateSourceHosts + (scraperId to privateSourceHost(url)),
+                    privateSourceHosts = it.privateSourceHosts + (rowId to if (source.isUrl) privateSourceHost(value) else "clé"),
                     successMessage = "$label enregistré sur cet appareil"
                 )
             }
         }
     }
 
-    private fun clearPrivateSource(scraperId: String) {
-        val label = PRIVATE_SOURCES.firstOrNull { it.scraperId == scraperId }?.label ?: scraperId
+    private fun clearPrivateSource(rowId: String) {
+        val source = PRIVATE_SOURCES.firstOrNull { it.rowId == rowId } ?: return
         viewModelScope.launch {
-            val current = pluginDataStore.getScraperSettings(scraperId)
-            pluginDataStore.setScraperSettings(scraperId, current - PRIVATE_SOURCE_URL_KEY)
+            val current = pluginDataStore.getScraperSettings(source.scraperId)
+            pluginDataStore.setScraperSettings(source.scraperId, current - source.settingKey)
             _uiState.update {
                 it.copy(
-                    privateSourceHosts = it.privateSourceHosts - scraperId,
-                    successMessage = "$label effacé"
+                    privateSourceHosts = it.privateSourceHosts - rowId,
+                    successMessage = "${source.label} effacé"
                 )
             }
         }

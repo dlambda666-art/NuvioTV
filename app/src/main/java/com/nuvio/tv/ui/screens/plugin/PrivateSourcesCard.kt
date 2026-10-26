@@ -50,13 +50,27 @@ import com.nuvio.tv.ui.theme.NuvioTheme
  * uniquement sur cet appareil, dans les réglages des plugins (non
  * synchronisés). Les plugins les lisent via SCRAPER_SETTINGS.url.
  */
-data class PrivateSource(val scraperId: String, val label: String)
+data class PrivateSource(
+    val scraperId: String,
+    val label: String,
+    /** Réglage du plugin où ranger la valeur (« url » pour une adresse d'addon). */
+    val settingKey: String = PRIVATE_SOURCE_URL_KEY,
+    /** false : clé API / passkey (pas une adresse). */
+    val isUrl: Boolean = true
+) {
+    /** Identifiant de la ligne (plusieurs lignes peuvent viser le même plugin). */
+    val rowId: String get() = if (settingKey == PRIVATE_SOURCE_URL_KEY) scraperId else "$scraperId:$settingKey"
+}
 
 val PRIVATE_SOURCES = listOf(
     PrivateSource("lumio666", "Lumio"),
     PrivateSource("frenchio666", "Frenchio"),
     PrivateSource("streamfusion666", "StreamFusion"),
-    PrivateSource("wastream666", "Wastream")
+    PrivateSource("wastream666", "Wastream"),
+    // 666TVF : trackers français lus directement par Comet666 (repris de Frenchio)
+    PrivateSource("comet666", "C411 · clé API", settingKey = "c411", isUrl = false),
+    PrivateSource("comet666", "Tr4ker · clé API", settingKey = "tr4ker", isUrl = false),
+    PrivateSource("comet666", "Torr9 · passkey", settingKey = "torr9", isUrl = false)
 )
 
 const val PRIVATE_SOURCE_URL_KEY = "url"
@@ -97,7 +111,7 @@ internal fun PrivateSourcesCard(
             )
             Spacer(modifier = Modifier.height(NuvioTheme.spacing.xs))
             Text(
-                text = "Colle l'adresse de config (ou du manifest) de chaque addon. " +
+                text = "Colle l'adresse de config (ou du manifest) de chaque addon, et tes clés de trackers (C411, Tr4ker, Torr9) si tu en as. " +
                     "Tout reste sur cet appareil uniquement et n'est jamais affiché.",
                 style = MaterialTheme.typography.bodySmall,
                 color = NuvioTheme.colors.TextSecondary
@@ -107,9 +121,9 @@ internal fun PrivateSourcesCard(
                 PRIVATE_SOURCES.forEach { source ->
                     PrivateSourceRow(
                         source = source,
-                        savedHost = savedHosts[source.scraperId],
-                        onSave = { onSave(source.scraperId, it) },
-                        onClear = { onClear(source.scraperId) }
+                        savedHost = savedHosts[source.rowId],
+                        onSave = { onSave(source.rowId, it) },
+                        onClear = { onClear(source.rowId) }
                     )
                 }
             }
