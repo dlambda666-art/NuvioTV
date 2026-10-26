@@ -85,7 +85,7 @@ class CalendarRepository @Inject constructor(
     private val vfSemaphore = Semaphore(2)
 
     private val bellsKey = stringSetPreferencesKey("calendar_bells_666")
-    private val vfFoundKey = stringSetPreferencesKey("calendar_vf_found_666_v2") // v2 : VF sûre seulement (on revérifie tout)
+    private val vfFoundKey = stringSetPreferencesKey("calendar_vf_found_666_v3") // v3 : VF sûre seulement, épisode vu jusqu'au bout (on revérifie tout)
     private val notifiedKey = stringSetPreferencesKey("calendar_notified_666")
     private val lastRefreshKey = stringPreferencesKey("calendar_last_refresh_666")
 
