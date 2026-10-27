@@ -255,6 +255,7 @@ function releaseMatches(release, titles, year, isTv) {
 // Le relais refuse les serveurs : c'est la Shield qui s'y connecte (wsRequest, 666TVF ≥ 1.0.64).
 // Frank donne les titres (FR + VO) et l'année ; sans wsRequest, Frank tente lui-même.
 var YGG_RELAY = 'wss://u2p.anhkagi.net/';
+var YGG_DIAG = '';
 function yggEvents(messages) {
     var out = [];
     (messages || []).forEach(function (m) {
@@ -277,6 +278,7 @@ function fixLatin(t) {
 }
 async function fromYgg(imdbId, isTv, season, episode) {
     var direct = typeof wsRequest === 'function';
+    YGG_DIAG = direct ? '' : '666TVF trop ancien (≥ 1.0.64 pour YGG)';
     var data = await getJson(FRANK_URL + '/ygg/' + (isTv ? 'series' : 'movie') + '/' + imdbId +
         '?' + (isTv ? 'season=' + season + '&episode=' + episode + '&' : '') + (direct ? 'norelay=1' : ''));
     var titles = (data && data.titles) || [];
@@ -290,6 +292,7 @@ async function fromYgg(imdbId, isTv, season, episode) {
                 until: '"EOSE"', timeout: 4000
             });
             items = items.concat(yggEvents(r && r.messages));
+            if (r && r.error) YGG_DIAG = 'relais : ' + String(r.error).slice(0, 60);
         });
     }
     var out = [], seen = {};
@@ -399,7 +402,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         if (q) return q;
         return (b.bytes || 0) - (a.bytes || 0);
     });
-    return found.slice(0, MAX_RESULTS).map(function (t) {
+    var shown = found.slice(0, MAX_RESULTS).map(function (t) {
         var line2 = ['🇫🇷 ' + t.lang].concat(extras(t.text)).join(' · ');
         var line3 = [formatSize(t.bytes), t.seeders != null ? '👤 ' + t.seeders : '', t.source].filter(Boolean).join(' · ');
         return {
@@ -414,6 +417,22 @@ async function getStreams(tmdbId, mediaType, season, episode) {
             type: 'torrent'
         };
     });
+    // Bouton « Tester » (Matrix) : d'où viennent les liens (gardés / trouvés), en 1re ligne.
+    if (String(tmdbId).replace(/^tmdb:/i, '') === '603') {
+        var raw = {}, kept = {};
+        lists.forEach(function (l) { l.forEach(function (t) { var k = String(t.source).split(' ')[0]; raw[k] = (raw[k] || 0) + 1; }); });
+        found.forEach(function (t) { var k = String(t.source).split(' ')[0]; kept[k] = (kept[k] || 0) + 1; });
+        var parts = ['C411', 'Tr4ker', 'Torr9', 'YGG', 'StremThru', 'Torrentio', 'DMM', 'TorrentsDB'].filter(function (k) { return raw[k] || (k === 'YGG') || (k === 'C411' && setting('c411')); })
+            .map(function (k) { return k + ' ' + (kept[k] || 0) + '/' + (raw[k] || 0); });
+        Object.keys(raw).forEach(function (k) { if (parts.join(' ').indexOf(k) < 0) parts.push(k + ' ' + (kept[k] || 0) + '/' + raw[k]); });
+        var diag = [{ title: 'Sources (VF gardés/trouvés) : ' + parts.slice(0, 4).join(' · ') }];
+        if (parts.length > 4) diag.push({ title: '… ' + parts.slice(4).join(' · ') });
+        if (YGG_DIAG) diag.push({ title: 'YGG : ' + YGG_DIAG });
+        diag.reverse().forEach(function (d) {
+            shown.unshift({ name: 'Comet666 diagnostic', title: d.title.slice(0, 75), url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct' });
+        });
+    }
+    return shown;
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode };
