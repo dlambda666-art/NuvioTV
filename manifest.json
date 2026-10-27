@@ -1,14 +1,14 @@
 {
   "name": "Les 5 cavaliers de l'apocalypse",
-  "version": "1.2.22",
+  "version": "1.2.23",
   "description": "Plugins perso de 666TVF",
   "author": "Lambda666",
   "scrapers": [
     {
       "id": "comet666",
       "name": "Comet666",
-      "description": "Torrents en VF, lus via TorBox/AllDebrid. Sources françaises : YGG (sans compte) et tes trackers C411 / Tr4ker / Torr9 (clés dans Plugins → « mes sources »), puis StremThru, Torrentio, Zilean, TorrentsDB. Jamais de P2P.",
-      "version": "1.1.3",
+      "description": "Torrents en VF, lus via TorBox/AllDebrid. Tes trackers C411 / Tr4ker / Torr9 (clés dans Plugins → « mes sources »), puis StremThru, Torrentio, Zilean, TorrentsDB. Jamais de P2P.",
+      "version": "1.1.4",
       "filename": "comet666.js",
       "supportedTypes": [
         "movie",
