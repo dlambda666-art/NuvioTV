@@ -186,14 +186,28 @@ const cases = [
         const lines = out.map(x => x.title);
         const has = k => lines.some(t => t.includes(k));
         const keyHidden = !out.some(x => JSON.stringify(x).includes('CLE'));
-        if (!has('C411') || has('Resurrections') || !keyHidden || !urls.some(u => u.includes('apikey=CLE'))) {
+        if (!has('C411') || !has('· YGG') || has('Resurrections') || !keyHidden || !urls.some(u => u.includes('apikey=CLE'))) {
             fails++; console.log('✗ Sources françaises : ' + lines.map(t => t.split('\n')[0] + ' / ' + (t.split('\n')[2] || '')).join(' | '));
-        } else console.log('✓ Sources françaises : C411 (clé jamais affichée)');
+        } else console.log('✓ Sources françaises : C411 (clé jamais affichée) + YGG, homonyme Resurrections écarté');
         global.SCRAPER_SETTINGS = {};
         urls.length = 0;
         await comet.getStreams('tt0133093', 'movie');
         if (urls.some(u => u.includes('c411.org'))) { fails++; console.log('✗ C411 interrogé sans clé'); }
         else console.log('✓ Sans clé, C411 n\'est pas interrogé');
+        // La Shield interroge le relais YGG elle-même (wsRequest)
+        global.SCRAPER_SETTINGS = {};
+        global.wsRequest = (url, o) => ({ messages: [
+            JSON.stringify(['EVENT', 'x', { tags: [['title', 'The.Matrix.1999.MULTi.VFF.2160p-QTZ'], ['x', 'dddddddddddddddddddddddddddddddddddddddd'], ['size', '7'], ['l', 'u2p.seed:3']] }]),
+            JSON.stringify(['EOSE', 'x'])
+        ] });
+        global.fetch = async u => {
+            u = String(u);
+            if (u.includes('/ygg/movie/')) return { ok: true, status: 200, json: async () => ({ titles: ['Matrix', 'The Matrix'], year: 1999, queries: ['The Matrix 1999'], items: [] }), text: async () => '' };
+            return { ok: false, status: 404, text: async () => '', json: async () => null };
+        };
+        const viaShield = await comet.getStreams('tt0133093', 'movie');
+        if (!viaShield.some(x => x.title.includes('· YGG'))) { fails++; console.log('✗ YGG via la Shield (wsRequest) : rien'); }
+        else console.log('✓ YGG interrogé par la Shield elle-même (le relais refuse les serveurs)');
         delete global.wsRequest;
         global.fetch = saved.fetch; global.SCRAPER_SETTINGS = saved.settings;
     }
