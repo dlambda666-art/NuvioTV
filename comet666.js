@@ -287,7 +287,8 @@ async function fromYgg(imdbId, isTv, season, episode) {
     if (direct) {
         ((data && data.queries) || []).forEach(function (q) {
             var r = wsRequest(YGG_RELAY, {
-                headers: { Origin: 'https://www.ygg.re' },
+                // mêmes en-têtes que Frenchio (le relais refuse les clients qui ne ressemblent pas à un navigateur)
+                headers: { Origin: 'https://www.ygg.re', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
                 send: JSON.stringify(['REQ', 'comet666', { kinds: [2003], search: q, limit: 50 }]),
                 until: '"EOSE"', timeout: 4000
             });
