@@ -787,7 +787,9 @@ internal fun PlayerRuntimeController.switchToSourceStream(
                 _uiState.update {
                     it.copy(
                         isLoadingSourceStreams = false,
-                        sourceStreamsError = context.getString(com.nuvio.tv.R.string.player_stream_error_invalid_url)
+                        sourceStreamsError = context.getString(com.nuvio.tv.R.string.player_stream_error_invalid_url),
+                        // 666TVF : le débrideur n'a pas pu préparer ce torrent → lien suivant
+                        error = DEBRID_RESOLVE_FAILED_666
                     )
                 }
             }

@@ -193,7 +193,7 @@ class CalendarRepository @Inject constructor(
     /**
      * L'épisode est-il dispo en VF ?
      * 1. Déjà vu dans 666TV → oui (on ne regarde que de la VF).
-     * 2. Sinon on demande aux plugins 666 dans l'ordre (StreamFusion, Frenchio, Lumio,
+     * 2. Sinon on demande aux plugins 666 dans l'ordre choisi (Outils 666, Comet666 d'abord par défaut),
      *    Wastream, puis Comet666) et on s'arrête au premier qui trouve un lien VF prêt.
      */
     suspend fun checkVf(episode: CalendarEpisode): VfState = withContext(Dispatchers.IO) {
@@ -295,7 +295,7 @@ class CalendarRepository @Inject constructor(
     private companion object {
         const val TAG = "Calendar666"
         const val FEATURE = "player_settings"
-        val VF_CHECKERS = listOf("streamfusion666", "frenchio666", "lumio666", "wastream666", "comet666")
+        val VF_CHECKERS: List<String> get() = com.nuvio.tv.core.tools.PluginOrder666.order.map { it.lowercase() }
         const val MAX_SERIES = 120
         const val MAX_REMEMBERED = 400
         const val META_TTL_MS = 6L * 60 * 60 * 1000

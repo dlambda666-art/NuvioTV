@@ -64,13 +64,11 @@ data class PrivateSource(
 
 val PRIVATE_SOURCES = listOf(
     PrivateSource("lumio666", "Lumio"),
-    PrivateSource("frenchio666", "Frenchio"),
     PrivateSource("streamfusion666", "StreamFusion"),
     PrivateSource("wastream666", "Wastream"),
     // 666TVF : trackers français lus directement par Comet666 (repris de Frenchio)
     PrivateSource("comet666", "C411 · clé API", settingKey = "c411", isUrl = false),
-    PrivateSource("comet666", "Tr4ker · clé API", settingKey = "tr4ker", isUrl = false),
-    PrivateSource("comet666", "Torr9 · passkey", settingKey = "torr9", isUrl = false)
+    PrivateSource("comet666", "Tr4ker · clé API", settingKey = "tr4ker", isUrl = false)   // Torr9 a fusionné avec Tr4ker
 )
 
 const val PRIVATE_SOURCE_URL_KEY = "url"
@@ -111,7 +109,7 @@ internal fun PrivateSourcesCard(
             )
             Spacer(modifier = Modifier.height(NuvioTheme.spacing.xs))
             Text(
-                text = "Colle l'adresse de config (ou du manifest) de chaque addon, et tes clés de trackers (C411, Tr4ker, Torr9) si tu en as. " +
+                text = "Colle l'adresse de config (ou du manifest) de chaque addon, et tes clés de trackers (C411, Tr4ker) si tu en as. " +
                     "Tout reste sur cet appareil uniquement et n'est jamais affiché.",
                 style = MaterialTheme.typography.bodySmall,
                 color = NuvioTheme.colors.TextSecondary

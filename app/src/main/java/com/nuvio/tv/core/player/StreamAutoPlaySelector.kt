@@ -9,11 +9,11 @@ import com.nuvio.tv.domain.model.StreamDebridCacheState
 
 object StreamAutoPlaySelector {
     /**
-     * 666TV : ordre des sources dans « Tous » et dans les pastilles :
-     * StreamFusion, puis Frenchio, Lumio, Wastream, et Comet666 en dernier (secours).
+     * 666TVF : ordre des sources dans « Tous » et dans les pastilles : celui choisi
+     * dans Outils 666 → « Ordre des cavaliers » (par défaut Comet666 d'abord).
      * Les autres sources gardent leur ordre, après celles-ci.
      */
-    val PLUGIN_666_ORDER = listOf("StreamFusion666", "Frenchio666", "Lumio666", "Wastream666", "Comet666")
+    val PLUGIN_666_ORDER: List<String> get() = com.nuvio.tv.core.tools.PluginOrder666.order
 
     fun plugin666Rank(name: String): Int =
         PLUGIN_666_ORDER.indexOfFirst { it.equals(name.trim(), ignoreCase = true) }

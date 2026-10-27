@@ -147,6 +147,8 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
     var busy by remember { mutableStateOf(false) }
     var menuOrder by remember { mutableStateOf(com.nuvio.tv.core.tools.MenuOrder666.fullOrder()) }
     var movingRoute by remember { mutableStateOf<String?>(null) }
+    var pluginOrder by remember { mutableStateOf(com.nuvio.tv.core.tools.PluginOrder666.order) }
+    var movingPlugin by remember { mutableStateOf<String?>(null) }
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         viewModel.runChecks()
@@ -300,6 +302,59 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     ) {
                         Text(
                             (if (moving) "⇅  " else "${index + 1}.  ") + com.nuvio.tv.core.tools.MenuOrder666.labelOf(route),
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            // ---------- Ordre des cavaliers ----------
+            item { Section("Ordre des cavaliers", "Ordre de la liste des flux, de « Lecture VF » et du lien suivant. Appui long sur OK, flèches haut/bas, OK pour poser") }
+            pluginOrder.forEachIndexed { index, name ->
+                item(key = "plugin_$name") {
+                    val moving = movingPlugin == name
+                    Surface(
+                        onClick = { },
+                        onLongClick = { movingPlugin = name },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onPreviewKeyEvent { ev ->
+                                if (!moving) return@onPreviewKeyEvent false
+                                if (ev.nativeKeyEvent.action != android.view.KeyEvent.ACTION_DOWN) return@onPreviewKeyEvent true
+                                if (ev.nativeKeyEvent.repeatCount > 0) return@onPreviewKeyEvent true
+                                val delta = when (ev.nativeKeyEvent.keyCode) {
+                                    android.view.KeyEvent.KEYCODE_DPAD_UP -> -1
+                                    android.view.KeyEvent.KEYCODE_DPAD_DOWN -> 1
+                                    else -> 0
+                                }
+                                if (delta != 0) {
+                                    val target = (index + delta).coerceIn(0, pluginOrder.lastIndex)
+                                    if (target != index) {
+                                        val list = pluginOrder.toMutableList().apply { add(target, removeAt(index)) }
+                                        pluginOrder = list
+                                        com.nuvio.tv.core.tools.PluginOrder666.save(context, list)
+                                    }
+                                    return@onPreviewKeyEvent true
+                                }
+                                when (ev.nativeKeyEvent.keyCode) {
+                                    android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_ENTER,
+                                    android.view.KeyEvent.KEYCODE_NUMPAD_ENTER, android.view.KeyEvent.KEYCODE_BACK -> movingPlugin = null
+                                }
+                                true
+                            },
+                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
+                        colors = ClickableSurfaceDefaults.colors(
+                            containerColor = Color(0x33000000),
+                            focusedContainerColor = if (moving) Color(0xFF1F6F2E) else Blood,
+                            contentColor = com.nuvio.tv.ui.components.Font666.Green,
+                            focusedContentColor = Color.White
+                        ),
+                        scale = ClickableSurfaceDefaults.scale(focusedScale = if (moving) 1.04f else 1.01f)
+                    ) {
+                        Text(
+                            (if (moving) "⇅  " else "${index + 1}.  ") + "🐎 " + com.nuvio.tv.core.tools.PluginOrder666.labelOf(name),
                             modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold

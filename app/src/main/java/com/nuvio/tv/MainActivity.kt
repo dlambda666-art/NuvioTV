@@ -371,6 +371,7 @@ open class MainActivity : ComponentActivity() {
         com.nuvio.tv.core.tools.Clock666.init(this)
         com.nuvio.tv.core.tools.PhoneLink666.init(this)
         com.nuvio.tv.core.tools.MenuOrder666.init(this)
+        com.nuvio.tv.core.tools.PluginOrder666.init(this)
         run {
             val appCtx = applicationContext
             Thread { com.nuvio.tv.core.tools.Backup666.autoBackupIfDue(appCtx) }.apply { priority = Thread.MIN_PRIORITY }.start()

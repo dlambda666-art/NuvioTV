@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
  *
  * Quand la lecture échoue pour de bon (les nouvelles tentatives du lecteur sont épuisées
  * et le message d'erreur va s'afficher), on lance à la place le flux prêt suivant de la
- * liste, dans l'ordre de 666TV (StreamFusion, Frenchio, Lumio, Wastream, Comet).
+ * liste, dans l'ordre des cavaliers choisi dans Outils 666 (Comet666 d'abord par défaut).
  * Idée reprise de Nuvio Arc (ysosrs123/NuvioTV-Fork, GPL-3.0), réécrite pour 666TV.
  *
  * - Jamais deux fois le même lien pour un même film / épisode ; 6 essais au maximum.
@@ -40,8 +40,12 @@ internal object SourceFailoverRules {
             null, StreamDebridCacheState.CACHED -> Unit
             else -> return false
         }
-        // Seulement des liens déjà prêts à lire (http/https) : un lien debrid encore à
-        // préparer pourrait laisser le lecteur bloqué en chargement s'il échoue.
+        // 666TVF : un torrent Comet666 confirmé en cache chez le débrideur est aussi un bon
+        // candidat (Comet666 passe en tête) ; s'il échoue à la préparation, on enchaîne.
+        if (stream.getStreamUrl().isNullOrBlank() && (stream.infoHash ?: stream.clientResolve?.infoHash) != null) {
+            return stream.debridCacheStatus?.state == StreamDebridCacheState.CACHED
+        }
+        // Sinon, seulement des liens déjà prêts à lire (http/https).
         val url = stream.getStreamUrl()?.trim() ?: return false
         return url.startsWith("http://", ignoreCase = true) || url.startsWith("https://", ignoreCase = true)
     }
@@ -80,6 +84,9 @@ private fun PlayerRuntimeController.currentSourceRequestKey(): String? {
 
 /** 666TV : message quand le fichier n'a aucune piste française (déclenche le lien suivant). */
 internal const val NO_FRENCH_AUDIO_666 = "Aucune piste audio française dans ce fichier"
+
+/** 666TVF : torrent que le débrideur n'a pas pu préparer (déclenche le lien suivant). */
+internal const val DEBRID_RESOLVE_FAILED_666 = "Le débrideur n'a pas pu préparer ce lien"
 
 private fun TrackInfo.isFrench666(): Boolean {
     val lang = language?.lowercase()?.trim().orEmpty()
