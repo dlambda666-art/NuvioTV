@@ -368,7 +368,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     var tmdbNum = String(tmdbId || '').replace(/^tmdb:/i, '');
     var lists = [
         await fromTrackers({ imdbId: ids.imdbId, tmdbId: /^\d+$/.test(tmdbNum) ? tmdbNum : null }, isTv, season, episode),
-        await fromYgg(ids.imdbId, isTv, season, episode),
+        // YGG retiré (27/10) : le relais public répond 403 même depuis la Shield.
         await fromStremThru(ids.imdbId, isTv, season, episode),
         await fromTorrentio(ids.imdbId, isTv, season, episode),
         await fromZilean(ids.imdbId, isTv, season, episode),
@@ -423,12 +423,11 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         var raw = {}, kept = {};
         lists.forEach(function (l) { l.forEach(function (t) { var k = String(t.source).split(' ')[0]; raw[k] = (raw[k] || 0) + 1; }); });
         found.forEach(function (t) { var k = String(t.source).split(' ')[0]; kept[k] = (kept[k] || 0) + 1; });
-        var parts = ['C411', 'Tr4ker', 'Torr9', 'YGG', 'StremThru', 'Torrentio', 'DMM', 'TorrentsDB'].filter(function (k) { return raw[k] || (k === 'YGG') || (k === 'C411' && setting('c411')); })
+        var parts = ['C411', 'Tr4ker', 'Torr9', 'YGG', 'StremThru', 'Torrentio', 'DMM', 'TorrentsDB'].filter(function (k) { return raw[k] || (k === 'C411' && setting('c411')); })
             .map(function (k) { return k + ' ' + (kept[k] || 0) + '/' + (raw[k] || 0); });
         Object.keys(raw).forEach(function (k) { if (parts.join(' ').indexOf(k) < 0) parts.push(k + ' ' + (kept[k] || 0) + '/' + raw[k]); });
         var diag = [{ title: 'Sources (VF gardés/trouvés) : ' + parts.slice(0, 4).join(' · ') }];
         if (parts.length > 4) diag.push({ title: '… ' + parts.slice(4).join(' · ') });
-        if (YGG_DIAG) diag.push({ title: 'YGG : ' + YGG_DIAG });
         diag.reverse().forEach(function (d) {
             shown.unshift({ name: 'Comet666 diagnostic', title: d.title.slice(0, 75), url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct' });
         });
