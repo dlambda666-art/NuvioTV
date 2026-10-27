@@ -211,8 +211,7 @@ function setting(name) {
 // Trackers français avec ta clé (collée sur la Shield, jamais dans ce fichier)
 var TRACKERS = [
     { key: 'c411', label: 'C411', base: 'https://c411.org/api' },
-    { key: 'tr4ker', label: 'Tr4ker', base: 'https://tr4ker.net/torznab' },
-    { key: 'torr9', label: 'Torr9', base: 'https://api.torr9.net/api/v1/torznab' }
+    { key: 'tr4ker', label: 'Tr4ker', base: 'https://tr4ker.net/torznab' }   // Torr9 a fusionné avec Tr4ker
 ];
 
 async function fromTrackers(ids, isTv, season, episode) {
@@ -423,7 +422,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         var raw = {}, kept = {};
         lists.forEach(function (l) { l.forEach(function (t) { var k = String(t.source).split(' ')[0]; raw[k] = (raw[k] || 0) + 1; }); });
         found.forEach(function (t) { var k = String(t.source).split(' ')[0]; kept[k] = (kept[k] || 0) + 1; });
-        var parts = ['C411', 'Tr4ker', 'Torr9', 'YGG', 'StremThru', 'Torrentio', 'DMM', 'TorrentsDB'].filter(function (k) { return raw[k] || (k === 'C411' && setting('c411')); })
+        var parts = ['C411', 'Tr4ker', 'StremThru', 'Torrentio', 'DMM', 'TorrentsDB'].filter(function (k) { return raw[k] || (k === 'C411' && setting('c411')) || (k === 'Tr4ker' && setting('tr4ker')); })
             .map(function (k) { return k + ' ' + (kept[k] || 0) + '/' + (raw[k] || 0); });
         Object.keys(raw).forEach(function (k) { if (parts.join(' ').indexOf(k) < 0) parts.push(k + ' ' + (kept[k] || 0) + '/' + raw[k]); });
         var diag = [{ title: 'Sources (VF gardés/trouvés) : ' + parts.slice(0, 4).join(' · ') }];
