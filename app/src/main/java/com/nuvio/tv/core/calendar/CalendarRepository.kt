@@ -73,7 +73,9 @@ class CalendarRepository @Inject constructor(
     private val tmdbService: TmdbService,
     private val pluginManager: PluginManager,
     private val factory: ProfileDataStoreFactory,
-    private val profileManager: ProfileManager
+    private val profileManager: ProfileManager,
+    private val localDebridService: com.nuvio.tv.core.debrid.LocalDebridService,
+    private val debridSettingsDataStore: com.nuvio.tv.data.local.DebridSettingsDataStore
 ) {
     private data class SeriesSeed(val id: String, val name: String, val poster: String?, val addonBaseUrl: String?)
 
@@ -231,13 +233,19 @@ class CalendarRepository @Inject constructor(
                     val results = withTimeoutOrNull(30_000) {
                         pluginManager.executeScraper(scraper, requestId, "tv", pluginSeason, pluginEpisode)
                     }.orEmpty()
-                    results.any { result ->
+                    val sure = results.filter { result ->
                         (result.url.isNotBlank() || !result.infoHash.isNullOrBlank()) &&
                             result.name?.contains("diagnostic", ignoreCase = true) != true &&
                             // 666TVF : un « MULTi (VF ?) » ne prouve rien (AHS S13 : c'était du polonais).
                             // Le calendrier n'annonce que de la VF sûre.
                             !result.title.contains("VF ?") && !result.title.contains("VF?")
                     }
+                    // Lien prêt (http) : VF dispo. Torrent (Comet666) : seulement s'il est en cache
+                    // chez le débrideur, sinon il ne se lancerait pas.
+                    if (sure.any { it.url.startsWith("http", ignoreCase = true) }) true
+                    else anyCached666(sure.mapNotNull { r ->
+                        r.infoHash?.lowercase() ?: Regex("btih:([0-9a-fA-F]{40})").find(r.url)?.groupValues?.get(1)?.lowercase()
+                    })
                 }.onFailure { Log.d(TAG, "VF check ${scraper.id} failed for ${episode.key}: ${it.message}") }
                     .getOrDefault(false)
             }
@@ -249,6 +257,13 @@ class CalendarRepository @Inject constructor(
             vfNegativeCache[episode.key] = System.currentTimeMillis()
             VfState.NOT_YET
         }
+    }
+
+    private suspend fun anyCached666(hashes: List<String>): Boolean {
+        if (hashes.isEmpty()) return false
+        val account = runCatching { debridSettingsDataStore.settings.first().activeResolverCredential }.getOrNull() ?: return false
+        val cached = runCatching { localDebridService.checkCached(account, hashes.distinct().take(40)) }.getOrNull() ?: return false
+        return cached.isNotEmpty()
     }
 
     private suspend fun isWatched(episode: CalendarEpisode): Boolean = runCatching {
