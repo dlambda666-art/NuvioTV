@@ -468,6 +468,17 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 )
             }
             item {
+                var voice by remember { mutableStateOf(com.nuvio.tv.core.dream.Dream666Data.voiceEnabled(context)) }
+                ActionRow(
+                    "Voix des spectres (écran de veille) : " + if (voice) "activée" else "coupée",
+                    "Une voix d'outre-tombe quand le grand spectre passe · volume bas, jamais entre 23 h et 8 h",
+                    onClick = {
+                        voice = !voice
+                        com.nuvio.tv.core.dream.Dream666Data.setVoiceEnabled(context, voice)
+                    }
+                )
+            }
+            item {
                 ActionRow(
                     "Pierres tombales : " + if (com.nuvio.tv.ui.components.Tomb666.enabled) "activées" else "désactivées",
                     "Affiches dans les tombes, fond cimetière",

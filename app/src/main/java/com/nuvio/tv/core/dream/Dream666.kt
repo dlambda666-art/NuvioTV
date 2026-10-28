@@ -48,6 +48,20 @@ object Dream666Data {
 
     fun label(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("label", "").orEmpty()
+
+    /** 666TVF : voix d'outre-tombe quand le grand spectre passe (Outils 666). */
+    fun voiceEnabled(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("voice", true)
+
+    fun setVoiceEnabled(context: Context, value: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("voice", value).apply()
+    }
+
+    const val VOICE_GAP_MS = 3 * 60_000L
+
+    /** Règle (testée) : jamais la nuit (23 h → 8 h), et pas plus d'une fois toutes les 3 minutes. */
+    fun voiceAllowed(hour: Int, now: Long, lastAt: Long): Boolean =
+        hour in 8..22 && (lastAt == 0L || now - lastAt >= VOICE_GAP_MS)
 }
 
 /** 666TV : écran de veille « cimetière » (à choisir dans Paramètres Shield → Écran de veille). */
@@ -131,6 +145,7 @@ private class Dream666View(context: Context) : View(context) {
         ghostCount++
         // Un passage sur trois : le grand spectre qui fonce vers nous.
         val near = ghostCount % 3 == 0 && ghosts.none { it.near }
+        if (near) maybeVoice(now)
         ghosts += if (near) {
             Ghost(0, true, now, 4_200L + rng.nextLong(1_200L), true, 0.32f, 0f, rng.nextFloat() * 6f)
         } else {
@@ -139,6 +154,23 @@ private class Dream666View(context: Context) : View(context) {
                 sprite, false, now, 5_000L + rng.nextLong(2_500L), rng.nextBoolean(),
                 0.22f + rng.nextFloat() * 0.25f, h * (0.14f + rng.nextFloat() * 0.14f), rng.nextFloat() * 6f
             )
+        }
+    }
+
+    // 666TVF : une voix d'outre-tombe avec le grand spectre, de temps en temps, à volume bas.
+    private var lastVoiceAt = 0L
+    private val voiceOn = Dream666Data.voiceEnabled(context)
+    private fun maybeVoice(now: Long) {
+        if (!voiceOn) return
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        if (!Dream666Data.voiceAllowed(hour, now, lastVoiceAt)) return
+        lastVoiceAt = now
+        runCatching {
+            android.media.MediaPlayer.create(context, R.raw.voix_spectre_666)?.apply {
+                setVolume(0.45f, 0.45f)
+                setOnCompletionListener { it.release() }
+                start()
+            }
         }
     }
 
