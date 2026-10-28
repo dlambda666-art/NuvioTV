@@ -158,6 +158,36 @@ function matchesEpisode(title, season, episode) {
     return /\b(INTEGRALE|COMPLETE|COMPLETA|INT[ÉE]GRALE)\b/i.test(t);
 }
 
+// 666TVF : date de diffusion de l'épisode (TMDB) — émissions datées (WWE Raw, talk-shows…).
+// Comet666 ne l'avait pas : il a lancé un vieux Raw le 27/10 (cas piège).
+async function episodeAirDate(tmdbId, season, episode) {
+    if (typeof TMDB_API_KEY === 'undefined' || !TMDB_API_KEY) return null;
+    var id = String(tmdbId || '').replace(/^tmdb:/i, '');
+    var key = encodeURIComponent(TMDB_API_KEY);
+    if (/^tt\d+$/i.test(id)) {
+        var f = await getJson('https://api.themoviedb.org/3/find/' + id + '?external_source=imdb_id&api_key=' + key);
+        id = f && f.tv_results && f.tv_results[0] ? String(f.tv_results[0].id) : '';
+    }
+    if (!/^\d+$/.test(id)) return null;
+    var ep = await getJson('https://api.themoviedb.org/3/tv/' + id + '/season/' + season + '/episode/' + episode + '?api_key=' + key);
+    return ep && ep.air_date ? ep.air_date : null;
+}
+
+// Vrai si le nom porte une date (2026.10.19) qui n'est pas celle de l'épisode (± 1 jour 1/2).
+function dateMismatch(text, airDate) {
+    if (!airDate) return false;
+    var target = Date.parse(airDate + 'T00:00:00Z');
+    if (isNaN(target)) return false;
+    var re = /\b(20\d\d)[ ._-](\d\d)[ ._-](\d\d)\b/g, m, any = false;
+    while ((m = re.exec(String(text)))) {
+        var d = Date.parse(m[1] + '-' + m[2] + '-' + m[3] + 'T00:00:00Z');
+        if (isNaN(d)) continue;
+        any = true;
+        if (Math.abs(d - target) <= 36 * 3600 * 1000) return false;
+    }
+    return any;
+}
+
 async function getText(url) {
     try {
         var res = await fetch(url, {});
@@ -373,10 +403,13 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         await fromZilean(ids.imdbId, isTv, season, episode),
         await fromTorrentsDb(ids.imdbId, isTv, season, episode)
     ];
+    var airDate = isTv ? await episodeAirDate(tmdbId, season, episode) : null;
     var seen = {};
     var seenNames = {};
     lists.forEach(function (list) {
         list.forEach(function (t) {
+            // fichier daté d'un autre jour (vieux WWE Raw) : jamais
+            if (isTv && dateMismatch(String(t.release) + ' ' + String(t.text || ''), airDate)) return;
             // même release publiée deux fois (avec ou sans « .mkv ») : une seule ligne
             var key = String(t.release).toLowerCase().replace(/[ ._-]*mkv$/, '').replace(/[^a-z0-9]+/g, ' ').trim();
             if (seen[t.hash] || seenNames[key]) return;
@@ -434,4 +467,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch };

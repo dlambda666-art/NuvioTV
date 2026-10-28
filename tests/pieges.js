@@ -197,6 +197,37 @@ const cases = [
         delete global.wsRequest;
         global.fetch = saved.fetch; global.SCRAPER_SETTINGS = saved.settings;
     }
+    // WWE Raw (27/10) : Comet666 avait lancé un vieux Raw (fichier daté d'un autre jour)
+    {
+        const dm = comet._dateMismatch;
+        const cases = [
+            ['WWE.Monday.Night.Raw.2026.10.19.FRENCH.1080p', '2026-10-26', true],
+            ['WWE.Monday.Night.Raw.2026.10.26.FRENCH.1080p', '2026-10-26', false],
+            ['WWE.Monday.Night.Raw.2026.10.27.FRENCH.1080p', '2026-10-26', false],
+            ['Show.S01E05.FRENCH.1080p', '2026-10-26', false]
+        ];
+        for (const [t, d, want] of cases) {
+            if (dm(t, d) !== want) { fails++; console.log(`✗ Date ${t} / ${d} → ${!want}`); }
+            else console.log(`✓ Date ${t} / ${d}`);
+        }
+        const saved = { fetch: global.fetch, key: global.TMDB_API_KEY, settings: global.SCRAPER_SETTINGS };
+        global.TMDB_API_KEY = 'K'; global.SCRAPER_SETTINGS = {};
+        const json = o => ({ ok: true, json: async () => o, text: async () => JSON.stringify(o) });
+        global.fetch = async u => {
+            if (u.includes('/find/')) return json({ tv_results: [{ id: 4656 }] });
+            if (u.includes('/episode/')) return json({ air_date: '2026-10-26' });
+            if (u.includes('torrentio')) return json({ streams: [
+                { infoHash: 'a'.repeat(40), title: 'WWE.Monday.Night.Raw.2026.10.19.FRENCH.1080p.WEB.h264\n👤 50 💾 3 GB' },
+                { infoHash: 'b'.repeat(40), title: 'WWE.Monday.Night.Raw.2026.10.26.FRENCH.1080p.WEB.h264\n👤 20 💾 3 GB' }
+            ] });
+            return { ok: false, json: async () => null, text: async () => '' };
+        };
+        const out = await comet.getStreams('tt0185103', 'tv', 2026, 43);
+        const titles = out.map(x => x.title.split('\n')[0]).join(' | ');
+        if (titles.includes('2026.10.19') || !titles.includes('2026.10.26')) { fails++; console.log('✗ Raw : vieux Raw gardé → ' + titles); }
+        else console.log('✓ Raw : seul le Raw du bon jour est gardé');
+        global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();
