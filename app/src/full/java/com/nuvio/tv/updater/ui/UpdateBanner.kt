@@ -69,7 +69,6 @@ internal fun UpdateBanner(
     )
     val containerColor = NuvioTheme.colors.BackgroundElevated
     val isWhiteTheme = NuvioTheme.currentTheme == AppTheme.WHITE
-    val progressBrush = ThemeColors.getColorPalette(NuvioTheme.currentTheme).accentBrush()
     val progressAlpha = if (isWhiteTheme) 0.18f else 1f
     val dividerColor = NuvioTheme.colors.Border
     val subtitle = when {
@@ -94,7 +93,15 @@ internal fun UpdateBanner(
                 drawRect(containerColor)
                 if (progress > 0f) {
                     drawRect(
-                        brush = progressBrush,
+                        // 666TVF : vert au départ, mauve à l'arrivée (28/10)
+                        brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                            0f to androidx.compose.ui.graphics.Color(0xFF2DD58F),
+                            0.33f to androidx.compose.ui.graphics.Color(0xFF2DD58F),
+                            0.67f to androidx.compose.ui.graphics.Color(0xFF9B30D9),
+                            1f to androidx.compose.ui.graphics.Color(0xFF9B30D9),
+                            startX = 0f,
+                            endX = size.width
+                        ),
                         alpha = progressAlpha,
                         size = Size(width = size.width * progress, height = size.height)
                     )
