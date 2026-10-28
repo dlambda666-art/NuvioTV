@@ -61,7 +61,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private val Blood = Color(0xFFC3121F)
+private val Blood = Color(0xFF9B30D9)
+/** 666TVF : rouge gardé pour les pannes seulement ; le reste est mauve (28/10). */
+private val Red666 = Color(0xFFC3121F)
 private val Green666 = Color(0xFF4CC36B)
 private val Orange666 = Color(0xFFE59A2B)
 
@@ -210,7 +212,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     ) {
                         Text(
                             when (row.ok) { true -> "●"; false -> "●"; null -> "●" },
-                            color = when (row.ok) { true -> Green666; false -> Blood; null -> Orange666 },
+                            color = when (row.ok) { true -> Green666; false -> Red666; null -> Orange666 },
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(row.name, modifier = Modifier.padding(start = 12.dp).width(380.dp), color = Color.White)

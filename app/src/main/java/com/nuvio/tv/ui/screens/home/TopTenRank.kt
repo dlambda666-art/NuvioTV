@@ -38,12 +38,12 @@ private const val RANK_VISIBLE_FRACTION = 0.8f
 
 // 666TV : chiffres couleur sang, contour rouge vif et halo.
 private val RankFill = Brush.verticalGradient(
-    listOf(Color(0xFFA10614), Color(0xFF5A000A))
+    listOf(Color(0xFF7E22B8), Color(0xFF3A0C5C))
 )
 private val RankOutline = Brush.verticalGradient(
-    listOf(Color(0xFFFF3A45), Color(0xFFC3121F))
+    listOf(Color(0xFFC27BFF), Color(0xFF9B30D9))
 )
-private val RankGlow = Color(0x8CC3121F)
+private val RankGlow = Color(0x8C9B30D9)
 
 private fun rankFontHeight(cardHeight: Dp): Dp = cardHeight * 0.88f
 

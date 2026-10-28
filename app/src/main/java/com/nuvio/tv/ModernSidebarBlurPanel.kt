@@ -228,8 +228,8 @@ internal fun ModernSidebarBlurPanel(
     }
 }
 
-private val Sidebar666Blood = Color(0xFFA10614)
-private val Sidebar666BloodBright = Color(0xFFC3121F)
+private val Sidebar666Blood = Color(0xFF7E22B8)
+private val Sidebar666BloodBright = Color(0xFF9B30D9)
 
 @Composable
 private fun SidebarNavigationItem(

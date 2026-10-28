@@ -39,7 +39,7 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.nuvio.tv.ui.components.Font666
 
-private val Blood666K = Color(0xFFA10614)
+private val Blood666K = Color(0xFF7E22B8)
 private val KeyBg = Color(0xEE121416)
 
 /**

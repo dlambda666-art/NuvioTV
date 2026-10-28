@@ -121,7 +121,7 @@ internal fun isFlatSettingsStyle(): Boolean = NuvioTheme.settingsUiStyle != Sett
 @Composable
 @androidx.compose.runtime.ReadOnlyComposable
 // 666TV : le focus des réglages est rouge sang, comme le menu de gauche.
-internal fun settingsFocusFillColor(): Color = androidx.compose.ui.graphics.Color(0xFFA10614).copy(alpha = 0.85f)
+internal fun settingsFocusFillColor(): Color = androidx.compose.ui.graphics.Color(0xFF7E22B8).copy(alpha = 0.85f)
 
 @Composable
 @androidx.compose.runtime.ReadOnlyComposable
@@ -339,11 +339,11 @@ internal fun SettingsRailButton(
         } else {
             CardDefaults.border(
                 border = if (isSelected) Border(
-                    border = androidx.compose.foundation.BorderStroke(NuvioTheme.spacing.hairline, androidx.compose.ui.graphics.Color(0xFFA10614)),
+                    border = androidx.compose.foundation.BorderStroke(NuvioTheme.spacing.hairline, androidx.compose.ui.graphics.Color(0xFF7E22B8)),
                     shape = RoundedCornerShape(SettingsPillRadius)
                 ) else Border.None,
                 focusedBorder = Border(
-                    border = androidx.compose.foundation.BorderStroke(NuvioTheme.spacing.xxs, androidx.compose.ui.graphics.Color(0xFFC3121F)),
+                    border = androidx.compose.foundation.BorderStroke(NuvioTheme.spacing.xxs, androidx.compose.ui.graphics.Color(0xFF9B30D9)),
                     shape = RoundedCornerShape(SettingsPillRadius)
                 )
             )
@@ -375,7 +375,7 @@ internal fun SettingsRailButton(
                                 .height(16.dp)
                                 .clip(RoundedCornerShape(SettingsPillRadius))
                                 .background(
-                                    if (isSelected) androidx.compose.ui.graphics.Color(0xFFC3121F) else Color.Transparent
+                                    if (isSelected) androidx.compose.ui.graphics.Color(0xFF9B30D9) else Color.Transparent
                                 )
                         )
                         Spacer(modifier = Modifier.width(NuvioTheme.spacing.md))
@@ -476,14 +476,14 @@ internal fun SettingsTopBarTab(
             },
         colors = CardDefaults.colors(
             containerColor = if (isSelected) {
-                androidx.compose.ui.graphics.Color(0xFFA10614).copy(alpha = 0.25f)
+                androidx.compose.ui.graphics.Color(0xFF7E22B8).copy(alpha = 0.25f)
             } else {
                 Color.Transparent
             },
             focusedContainerColor = if (glideIndicator) {
                 Color.Transparent
             } else {
-                androidx.compose.ui.graphics.Color(0xFFC3121F)
+                androidx.compose.ui.graphics.Color(0xFF9B30D9)
             }
         ),
         border = CardDefaults.border(border = Border.None, focusedBorder = Border.None),

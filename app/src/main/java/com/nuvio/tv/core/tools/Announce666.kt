@@ -111,7 +111,7 @@ object Announce666 {
                 background = GradientDrawable().apply {
                     cornerRadius = dp(12).toFloat()
                     setColor(Color.argb(245, 28, 26, 26))
-                    setStroke(dp(2), Color.rgb(0xC3, 0x12, 0x1F))
+                    setStroke(dp(2), Color.rgb(0x9B, 0x30, 0xD9))
                 }
                 isFocusable = true
                 isFocusableInTouchMode = true

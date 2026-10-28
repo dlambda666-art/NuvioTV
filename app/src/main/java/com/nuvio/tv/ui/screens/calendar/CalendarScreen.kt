@@ -332,7 +332,7 @@ fun CalendarVfBanner(episodes: List<CalendarEpisode>, modifier: Modifier = Modif
             .width(420.dp)
             .clip(shape)
             .background(NuvioTheme.colors.BackgroundElevated.copy(alpha = 0.96f))
-            .border(2.dp, androidx.compose.ui.graphics.Color(0xFFC3121F), shape)
+            .border(2.dp, androidx.compose.ui.graphics.Color(0xFF9B30D9), shape)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {

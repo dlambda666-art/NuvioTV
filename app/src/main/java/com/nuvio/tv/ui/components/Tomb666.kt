@@ -97,7 +97,7 @@ fun Modifier.tomb666(landscape: Boolean, focused: Boolean): Modifier = composed 
             if (glow > 0.01f) {
                 drawRect(
                     brush = Brush.radialGradient(
-                        colors = listOf(Color(0xFFB00000).copy(alpha = 0.55f * glow), Color.Transparent),
+                        colors = listOf(Color(0xFF8A2BD0).copy(alpha = 0.55f * glow), Color.Transparent),
                         center = Offset(fx + fw / 2f, fy + fh * 0.5f),
                         radius = maxOf(fw, fh) * 0.62f
                     )

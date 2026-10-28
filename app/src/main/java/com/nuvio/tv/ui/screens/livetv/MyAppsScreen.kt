@@ -53,8 +53,8 @@ import kotlinx.coroutines.withContext
  * Les raccourcis de « TV en direct » (Orange TV, TizenTube, Cache Cleaner) n'y figurent pas.
  */
 private val Green666 = Color(0xFF49DD89)
-private val Blood666 = Color(0xFFC3121F)
-private val BloodHi666 = Color(0xFFFF3A45)
+private val Blood666 = Color(0xFF9B30D9)
+private val BloodHi666 = Color(0xFFC27BFF)
 
 private data class ShieldApp(val label: String, val launch: Intent, val icon: Drawable?, val banner: Drawable?) {
     val key: String get() = launch.`package` ?: launch.component?.packageName ?: label

@@ -757,9 +757,9 @@ private fun HomePosterOptionsDialog(
                     .fillMaxWidth()
                     .focusRequester(primaryFocusRequester),
                 colors = ButtonDefaults.colors(
-                    containerColor = androidx.compose.ui.graphics.Color(0xFF8A0010),
+                    containerColor = androidx.compose.ui.graphics.Color(0xFF5C168C),
                     contentColor = androidx.compose.ui.graphics.Color(0xFFF2EFE9),
-                    focusedContainerColor = androidx.compose.ui.graphics.Color(0xFFC3121F),
+                    focusedContainerColor = androidx.compose.ui.graphics.Color(0xFF9B30D9),
                     focusedContentColor = androidx.compose.ui.graphics.Color.White
                 )
             ) {

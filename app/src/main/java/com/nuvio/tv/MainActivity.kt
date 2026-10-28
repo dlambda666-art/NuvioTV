@@ -1938,8 +1938,8 @@ private fun LegacySidebarScaffold(
     }
 }
 
-private val Blood666 = Color(0xFFA10614)
-private val Blood666Bright = Color(0xFFC3121F)
+private val Blood666 = Color(0xFF7E22B8)
+private val Blood666Bright = Color(0xFF9B30D9)
 
 @Composable
 private fun LegacySidebarButton(

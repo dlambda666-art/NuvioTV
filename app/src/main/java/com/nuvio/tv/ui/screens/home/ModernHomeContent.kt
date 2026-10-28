@@ -1380,8 +1380,8 @@ private fun Hero666PlayButton(
 ) {
     if (!visible) return
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
-    val blood = androidx.compose.ui.graphics.Color(0xFFC3121F)
-    val bloodDark = androidx.compose.ui.graphics.Color(0xFF8A0010)
+    val blood = androidx.compose.ui.graphics.Color(0xFF9B30D9)
+    val bloodDark = androidx.compose.ui.graphics.Color(0xFF5C168C)
     androidx.tv.material3.Surface(
         onClick = onClick,
         modifier = modifier
