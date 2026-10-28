@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -115,7 +116,7 @@ fun Roulette666Screen(
     onOpenDetail: (itemId: String, itemType: String, addonBaseUrl: String?) -> Unit,
     viewModel: Roulette666ViewModel = hiltViewModel()
 ) {
-    val filmsState by viewModel.films.let { flow -> androidx.compose.runtime.produceState<List<RouletteFilm>?>(null, flow) { flow.collect { value = it } } }
+    val filmsState by viewModel.films.collectAsState()
     val films = filmsState
     var index by remember { mutableIntStateOf(0) }
     var spinning by remember { mutableStateOf(false) }
@@ -130,11 +131,10 @@ fun Roulette666Screen(
         scope.launch {
             val target = (0 until list.size).random()
             val delays = rouletteDelays()
-            val start = index
             val total = delays.size
             for ((n, d) in delays.withIndex()) {
-                // on finit pile sur le film tiré
-                index = ((start + n + 1) + (target - (start + total)).mod(list.size)).mod(list.size)
+                // on défile vers le film tiré et on finit pile dessus
+                index = (target - (total - 1 - n)).mod(list.size)
                 delay(d)
             }
             index = target

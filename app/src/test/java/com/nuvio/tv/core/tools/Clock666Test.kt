@@ -26,3 +26,17 @@ class DreamVoiceRuleTest {
         org.junit.Assert.assertTrue(d.voiceAllowed(14, 1_000_000L, 1_000_000L - d.VOICE_GAP_MS))
     }
 }
+
+/** Plaque « PROGRAMME » : libellés de date lisibles. */
+class ProgrammeLabelTest {
+    @Test
+    fun `programme labels`() {
+        val z = java.time.ZoneId.of("Europe/Brussels")
+        val now = java.time.ZonedDateTime.of(2026, 10, 28, 21, 0, 0, 0, z).toInstant().toEpochMilli()
+        fun at(d: Int, h: Int, m: Int = 0) = java.time.ZonedDateTime.of(2026, 10, d, h, m, 0, 0, z).toInstant().toEpochMilli()
+        val f = com.nuvio.tv.core.dream.Dream666Data
+        assertEquals("Ce soir 22:00", f.whenLabel(at(28, 22), now, z))
+        assertEquals("Demain 02:00", f.whenLabel(at(29, 2), now, z))
+        assertEquals("Sam. 01:00", f.whenLabel(at(31, 1), now, z))
+    }
+}

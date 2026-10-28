@@ -21,6 +21,8 @@ object MenuOrder666 {
         "calendar" to "Calendrier",
         "live_tv" to "TV en direct",
         "my_apps" to "Mes applis",
+        "meteo_666" to "Météo",
+        "roulette_666" to "Roulette",
         "settings" to "Paramètres"
     )
 

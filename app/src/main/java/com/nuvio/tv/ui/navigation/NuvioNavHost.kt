@@ -1189,6 +1189,16 @@ private fun PlaybackNavHost(
         composable(Screen.Tools666.route) {
             com.nuvio.tv.ui.screens.livetv.Tools666Screen()
         }
+        composable(Screen.Meteo666.route) {
+            com.nuvio.tv.ui.screens.livetv.MeteoScreen666()
+        }
+        composable(Screen.Roulette666.route) {
+            com.nuvio.tv.ui.screens.livetv.Roulette666Screen(
+                onOpenDetail = { itemId, itemType, addonBaseUrl ->
+                    navController.navigate(Screen.Detail.createRoute(itemId = itemId, itemType = itemType, addonBaseUrl = null))
+                }
+            )
+        }
         composable(Screen.LiveTv.route) {
             com.nuvio.tv.ui.screens.livetv.LiveTvScreen()
         }

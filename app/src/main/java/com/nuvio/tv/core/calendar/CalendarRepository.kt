@@ -332,6 +332,17 @@ class CalendarRepository @Inject constructor(
         late
     }
 
+    /** 666TVF : le programme de l'écran de veille — prochains épisodes des séries avec la cloche. */
+    suspend fun upcomingBells666(limit: Int = 3): List<CalendarEpisode> = withContext(Dispatchers.IO) {
+        val bellSet = store().data.first()[bellsKey].orEmpty()
+        if (bellSet.isEmpty()) return@withContext emptyList()
+        val now = Instant.now()
+        episodes(daysBack = 0, daysAhead = 8)
+            .filter { it.seriesId in bellSet && it.airInstant.isAfter(now) }
+            .sortedBy { it.airInstant }
+            .take(limit)
+    }
+
     private fun Set<String>.takeLast(n: Int): Set<String> = if (size <= n) this else toList().takeLast(n).toSet()
 
     private fun String.isSeriesType(): Boolean =

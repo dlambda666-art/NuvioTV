@@ -53,6 +53,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
@@ -1084,6 +1086,8 @@ open class MainActivity : ComponentActivity() {
                             add(Screen.Calendar.route)
                             add(Screen.LiveTv.route)
                             add(Screen.MyApps.route)
+                            add(Screen.Meteo666.route)
+                            add(Screen.Roulette666.route)
                             add(Screen.Settings.route)
                             if (discoverLocation == DiscoverLocation.IN_SIDEBAR) {
                                 add(Screen.Discover.route)
@@ -1155,6 +1159,20 @@ open class MainActivity : ComponentActivity() {
                                     route = Screen.MyApps.route,
                                     label = "Mes applis",
                                     icon = Icons.Default.Apps
+                                )
+                            )
+                            add(
+                                DrawerItem(
+                                    route = Screen.Meteo666.route,
+                                    label = "Météo",
+                                    icon = Icons.Default.WbSunny
+                                )
+                            )
+                            add(
+                                DrawerItem(
+                                    route = Screen.Roulette666.route,
+                                    label = "Roulette",
+                                    icon = Icons.Default.Casino
                                 )
                             )
                             add(
@@ -1299,6 +1317,14 @@ open class MainActivity : ComponentActivity() {
                                     }
                                     if (found.isNotEmpty()) {
                                         pending666 = (pending666 + found).distinctBy { "${it.seriesId}|${it.season}|${it.episode}" }
+                                    }
+                                    // 666TVF : programme de l'écran de veille (cloches + galas UFC)
+                                    runCatching {
+                                        val eps = calendarRepository.upcomingBells666(3).map { it.airInstant.toEpochMilli() to it.seriesName }
+                                        val ufc = ufcScheduleRepository666.upcomingNumbered(limit = 2)
+                                            .filter { it.start.isAfter(java.time.Instant.now()) }
+                                            .map { it.start.toEpochMilli() to it.name.substringBefore(":").trim() }
+                                        com.nuvio.tv.core.dream.Dream666Data.saveProgramme(this@MainActivity, eps + ufc)
                                     }
                                     // 666TV : vérifié toutes les 20 minutes (avant : 6 h), même
                                     // quand tu es dans Orange TV ou YouTube.

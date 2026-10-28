@@ -59,6 +59,31 @@ object Dream666Data {
 
     const val VOICE_GAP_MS = 3 * 60_000L
 
+    /** 666TVF : programme (épisodes avec la cloche, galas UFC) : « instant|nom » par ligne. */
+    fun saveProgramme(context: Context, items: List<Pair<Long, String>>) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString("programme", items.sortedBy { it.first }.take(3).joinToString("\n") { "${it.first}|${it.second.replace("\n", " ")}" })
+            .apply()
+    }
+
+    fun programme(context: Context, now: Long = System.currentTimeMillis()): List<Pair<Long, String>> =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("programme", "").orEmpty()
+            .lines().mapNotNull { l -> l.substringBefore("|").toLongOrNull()?.let { it to l.substringAfter("|") } }
+            .filter { it.first > now - 3 * 3600_000L }
+
+    /** « Ce soir 22:00 », « Demain 02:00 », « Sam. 01:00 » (heure de la Shield). */
+    fun whenLabel(at: Long, now: Long = System.currentTimeMillis(), zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String {
+        val t = java.time.Instant.ofEpochMilli(at).atZone(zone)
+        val today = java.time.Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+        val hm = "%02d:%02d".format(t.hour, t.minute)
+        return when (t.toLocalDate()) {
+            today -> (if (t.hour >= 17) "Ce soir " else "Aujourd'hui ") + hm
+            today.plusDays(1) -> "Demain $hm"
+            else -> t.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, Locale.FRANCE)
+                .replaceFirstChar { it.uppercase() }.let { if (it.endsWith(".")) it else "$it." } + " " + hm
+        }
+    }
+
     /** Règle (testée) : jamais la nuit (23 h → 8 h), et pas plus d'une fois toutes les 3 minutes. */
     fun voiceAllowed(hour: Int, now: Long, lastAt: Long): Boolean =
         hour in 8..22 && (lastAt == 0L || now - lastAt >= VOICE_GAP_MS)
@@ -92,6 +117,45 @@ private class Dream666View(context: Context) : View(context) {
     private var weather: Clock666.Weather? = null
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    // ---- 666TVF : plaque « PROGRAMME » (prochains épisodes avec la cloche, galas) ----
+    private val programme = Dream666Data.programme(context)
+    private val plaque: Bitmap? = if (programme.isEmpty()) null else runCatching {
+        BitmapFactory.decodeResource(resources, R.drawable.frame_plaque_666, BitmapFactory.Options().apply { inScaled = false })
+    }.getOrNull()
+    private val creepster: android.graphics.Typeface? = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, R.font.creepster_666) }.getOrNull()
+    private val plaqueTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.rgb(0xC2, 0x7B, 0xFF); textAlign = Paint.Align.CENTER
+        typeface = creepster; setShadowLayer(10f, 0f, 0f, Color.rgb(0x9B, 0x30, 0xD9))
+    }
+    private val plaqueWhenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.rgb(0x4C, 0xC3, 0x6B); setShadowLayer(6f, 0f, 0f, Color.argb(160, 0x4C, 0xC3, 0x6B))
+    }
+    private val plaqueNamePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(235, 235, 235) }
+    private val plaqueFill = Paint().apply { color = Color.argb(225, 8, 8, 10) }
+
+    private fun drawProgramme(canvas: Canvas, w: Float, h: Float) {
+        val pl = plaque ?: return
+        if (programme.isEmpty()) return
+        val pw = w * 0.29f; val ph = pw * pl.height / pl.width
+        val px = w * 0.69f; val py = h * 0.04f
+        canvas.drawRect(px + pw * 0.05f, py + ph * 0.06f, px + pw * 0.95f, py + ph * 0.77f, plaqueFill)
+        canvas.drawBitmap(pl, null, RectF(px, py, px + pw, py + ph), paint)
+        plaqueTitlePaint.textSize = ph * 0.12f
+        canvas.drawText("PROGRAMME", px + pw / 2, py + ph * 0.2f, plaqueTitlePaint)
+        val fs = ph * 0.068f
+        plaqueWhenPaint.textSize = fs; plaqueNamePaint.textSize = fs
+        val x0 = px + pw * 0.075f; val x1 = x0 + fs * 7.0f; val maxW = px + pw * 0.93f - x1
+        var y = py + ph * 0.36f
+        val now = System.currentTimeMillis()
+        for ((at, name) in programme) {
+            canvas.drawText(Dream666Data.whenLabel(at, now), x0, y, plaqueWhenPaint)
+            var n = name
+            while (n.length > 3 && plaqueNamePaint.measureText(n) > maxW) n = n.dropLast(2).trimEnd() + "…"
+            canvas.drawText(n, x1, y, plaqueNamePaint)
+            y += fs * 1.6f
+        }
+    }
+
     private val clockPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.rgb(91, 227, 107)
         typeface = runCatching { androidx.core.content.res.ResourcesCompat.getFont(context, R.font.creepster_666) }.getOrNull()
@@ -322,6 +386,8 @@ private class Dream666View(context: Context) : View(context) {
 
         // Le grand spectre passe devant tout (sauf l'heure).
         for (g in ghosts) if (g.near) drawGhost(canvas, g, now, w, h, flash)
+
+        drawProgramme(canvas, w, h)
 
         // Heure, date, météo.
         val d = Date(now)
