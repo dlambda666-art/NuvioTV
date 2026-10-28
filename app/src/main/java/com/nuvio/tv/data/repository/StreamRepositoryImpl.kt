@@ -564,7 +564,10 @@ class StreamRepositoryImpl @Inject constructor(
             url = url,
             addonName = addonName,
             addonLogo = null,
-            description = buildDescription(this),
+            // 666TVF : plugins regroupés par dépôt → la carte dit quel cavalier a trouvé le flux
+            description = buildDescription(this).let { d ->
+                if (addonName != scraper.name) "🐎 ${scraper.name}" + (d?.let { " • $it" } ?: "") else d
+            },
             // 666TV : groupe Binge = même plugin + même qualité, pour que l'épisode
             // suivant reprenne la même source.
             behaviorHints = StreamBehaviorHints(

@@ -43,9 +43,29 @@ object StreamAutoPlaySelector {
         return (directDebridEntries + orderedAddons + pluginEntries).sortedBy { plugin666Rank(it.addonName) }.map(::dvOnlyLast666)
     }
 
-    /** 666TVF : Dolby Vision sans HDR rangé en bas de sa source (image violette, 28/10). */
-    private fun dvOnlyLast666(group: AddonStreams): AddonStreams =
-        if (group.streams.none { isDvOnly(it) }) group else group.copy(streams = group.streams.sortedBy { if (isDvOnly(it)) 1 else 0 })
+    /**
+     * 666TVF : dans une source (ou un dépôt regroupé « Les 4 cavaliers »), l'ordre des cavaliers
+     * choisi dans Outils 666, puis le Dolby Vision sans HDR en bas (image violette, 28/10).
+     */
+    private fun dvOnlyLast666(group: AddonStreams): AddonStreams {
+        val mixed = group.streams.mapNotNull { cavalier666(it) }.distinct().size > 1
+        if (!mixed && group.streams.none { isDvOnly(it) }) return group
+        return group.copy(streams = group.streams.sortedWith(
+            compareBy<Stream> { if (mixed) cavalier666(it)?.let(::plugin666Rank) ?: Int.MAX_VALUE else 0 }
+                .thenBy { if (isDvOnly(it)) 1 else 0 }
+        ))
+    }
+
+    /**
+     * 666TVF : le cavalier qui a fourni ce flux (Comet666, Lumio666…), même quand les plugins
+     * sont regroupés par dépôt. Lu dans le groupe Binge « 666|<plugin>|<qualité> ».
+     */
+    fun cavalier666(stream: Stream): String? = cavalierFromBinge666(stream.behaviorHints?.bingeGroup)
+
+    fun cavalierFromBinge666(bingeGroup: String?): String? {
+        val id = bingeGroup?.takeIf { it.startsWith("666|") }?.split("|")?.getOrNull(1)?.takeIf { it.isNotBlank() } ?: return null
+        return com.nuvio.tv.core.tools.PluginOrder666.DEFAULT.firstOrNull { it.equals(id, ignoreCase = true) } ?: id
+    }
 
     private fun isPlayable(stream: Stream): Boolean {
         // External URL streams (e.g. error pages, web links) are not playable.

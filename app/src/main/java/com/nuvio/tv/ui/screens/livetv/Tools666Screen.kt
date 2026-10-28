@@ -473,6 +473,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     }
                 )
             }
+            item { CityPicker666() }
             item {
                 var voice by remember { mutableStateOf(com.nuvio.tv.core.dream.Dream666Data.voiceEnabled(context)) }
                 ActionRow(

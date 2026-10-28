@@ -218,6 +218,7 @@ private class Dream666View(context: Context) : View(context) {
         setLayerType(LAYER_TYPE_HARDWARE, null)
         Thread {
             Dream666Data.posters(context).forEachIndexed { i, url -> if (i < 3) posters[i] = load(url) }
+            com.nuvio.tv.core.tools.Meteo666.init(context)
             weather = runCatching { Clock666.weather() }.getOrNull()
             postInvalidate()
         }.apply { isDaemon = true }.start()

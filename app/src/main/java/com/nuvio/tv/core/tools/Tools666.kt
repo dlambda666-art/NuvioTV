@@ -58,6 +58,7 @@ object Clock666 {
         private set
 
     fun init(context: Context) {
+        Meteo666.init(context)
         enabled = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("clock", true)
     }
 
@@ -68,16 +69,20 @@ object Clock666 {
 
     data class Weather(val tempC: Int, val icon: String)
 
-    private var cached: Weather? = null
+    @Volatile private var cached: Weather? = null
     private var cachedAt = 0L
 
-    /** Météo du coin (position approximative d'après la connexion, rien n'est demandé). */
+    /** Oublie la météo en mémoire (changement de ville). */
+    fun clearWeather() { cached = null }
+
+    /** Météo de ta ville (réglée dans Outils 666). */
     fun weather(): Weather? {
         if (cached != null && System.currentTimeMillis() - cachedAt < 20 * 60_000L) return cached
         return runCatching {
-            val geo = Http666.get("https://ipwho.is/?fields=latitude,longitude") ?: return null
-            val lat = Regex("\"latitude\"\\s*:\\s*(-?[0-9.]+)").find(geo)?.groupValues?.get(1) ?: return null
-            val lon = Regex("\"longitude\"\\s*:\\s*(-?[0-9.]+)").find(geo)?.groupValues?.get(1) ?: return null
+            // 666TVF : ta ville (Outils 666), plus la position approximative de la connexion
+            val city = Meteo666.city()
+            val lat = city.lat.toString()
+            val lon = city.lon.toString()
             val w = Http666.get(
                 "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,weather_code,is_day"
             ) ?: return null

@@ -60,7 +60,8 @@ internal object SourceFailoverRules {
         }
 
     /** Clé « toute la source » (ex. Frenchio666), utilisée quand ses liens sont refusés. */
-    fun sourceKey(stream: Stream): String = "source:" + displayName(stream).lowercase()
+    fun sourceKey(stream: Stream): String =
+        "source:" + (com.nuvio.tv.core.player.StreamAutoPlaySelector.cavalier666(stream) ?: displayName(stream)).lowercase()
 
     fun sourceKey(name: String?): String? = name?.takeIf { it.isNotBlank() }?.let { "source:" + it.lowercase() }
 
@@ -175,7 +176,10 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
     }
     // 666TVF : lien refusé par le serveur → toute cette source est sautée pour ce film / épisode.
     if (SourceFailoverRules.isServerRefusal(error)) {
-        SourceFailoverRules.sourceKey(state.currentStreamAddonName ?: state.currentStreamName)?.let {
+        SourceFailoverRules.sourceKey(
+            com.nuvio.tv.core.player.StreamAutoPlaySelector.cavalierFromBinge666(currentStreamBingeGroup)
+                ?: state.currentStreamAddonName ?: state.currentStreamName
+        )?.let {
             Log.i(PlayerRuntimeController.TAG, "Source refused ($error) → skipping $it")
             sourceFailoverTriedKeys += it
         }

@@ -109,4 +109,22 @@ class SourceFailoverRulesTest {
         // manifest vide (dépôt en panne) : on ne supprime rien
         assertEquals(emptyList<String>(), com.nuvio.tv.core.tools.PluginPrune666.obsolete(all, "r1", emptySet()).map { it.id })
     }
+
+    // Cas piège 28/10 : plugins regroupés par dépôt — un cavalier refusé ne fait pas sauter les autres
+    @Test
+    fun `grouped plugins keep their cavalier identity`() {
+        fun grouped(cav: String, url: String) = Stream(
+            name = "x", title = "Film.2026.VFF.1080p", description = null, url = url, ytId = null, infoHash = null,
+            fileIdx = null, externalUrl = null,
+            behaviorHints = com.nuvio.tv.domain.model.StreamBehaviorHints(
+                notWebReady = null, bingeGroup = "666|$cav|1080p", countryWhitelist = null, proxyHeaders = null
+            ),
+            addonName = "Les 4 cavaliers de l'apocalypse", addonLogo = null
+        )
+        val comet = grouped("comet666", "https://a.test/c")
+        val lumio = grouped("lumio666", "https://a.test/l")
+        assertEquals("Comet666", com.nuvio.tv.core.player.StreamAutoPlaySelector.cavalier666(comet))
+        val tried = setOf("https://a.test/c", SourceFailoverRules.sourceKey(comet))
+        assertEquals(lumio, SourceFailoverRules.selectNext(listOf(comet, lumio), tried))
+    }
 }

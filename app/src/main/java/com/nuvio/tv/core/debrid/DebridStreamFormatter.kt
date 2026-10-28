@@ -40,9 +40,13 @@ class DebridStreamFormatter @Inject constructor(
             .joinToString("\n")
             .trim()
 
+        // 666TVF : plugins regroupés par dépôt → on garde le nom du cavalier sur la carte
+        val cavalier = com.nuvio.tv.core.player.StreamAutoPlaySelector.cavalier666(stream)
+            ?.takeIf { !stream.addonName.equals(it, ignoreCase = true) }
+        val description = formattedDescription.ifBlank { stream.description ?: stream.title }
         return stream.copy(
             name = formattedName.ifBlank { stream.name ?: DebridProviders.instantName(stream.clientResolve?.service) },
-            description = formattedDescription.ifBlank { stream.description ?: stream.title },
+            description = if (cavalier != null && description?.contains("🐎") != true) "🐎 $cavalier\n" + description.orEmpty() else description,
             // 666TV : ne jamais effacer des badges déjà trouvés.
             badges = matchedBadges.ifEmpty { stream.badges }
         )
