@@ -336,7 +336,7 @@ fun CalendarVfBanner(episodes: List<CalendarEpisode>, modifier: Modifier = Modif
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        val vf = episodes.none { it.seriesId.startsWith("alerte:") || it.seriesId.startsWith("sport:") }
+        val vf = episodes.none { it.seriesId.startsWith("alerte:") || it.seriesId.startsWith("sport:") || it.seriesId.startsWith("retard:") }
         Text(
             text = com.nuvio.tv.announceTitle666(episodes),
             style = MaterialTheme.typography.titleMedium,

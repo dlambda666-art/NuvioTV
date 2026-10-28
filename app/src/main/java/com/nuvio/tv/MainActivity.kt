@@ -1276,7 +1276,10 @@ open class MainActivity : ComponentActivity() {
                                 while (true) {
                                     var found = runCatching { calendarRepository.newVfEpisodesToAnnounce() }
                                         .getOrDefault(emptyList()) +
-                                        runCatching { ufcToAnnounce666(ufcScheduleRepository666) }.getOrDefault(emptyList())
+                                        runCatching { ufcToAnnounce666(ufcScheduleRepository666) }.getOrDefault(emptyList()) +
+                                        // 666TVF : Raw & co sans VF 18 h après la diffusion → signalé une fois
+                                        runCatching { calendarRepository.lateVfEpisodes666() }.getOrDefault(emptyList())
+                                            .map { it.copy(seriesId = "retard:" + it.seriesId) }
                                     // 666TVF : une fois par jour, chaque plugin passe le test Matrix ;
                                     // un plugin tombé à 0 lien est signalé (une fois par panne). Jamais pendant un film.
                                     // (pas au tout premier tour : on laisse l'appli démarrer tranquille)
@@ -1336,7 +1339,7 @@ open class MainActivity : ComponentActivity() {
                                 val overlay = !inApp && com.nuvio.tv.core.tools.Announce666.showOverlay(
                                     pendingContext666,
                                     title = announceTitle666(shown),
-                                    titleGreen = shown.none { it.seriesId.startsWith("alerte:") || it.seriesId.startsWith("sport:") },
+                                    titleGreen = shown.none { it.seriesId.startsWith("alerte:") || it.seriesId.startsWith("sport:") || it.seriesId.startsWith("retard:") },
                                     lines = shown.map { announceLine666(it) },
                                     onDismiss = { announcements666.value = emptyList() }
                                 )
@@ -1364,14 +1367,16 @@ open class MainActivity : ComponentActivity() {
                                 if (!bellLifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) &&
                                     !com.nuvio.tv.core.tools.Announce666.overlayShowing) {
                                     val names = calendarVfAnnouncements.joinToString(", ") { ep ->
-                                        if (ep.seriesId.startsWith("sport:") || ep.seriesId.startsWith("alerte:")) ep.seriesName else ep.seriesName + " S" + ep.season + "E" + ep.episode
+                                        if (ep.seriesId.startsWith("sport:") || ep.seriesId.startsWith("alerte:")) ep.seriesName else ep.seriesName + " " + ep.code
                                     }
                                     val sport = calendarVfAnnouncements.all { it.seriesId.startsWith("sport:") }
                                     val alerte = calendarVfAnnouncements.all { it.seriesId.startsWith("alerte:") }
+                                    val retard = calendarVfAnnouncements.all { it.seriesId.startsWith("retard:") }
                                     runCatching {
                                         android.widget.Toast.makeText(
                                             bellContext.applicationContext,
                                             if (alerte) "⚠️ 666TVF : $names ne renvoie plus rien — vérifie sa config (Outils 666)"
+                                            else if (retard) "⏳ 666TVF : $names toujours pas en VF"
                                             else if (sport) "🥊 666TVF : c'est l'heure du combat — $names" else "🔔 666TVF : $names dispo en VF !",
                                             android.widget.Toast.LENGTH_LONG
                                         ).show()
@@ -2739,6 +2744,7 @@ private fun android.content.Context.markSportAnnounced666(shown: List<com.nuvio.
 internal fun announceTitle666(episodes: List<com.nuvio.tv.core.calendar.CalendarEpisode>): String = when {
     episodes.all { it.seriesId.startsWith("alerte:") } -> "⚠️ Plugin en panne"
     episodes.all { it.seriesId.startsWith("sport:") } -> "🥊 C'est l'heure du combat"
+    episodes.all { it.seriesId.startsWith("retard:") } -> "⏳ Pas encore en VF"
     else -> "🔔 Nouveau en VF"
 }
 
@@ -2746,6 +2752,7 @@ internal fun announceLine666(ep: com.nuvio.tv.core.calendar.CalendarEpisode): St
     ep.seriesId.startsWith("alerte:") -> "⚠️ ${ep.seriesName} · ${ep.title.orEmpty()}"
     ep.seriesId.startsWith("sport:") -> "🥊 ${ep.seriesName} · ${ep.title.orEmpty()}"
     ep.seriesId.startsWith("test:") -> "🇫🇷 ${ep.seriesName} · ${ep.title.orEmpty()}"
+    ep.seriesId.startsWith("retard:") -> "⏳ ${ep.seriesName} · ${ep.code} : toujours pas de VF, d'habitude c'est plus rapide"
     else -> "🇫🇷 ${ep.seriesName} · ${ep.code}"
 }
 
@@ -2753,5 +2760,6 @@ internal fun announceLogText666(ep: com.nuvio.tv.core.calendar.CalendarEpisode):
     ep.seriesId.startsWith("alerte:") -> "⚠️ ${ep.seriesName} ne renvoie plus rien"
     ep.seriesId.startsWith("sport:") -> "🥊 ${ep.seriesName} · c'est l'heure du combat"
     ep.seriesId.startsWith("test:") -> "🔔 Annonce d'essai"
+    ep.seriesId.startsWith("retard:") -> "⏳ ${ep.seriesName} ${ep.code} : pas encore en VF"
     else -> "🔔 ${ep.seriesName} ${ep.code} en VF"
 }

@@ -89,6 +89,9 @@ class CalendarRepository @Inject constructor(
     private val bellsKey = stringSetPreferencesKey("calendar_bells_666")
     private val vfFoundKey = stringSetPreferencesKey("calendar_vf_found_666_v3") // v3 : VF sûre seulement, épisode vu jusqu'au bout (on revérifie tout)
     private val notifiedKey = stringSetPreferencesKey("calendar_notified_666")
+    // 666TVF : séries dont la VF arrive vite (WWE Raw…) et retards déjà signalés
+    private val fastVfKey = stringSetPreferencesKey("calendar_fast_vf_666")
+    private val lateAlertedKey = stringSetPreferencesKey("calendar_late_alerted_666")
     private val lastRefreshKey = stringPreferencesKey("calendar_last_refresh_666")
 
     private fun store(pid: Int = profileManager.activeProfileId.value) = factory.get(pid, FEATURE)
@@ -294,12 +297,39 @@ class CalendarRepository @Inject constructor(
             .filter { it.seriesId in bellSet && it.hasAired() && it.key !in notified }
         val announce = candidates.filter { checkVf(it) == VfState.AVAILABLE }
         if (announce.isNotEmpty()) {
+            val now = Instant.now()
+            val fast = announce.filter { isFastVf666(it.airInstant.toEpochMilli(), now.toEpochMilli()) }.map { it.seriesId }
             store().edit { prefs ->
+                if (fast.isNotEmpty()) prefs[fastVfKey] = (prefs[fastVfKey].orEmpty() + fast).takeLast(MAX_SERIES)
                 prefs[notifiedKey] = (prefs[notifiedKey].orEmpty() + announce.map { it.key }).takeLast(MAX_REMEMBERED)
                 prefs[lastRefreshKey] = System.currentTimeMillis().toString()
             }
         }
         announce
+    }
+
+    /**
+     * 666TVF : vérification des galas / émissions rapides (WWE Raw…). Une série dont la VF
+     * arrive d'habitude en moins de 36 h, et dont l'épisode n'a toujours pas de VF 18 h après
+     * sa diffusion : signalé une fois (« ⏳ pas encore en VF »). Aucune alerte pour les séries
+     * dont la VF arrive des semaines plus tard (AHS…).
+     */
+    suspend fun lateVfEpisodes666(): List<CalendarEpisode> = withContext(Dispatchers.IO) {
+        val prefs = store().data.first()
+        val bellSet = prefs[bellsKey].orEmpty()
+        val fast = prefs[fastVfKey].orEmpty()
+        if (bellSet.isEmpty() || fast.isEmpty()) return@withContext emptyList()
+        val notified = prefs[notifiedKey].orEmpty()
+        val alerted = prefs[lateAlertedKey].orEmpty()
+        val now = Instant.now().toEpochMilli()
+        val late = episodes(daysBack = 3, daysAhead = 0)
+            .filter { it.seriesId in bellSet && it.seriesId in fast && it.key !in notified && it.key !in alerted }
+            .filter { isLateVf666(it.airInstant.toEpochMilli(), now) }
+            .filter { checkVf(it) == VfState.NOT_YET }
+        if (late.isNotEmpty()) {
+            store().edit { it[lateAlertedKey] = (it[lateAlertedKey].orEmpty() + late.map { e -> e.key }).takeLast(MAX_REMEMBERED) }
+        }
+        late
     }
 
     private fun Set<String>.takeLast(n: Int): Set<String> = if (size <= n) this else toList().takeLast(n).toSet()
@@ -317,3 +347,11 @@ class CalendarRepository @Inject constructor(
         const val VF_NEGATIVE_TTL_MS = 30L * 60 * 1000
     }
 }
+
+/** 666TVF : VF arrivée moins de 36 h après la diffusion → série « rapide ». */
+internal fun isFastVf666(airMs: Long, announcedMs: Long): Boolean =
+    announcedMs >= airMs && announcedMs - airMs <= 36L * 3600_000
+
+/** 666TVF : toujours sans VF entre 18 h et 72 h après la diffusion → retard à signaler. */
+internal fun isLateVf666(airMs: Long, nowMs: Long): Boolean =
+    nowMs - airMs in (18L * 3600_000)..(72L * 3600_000)
