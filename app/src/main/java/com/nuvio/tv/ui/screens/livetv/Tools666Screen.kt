@@ -150,6 +150,16 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
     var pluginOrder by remember { mutableStateOf(com.nuvio.tv.core.tools.PluginOrder666.order) }
     var movingPlugin by remember { mutableStateOf<String?>(null) }
     val first = remember { FocusRequester() }
+    var annonces by remember { mutableStateOf(com.nuvio.tv.core.tools.Announce666.entries(context)) }
+    var overlayOk by remember { mutableStateOf(com.nuvio.tv.core.tools.Announce666.canOverlay(context)) }
+    LaunchedEffect(Unit) {
+        // l'autorisation se donne dans les réglages Android, puis on revient ici
+        while (true) {
+            kotlinx.coroutines.delay(2_000L)
+            overlayOk = com.nuvio.tv.core.tools.Announce666.canOverlay(context)
+            annonces = com.nuvio.tv.core.tools.Announce666.entries(context)
+        }
+    }
     LaunchedEffect(Unit) {
         viewModel.runChecks()
         runCatching { first.requestFocus() }
@@ -214,6 +224,61 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     modifier = Modifier.padding(horizontal = 18.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF8F8A85)
+                )
+            }
+
+            // ---------- Dernières annonces ----------
+            item { Section("Dernières annonces", "Tout ce qui a fait sonner la cloche, le plus récent en haut (30 dernières)") }
+            if (annonces.isEmpty()) {
+                item {
+                    Text("Aucune annonce pour l'instant", modifier = Modifier.padding(horizontal = 18.dp), color = Color(0xFFC8C3BE))
+                }
+            }
+            annonces.forEach { a ->
+                item {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            SimpleDateFormat("EEE d · HH:mm", Locale.FRANCE).format(Date(a.at)),
+                            modifier = Modifier.width(150.dp),
+                            color = Color(0xFFC8C3BE)
+                        )
+                        Text(a.text, modifier = Modifier.width(470.dp), color = Color.White, maxLines = 1)
+                        Text(a.where, color = Color(0xFFC8C3BE), maxLines = 1)
+                    }
+                }
+            }
+
+            // ---------- Annonces partout ----------
+            item { Section("Annonces partout", "Pour que la bannière apparaisse aussi dans Orange, YouTube…") }
+            item {
+                ActionRow(
+                    "Autoriser l'affichage par-dessus les autres applis",
+                    "À faire une seule fois sur chaque Shield · état : " + if (overlayOk) "autorisé ✓" else "pas encore autorisé",
+                    onClick = {
+                        val pkg = android.net.Uri.parse("package:" + context.packageName)
+                        val opened = runCatching {
+                            context.startActivity(
+                                android.content.Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION, pkg)
+                                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        }.isSuccess || runCatching {
+                            context.startActivity(
+                                android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg)
+                                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        }.isSuccess
+                        if (!opened) toast(context, "Réglages Android → Applis → Accès spécial → Afficher par-dessus d'autres applis → 666TVF")
+                    }
+                )
+            }
+            item {
+                ActionRow(
+                    "Tester la bannière",
+                    "La cloche sonne dans 20 s avec une annonce d'essai : tu as le temps d'aller sur Orange",
+                    onClick = {
+                        com.nuvio.tv.core.tools.Announce666.requestTest()
+                        toast(context, "Annonce d'essai dans 20 s")
+                    }
                 )
             }
 

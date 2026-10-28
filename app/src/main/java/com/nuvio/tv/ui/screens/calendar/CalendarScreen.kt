@@ -2,6 +2,7 @@ package com.nuvio.tv.ui.screens.calendar
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -331,20 +332,20 @@ fun CalendarVfBanner(episodes: List<CalendarEpisode>, modifier: Modifier = Modif
             .width(420.dp)
             .clip(shape)
             .background(NuvioTheme.colors.BackgroundElevated.copy(alpha = 0.96f))
+            .border(2.dp, androidx.compose.ui.graphics.Color(0xFFC3121F), shape)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
+        val vf = episodes.none { it.seriesId.startsWith("alerte:") || it.seriesId.startsWith("sport:") }
         Text(
-            text = if (episodes.all { it.seriesId.startsWith("alerte:") }) "⚠️ Plugin en panne"
-            else if (episodes.all { it.seriesId.startsWith("sport:") }) "🥊 C'est l'heure du combat" else "🔔 Nouveau en VF",
+            text = com.nuvio.tv.announceTitle666(episodes),
             style = MaterialTheme.typography.titleMedium,
-            color = NuvioTheme.colors.TextPrimary
+            // 666TVF : « Nouveau en VF » en vert (28/10)
+            color = if (vf) androidx.compose.ui.graphics.Color(0xFF4CC36B) else NuvioTheme.colors.TextPrimary
         )
         episodes.take(4).forEach { ep ->
             Text(
-                text = if (ep.seriesId.startsWith("alerte:")) "⚠️ ${ep.seriesName} · ${ep.title.orEmpty()}"
-                else if (ep.seriesId.startsWith("sport:")) "🥊 ${ep.seriesName} · ${ep.title.orEmpty()}"
-                else "🇫🇷 ${ep.seriesName} · ${ep.code}",
+                text = com.nuvio.tv.announceLine666(ep),
                 style = MaterialTheme.typography.bodyMedium,
                 color = NuvioTheme.colors.TextPrimary,
                 maxLines = 1,
@@ -353,13 +354,13 @@ fun CalendarVfBanner(episodes: List<CalendarEpisode>, modifier: Modifier = Modif
         }
         if (episodes.size > 4) {
             Text(
-                text = "+ ${episodes.size - 4} autre(s) — voir le Calendrier",
+                text = "+ ${episodes.size - 4} autre(s) · OK pour fermer · voir le Calendrier",
                 style = MaterialTheme.typography.bodySmall,
                 color = NuvioTheme.colors.TextSecondary
             )
         } else {
             Text(
-                text = "Détails dans le Calendrier",
+                text = "Appuie sur OK pour fermer · Détails dans le Calendrier",
                 style = MaterialTheme.typography.bodySmall,
                 color = NuvioTheme.colors.TextSecondary
             )

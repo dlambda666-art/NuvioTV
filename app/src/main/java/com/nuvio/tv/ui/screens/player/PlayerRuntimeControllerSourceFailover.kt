@@ -51,10 +51,12 @@ internal object SourceFailoverRules {
     }
 
     /** Premier flux jouable de la liste (déjà dans l'ordre 666TV) qui n'a pas encore été essayé. */
-    fun selectNext(streams: List<Stream>, tried: Set<String>): Stream? =
+    fun selectNext(streams: List<Stream>, tried: Set<String>, season: Int? = null, episode: Int? = null): Stream? =
         streams.firstOrNull { stream ->
             val key = failoverKey(stream) ?: return@firstOrNull false
-            key !in tried && isPlayable(stream) && sourceKey(stream) !in tried
+            key !in tried && isPlayable(stream) && sourceKey(stream) !in tried &&
+                // 666TVF : jamais un autre épisode (vieux Raw) ni du Dolby Vision sans HDR (violet)
+                !com.nuvio.tv.core.player.StreamAutoPlaySelector.autoPlayBlocked(stream, season, episode)
         }
 
     /** Clé « toute la source » (ex. Frenchio666), utilisée quand ses liens sont refusés. */
@@ -196,7 +198,10 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
         var next: Stream? = null
         var waited = 0L
         while (waited <= SourceFailoverRules.LIST_WAIT_MS) {
-            next = SourceFailoverRules.selectNext(_uiState.value.sourceAllStreams, sourceFailoverTriedKeys)
+            next = SourceFailoverRules.selectNext(
+                _uiState.value.sourceAllStreams, sourceFailoverTriedKeys,
+                _uiState.value.currentSeason, _uiState.value.currentEpisode
+            )
             if (next != null) break
             if (sourceStreamsFetchCompleted && !_uiState.value.isLoadingSourceStreams &&
                 sourceStreamsCacheRequestKey == requestKey

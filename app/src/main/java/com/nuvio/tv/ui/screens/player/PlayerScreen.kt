@@ -156,6 +156,11 @@ fun PlayerScreen(
     onPlayRecommendation: (PostPlayRecommendation, manualSelection: Boolean) -> Unit = { _, _ -> },
     onOpenRecommendationDetails: (PostPlayRecommendation) -> Unit = {}
 ) {
+    // 666TVF : tant que le lecteur est ouvert, aucune annonce (cloche, bannière).
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        com.nuvio.tv.core.tools.Announce666.playerOpened()
+        onDispose { com.nuvio.tv.core.tools.Announce666.playerClosed() }
+    }
     val uiState by viewModel.uiState.collectAsState()
     val postPlayRecommendationState by viewModel.postPlayRecommendationUiState.collectAsState()
     val effectiveAutoplayEnabled by viewModel.effectiveAutoplayEnabled.collectAsState(initial = false)

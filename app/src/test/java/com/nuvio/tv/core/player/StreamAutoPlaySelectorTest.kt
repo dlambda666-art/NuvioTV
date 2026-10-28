@@ -268,6 +268,51 @@ class StreamAutoPlaySelectorTest {
         assertEquals(listOf(regular, cachedDebrid), ordered)
     }
 
+    // Cas pièges 28/10
+    @Test
+    fun `autoplay never launches Dolby Vision without HDR when HDR10 exists`() {
+        val dv = stream("Comet666", url = "https://a.test/dv", name = "Film.2160p.WEB.DV.H265")
+        val hdr = stream("Comet666", url = "https://a.test/hdr", name = "Film.2160p.WEB.HDR10.H265")
+        val selected = StreamAutoPlaySelector.selectAutoPlayStream(
+            streams = listOf(dv, hdr), mode = StreamAutoPlayMode.FIRST_STREAM, regexPattern = "",
+            source = StreamAutoPlaySource.ALL_SOURCES, installedAddonNames = emptySet(),
+            selectedAddons = emptySet(), selectedPlugins = emptySet()
+        )
+        assertEquals(hdr, selected)
+        org.junit.Assert.assertFalse(StreamAutoPlaySelector.isDvOnly(stream("X", name = "Film.2160p.DV.HDR10.H265")))
+        org.junit.Assert.assertTrue(StreamAutoPlaySelector.isDvOnly(stream("X", name = "Film 2160p Dolby Vision")))
+    }
+
+    @Test
+    fun `Dolby Vision without HDR goes last in its source`() {
+        val dv = stream("Comet666", url = "https://a.test/dv", name = "Film.2160p.DV")
+        val hdr = stream("Comet666", url = "https://a.test/hdr", name = "Film.2160p.HDR")
+        val ordered = StreamAutoPlaySelector.orderAddonStreams(
+            listOf(AddonStreams("Comet666", null, listOf(dv, hdr))), emptyList()
+        )
+        assertEquals(listOf(hdr, dv), ordered.first().streams)
+    }
+
+    @Test
+    fun `autoplay never launches a WWE Raw dated another day`() {
+        StreamAutoPlaySelector.airDateHint666 = Triple(2026, 43, "2026-10-26")
+        try {
+            val old = stream("Comet666", url = "https://a.test/old", name = "WWE.Raw.2026.10.19.FRENCH.2160p")
+            val good = stream("Comet666", url = "https://a.test/good", name = "WWE.Raw.2026.10.26.FRENCH.1080p")
+            val selected = StreamAutoPlaySelector.selectAutoPlayStream(
+                streams = listOf(old, good), mode = StreamAutoPlayMode.FIRST_STREAM, regexPattern = "",
+                source = StreamAutoPlaySource.ALL_SOURCES, installedAddonNames = emptySet(),
+                selectedAddons = emptySet(), selectedPlugins = emptySet(), season = 2026, episode = 43
+            )
+            assertEquals(good, selected)
+            org.junit.Assert.assertTrue(StreamAutoPlaySelector.dateMismatch("Raw.2026.10.19", "2026-10-26"))
+            org.junit.Assert.assertFalse(StreamAutoPlaySelector.dateMismatch("Raw.2026.10.27", "2026-10-26"))
+            org.junit.Assert.assertFalse(StreamAutoPlaySelector.dateMismatch("Show.S01E05", "2026-10-26"))
+        } finally {
+            StreamAutoPlaySelector.airDateHint666 = null
+        }
+    }
+
     private fun stream(
         addonName: String,
         url: String? = null,

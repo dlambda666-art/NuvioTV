@@ -339,6 +339,7 @@ class StreamScreenViewModel @Inject constructor(
 
     private fun loadStreams(forceRefresh: Boolean = false) {
         streamRepository.setLocalPluginSearchPaused(false)
+        setAirDateHint666()
         streamLoadScope?.cancel()
         streamLoadScope = null
         streamLoadJob = null
@@ -897,6 +898,18 @@ class StreamScreenViewModel @Inject constructor(
             ensureActive()
             streamLoadCompleted = true
         }
+    }
+
+    /** 666TVF : date de diffusion de l'épisode (fiche), pour écarter un vieux WWE Raw. */
+    private fun setAirDateHint666() {
+        if (season == null || episode == null) return
+        val metaId = contentId?.takeIf { it.isNotBlank() } ?: videoId.substringBefore(":")
+        val released = runCatching {
+            metaRepository.getCachedMeta(contentType, metaId)?.videos
+                ?.firstOrNull { it.id == videoId || (it.season == season && it.episode == episode) }
+                ?.released
+        }.getOrNull()?.take(10)?.takeIf { Regex("\\d{4}-\\d{2}-\\d{2}").matches(it) }
+        StreamAutoPlaySelector.airDateHint666 = released?.let { Triple(season, episode, it) }
     }
 
     private fun shouldAttemptEmbeddedMetaStreamLookup(): Boolean {

@@ -36,12 +36,16 @@ object StreamAutoPlaySelector {
             it.streams.any { stream -> stream.isDirectDebrid() }
         }
         if (installedOrder.isEmpty()) {
-            return (directDebridEntries + remainingEntries).sortedBy { plugin666Rank(it.addonName) }
+            return (directDebridEntries + remainingEntries).sortedBy { plugin666Rank(it.addonName) }.map(::dvOnlyLast666)
         }
         val (addonEntries, pluginEntries) = remainingEntries.partition { it.addonName in addonRankByName }
         val orderedAddons = addonEntries.sortedBy { addonRankByName.getValue(it.addonName) }
-        return (directDebridEntries + orderedAddons + pluginEntries).sortedBy { plugin666Rank(it.addonName) }
+        return (directDebridEntries + orderedAddons + pluginEntries).sortedBy { plugin666Rank(it.addonName) }.map(::dvOnlyLast666)
     }
+
+    /** 666TVF : Dolby Vision sans HDR rangé en bas de sa source (image violette, 28/10). */
+    private fun dvOnlyLast666(group: AddonStreams): AddonStreams =
+        if (group.streams.none { isDvOnly(it) }) group else group.copy(streams = group.streams.sortedBy { if (isDvOnly(it)) 1 else 0 })
 
     private fun isPlayable(stream: Stream): Boolean {
         // External URL streams (e.g. error pages, web links) are not playable.
@@ -81,9 +85,53 @@ object StreamAutoPlaySelector {
             val e = m.groupValues[2].toIntOrNull() ?: return@forEach
             found += Triple(s, e, e)
         }
+        // 666TVF : émission datée (WWE Raw) : un fichier daté d'un autre jour est un autre épisode
+        if (dateMismatch(text, airDateFor(season, episode))) return 2
         if (found.isEmpty()) return 1
         return if (found.any { (s, a, b) -> s == season && episode in a..b }) 0 else 2
     }
+
+    /**
+     * 666TVF : date de diffusion de l'épisode en cours (posée par l'écran des flux, qui a la fiche).
+     * Sert à reconnaître un vieux WWE Raw (2026.10.19 au lieu de 2026.10.26, 27/10).
+     */
+    @Volatile var airDateHint666: Triple<Int, Int, String>? = null
+
+    fun airDateFor(season: Int?, episode: Int?): String? =
+        airDateHint666?.takeIf { it.first == season && it.second == episode }?.third
+
+    private val DATED = Regex("""\b(20\d\d)[ ._-](\d\d)[ ._-](\d\d)\b""")
+
+    /** Vrai si le texte porte une date qui n'est pas celle de l'épisode (± 1 jour 1/2). */
+    fun dateMismatch(text: String, airDate: String?): Boolean {
+        val target = airDate?.take(10)?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() } ?: return false
+        var any = false
+        for (m in DATED.findAll(text)) {
+            val d = runCatching {
+                java.time.LocalDate.of(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.groupValues[3].toInt())
+            }.getOrNull() ?: continue
+            any = true
+            if (kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(target, d)) <= 1) return false
+        }
+        return any
+    }
+
+    private val DV = Regex("""(?i)(?<![a-z0-9])(DV|DoVi|Dolby[ ._-]?Vision)(?![a-z0-9])""")
+    private val HDR = Regex("""(?i)(?<![a-z0-9])(HDR|HDR10|HDR10\+|HDR10Plus|HLG)(?![a-z0-9])""")
+
+    /**
+     * 666TVF : Dolby Vision sans couche HDR10 de secours → image violette sur la Shield du bas
+     * (28/10). Jamais lancé automatiquement, et rangé derrière les autres dans la liste.
+     */
+    fun isDvOnly(stream: Stream): Boolean {
+        val text = listOfNotNull(stream.name, stream.title, stream.description, stream.behaviorHints?.filename)
+            .joinToString(" ")
+        return DV.containsMatchIn(text) && !HDR.containsMatchIn(text)
+    }
+
+    /** Ce que la lecture auto et le lien suivant ne lancent jamais (s'il existe autre chose). */
+    fun autoPlayBlocked(stream: Stream, season: Int?, episode: Int?): Boolean =
+        episodeRank(stream, season, episode) >= 2 || isDvOnly(stream)
 
     private fun isUncertainFrench(stream: Stream): Boolean =
         listOf(stream.name, stream.title, stream.description).any { it?.contains("VF ?") == true }
@@ -104,7 +152,8 @@ object StreamAutoPlaySelector {
     ): Stream? {
         if (streams.isEmpty()) return null
         // 666TV : jamais de lecture auto d'un flux qui annonce un autre épisode.
-        val epStreams = streams.filter { episodeRank(it, season, episode) < 2 }
+        // 666TVF : ni un autre épisode (vieux WWE Raw), ni du Dolby Vision sans HDR (image violette).
+        val epStreams = streams.filter { !autoPlayBlocked(it, season, episode) }
         @Suppress("NAME_SHADOWING")
         val streams = if (epStreams.isNotEmpty()) epStreams else streams
 

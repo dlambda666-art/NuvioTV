@@ -372,6 +372,7 @@ open class MainActivity : ComponentActivity() {
         com.nuvio.tv.core.tools.PhoneLink666.init(this)
         com.nuvio.tv.core.tools.MenuOrder666.init(this)
         com.nuvio.tv.core.tools.PluginOrder666.init(this)
+        com.nuvio.tv.core.tools.Announce666.externalPlayback = { externalPlaybackTracker.awaitingExternal666 }
         run {
             val appCtx = applicationContext
             Thread { com.nuvio.tv.core.tools.Backup666.autoBackupIfDue(appCtx) }.apply { priority = Thread.MIN_PRIORITY }.start()
@@ -1259,9 +1260,8 @@ open class MainActivity : ComponentActivity() {
                             }
 
                             // 666TV : « nouvel épisode en VF » pour les séries avec la cloche.
-                            var calendarVfAnnouncements by remember {
-                                mutableStateOf<List<com.nuvio.tv.core.calendar.CalendarEpisode>>(emptyList())
-                            }
+                            // 666TVF : tenue par l'activité, pour que OK puisse fermer la bannière.
+                            var calendarVfAnnouncements by announcements666
                             // 666TV : ce qui attend d'être annoncé. Rien n'est « consommé » tant
                             // que tu ne l'as pas vu : pas pendant un film, pas écran éteint.
                             var pending666 by remember {
@@ -1300,31 +1300,67 @@ open class MainActivity : ComponentActivity() {
                                     delay(20L * 60L * 1000L)
                                 }
                             }
+                            // 666TVF : « Tester la bannière » (Outils 666) — dans 20 s, le temps d'aller sur Orange.
+                            val testRequest666 by com.nuvio.tv.core.tools.Announce666.testRequest.collectAsState()
+                            LaunchedEffect(testRequest666) {
+                                if (testRequest666 == 0L) return@LaunchedEffect
+                                delay(20_000L)
+                                pending666 = pending666 + com.nuvio.tv.core.calendar.CalendarEpisode(
+                                    seriesId = "test:" + testRequest666,
+                                    seriesName = "Annonce d'essai",
+                                    poster = null,
+                                    season = 0,
+                                    episode = 0,
+                                    title = "tout marche 😈",
+                                    airInstant = java.time.Instant.now(),
+                                    addonBaseUrl = null
+                                )
+                            }
                             val inPlayer666 = currentRoute?.startsWith("player/") == true
+                            val playerOpen666 by com.nuvio.tv.core.tools.Announce666.playerOpen.collectAsState()
                             val pendingContext666 = LocalContext.current
-                            LaunchedEffect(pending666, inPlayer666) {
+                            val pendingLifecycle666 = androidx.compose.ui.platform.LocalLifecycleOwner.current.lifecycle
+                            LaunchedEffect(pending666, inPlayer666, playerOpen666) {
                                 if (pending666.isEmpty() || inPlayer666) return@LaunchedEffect
+                                // 666TVF : jamais pendant un film — c'est le lecteur qui le dit, pas l'écran
+                                // affiché (la cloche a sonné en plein film le 27/10).
+                                while (com.nuvio.tv.core.tools.Announce666.inPlayer()) delay(2_000L)
                                 val power = pendingContext666.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
                                 while (power != null && !power.isInteractive) delay(60_000L)
+                                if (com.nuvio.tv.core.tools.Announce666.inPlayer()) return@LaunchedEffect
                                 val shown = pending666
                                 pendingContext666.markSportAnnounced666(shown)
-                                calendarVfAnnouncements = shown
-                                pending666 = emptyList()
-                            }
-                            LaunchedEffect(calendarVfAnnouncements) {
-                                if (calendarVfAnnouncements.isNotEmpty()) {
-                                    delay(15_000L)
-                                    calendarVfAnnouncements = emptyList()
+                                val inApp = pendingLifecycle666.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
+                                val overlay = !inApp && com.nuvio.tv.core.tools.Announce666.showOverlay(
+                                    pendingContext666,
+                                    title = announceTitle666(shown),
+                                    titleGreen = shown.none { it.seriesId.startsWith("alerte:") || it.seriesId.startsWith("sport:") },
+                                    lines = shown.map { announceLine666(it) },
+                                    onDismiss = { announcements666.value = emptyList() }
+                                )
+                                val where = when {
+                                    inApp -> "vue dans 666TVF"
+                                    overlay -> "vue par-dessus une autre appli"
+                                    else -> "en attente (autre appli, pas d'autorisation)"
                                 }
+                                shown.forEach { com.nuvio.tv.core.tools.Announce666.log(pendingContext666, announceLogText666(it), where) }
+                                // La bannière reste jusqu'à OK (dans 666TVF, ou à ton retour si tu étais ailleurs).
+                                calendarVfAnnouncements = (calendarVfAnnouncements + shown).distinctBy { "${it.seriesId}|${it.season}|${it.episode}" }
+                                pending666 = emptyList()
                             }
                             // 666TV : cri quand la bannière apparaît (jamais pendant la lecture).
                             val bellContext = LocalContext.current
                             val bellLifecycle = androidx.compose.ui.platform.LocalLifecycleOwner.current.lifecycle
                             LaunchedEffect(calendarVfAnnouncements) {
                                 if (calendarVfAnnouncements.isEmpty() || currentRoute?.startsWith("player/") == true) return@LaunchedEffect
+                                if (com.nuvio.tv.core.tools.Announce666.inPlayer()) return@LaunchedEffect
+                                // fermeture par OK : la liste rétrécit, pas de nouvelle cloche
+                                if (bellRung666.containsAll(calendarVfAnnouncements.map { it.key })) return@LaunchedEffect
+                                bellRung666 += calendarVfAnnouncements.map { it.key }
                                 // 666TV : 666TV est derrière une autre appli (Orange, YouTube…) :
                                 // le cri sonne quand même, avec un message en bas de l'écran.
-                                if (!bellLifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                                if (!bellLifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) &&
+                                    !com.nuvio.tv.core.tools.Announce666.overlayShowing) {
                                     val names = calendarVfAnnouncements.joinToString(", ") { ep ->
                                         if (ep.seriesId.startsWith("sport:") || ep.seriesId.startsWith("alerte:")) ep.seriesName else ep.seriesName + " S" + ep.season + "E" + ep.episode
                                     }
@@ -1347,7 +1383,7 @@ open class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
-                            if (calendarVfAnnouncements.isNotEmpty() && currentRoute?.startsWith("player/") != true) {
+                            if (calendarVfAnnouncements.isNotEmpty() && currentRoute?.startsWith("player/") != true && playerOpen666 == 0) {
                                 com.nuvio.tv.ui.screens.calendar.CalendarVfBanner(
                                     episodes = calendarVfAnnouncements,
                                     modifier = Modifier
@@ -1516,7 +1552,20 @@ open class MainActivity : ComponentActivity() {
     // and then immediately exiting the app).
     val longPressBackHeld = mutableStateOf(false)
 
+    /** 666TVF : annonces affichées (bannière) — restent jusqu'à OK / Retour. */
+    val announcements666 = mutableStateOf<List<com.nuvio.tv.core.calendar.CalendarEpisode>>(emptyList())
+    private val bellRung666 = mutableSetOf<String>()
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (announcements666.value.isNotEmpty() && !com.nuvio.tv.core.tools.Announce666.inPlayer() &&
+            event.keyCode in setOf(KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER, KeyEvent.KEYCODE_BACK)
+        ) {
+            if (event.action == KeyEvent.ACTION_UP) {
+                announcements666.value = emptyList()
+                com.nuvio.tv.core.tools.Announce666.hideOverlay(this)
+            }
+            return true
+        }
         if (event.keyCode == KeyEvent.KEYCODE_BACK) {
             if (longPressBackHeld.value) {
                 if (event.action == KeyEvent.ACTION_UP) longPressBackHeld.value = false
@@ -2682,4 +2731,25 @@ private fun android.content.Context.markSportAnnounced666(shown: List<com.nuvio.
     val prefs = getSharedPreferences("666tv_sport", android.content.Context.MODE_PRIVATE)
     val done = prefs.getStringSet("announced", emptySet()).orEmpty()
     prefs.edit().putStringSet("announced", (done + names).toList().takeLast(30).toSet()).apply()
+}
+
+// 666TVF : textes des annonces (bannière dans 666TVF, bannière par-dessus Orange, journal).
+internal fun announceTitle666(episodes: List<com.nuvio.tv.core.calendar.CalendarEpisode>): String = when {
+    episodes.all { it.seriesId.startsWith("alerte:") } -> "⚠️ Plugin en panne"
+    episodes.all { it.seriesId.startsWith("sport:") } -> "🥊 C'est l'heure du combat"
+    else -> "🔔 Nouveau en VF"
+}
+
+internal fun announceLine666(ep: com.nuvio.tv.core.calendar.CalendarEpisode): String = when {
+    ep.seriesId.startsWith("alerte:") -> "⚠️ ${ep.seriesName} · ${ep.title.orEmpty()}"
+    ep.seriesId.startsWith("sport:") -> "🥊 ${ep.seriesName} · ${ep.title.orEmpty()}"
+    ep.seriesId.startsWith("test:") -> "🇫🇷 ${ep.seriesName} · ${ep.title.orEmpty()}"
+    else -> "🇫🇷 ${ep.seriesName} · ${ep.code}"
+}
+
+internal fun announceLogText666(ep: com.nuvio.tv.core.calendar.CalendarEpisode): String = when {
+    ep.seriesId.startsWith("alerte:") -> "⚠️ ${ep.seriesName} ne renvoie plus rien"
+    ep.seriesId.startsWith("sport:") -> "🥊 ${ep.seriesName} · c'est l'heure du combat"
+    ep.seriesId.startsWith("test:") -> "🔔 Annonce d'essai"
+    else -> "🔔 ${ep.seriesName} ${ep.code} en VF"
 }

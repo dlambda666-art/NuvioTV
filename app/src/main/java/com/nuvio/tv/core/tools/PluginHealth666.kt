@@ -18,7 +18,9 @@ import javax.inject.Singleton
 @Singleton
 class PluginHealth666 @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val pluginManager: PluginManager
+    private val pluginManager: PluginManager,
+    private val localDebridService: com.nuvio.tv.core.debrid.LocalDebridService,
+    private val debridSettingsDataStore: com.nuvio.tv.data.local.DebridSettingsDataStore
 ) {
     data class Result(val id: String, val name: String, val links: Int, val detail: String) {
         val ok: Boolean get() = links > 0
@@ -37,6 +39,20 @@ class PluginHealth666 @Inject constructor(
             // 666TVF : la liste ne suffit pas — le 1er lien doit aussi s'ouvrir (Frenchio en 403, 26/10).
             val refused = real.firstOrNull { it.url.startsWith("http", ignoreCase = true) }?.let { probe(it.url, it.headers) }
                 ?.takeIf { it == -1 || it >= 400 }
+            // 666TVF : torrents (Comet666) : il faut qu'au moins un soit en cache chez le débrideur,
+            // sinon rien ne se lance (vérifié comme pour le calendrier).
+            if (real.isNotEmpty() && real.none { it.url.startsWith("http", ignoreCase = true) }) {
+                val hashes = real.mapNotNull { r ->
+                    r.infoHash?.lowercase() ?: Regex("btih:([0-9a-fA-F]{40})").find(r.url)?.groupValues?.get(1)?.lowercase()
+                }.distinct()
+                val cached = cachedCount(hashes)
+                if (cached == 0) {
+                    return@map Result(scraper.id, scraper.name, 0, "${real.size} torrent(s), aucun en cache chez le débrideur")
+                }
+                if (cached != null) {
+                    return@map Result(scraper.id, scraper.name, cached, "$cached/${hashes.size} en cache pour Matrix")
+                }
+            }
             if (refused != null) {
                 return@map Result(scraper.id, scraper.name, 0,
                     if (refused == -1) "${real.size} lien(s), mais le 1er ne répond pas" else "${real.size} lien(s), mais refusés (HTTP $refused)")
@@ -55,6 +71,13 @@ class PluginHealth666 @Inject constructor(
         }
         save(results)
         return results
+    }
+
+    /** Nombre de torrents en cache chez le débrideur actif ; null si on ne peut pas vérifier. */
+    private suspend fun cachedCount(hashes: List<String>): Int? {
+        if (hashes.isEmpty()) return null
+        val account = runCatching { debridSettingsDataStore.settings.first().activeResolverCredential }.getOrNull() ?: return null
+        return runCatching { localDebridService.checkCached(account, hashes.take(40))?.size }.getOrNull()
     }
 
     /** Code HTTP de l'ouverture du lien (2 premiers octets seulement), -1 si pas de réponse. */

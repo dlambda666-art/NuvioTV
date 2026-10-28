@@ -48,7 +48,8 @@ class ShieldTransferService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val factory: ProfileDataStoreFactory,
     private val profileManager: ProfileManager,
-    private val pluginDataStore: PluginDataStore
+    private val pluginDataStore: PluginDataStore,
+    private val allDebrid666: com.nuvio.tv.core.debrid.AllDebrid666
 ) {
     data class ImportSummary(val sources: Int, val settings: Int)
 
@@ -78,6 +79,10 @@ class ShieldTransferService @Inject constructor(
             .put("from", Build.MODEL ?: "Shield")
             .put("sources", sources)
             .put("player", player)
+            // 666TVF : ordre des cavaliers et clé AllDebrid (paquet chiffré, réseau local seulement)
+            .put("extras666", JSONObject()
+                .put("pluginOrder", com.nuvio.tv.core.tools.PluginOrder666.order.joinToString("|"))
+                .put("alldebrid", allDebrid666.apiKey.value))
             .toString()
     }
 
@@ -100,6 +105,16 @@ class ShieldTransferService @Inject constructor(
                 val entry = player.optJSONObject(i) ?: continue
                 val name = entry.optString("k").takeIf { it.isNotBlank() } ?: continue
                 if (applyEntry(prefs, name, entry.optString("t"), entry)) settingCount++
+            }
+        }
+        root.optJSONObject("extras666")?.let { extras ->
+            extras.optString("pluginOrder").takeIf { it.isNotBlank() }?.let {
+                com.nuvio.tv.core.tools.PluginOrder666.save(context, it.split("|"))
+                settingCount++
+            }
+            extras.optString("alldebrid").takeIf { it.isNotBlank() }?.let {
+                allDebrid666.saveKey(it)
+                sourceCount++
             }
         }
         ImportSummary(sourceCount, settingCount)

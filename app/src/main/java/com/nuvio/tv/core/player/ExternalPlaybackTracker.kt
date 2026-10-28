@@ -220,6 +220,8 @@ class ExternalPlaybackTracker @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var zidooMonitorJob: Job? = null
     private var awaitingExternalPlayerResult = false
+    /** 666TVF : un film tourne dans le lecteur externe (pas d'annonce pendant ce temps). */
+    val awaitingExternal666: Boolean get() = awaitingExternalPlayerResult
     // Armed only when the loader is raised on return from a persisted (process-recreated) session,
     // where onActivityResult may never fire because the external player killed us and left no
     // pending result. If the result does not arrive within STALE_RETURN_WATCHDOG_MS the session is

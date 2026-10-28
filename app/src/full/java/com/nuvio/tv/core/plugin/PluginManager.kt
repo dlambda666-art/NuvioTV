@@ -1064,6 +1064,15 @@ class PluginManager @Inject constructor(
             }
         }
         
+        // 666TVF : plugin retiré du dépôt → retiré de la Shield aussi (Frenchio, 28/10)
+        val obsolete = com.nuvio.tv.core.tools.PluginPrune666.obsolete(
+            existingScrapers, repoId, scraperInfos.map { it.id }.toSet()
+        )
+        obsolete.forEach { old ->
+            Log.i(TAG, "Plugin retiré du dépôt, supprimé : ${old.name}")
+            existingScrapers.removeAll { it.id == old.id }
+            runCatching { dataStore.deleteScraperCode(old.id) }
+        }
         dataStore.saveScrapers(existingScrapers)
     }
 
