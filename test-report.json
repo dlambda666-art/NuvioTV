@@ -1,0 +1,276 @@
+{
+ "at": "2026-10-28T19:33:17.734Z",
+ "cases": [
+  {
+   "id": "1339210",
+   "ms": 1272,
+   "count": 0,
+   "err": null,
+   "sample": []
+  },
+  {
+   "id": "tt33249097",
+   "ms": 502,
+   "count": 0,
+   "err": null,
+   "sample": []
+  }
+ ],
+ "lookup": {
+  "status": 200,
+  "json": {
+   "imdbId": "tt33249097",
+   "tmdbId": 1339210,
+   "titles": [
+    "Affection",
+    "Affection"
+   ],
+   "year": 2026,
+   "type": "movie"
+  }
+ },
+ "debug": {
+  "status": 200,
+  "json": {
+   "id": "1339210",
+   "type": "movie",
+   "tmdbKey": true,
+   "steps": [
+    {
+     "search": "Affection",
+     "results": [
+      {
+       "title": "Affection",
+       "tag": "NONE",
+       "text": "Affection (2026)",
+       "match": true
+      },
+      {
+       "title": "Affection Affection",
+       "tag": "NONE",
+       "text": "Affection Affection (2026)",
+       "match": false
+      },
+      {
+       "title": "L'Objet de mon affection",
+       "tag": "DUB",
+       "text": "L'Objet de mon affection (1998)",
+       "match": false
+      }
+     ]
+    }
+   ],
+   "tmdb": {
+    "type": "movie",
+    "titles": [
+     "Affection",
+     "Affection"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/3b3wC8JFjURlMsFj9gqbv0SyTJs.jpg",
+    "year": 2026,
+    "releaseDate": "2026-05-08",
+    "language": "en",
+    "genres": [
+     27,
+     878
+    ],
+    "imdbId": "tt33249097",
+    "tmdbId": 1339210,
+    "mediaType": "movie"
+   },
+   "frenchPlatform": false,
+   "platforms": [],
+   "page": {
+    "href": "https://maj.french-stream.pink/15127844-affection.html",
+    "status": 200,
+    "length": 85032,
+    "h1At": 44086,
+    "hits": [
+     "s=\"desc-text\">Résumé du film Affection en streaming complet vf et vostfr hd vod gratuit sans limite et sans inscription<",
+     "c-text\">Résumé du film Affection en streaming complet vf et vostfr hd vod gratuit sans limite et sans inscription</p> ",
+     "ul class=\"flist-col\"> <li><span>Version:</span><span id=\"film_lang\"><a href=\"/index.php?do=x",
+     "n id=\"film_lang\"><a href=\"/index.php?do=xfsearch&amp;xfname=version-film&amp;xf=VOSTFR\">VOSTFR</a></span></li> ",
+     "href=\"/index.php?do=xfsearch&amp;xfname=version-film&amp;xf=VOSTFR\">VOSTFR</a></span></li> <",
+     "ndex.php?do=xfsearch&amp;xfname=version-film&amp;xf=VOSTFR\">VOSTFR</a></span></li> <li><span",
+     "OSTFR</a></span></li> <li><span>Qualité:</span> <span id=\"film_quality\" style=\"font-size: 11",
+     " <li><span>Qualité:</span> <span id=\"film_quality\" style=\"font-size: 11px; text-transform: uppercase; ",
+     "er-radius: 3px;\"><a href=\"/index.php?do=xfsearch&amp;xfname=qualit&amp;xf=HD\">HD</a></span></li> ",
+     " <li><span>Langue d'origine:</span> <a href=\"/index.php?do=xfsearch&amp",
+     "meta short-qual\"><a href=\"/index.php?do=xfsearch&amp;xfname=version-film&amp;xf=VOSTFR\">VOSTFR</a></div> ",
+     "href=\"/index.php?do=xfsearch&amp;xfname=version-film&amp;xf=VOSTFR\">VOSTFR</a></div> <div class=",
+     "ndex.php?do=xfsearch&amp;xfname=version-film&amp;xf=VOSTFR\">VOSTFR</a></div> <div class=\"short-m",
+     "eta short-label\"><a href=\"/index.php?do=xfsearch&amp;xfname=qualit&amp;xf=HD\">HD</a></div> <br> ",
+     "ption\" onclick=\"downloadFile('basse')\"><span>Télécharger en VOSTFR</span></div> </div> ",
+     "rel-form-grid-4\"> <select id=\"commu-rel-quality\" class=\"commu-rel-input\"> <o",
+     " </div> <input id=\"commu-rel-quality-custom\" class=\"commu-rel-input commu-rel-input-narro",
+     "m: 1px; flex-wrap: nowrap; position: relative; } .player-option.active { border-bottom: 0px solid #f48625;",
+     "v=grp8ts1793019037\" defer></script> </body> </html> <!-- French-Stream Copyright (https://french-stream.club) --> ",
+     "> </body> </html> <!-- French-Stream Copyright (https://french-stream.club) --> "
+    ]
+   },
+   "streams": {
+    "enabled": true,
+    "count": 46,
+    "vf": false,
+    "sample": [
+     {
+      "vf": false,
+      "text": "Torrentio Affection.2025.1080p.WEBRip.10Bit.DDP.5.1.x265-NeoNoir 👤 79 💾 1.39 GB ⚙️ ThePirateBay"
+     },
+     {
+      "vf": false,
+      "text": "Torrentio Affection 2025 1080p WEBRip 👤 57 💾 1.65 GB ⚙️ YTS"
+     },
+     {
+      "vf": false,
+      "text": "Torrentio Affection 2025 1080p WEB-DL HEVC x265 5.1 BONE 👤 12 💾 1.04 GB ⚙️ ThePirateBay"
+     },
+     {
+      "vf": false,
+      "text": "Torrentio Affection 2025 1080p AMZN WEB-DL DDP5 1 H 264-BYNDR 👤 12 💾 5.59 GB ⚙️ ThePirateBay"
+     },
+     {
+      "vf": false,
+      "text": "Torrentio Affection.2025 [PL.1080p.WEB-DL.H264-OzW] [Lektor PL] [mp4] [FIO… 👤 3 💾 2.8 GB ⚙️ TorrentGalaxy 🇵🇱"
+     },
+     {
+      "vf": false,
+      "text": "Torrentio Affection 2025 1080p WEBRip 10Bit DDP 5 1 x265-NeoNoir 👤 2 💾 1.39 GB ⚙️ ThePirateBay"
+     },
+     {
+      "vf": false,
+      "text": "Torrentio Affection 2025 1080p WEB-DL HEVC x265 5 1-BONE 👤 1 💾 1.04 GB ⚙️ ThePirateBay"
+     },
+     {
+      "vf": false,
+      "text": "Torrentio Affection (2025) 1080p WEBRip 5.1-LAMA 👤 1 💾 1.65 GB ⚙️ ThePirateBay"
+     },
+     {
+      "vf": false,
+      "text": "Torrentio Affection 2025 720p WEBRip 👤 23 💾 819.9 MB ⚙️ YTS"
+     },
+     {
+      "vf": false,
+      "text": "Torrentio Affection (2025) [PL.720p.edition-WEB-DL.H265.DarK] [Lektor PL] … 👤 3 💾 832.49 MB ⚙️ TorrentGalaxy 🇵🇱"
+     },
+     {
+      "vf": false,
+      "text": "Torrentio Affection (2025) 720p WEBRip-LAMA 👤 2 💾 819.9 MB ⚙️ ThePirateBay"
+     },
+     {
+      "vf": false,
+      "text": "StremThru Affection (2025) [1080p] [WEBRip] [5.1] [YTS.BZ]"
+     },
+     {
+      "vf": false,
+      "text": "StremThru Affection (2025) 1080p_sk.tit.mkv"
+     },
+     {
+      "vf": false,
+      "text": "StremThru Affection.2025.1080p.WEBRip.10Bit.DDP.5.1.x265-NeoNoir.mkv"
+     },
+     {
+      "vf": false,
+      "text": "StremThru 【高清影视之家发布 www.BBEGGE.com】疾患[简繁英字幕].Affection.2025.1080p.BluRay.x265.10bit.DTS-QuickIO"
+     }
+    ]
+   },
+   "streamsStatus": {
+    "enabled": true,
+    "checked": 699,
+    "found": 5,
+    "lastError": "HTTP 502"
+   },
+   "database": {
+    "enabled": true,
+    "loaded": 5187,
+    "saved": 1726,
+    "lastError": null,
+    "inMemory": 5286
+   },
+   "warmupStatus": {
+    "enabled": true,
+    "runs": 15,
+    "lastRun": "2026-10-28T16:56:38.611Z",
+    "catalogs": 80,
+    "titles": 3425,
+    "lastError": null,
+    "recent": 288
+   },
+   "queue": 0,
+   "cached": null,
+   "betterposters": {
+    "configured": true,
+    "valid": true,
+    "host": "btttr.cc",
+    "segments": [
+     "poster-qa",
+     "imdb",
+     "poster-default",
+     "<id>"
+    ],
+    "params": [
+     "lang"
+    ],
+    "placeholders": [
+     "{imdb_id}"
+    ]
+   }
+  }
+ },
+ "catalogs": [
+  "movie/fs-derniers-films FS - Derniers Films",
+  "movie/fs-films-action FS - Films Action",
+  "series/fs-dernieres-series FS - Dernières Séries",
+  "series/fs-series-netflix FS - Séries Netflix",
+  "series/fs-series-appletv FS - Séries Apple TV+",
+  "series/fs-series-prime FS - Séries Prime Video",
+  "series/fs-series-disneyplus FS - Séries Disney+",
+  "movie/fs-vf-week FS - En VF cette semaine",
+  "series/fs-vf-week FS - En VF cette semaine",
+  "movie/fs-pour-toi Pour toi, Lambda",
+  "series/fs-pour-toi Pour toi, Lambda",
+  "movie/fs-horreur-classiques Classiques de l'horreur en VF",
+  "movie/fs-search Recherche French Stream - Films",
+  "series/fs-search Recherche French Stream - Séries"
+ ],
+ "inCatalogs": {
+  "fs-derniers-films": {
+   "count": 54,
+   "hit": []
+  },
+  "fs-films-action": {
+   "count": 54,
+   "hit": []
+  },
+  "fs-vf-week": {
+   "count": 78,
+   "hit": []
+  },
+  "fs-pour-toi": {
+   "count": 30,
+   "hit": []
+  },
+  "fs-horreur-classiques": {
+   "count": 100,
+   "hit": []
+  },
+  "fs-search": {
+   "count": 0,
+   "hit": []
+  }
+ },
+ "torrentioAll": [
+  "Affection.2025.1080p.WEBRip.10Bit.DDP.5.1.x265-NeoNoir",
+  "Affection 2025 1080p WEBRip",
+  "Affection 2025 1080p WEB-DL HEVC x265 5.1 BONE",
+  "Affection 2025 1080p AMZN WEB-DL DDP5 1 H 264-BYNDR",
+  "Affection.2025 [PL.1080p.WEB-DL.H264-OzW] [Lektor PL] [mp4] [FIO…",
+  "Affection 2025 1080p WEBRip 10Bit DDP 5 1 x265-NeoNoir",
+  "Affection 2025 1080p WEB-DL HEVC x265 5 1-BONE",
+  "Affection (2025) 1080p WEBRip 5.1-LAMA",
+  "Affection 2025 720p WEBRip",
+  "Affection (2025) [PL.720p.edition-WEB-DL.H265.DarK] [Lektor PL] …",
+  "Affection (2025) 720p WEBRip-LAMA"
+ ]
+}
