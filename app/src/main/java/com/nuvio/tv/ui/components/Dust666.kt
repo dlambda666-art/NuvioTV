@@ -88,7 +88,7 @@ object Dust666 {
                             (py * it.height / b.height).toInt().coerceIn(0, it.height - 1)
                         )
                     }.getOrNull()
-                } ?: 0xFF5A0000.toInt()
+                } ?: 0xFF3A0C5C.toInt()
                 i++
             }
             hiddenKey = key
@@ -129,7 +129,7 @@ fun Dust666Overlay(modifier: Modifier = Modifier) {
     Canvas(modifier.onGloballyPositioned { origin = it.positionInRoot() }) {
         val el = (System.nanoTime() - burst.startNanos) / 1e9f
         val life = 0.9f
-        val ember = Color(0xFF5A0000); val ash = Color(0xFF888888)
+        val ember = Color(0xFF3A0C5C); val ash = Color(0xFF888888)
         for (i in burst.x.indices) {
             val lt = el - burst.delay[i]
             val baseX = burst.x[i] - origin.x; val baseY = burst.y[i] - origin.y

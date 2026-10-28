@@ -43,8 +43,8 @@ import com.nuvio.tv.R
 
 private val Splash666Bg = Color(0xFF0C0F0E)
 private val Splash666Green = Color(0xFF19C88E)
-private val Splash666Blood = Color(0xFFC3121F)
-private val Splash666BloodDark = Color(0xFF8A0010)
+private val Splash666Blood = Color(0xFF9B30D9)
+private val Splash666BloodDark = Color(0xFF5C168C)
 
 /** Taille du logo en pixels : la même que celle de l'écran de lancement Android, pour un enchaînement sans saut. */
 private const val SPLASH_WORDMARK_WIDTH_PX = 540
@@ -205,7 +205,7 @@ fun StartupSplashScreen(
                 // grand halo orange, puis cœur blanc-jaune qui brûle (en lumière additive)
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(Color(0xFFFF8A00).copy(alpha = 0.7f * eyes), Color(0xFFFF5A00).copy(alpha = 0.25f * eyes), Color.Transparent),
+                        colors = listOf(Color(0xFFC27BFF).copy(alpha = 0.7f * eyes), Color(0xFF9B30D9).copy(alpha = 0.25f * eyes), Color.Transparent),
                         center = c,
                         radius = w * 0.045f
                     ),
@@ -215,7 +215,7 @@ fun StartupSplashScreen(
                 )
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(Color.White.copy(alpha = eyes), Color(0xFFFFE08A).copy(alpha = 0.95f * eyes), Color(0xFFFF9A1F).copy(alpha = 0.5f * eyes), Color.Transparent),
+                        colors = listOf(Color.White.copy(alpha = eyes), Color(0xFFF0D9FF).copy(alpha = 0.95f * eyes), Color(0xFFB866FF).copy(alpha = 0.5f * eyes), Color.Transparent),
                         center = c,
                         radius = w * 0.017f
                     ),
@@ -313,7 +313,7 @@ fun StartupSplashScreen(
                 val x = w * fx
                 val top = h * y0
                 val rMax = w * (if (i == 0) 0.0058f else 0.0047f)
-                val blood = Color(0xFF7D000C)
+                val blood = Color(0xFF4E1077)
                 if (ph < 0.45f) {
                     // la goutte grossit au bord
                     val g = ph / 0.45f
