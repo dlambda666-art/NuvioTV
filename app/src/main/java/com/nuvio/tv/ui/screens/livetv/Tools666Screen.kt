@@ -74,7 +74,8 @@ data class Health666(val name: String, val detail: String, val ok: Boolean?)
 class Tools666ViewModel @Inject constructor(
     private val addonRepository: AddonRepository,
     private val pluginDataStore: PluginDataStore,
-    private val pluginHealth: com.nuvio.tv.core.tools.PluginHealth666
+    private val pluginHealth: com.nuvio.tv.core.tools.PluginHealth666,
+    private val startupSync666: com.nuvio.tv.core.sync.StartupSyncService
 ) : ViewModel() {
     private val _checks = MutableStateFlow<List<Health666>>(emptyList())
     val checks: StateFlow<List<Health666>> = _checks
@@ -90,6 +91,11 @@ class Tools666ViewModel @Inject constructor(
                 list += { webRow("Internet", "https://clients3.google.com/generate_204") }
                 list += { webRow("TorBox", "https://api.torbox.app/") }
                 list += { webRow("Passer le générique (IntroDB)", "https://api.introdb.app/") }
+                // 666TVF : commencé en bas, repris en haut — passe par le compte Nuvio des deux Shield.
+                list += {
+                    if (startupSync666.hasAccount666) Health666("Reprise entre les Shield", "Compte Nuvio connecté", true)
+                    else Health666("Reprise entre les Shield", "Pas de compte Nuvio : connecte le même sur les deux Shield", false)
+                }
                 val addons = withTimeoutOrNull(5_000) { addonRepository.getInstalledAddons().first() }.orEmpty()
                 addons.forEach { a ->
                     list += {

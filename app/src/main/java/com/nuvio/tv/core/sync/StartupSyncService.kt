@@ -153,6 +153,17 @@ class StartupSyncService @Inject constructor(
         }
     }
 
+    /**
+     * 666TVF : à l'ouverture d'une fiche, on récupère tout de suite la position laissée sur
+     * l'autre Shield (commencé en bas, repris en haut), au lieu d'attendre le passage des 15 min.
+     */
+    fun requestProgressPull666() {
+        scheduleActivityPull(reason = "666-fiche", minIntervalMs = 30_000L)
+    }
+
+    /** 666TVF : vrai si un compte Nuvio est connecté (la reprise entre Shield passe par lui). */
+    val hasAccount666: Boolean get() = authManager.authState.value is AuthState.FullAccount
+
     fun requestForegroundSync() {
         scheduleActivityPull(
             reason = "foreground",

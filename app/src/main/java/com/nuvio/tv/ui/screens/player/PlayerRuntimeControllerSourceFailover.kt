@@ -145,6 +145,8 @@ internal fun PlayerRuntimeController.observeSourceFailover() {
                 val release = (currentStreamDescription ?: _uiState.value.currentStreamName).orEmpty().lineSequence().firstOrNull().orEmpty()
                 if (release.isNotBlank()) reportReleaseVerdict666(release, hasFrench666)
             }
+            // 666TVF : piste française entendue → Frank sait que ce titre est en VF (nouveautés VF).
+            if (hasFrench666) com.nuvio.tv.core.tools.FrankVf666.confirm(context, contentId, contentType, "audio")
             if (tracks.none { it.isFrench666() } && tracks.all { it.knownOtherLanguage666() }) {
                 Log.i(PlayerRuntimeController.TAG, "No French audio track (${tracks.joinToString { it.language.orEmpty() }}) → next link")
                 _uiState.update { it.copy(error = NO_FRENCH_AUDIO_666) }

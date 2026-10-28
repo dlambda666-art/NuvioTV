@@ -910,6 +910,8 @@ open class MainActivity : ComponentActivity() {
                     startupDestination = startupDestinationForRoute(actualRoute ?: startDestination)
 
                     LaunchedEffect(actualRoute) {
+                        // 666TVF : fiche ouverte → position de l'autre Shield récupérée tout de suite
+                        if (actualRoute?.startsWith("detail/") == true) startupSyncService.requestProgressPull666()
                         optimisticRoute = null
                     }
 
