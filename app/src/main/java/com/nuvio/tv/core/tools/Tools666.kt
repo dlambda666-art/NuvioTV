@@ -73,24 +73,27 @@ object Clock666 {
 
     /** Météo du coin (position approximative d'après la connexion, rien n'est demandé). */
     fun weather(): Weather? {
-        if (cached != null && System.currentTimeMillis() - cachedAt < 45 * 60_000L) return cached
+        if (cached != null && System.currentTimeMillis() - cachedAt < 20 * 60_000L) return cached
         return runCatching {
             val geo = Http666.get("https://ipwho.is/?fields=latitude,longitude") ?: return null
             val lat = Regex("\"latitude\"\\s*:\\s*(-?[0-9.]+)").find(geo)?.groupValues?.get(1) ?: return null
             val lon = Regex("\"longitude\"\\s*:\\s*(-?[0-9.]+)").find(geo)?.groupValues?.get(1) ?: return null
             val w = Http666.get(
-                "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,weather_code"
+                "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,weather_code,is_day"
             ) ?: return null
             val cur = w.substringAfter("\"current\"", "")
             val t = Regex("\"temperature_2m\"\\s*:\\s*(-?[0-9.]+)").find(cur)?.groupValues?.get(1)?.toDouble() ?: return null
             val code = Regex("\"weather_code\"\\s*:\\s*([0-9]+)").find(cur)?.groupValues?.get(1)?.toInt() ?: 0
-            Weather(Math.round(t).toInt(), iconFor(code))
+            // 666TVF : la nuit, la lune plutôt que le soleil (28/10)
+            val day = Regex("\"is_day\"\\s*:\\s*([01])").find(cur)?.groupValues?.get(1) != "0"
+            Weather(Math.round(t).toInt(), iconFor(code, day))
         }.getOrNull()?.also { cached = it; cachedAt = System.currentTimeMillis() }
     }
 
-    private fun iconFor(code: Int): String = when (code) {
-        0 -> "☀"
-        1, 2 -> "⛅"
+    internal fun iconFor(code: Int, day: Boolean = true): String = when (code) {
+        0 -> if (day) "☀" else "🌙"
+        1 -> if (day) "⛅" else "🌙"
+        2 -> if (day) "⛅" else "☁"
         3 -> "☁"
         45, 48 -> "🌫"
         in 51..67, in 80..82 -> "🌧"
