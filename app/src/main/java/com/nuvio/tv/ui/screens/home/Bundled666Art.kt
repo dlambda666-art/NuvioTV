@@ -37,7 +37,7 @@ private val PORTES_666 = listOf(
     "possessions" to R.drawable.title_possessions_666,
     "sorcellerie" to R.drawable.title_sorcellerie_666,
     "horreur cosmique" to R.drawable.title_cosmique_666
-).map { (key, title) -> BundledArt("\u0000", coverRes = R.drawable.tile_porte_666, titleLogoRes = title, titleKey = key, exact = true) }
+).map { (key, title) -> BundledArt("\u0000", coverRes = R.drawable.tile_porte_666, focusGifRes = R.raw.anim_porte_666, titleLogoRes = title, titleKey = key, exact = true) }
 
 private val BUNDLED_ART = listOf(
     BundledArt("PrRXbjxT", coverRes = R.drawable.tile_horreur_666),
@@ -70,6 +70,8 @@ internal fun applyBundled666Art(collections: List<Collection>): List<Collection>
                 if (art == null) folder else folder.copy(
                     coverImageUrl = art.coverRes?.let(::resUri) ?: folder.coverImageUrl,
                     focusGifUrl = art.focusGifRes?.let(::resUri) ?: folder.focusGifUrl,
+                    // 666TVF : les portes s'ouvrent toujours au survol
+                    focusGifEnabled = if (art.focusGifRes != null) true else folder.focusGifEnabled,
                     titleLogoUrl = art.titleLogoRes?.let(::resUri) ?: folder.titleLogoUrl
                 )
             }
