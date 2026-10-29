@@ -277,6 +277,10 @@ open class MainActivity : ComponentActivity() {
     lateinit var pluginHealth666: com.nuvio.tv.core.tools.PluginHealth666
 
     @Inject
+    lateinit var vfWatcher666: com.nuvio.tv.core.tools.VfWatcher666
+    private var vfWatcherRunning666 = false
+
+    @Inject
     lateinit var experienceModeDataStore: ExperienceModeDataStore
 
     @Inject
@@ -1301,6 +1305,17 @@ open class MainActivity : ComponentActivity() {
                                     // 666TVF : une fois par jour, chaque plugin passe le test Matrix ;
                                     // un plugin tombé à 0 lien est signalé (une fois par panne). Jamais pendant un film.
                                     // (pas au tout premier tour : on laisse l'appli démarrer tranquille)
+                                    // 666TVF : le guetteur des sorties, une fois par jour, en arrière-plan
+                                    if (loops666 > 0 && !inPlayerNow666 && !vfWatcherRunning666) {
+                                        vfWatcherRunning666 = true
+                                        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                            val n = runCatching { vfWatcher666.dailyRun { com.nuvio.tv.core.tools.Announce666.inPlayer() } }.getOrDefault(0)
+                                            if (n > 0) com.nuvio.tv.core.tools.Announce666.log(
+                                                this@MainActivity, "🔎 Guetteur : $n film(s) trouvé(s) en VF → En VF cette semaine", "noté par la Shield"
+                                            )
+                                            vfWatcherRunning666 = false
+                                        }
+                                    }
                                     if (loops666++ > 0 && !inPlayerNow666) {
                                         found = found + runCatching { pluginHealth666.dailyCheckNewlyBroken() }.getOrDefault(emptyList()).map { r ->
                                             com.nuvio.tv.core.calendar.CalendarEpisode(

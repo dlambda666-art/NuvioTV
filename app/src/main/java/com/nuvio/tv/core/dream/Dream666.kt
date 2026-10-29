@@ -84,9 +84,9 @@ object Dream666Data {
         }
     }
 
-    /** Règle (testée) : jamais la nuit (23 h → 8 h), et pas plus d'une fois toutes les 3 minutes. */
+    /** Règle (testée) : muette de minuit à 5 h seulement (lever tôt avec les chats), et pas plus d'une fois toutes les 3 minutes. */
     fun voiceAllowed(hour: Int, now: Long, lastAt: Long): Boolean =
-        hour in 8..22 && (lastAt == 0L || now - lastAt >= VOICE_GAP_MS)
+        hour !in 0..4 && (lastAt == 0L || now - lastAt >= VOICE_GAP_MS)
 }
 
 /** 666TV : écran de veille « cimetière » (à choisir dans Paramètres Shield → Écran de veille). */
@@ -231,7 +231,7 @@ private class Dream666View(context: Context) : View(context) {
         lastVoiceAt = now
         runCatching {
             android.media.MediaPlayer.create(context, R.raw.voix_spectre_666)?.apply {
-                setVolume(0.45f, 0.45f)
+                setVolume(0.7f, 0.7f)
                 setOnCompletionListener { it.release() }
                 start()
             }
