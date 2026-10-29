@@ -22,29 +22,37 @@ class VfWatcher666 @Inject constructor(
 ) {
     private val prefs by lazy { context.getSharedPreferences("666tv_guetteur", Context.MODE_PRIVATE) }
 
-    /** Renvoie le nombre de VF trouvées (0 si pas encore l'heure ou rien de neuf). */
-    suspend fun dailyRun(busy: () -> Boolean): Int {
-        if (System.currentTimeMillis() - prefs.getLong("at", 0L) < 24L * 3600 * 1000) return 0
+    /** Renvoie les titres trouvés en VF (vide si pas encore l'heure, en pause ou rien de neuf). */
+    suspend fun dailyRun(busy: () -> Boolean): List<String> {
+        if (System.currentTimeMillis() - prefs.getLong("at", 0L) < 24L * 3600 * 1000) return emptyList()
         val raw = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             Http666.get("https://lambda666-frankenstream.hf.space/vf/candidates/movie", 60_000)
-        } ?: return 0
-        val list = runCatching {
-            val arr = JSONObject(raw).optJSONArray("candidates") ?: return 0
-            (0 until arr.length()).mapNotNull { i -> arr.optJSONObject(i)?.optString("imdbId")?.takeIf { it.startsWith("tt") } }
-        }.getOrDefault(emptyList())
+        } ?: return emptyList()
+        // imdbId → titre (pour nommer les films trouvés dans « Dernières annonces »)
+        val names = LinkedHashMap<String, String>()
+        runCatching {
+            val arr = JSONObject(raw).optJSONArray("candidates") ?: return emptyList()
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                val id = o.optString("imdbId").takeIf { it.startsWith("tt") } ?: continue
+                val year = o.optString("year").takeIf { it.isNotBlank() && it != "null" }
+                names[id] = o.optString("name").ifBlank { id } + (year?.let { " ($it)" } ?: "")
+            }
+        }
+        val list = names.keys.toList()
         val order = PluginOrder666.order.map { it.lowercase() }
         val cavaliers = runCatching { pluginManager.enabledScrapers.first() }.getOrDefault(emptyList())
             .filter { s -> s.id.substringAfterLast(':').lowercase() in order && s.supportsType("movie") }
             .sortedBy { s -> order.indexOf(s.id.substringAfterLast(':').lowercase()) }
-        if (cavaliers.isEmpty()) return 0
+        if (cavaliers.isEmpty()) return emptyList()
         // Reprise : les films déjà vérifiés aujourd'hui ne sont pas refaits (pause puis reprise).
         val day = java.time.LocalDate.now().toString()
         val done = if (prefs.getString("day", null) == day) prefs.getStringSet("done", emptySet()).orEmpty().toMutableSet() else mutableSetOf()
-        var found = prefs.takeIf { it.getString("day", null) == day }?.getInt("found_today", 0) ?: 0
+        val found = mutableListOf<String>()
         for (id in list) {
             if (id in done) continue
             // fiche / liste de flux ouverte ou film lancé : pause, reprise au prochain passage (20 min)
-            if (busy()) { save(day, done, found); return 0 }
+            if (busy()) { save(day, done); return emptyList() }
             val vf = cavaliers.any { scraper ->
                 if (busy()) return@any false
                 val res = withTimeoutOrNull(30_000) {
@@ -52,16 +60,16 @@ class VfWatcher666 @Inject constructor(
                 }.orEmpty()
                 res.any { r -> FrankVf666.isSureVfRelease(listOfNotNull(r.name, r.title).joinToString(" ")) }
             }
-            if (vf) { FrankVf666.confirm(context, id, "movie", "guetteur"); found++; done += id }
-            if (busy()) { save(day, done, found); return 0 }   // interrompu en plein milieu : on refera ce film
+            if (vf) { FrankVf666.confirm(context, id, "movie", "guetteur"); found += names[id] ?: id; done += id }
+            if (busy()) { save(day, done); return found }   // interrompu : les films trouvés sont quand même nommés
             done += id
         }
-        save(day, done, found)
-        prefs.edit().putLong("at", System.currentTimeMillis()).putInt("last_found", found).apply()
+        save(day, done)
+        prefs.edit().putLong("at", System.currentTimeMillis()).putInt("last_found", found.size).apply()
         return found
     }
 
-    private fun save(day: String, done: Set<String>, found: Int) {
-        prefs.edit().putString("day", day).putStringSet("done", done).putInt("found_today", found).apply()
+    private fun save(day: String, done: Set<String>) {
+        prefs.edit().putString("day", day).putStringSet("done", done).apply()
     }
 }
