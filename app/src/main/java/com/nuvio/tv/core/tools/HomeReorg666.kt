@@ -75,8 +75,8 @@ class HomeReorg666 @Inject constructor(
             "Loups-garous" to Regex("werewolf|loup", RegexOption.IGNORE_CASE),
             "Zombies" to Regex("zombie", RegexOption.IGNORE_CASE),
             "Cannibales" to Regex("cannibal", RegexOption.IGNORE_CASE),
-            "Body horror" to Regex("body", RegexOption.IGNORE_CASE),
-            "Maisons hantées" to Regex("haunt|hant", RegexOption.IGNORE_CASE),
+            "Body horror" to Regex("body[ _-]?horror", RegexOption.IGNORE_CASE),
+            "Maisons hantées" to Regex("haunt|hantée|hantee", RegexOption.IGNORE_CASE),
             "Possessions" to Regex("possess|exorc", RegexOption.IGNORE_CASE),
             "Sorcellerie" to Regex("witch|sorc", RegexOption.IGNORE_CASE),
             "Horreur cosmique" to Regex("cosmic|cosmique|lovecraft", RegexOption.IGNORE_CASE)
