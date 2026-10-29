@@ -57,7 +57,8 @@ object Dream666Data {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("voice", value).apply()
     }
 
-    const val VOICE_GAP_MS = 3 * 60_000L
+    // 666TVF : trop rare à 3 min (29/10) → environ une fois par minute
+    const val VOICE_GAP_MS = 45_000L
 
     /** 666TVF : programme (épisodes avec la cloche, galas UFC) : « instant|nom » par ligne. */
     fun saveProgramme(context: Context, items: List<Pair<Long, String>>) {
@@ -84,7 +85,7 @@ object Dream666Data {
         }
     }
 
-    /** Règle (testée) : muette de minuit à 5 h seulement (lever tôt avec les chats), et pas plus d'une fois toutes les 3 minutes. */
+    /** Règle (testée) : muette de minuit à 5 h seulement (lever tôt avec les chats), et au plus une fois toutes les 45 s. */
     fun voiceAllowed(hour: Int, now: Long, lastAt: Long): Boolean =
         hour !in 0..4 && (lastAt == 0L || now - lastAt >= VOICE_GAP_MS)
 }

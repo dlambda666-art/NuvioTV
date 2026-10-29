@@ -519,7 +519,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 var voice by remember { mutableStateOf(com.nuvio.tv.core.dream.Dream666Data.voiceEnabled(context)) }
                 ActionRow(
                     "Voix des spectres (écran de veille) : " + if (voice) "activée" else "coupée",
-                    "Une voix d'outre-tombe quand le grand spectre passe · volume bas, muette de minuit à 5 h",
+                    "Une voix d'outre-tombe quand le grand spectre passe (environ une fois par minute) · muette de minuit à 5 h",
                     onClick = {
                         voice = !voice
                         com.nuvio.tv.core.dream.Dream666Data.setVoiceEnabled(context, voice)

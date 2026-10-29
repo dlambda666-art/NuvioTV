@@ -24,7 +24,7 @@ class DreamVoiceRuleTest {
         org.junit.Assert.assertTrue(d.voiceAllowed(5, 1_000_000L, 0L))
         org.junit.Assert.assertFalse(d.voiceAllowed(0, 1_000_000L, 0L))
         org.junit.Assert.assertFalse(d.voiceAllowed(3, 1_000_000L, 0L))
-        org.junit.Assert.assertFalse(d.voiceAllowed(14, 1_000_000L, 1_000_000L - 60_000L))
+        org.junit.Assert.assertFalse(d.voiceAllowed(14, 1_000_000L, 1_000_000L - 30_000L))
         org.junit.Assert.assertTrue(d.voiceAllowed(14, 1_000_000L, 1_000_000L - d.VOICE_GAP_MS))
     }
 }
