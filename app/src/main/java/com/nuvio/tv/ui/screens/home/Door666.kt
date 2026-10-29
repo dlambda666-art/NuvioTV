@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.nuvio.tv.R
 import kotlinx.coroutines.delay
 
@@ -29,6 +31,15 @@ object Door666 {
         autoEnter = value
     }
 
+    /** Début du lever de la dalle dans le GIF : le fond commence alors à passer au cimetière. */
+    const val LIFT_MS = 900L
+
+    /**
+     * 666TVF : vrai pendant qu'une porte s'ouvre. Le fond de l'accueil glisse alors vers le
+     * cimetière (fondu enchaîné) : en entrant, le cimetière est déjà là, plus d'attente (29/10).
+     */
+    var opening by androidx.compose.runtime.mutableStateOf(false)
+
     /** Vrai si la tuile est une porte de l'horreur (son animation est celle de la dalle). */
     fun isDoor(focusGifUrl: String?): Boolean =
         focusGifUrl?.endsWith("/" + R.raw.anim_porte_666) == true
@@ -39,8 +50,17 @@ object Door666 {
 fun DoorAutoEnter666(isFocused: Boolean, focusGifUrl: String?, onEnter: () -> Unit) {
     val enter = rememberUpdatedState(onEnter)
     LaunchedEffect(isFocused, focusGifUrl) {
-        if (!isFocused || !Door666.autoEnter || !Door666.isDoor(focusGifUrl)) return@LaunchedEffect
-        delay(Door666.OPEN_MS)
-        enter.value()
+        if (!isFocused || !Door666.isDoor(focusGifUrl)) return@LaunchedEffect
+        try {
+            delay(Door666.LIFT_MS)
+            Door666.opening = true                    // le fond passe au cimetière pendant que la dalle monte
+            if (!Door666.autoEnter) return@LaunchedEffect
+            delay(Door666.OPEN_MS - Door666.LIFT_MS)
+            enter.value()
+        } finally {
+            if (!isFocused) Door666.opening = false
+        }
     }
+    // la porte n'est plus sélectionnée : retour au fond normal
+    LaunchedEffect(isFocused) { if (!isFocused && Door666.isDoor(focusGifUrl)) Door666.opening = false }
 }

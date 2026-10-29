@@ -741,7 +741,9 @@ fun ModernHomeContent(
                         (activeRowKeyVal?.startsWith(CALENDAR_ROW_ADDON_ID + "_") == true ||
                             activeRowKeyVal?.startsWith(TOP_TEN_VF_ROW_ADDON_ID + "_") == true ||
                             activeRowKeyVal?.startsWith(TOP_TEN_SERIES_VF_ROW_ADDON_ID + "_") == true)
-                    val heroBackdrop = if (forcedBackdrop666 != null) forcedBackdrop666 else if (fixed666Backdrop) COLLECTIONS_BACKDROP_666 else firstNonBlank(
+                    // 666TVF : une porte de l'horreur s'ouvre → fondu vers le cimetière
+                    val doorOpening666 = Door666.opening && activeCarouselItem?.payload is ModernPayload.CollectionFolder
+                    val heroBackdrop = if (forcedBackdrop666 != null) forcedBackdrop666 else if (doorOpening666) CEMETERY_BACKDROP_666 else if (fixed666Backdrop) COLLECTIONS_BACKDROP_666 else firstNonBlank(
                         resolvedHero?.backdrop,
                         resolvedHero?.imageUrl,
                         resolvedHero?.poster,
