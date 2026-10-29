@@ -42,7 +42,8 @@ class HomeReorg666 @Inject constructor(
         val names = HashMap<String, String>()
         addons.forEach { a -> a.catalogs.forEach { c -> names["${a.id}|${c.rawType}|${c.id}"] = c.name } }
         val classics = addons.firstNotNullOfOrNull { a ->
-            a.catalogs.firstOrNull { it.id == "fs-horreur-classiques" }?.let { AddonCatalogCollectionSource(a.id, it.rawType, it.id) }
+            a.catalogs.firstOrNull { it.id.contains("horreur-classiques") || norm(it.name).contains("classiques de l'horreur") }
+                ?.let { AddonCatalogCollectionSource(a.id, it.rawType, it.id) }
         }
         val result = plan(current, { s -> names["${s.addonId}|${s.type}|${s.catalogId}"] }, classics) { UUID.randomUUID().toString() }
         if (result.collections == current) return result.report
@@ -92,6 +93,20 @@ class HomeReorg666 @Inject constructor(
         internal fun isComingSoon(f: CollectionFolder) = f.has("cLGKrgcd") || norm(f.title).let { "prochainement" in it || "coming soon" in it }
         internal fun isShudder(f: CollectionFolder) = f.has("streaming-shudder") || "shudder" in norm(f.title)
         internal fun isHorror(f: CollectionFolder) = f.has("PrRXbjxT") || norm(f.title) == "horreur"
+        internal fun isClassicsTile(f: CollectionFolder) = "classique" in norm(f.title) && f.coverImageUrl != PORTE_COVER
+
+        /** Le catalogue « Classiques de l'horreur » de Frank, où qu'il soit (id direct ou via aiometadata). */
+        internal fun classicsSources(
+            all: List<CollectionFolder>,
+            catalogName: (AddonCatalogCollectionSource) -> String?,
+            classics: AddonCatalogCollectionSource?
+        ): List<com.nuvio.tv.domain.model.CollectionSource> {
+            val found = all.flatMap { it.sources }.filterIsInstance<AddonCatalogCollectionSource>().firstOrNull { s ->
+                "horreur-classiques" in s.catalogId || "classique" in norm(catalogName(s))
+            } ?: classics
+            return listOfNotNull(found)
+        }
+
         internal fun isUnwanted(f: CollectionFolder): Boolean {
             val t = norm(f.title)
             return listOf("streaming-netflix", "streaming-prime", "streaming-hbo", "sf00sWZ2", "FKYdvQR5").any { f.has(it) } ||
@@ -108,7 +123,31 @@ class HomeReorg666 @Inject constructor(
             val report = mutableListOf<String>()
             val all = collections.flatMap { it.folders }
             if (all.count { it.coverImageUrl == PORTE_COVER } > 1) {
-                return Plan(collections, listOf("Ton accueil est déjà réorganisé : rien n'a été changé"))
+                // Déjà réorganisé : on complète seulement la porte « Classiques » si elle manque (29/10)
+                if (all.any { it.coverImageUrl == PORTE_COVER && norm(it.title) == "classiques" }) {
+                    return Plan(collections, listOf("Ton accueil est déjà réorganisé : rien n'a été changé"))
+                }
+                val tile = all.firstOrNull(::isClassicsTile)
+                val src = tile?.sources ?: classicsSources(all, catalogName, classics)
+                if (src.isEmpty()) return Plan(collections, listOf("Pas trouvé : Classiques (ni tuile ni catalogue « Classiques de l'horreur »)"))
+                val firstDoorRow = collections.indexOfFirst { c -> c.folders.any { it.coverImageUrl == PORTE_COVER } }
+                val template = collections[firstDoorRow].folders.first { it.coverImageUrl == PORTE_COVER }
+                val door = (tile ?: template.copy(id = newId())).copy(
+                    title = "Classiques", coverImageUrl = PORTE_COVER, focusGifUrl = null, titleLogoUrl = null,
+                    sources = src, heroBackdropUrl = template.heroBackdropUrl
+                )
+                val out = collections.mapIndexedNotNull { i, c ->
+                    val kept = c.folders.filter { it.id != tile?.id }
+                    when {
+                        i == firstDoorRow -> {
+                            val at = kept.indexOfFirst { norm(it.title) == "horreur" }.let { if (it < 0) 0 else it + 1 }
+                            c.copy(folders = kept.take(at) + door + kept.drop(at))
+                        }
+                        kept.isEmpty() && c.folders.isNotEmpty() -> null
+                        else -> c.copy(folders = kept)
+                    }
+                }
+                return Plan(out, listOf("Porte : Classiques (${src.size} liste(s))"))
             }
             val horror = all.firstOrNull(::isHorror)
                 ?: return Plan(collections, listOf("Tuile « Horreur » introuvable : rien n'a été changé"))
@@ -116,7 +155,8 @@ class HomeReorg666 @Inject constructor(
             val pourToi = all.firstOrNull(::isPourToi)
             val shudder = all.firstOrNull(::isShudder)
             val coming = all.firstOrNull(::isComingSoon)
-            val moved = listOfNotNull(vfWeek, pourToi, shudder, coming, horror).map { it.id }.toSet()
+            val moved = (listOfNotNull(vfWeek, pourToi, shudder, coming, horror) +
+                listOfNotNull(all.firstOrNull { it.id != horror.id && isClassicsTile(it) })).map { it.id }.toSet()
             val removed = all.filter { it.id !in moved && isUnwanted(it) }
             removed.forEach { report += "Enlevé : ${it.title}" }
 
@@ -126,10 +166,11 @@ class HomeReorg666 @Inject constructor(
                 id = newId(), title = title, coverImageUrl = PORTE_COVER, focusGifUrl = null, titleLogoUrl = null, sources = sources
             )
             val doors = mutableListOf(horror.copy(coverImageUrl = PORTE_COVER, focusGifUrl = null, titleLogoUrl = null, title = "Horreur"))
-            val classicsSource = all.flatMap { it.sources }.filterIsInstance<AddonCatalogCollectionSource>()
-                .firstOrNull { it.catalogId == "fs-horreur-classiques" } ?: classics
-            if (classicsSource != null) doors += door("Classiques", listOf(classicsSource))
-            else report += "Pas trouvé : Classiques (catalogue Frank absent)"
+            // Classiques : ta tuile « Classiques de l'horreur » (renommée), sinon le catalogue de Frank
+            val classicsTile = all.firstOrNull { it.id != horror.id && isClassicsTile(it) }
+            val classicsSrc = classicsTile?.sources ?: classicsSources(all, catalogName, classics)
+            if (classicsSrc.isNotEmpty()) doors += door("Classiques", classicsSrc)
+            else report += "Pas trouvé : Classiques (ni tuile ni catalogue « Classiques de l'horreur »)"
             for ((title, re) in SUBGENRES) {
                 val src = horrorSources.filter { s -> re.containsMatchIn(catalogName(s).orEmpty() + " " + s.catalogId) }
                 if (src.isEmpty()) report += "Pas trouvé : $title (aucune liste à ce nom dans la tuile Horreur)"

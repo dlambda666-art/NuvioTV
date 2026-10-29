@@ -24,6 +24,10 @@ class VfWatcher666 @Inject constructor(
 
     /** Renvoie les titres trouvés en VF (vide si pas encore l'heure, en pause ou rien de neuf). */
     suspend fun dailyRun(busy: () -> Boolean): List<String> {
+        // 666TVF : la version qui nomme les films refait un passage complet une fois (29/10)
+        if (!prefs.getBoolean("named_v2", false)) {
+            prefs.edit().remove("at").remove("day").remove("done").putBoolean("named_v2", true).apply()
+        }
         if (System.currentTimeMillis() - prefs.getLong("at", 0L) < 24L * 3600 * 1000) return emptyList()
         val raw = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             Http666.get("https://lambda666-frankenstream.hf.space/vf/candidates/movie", 60_000)

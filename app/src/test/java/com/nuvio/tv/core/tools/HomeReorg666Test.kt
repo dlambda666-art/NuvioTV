@@ -49,4 +49,26 @@ class HomeReorg666Test {
         val again = HomeReorg666.plan(rows, { names[it.catalogId] }, null) { "z${n++}" }
         assertEquals(rows, again.collections)
     }
+
+    @Test
+    fun `classics tile becomes the Classiques door, also on a second pass`() {
+        val horror = f("h", "Horreur", "PrRXbjxT", "so-slasher")
+        val classics = f("cl", "Classiques de l'horreur en VF", null, "aiom-classics")
+        val home = listOf(
+            Collection("c2", "Pour toi", folders = listOf(f("pt", "Pour toi"))),
+            Collection("c3", "Genres", folders = listOf(horror, classics))
+        )
+        var n = 0
+        val p = HomeReorg666.plan(home, { names[it.catalogId] }, null) { "id${n++}" }
+        val doors = p.collections.flatMap { it.folders }.filter { it.coverImageUrl == HomeReorg666.PORTE_COVER }
+        assertEquals(listOf("Horreur", "Classiques", "Slasher"), doors.map { it.title })
+        assertEquals("aiom-classics", (doors[1].sources.first() as AddonCatalogCollectionSource).catalogId)
+        // Accueil déjà réorganisé sans porte Classiques (ancienne version) : on la rajoute après Horreur
+        val old = p.collections.map { c -> c.copy(folders = c.folders.filter { it.title != "Classiques" }) } +
+            Collection("c9", "Autre", folders = listOf(classics))
+        val fixed = HomeReorg666.plan(old, { names[it.catalogId] }, null) { "z${n++}" }
+        val doors2 = fixed.collections.flatMap { it.folders }.filter { it.coverImageUrl == HomeReorg666.PORTE_COVER }
+        assertEquals(listOf("Horreur", "Classiques", "Slasher"), doors2.map { it.title })
+        assertTrue(fixed.collections.none { it.title == "Autre" })
+    }
 }
