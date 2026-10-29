@@ -75,8 +75,31 @@ class Tools666ViewModel @Inject constructor(
     private val addonRepository: AddonRepository,
     private val pluginDataStore: PluginDataStore,
     private val pluginHealth: com.nuvio.tv.core.tools.PluginHealth666,
-    private val startupSync666: com.nuvio.tv.core.sync.StartupSyncService
+    private val startupSync666: com.nuvio.tv.core.sync.StartupSyncService,
+    private val homeReorg666: com.nuvio.tv.core.tools.HomeReorg666
 ) : ViewModel() {
+    // 666TVF : réorganisation de l'accueil (portes de l'horreur)
+    private val _reorgReport = MutableStateFlow<List<String>>(emptyList())
+    val reorgReport: StateFlow<List<String>> = _reorgReport
+    private val _canUndoReorg = MutableStateFlow(homeReorg666.canUndo())
+    val canUndoReorg: StateFlow<Boolean> = _canUndoReorg
+
+    fun reorganizeHome() {
+        viewModelScope.launch {
+            _reorgReport.value = listOf("Réorganisation en cours…")
+            _reorgReport.value = runCatching { homeReorg666.apply() }.getOrElse { listOf("Erreur : ${it.message}") }
+            _canUndoReorg.value = homeReorg666.canUndo()
+        }
+    }
+
+    fun undoReorganize() {
+        viewModelScope.launch {
+            val ok = runCatching { homeReorg666.undo() }.getOrDefault(false)
+            _reorgReport.value = listOf(if (ok) "Accueil remis comme avant" else "Rien à annuler")
+            _canUndoReorg.value = homeReorg666.canUndo()
+        }
+    }
+
     private val _checks = MutableStateFlow<List<Health666>>(emptyList())
     val checks: StateFlow<List<Health666>> = _checks
     private val _running = MutableStateFlow(false)
@@ -151,6 +174,8 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
     val checks by viewModel.checks.collectAsState()
     val running by viewModel.running.collectAsState()
+    val reorgReport by viewModel.reorgReport.collectAsState()
+    val canUndoReorg by viewModel.canUndoReorg.collectAsState()
     var lastBackup by remember { mutableStateOf(Backup666.lastBackupAt(context)) }
     var busy by remember { mutableStateOf(false) }
     var menuOrder by remember { mutableStateOf(com.nuvio.tv.core.tools.MenuOrder666.fullOrder()) }
@@ -233,6 +258,22 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF8F8A85)
                 )
+            }
+
+            // ---------- Accueil 666 ----------
+            item { Section("Accueil 666", "Les portes de l'horreur : un sous-genre par tuile, en VF · sauvegarde avant, annulable") }
+            item {
+                ActionRow(
+                    "Réorganiser mon accueil",
+                    "1re rangée : En VF cette semaine · Pour toi · Shudder · Prochainement, puis les portes (Horreur, Classiques, Slasher…). Netflix, Prime, HBO, Canal+, Films et Séries partent.",
+                    onClick = { viewModel.reorganizeHome() }
+                )
+            }
+            if (canUndoReorg) {
+                item { ActionRow("Annuler la réorganisation", "Remet l'accueil exactement comme avant", onClick = { viewModel.undoReorganize() }) }
+            }
+            reorgReport.forEach { line ->
+                item { Text(line, modifier = Modifier.padding(horizontal = 18.dp), color = Color(0xFFC8C3BE)) }
             }
 
             // ---------- Dernières annonces ----------
