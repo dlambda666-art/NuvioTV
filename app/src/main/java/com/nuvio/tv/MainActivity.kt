@@ -377,6 +377,7 @@ open class MainActivity : ComponentActivity() {
         com.nuvio.tv.core.tools.Clock666.init(this)
         com.nuvio.tv.core.tools.PhoneLink666.init(this)
         com.nuvio.tv.core.tools.MenuOrder666.init(this)
+        com.nuvio.tv.ui.screens.home.Door666.init(this)
         com.nuvio.tv.core.tools.PluginOrder666.init(this)
         com.nuvio.tv.core.tools.Announce666.externalPlayback = { externalPlaybackTracker.awaitingExternal666 }
         run {

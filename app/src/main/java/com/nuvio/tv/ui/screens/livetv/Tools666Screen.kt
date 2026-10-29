@@ -269,6 +269,17 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     onClick = { viewModel.reorganizeHome() }
                 )
             }
+            item {
+                var auto by remember { mutableStateOf(com.nuvio.tv.ui.screens.home.Door666.autoEnter) }
+                ActionRow(
+                    "Entrer tout seul par les portes : " + if (auto) "activé" else "coupé",
+                    "Reste sur une porte : quand la dalle est levée, tu entres dans le cimetière sans appuyer sur OK",
+                    onClick = {
+                        auto = !auto
+                        com.nuvio.tv.ui.screens.home.Door666.setAutoEnter(context, auto)
+                    }
+                )
+            }
             if (canUndoReorg) {
                 item { ActionRow("Annuler la réorganisation", "Remet l'accueil exactement comme avant", onClick = { viewModel.undoReorganize() }) }
             }

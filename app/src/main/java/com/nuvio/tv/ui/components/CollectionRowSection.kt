@@ -250,6 +250,8 @@ private fun FolderCard(
     val tileWidth: Dp
     val tileHeight: Dp
     var isFocused by remember { mutableStateOf(false) }
+    // 666TVF : porte de l'horreur ouverte → on entre tout seul
+    com.nuvio.tv.ui.screens.home.DoorAutoEnter666(isFocused, if (folder.focusGifEnabled) folder.focusGifUrl else null, onClick)
     when (folder.tileShape) {
         PosterShape.POSTER -> { tileWidth = posterCardStyle.width; tileHeight = posterCardStyle.height }
         PosterShape.LANDSCAPE -> { tileWidth = posterCardStyle.width * (16f / 9f); tileHeight = posterCardStyle.width }

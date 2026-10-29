@@ -1180,6 +1180,8 @@ private fun ModernCarouselCard(
         isFocused -> payload.focusGifUrl
         else -> null
     }
+    // 666TVF : porte de l'horreur ouverte → on entre tout seul
+    DoorAutoEnter666(isFocused, payload?.focusGifUrl, onClick)
     val imageContentScale = when (item.payload) {
         is ModernPayload.CollectionFolder -> ContentScale.FillBounds
         else -> ContentScale.Crop

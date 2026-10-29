@@ -986,6 +986,8 @@ private fun GridCollectionFolderCard(
     val cardShape = RoundedCornerShape(posterCardStyle.cornerRadius)
     val cardDepthStyle = LocalCardDepthStyle.current
     var isFocused by remember { mutableStateOf(false) }
+    // 666TVF : porte de l'horreur ouverte → on entre tout seul
+    com.nuvio.tv.ui.screens.home.DoorAutoEnter666(isFocused, if (folder.focusGifEnabled) folder.focusGifUrl else null, onClick)
     val cardGlow = rememberArtworkBackedCardGlow(
         imageUrl = folder.coverImageUrl,
         fallbackSeed = "$collectionTitle:${folder.title}:${folder.coverEmoji.orEmpty()}",
