@@ -24,3 +24,14 @@ class FrankVf666Test {
         assertNull(FrankVf666.frankId("tmdb:1339210"))
     }
 }
+
+/** Guetteur : une ligne après chaque passage, même sans trouvaille. */
+class VfWatcherSummaryTest {
+    @Test
+    fun `summary names the films or says nothing new`() {
+        assertEquals("🔎 Guetteur : 18 film(s) vérifié(s), rien de nouveau en VF",
+            VfWatcher666.summary(VfWatcher666.Run(18, emptyList())))
+        assertEquals("🔎 Guetteur : 18 film(s) vérifié(s) · Affection (2026) en VF",
+            VfWatcher666.summary(VfWatcher666.Run(18, listOf("Affection (2026)"))))
+    }
+}

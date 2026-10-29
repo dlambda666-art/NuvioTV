@@ -1313,11 +1313,11 @@ open class MainActivity : ComponentActivity() {
                                     if (loops666 > 0 && !inPlayerNow666 && !vfWatcherRunning666) {
                                         vfWatcherRunning666 = true
                                         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                                            val films = runCatching { vfWatcher666.dailyRun { com.nuvio.tv.core.tools.Announce666.watcherBusy() } }.getOrDefault(emptyList())
-                                            // 666TVF : chaque film trouvé est nommé dans « Dernières annonces » (29/10)
-                                            films.forEach { name ->
-                                                com.nuvio.tv.core.tools.Announce666.log(this@MainActivity, "🔎 $name en VF → En VF cette semaine", "trouvé par le guetteur")
-                                            }
+                                            val run = runCatching { vfWatcher666.dailyRun { com.nuvio.tv.core.tools.Announce666.watcherBusy() } }.getOrNull()
+                                            // 666TVF : une ligne après chaque passage, avec le nom des films trouvés (29/10)
+                                            if (run != null) com.nuvio.tv.core.tools.Announce666.log(
+                                                this@MainActivity, com.nuvio.tv.core.tools.VfWatcher666.summary(run), "guetteur des sorties"
+                                            )
                                             vfWatcherRunning666 = false
                                         }
                                     }
