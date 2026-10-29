@@ -18,7 +18,10 @@ object Meteo666 {
         val tempC: Int, val feelsC: Int, val humidity: Int, val windKmh: Int, val windDir: String,
         val code: Int, val day: Boolean, val sunrise: String?, val sunset: String?
     )
-    data class Day(val date: java.time.LocalDate, val code: Int, val maxC: Int, val minC: Int, val rainPct: Int)
+    data class Day(
+        val date: java.time.LocalDate, val code: Int, val maxC: Int, val minC: Int, val rainPct: Int,
+        val windKmh: Int = 0, val windDir: String = "", val sunrise: String? = null, val sunset: String? = null
+    )
     data class Forecast(val city: City, val now: Now, val days: List<Day>, val at: Long)
 
     @Volatile private var appContext: Context? = null
@@ -60,7 +63,7 @@ object Meteo666 {
         return runCatching {
             val url = "https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}" +
                 "&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,is_day" +
-                "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
+                "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,wind_speed_10m_max,wind_direction_10m_dominant" +
                 "&timezone=auto&forecast_days=7"
             parse(c, Http666.get(url) ?: return null)
         }.getOrNull()?.also { cache = it }
@@ -77,7 +80,11 @@ object Meteo666 {
                 daily.getJSONArray("weather_code").optInt(i),
                 Math.round(daily.getJSONArray("temperature_2m_max").optDouble(i)).toInt(),
                 Math.round(daily.getJSONArray("temperature_2m_min").optDouble(i)).toInt(),
-                daily.optJSONArray("precipitation_probability_max")?.optInt(i) ?: 0
+                daily.optJSONArray("precipitation_probability_max")?.optInt(i) ?: 0,
+                daily.optJSONArray("wind_speed_10m_max")?.optDouble(i)?.takeIf { !it.isNaN() }?.let { Math.round(it).toInt() } ?: 0,
+                daily.optJSONArray("wind_direction_10m_dominant")?.optDouble(i)?.takeIf { !it.isNaN() }?.let { windDir(it) } ?: "",
+                daily.optJSONArray("sunrise")?.optString(i)?.substringAfter("T")?.take(5),
+                daily.optJSONArray("sunset")?.optString(i)?.substringAfter("T")?.take(5)
             )
         }
         fun hm(key: String) = daily.optJSONArray(key)?.optString(0)?.substringAfter("T")?.take(5)

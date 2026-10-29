@@ -57,6 +57,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 
+private const val FRANK_URL = "https://lambda666-frankenstream.hf.space"
 private val RGreen = Color(0xFF4CC36B)
 private val RMauve = Color(0xFF9B30D9)
 
@@ -78,14 +79,19 @@ class Roulette666ViewModel @Inject constructor(
             val frank = addons.firstOrNull { it.baseUrl.contains("frankenstream", ignoreCase = true) }
             frankBase = frank?.baseUrl?.trimEnd('/')
             _films.value = withContext(Dispatchers.IO) {
-                val base = frankBase ?: return@withContext emptyList()
-                listOf("fs-horreur-classiques", "fs-pour-toi").flatMap { load(base, it) }.distinctBy { it.id }.shuffled()
+                // 666TVF : Frank est souvent installé via aiometadata (pas d'addon « frankenstream »
+                // dans la liste) : on va directement chez lui (29/10, « Frank ne répond pas »).
+                val bases = listOfNotNull(frankBase, FRANK_URL).distinct()
+                bases.firstNotNullOfOrNull { base ->
+                    listOf("fs-horreur-classiques", "fs-pour-toi").flatMap { load(base, it) }
+                        .distinctBy { it.id }.takeIf { it.isNotEmpty() }
+                }.orEmpty().shuffled()
             }
         }
     }
 
     private fun load(base: String, catalog: String): List<RouletteFilm> = runCatching {
-        val raw = com.nuvio.tv.core.tools.Http666.get("$base/catalog/movie/$catalog.json", 15_000) ?: return emptyList()
+        val raw = com.nuvio.tv.core.tools.Http666.get("$base/catalog/movie/$catalog.json", 40_000) ?: return emptyList()
         val arr = JSONObject(raw).optJSONArray("metas") ?: return emptyList()
         (0 until arr.length()).mapNotNull { i ->
             val m = arr.getJSONObject(i)

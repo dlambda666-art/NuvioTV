@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +49,8 @@ private val MGrey = Color(0xFFC8C3BE)
 fun MeteoScreen666() {
     var fc by remember { mutableStateOf<Meteo666.Forecast?>(null) }
     var failed by remember { mutableStateOf(false) }
+    // 666TVF : le haut de l'écran suit le jour choisi (aujourd'hui = maintenant)
+    var selected by remember { mutableStateOf(0) }
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         fc = withContext(Dispatchers.IO) { Meteo666.forecast() }
@@ -72,16 +75,35 @@ fun MeteoScreen666() {
                 Text(if (failed) "Météo injoignable pour l'instant" else "Chargement…", color = MGrey, fontSize = 20.sp)
                 return@Column
             }
+            val sel = f.days.getOrNull(selected)
             Row(Modifier.padding(top = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(Clock666.iconFor(f.now.code, f.now.day), fontSize = 96.sp)
-                Spacer(Modifier.width(28.dp))
-                Text("${f.now.tempC}°", fontSize = 80.sp, fontWeight = FontWeight.Light, color = MGreen)
-                Spacer(Modifier.width(34.dp))
-                Column {
-                    Text("${Meteo666.label(f.now.code, f.now.day)} · ressenti ${f.now.feelsC}°", color = MGrey, fontSize = 18.sp)
-                    Text("Vent ${f.now.windKmh} km/h ${f.now.windDir} · humidité ${f.now.humidity} %", color = MGrey, fontSize = 18.sp)
-                    if (f.now.sunrise != null && f.now.sunset != null) {
-                        Text("Lever ${f.now.sunrise} · coucher ${f.now.sunset}", color = MGrey, fontSize = 18.sp)
+                if (selected == 0 || sel == null) {
+                    Text(Clock666.iconFor(f.now.code, f.now.day), fontSize = 96.sp)
+                    Spacer(Modifier.width(28.dp))
+                    Text("${f.now.tempC}°", fontSize = 80.sp, fontWeight = FontWeight.Light, color = MGreen)
+                    Spacer(Modifier.width(34.dp))
+                    Column {
+                        Text("Maintenant · ${Meteo666.label(f.now.code, f.now.day)} · ressenti ${f.now.feelsC}°", color = MGrey, fontSize = 18.sp)
+                        Text("Vent ${f.now.windKmh} km/h ${f.now.windDir} · humidité ${f.now.humidity} %", color = MGrey, fontSize = 18.sp)
+                        if (f.now.sunrise != null && f.now.sunset != null) {
+                            Text("Lever ${f.now.sunrise} · coucher ${f.now.sunset}", color = MGrey, fontSize = 18.sp)
+                        }
+                    }
+                } else {
+                    Text(Clock666.iconFor(sel.code, true), fontSize = 96.sp)
+                    Spacer(Modifier.width(28.dp))
+                    Text("${sel.maxC}°", fontSize = 80.sp, fontWeight = FontWeight.Light, color = MGreen)
+                    Text(" / ${sel.minC}°", fontSize = 40.sp, fontWeight = FontWeight.Light, color = MGrey)
+                    Spacer(Modifier.width(34.dp))
+                    Column {
+                        Text("${dayName(sel.date, false)} ${sel.date.dayOfMonth} · ${Meteo666.label(sel.code, true)}", color = MGrey, fontSize = 18.sp)
+                        Text(
+                            "Pluie ${sel.rainPct} %" + (if (sel.windKmh > 0) " · vent jusqu'à ${sel.windKmh} km/h ${sel.windDir}" else ""),
+                            color = MGrey, fontSize = 18.sp
+                        )
+                        if (sel.sunrise != null && sel.sunset != null) {
+                            Text("Lever ${sel.sunrise} · coucher ${sel.sunset}", color = MGrey, fontSize = 18.sp)
+                        }
                     }
                 }
             }
@@ -90,7 +112,12 @@ fun MeteoScreen666() {
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 f.days.take(7).forEachIndexed { i, d ->
-                    DayCard(d, i == 0, Modifier.weight(1f).let { if (i == 0) it.focusRequester(first) else it })
+                    DayCard(
+                        d, i == 0,
+                        Modifier.weight(1f)
+                            .onFocusChanged { if (it.isFocused || it.hasFocus) selected = i }
+                            .let { if (i == 0) it.focusRequester(first) else it }
+                    )
                 }
             }
             Spacer(Modifier.weight(1f))
