@@ -32,7 +32,7 @@ object Door666 {
     }
 
     /** Début du lever de la dalle dans le GIF : le fond commence alors à passer au cimetière. */
-    const val LIFT_MS = 900L
+    const val LIFT_MS = 600L
 
     /**
      * 666TVF : vrai pendant qu'une porte s'ouvre. Le fond de l'accueil glisse alors vers le
