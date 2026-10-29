@@ -37,9 +37,14 @@ class VfWatcher666 @Inject constructor(
             .filter { s -> s.id.substringAfterLast(':').lowercase() in order && s.supportsType("movie") }
             .sortedBy { s -> order.indexOf(s.id.substringAfterLast(':').lowercase()) }
         if (cavaliers.isEmpty()) return 0
-        var found = 0
+        // Reprise : les films déjà vérifiés aujourd'hui ne sont pas refaits (pause puis reprise).
+        val day = java.time.LocalDate.now().toString()
+        val done = if (prefs.getString("day", null) == day) prefs.getStringSet("done", emptySet()).orEmpty().toMutableSet() else mutableSetOf()
+        var found = prefs.takeIf { it.getString("day", null) == day }?.getInt("found_today", 0) ?: 0
         for (id in list) {
-            if (busy()) return found                // un film démarre : on reprendra demain
+            if (id in done) continue
+            // fiche / liste de flux ouverte ou film lancé : pause, reprise au prochain passage (20 min)
+            if (busy()) { save(day, done, found); return 0 }
             val vf = cavaliers.any { scraper ->
                 if (busy()) return@any false
                 val res = withTimeoutOrNull(30_000) {
@@ -47,9 +52,16 @@ class VfWatcher666 @Inject constructor(
                 }.orEmpty()
                 res.any { r -> FrankVf666.isSureVfRelease(listOfNotNull(r.name, r.title).joinToString(" ")) }
             }
-            if (vf) { FrankVf666.confirm(context, id, "movie", "guetteur"); found++ }
+            if (vf) { FrankVf666.confirm(context, id, "movie", "guetteur"); found++; done += id }
+            if (busy()) { save(day, done, found); return 0 }   // interrompu en plein milieu : on refera ce film
+            done += id
         }
+        save(day, done, found)
         prefs.edit().putLong("at", System.currentTimeMillis()).putInt("last_found", found).apply()
         return found
+    }
+
+    private fun save(day: String, done: Set<String>, found: Int) {
+        prefs.edit().putString("day", day).putStringSet("done", done).putInt("found_today", found).apply()
     }
 }

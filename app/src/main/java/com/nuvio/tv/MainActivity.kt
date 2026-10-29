@@ -918,6 +918,10 @@ open class MainActivity : ComponentActivity() {
                     LaunchedEffect(actualRoute) {
                         // 666TVF : fiche ouverte → position de l'autre Shield récupérée tout de suite
                         if (actualRoute?.startsWith("detail/") == true) startupSyncService.requestProgressPull666()
+                        // 666TVF : fiche / liste de flux ouverte → le guetteur des sorties se met en pause
+                        com.nuvio.tv.core.tools.Announce666.browsing666 = actualRoute?.let {
+                            it.startsWith("detail/") || it.startsWith("stream/") || it.startsWith("player/")
+                        } == true
                         optimisticRoute = null
                     }
 
@@ -1309,7 +1313,7 @@ open class MainActivity : ComponentActivity() {
                                     if (loops666 > 0 && !inPlayerNow666 && !vfWatcherRunning666) {
                                         vfWatcherRunning666 = true
                                         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                                            val n = runCatching { vfWatcher666.dailyRun { com.nuvio.tv.core.tools.Announce666.inPlayer() } }.getOrDefault(0)
+                                            val n = runCatching { vfWatcher666.dailyRun { com.nuvio.tv.core.tools.Announce666.watcherBusy() } }.getOrDefault(0)
                                             if (n > 0) com.nuvio.tv.core.tools.Announce666.log(
                                                 this@MainActivity, "🔎 Guetteur : $n film(s) trouvé(s) en VF → En VF cette semaine", "noté par la Shield"
                                             )

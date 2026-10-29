@@ -40,6 +40,12 @@ object Announce666 {
     /** Lecteur externe lancé par 666TVF (le film tourne ailleurs). */
     @Volatile var externalPlayback: () -> Boolean = { false }
 
+    /** 666TVF : une fiche ou une liste de flux est ouverte (le guetteur se met en pause). */
+    @Volatile var browsing666: Boolean = false
+
+    /** Le guetteur des sorties ne travaille que si on ne lit rien et qu'on ne cherche rien. */
+    fun watcherBusy(): Boolean = inPlayer() || browsing666
+
     fun playerOpened() { _playerOpen.value = _playerOpen.value + 1 }
     fun playerClosed(now: Long = System.currentTimeMillis()) {
         _playerOpen.value = (_playerOpen.value - 1).coerceAtLeast(0)
