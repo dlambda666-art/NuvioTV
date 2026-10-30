@@ -184,6 +184,13 @@ internal fun ModernHeroMediaLayer(
                 alignment = Alignment.TopEnd
             )
         }
+        // 666TVF : le fond abattoir est vivant (sang qui goutte, néon qui clignote), derrière les tuiles
+        Abattoir666Layer(
+            visible = displayedBackdrop == COLLECTIONS_BACKDROP_666,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = 1f - transitionProgressState.value }
+        )
         if (shouldPlay) {
             val trailerUrlVal = heroTrailerUrl()
             val playbackKeyVal = heroTrailerPlaybackKey()
