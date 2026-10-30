@@ -279,6 +279,11 @@ open class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var vfWatcher666: com.nuvio.tv.core.tools.VfWatcher666
+
+    // 666TVF : enregistrement auto des nouveaux épisodes VF + « Vu » et ménage (Shield du bas)
+    @Inject
+    lateinit var autoRecord666: com.nuvio.tv.core.tools.AutoRecord666
+    private var autoRecordRunning666 = false
     private var vfWatcherRunning666 = false
 
     @Inject
@@ -1377,6 +1382,18 @@ open class MainActivity : ComponentActivity() {
                                     }
                                     if (found.isNotEmpty()) {
                                         pending666 = (pending666 + found).distinctBy { "${it.seriesId}|${it.season}|${it.episode}" }
+                                    }
+                                    // 666TVF : nouvel épisode VF annoncé → enregistré tout seul ; vus effacés après 3 jours
+                                    if (com.nuvio.tv.core.tools.Record666.enabledHere()) {
+                                        runCatching { autoRecord666.offer(found) }
+                                        if (!autoRecordRunning666) {
+                                            autoRecordRunning666 = true
+                                            lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                                runCatching { autoRecord666.sweep(watchProgressRepository666) }
+                                                if (!inPlayerNow666) runCatching { autoRecord666.runOnce { com.nuvio.tv.core.tools.Announce666.watcherBusy() } }
+                                                autoRecordRunning666 = false
+                                            }
+                                        }
                                     }
                                     // 666TVF : programme de l'écran de veille (cloches + galas UFC)
                                     runCatching {

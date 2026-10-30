@@ -32,7 +32,7 @@ object Door666 {
     }
 
     /** Début du lever de la dalle dans le GIF : le fond commence alors à passer au cimetière. */
-    const val LIFT_MS = 600L
+    const val LIFT_MS = 600L  // + fondu de 4 s = entrée à OPEN_MS
 
     /**
      * 666TVF : vrai pendant qu'une porte s'ouvre. Le fond de l'accueil glisse alors vers le
@@ -63,4 +63,31 @@ fun DoorAutoEnter666(isFocused: Boolean, focusGifUrl: String?, onEnter: () -> Un
     }
     // la porte n'est plus sélectionnée : retour au fond normal
     LaunchedEffect(isFocused) { if (!isFocused && Door666.isDoor(focusGifUrl)) Door666.opening = false }
+}
+
+/** Durée du fondu vers le cimetière : de la levée de la dalle jusqu'à l'entrée (4 s, linéaire). */
+const val DOOR_FADE_MS_666 = 4_000
+
+/**
+ * 666TVF : le cimetière apparaît doucement derrière les tuiles pendant qu'une porte s'ouvre
+ * (dispositions Classique et Grille ; la Moderne le fait dans son bandeau). 30/10.
+ */
+@Composable
+fun DoorFade666(modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier) {
+    val alpha by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (Door666.opening) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.tween(
+            durationMillis = if (Door666.opening) DOOR_FADE_MS_666 else 300,
+            easing = androidx.compose.animation.core.LinearEasing
+        ),
+        label = "doorFade666"
+    )
+    if (alpha <= 0f) return
+    androidx.compose.foundation.Image(
+        painter = androidx.compose.ui.res.painterResource(R.drawable.bg_cimetiere_666),
+        contentDescription = null,
+        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+        alpha = alpha,
+        modifier = modifier
+    )
 }

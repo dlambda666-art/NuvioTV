@@ -71,7 +71,13 @@ object Record666 {
         val status: Status,
         val error: String?,
         val addedAt: Long,
-        val usb: Boolean
+        val usb: Boolean,
+        /** Quand tu l'as regardé (0 = pas encore). */
+        val watchedAt: Long = 0,
+        /** « Garder » : jamais effacé tout seul. */
+        val keep: Boolean = false,
+        /** Lancé tout seul par la cloche (nouvel épisode VF). */
+        val auto: Boolean = false
     ) {
         val file: File get() = File(path)
         val partFile: File get() = File("$path.part")
@@ -156,7 +162,7 @@ object Record666 {
     fun fitText(fit: Fit, place: Place): String = when (fit) {
         Fit.Ok -> "✓ Tient sur ${if (place.usb) "la clé USB" else "la Shield"} (${gb(place.usable)} libres)"
         Fit.Unknown -> "Taille inconnue · ${gb(place.usable)} libres ${if (place.usb) "sur la clé" else "sur la Shield"}"
-        Fit.TooBigForKey -> "Trop gros pour la clé : 4 Go maximum par fichier (prends un 1080p plus léger)"
+        Fit.TooBigForKey -> "Trop gros : ta clé est en FAT32, 4 Go max par fichier (formatée en exFAT, plus de limite)"
         Fit.NoRoom -> "Pas assez de place (${gb(place.usable)} libres)"
     }
 
@@ -216,7 +222,7 @@ object Record666 {
     )
 
     /** Ajoute à la file et démarre. Renvoie un message à afficher. */
-    fun enqueue(context: Context, r: Request666): String {
+    fun enqueue(context: Context, r: Request666, auto: Boolean = false): String {
         init(context)
         val place = place(context) ?: return "Pas de stockage disponible"
         val id = idFor(r.contentId, r.videoId, r.season, r.episode)
@@ -234,7 +240,7 @@ object Record666 {
             videoId = r.videoId, season = r.season, episode = r.episode, episodeTitle = r.episodeTitle, year = r.year,
             quality = r.quality, url = r.url, headers = r.headers, path = File(place.dir, name).absolutePath,
             posterUrl = r.poster, backdropUrl = r.backdrop, logoUrl = r.logo, total = r.size ?: -1,
-            status = Status.QUEUED, error = null, addedAt = System.currentTimeMillis(), usb = place.usb
+            status = Status.QUEUED, error = null, addedAt = System.currentTimeMillis(), usb = place.usb, auto = auto
         )
         update(context) { list -> list.filterNot { it.id == id } + rec }
         Record666Service.start(context)
@@ -253,6 +259,18 @@ object Record666 {
         update(context) { list -> list.map { if (it.id == id) it.copy(status = Status.QUEUED, error = null) else it } }
         Record666Service.start(context)
     }
+
+    const val AUTO_DELETE_AFTER_MS = 3L * 24 * 3600 * 1000
+
+    /** Règle pure (testée) : vu depuis plus de 3 jours, pas gardé → effacé tout seul. */
+    fun shouldAutoDelete(r: Rec, now: Long): Boolean =
+        r.status == Status.DONE && !r.keep && r.watchedAt > 0 && now - r.watchedAt >= AUTO_DELETE_AFTER_MS
+
+    fun markWatched(context: Context, id: String, at: Long) =
+        update(context) { list -> list.map { if (it.id == id && it.watchedAt == 0L) it.copy(watchedAt = at) else it } }
+
+    fun setKeep(context: Context, id: String, keep: Boolean) =
+        update(context) { list -> list.map { if (it.id == id) it.copy(keep = keep) else it } }
 
     fun idFor(contentId: String?, videoId: String?, season: Int?, episode: Int?): String {
         val base = (contentId ?: videoId ?: "x").replace(Regex("[^A-Za-z0-9]"), "")
@@ -462,6 +480,7 @@ object Record666 {
                 put("posterUrl", r.posterUrl); put("backdropUrl", r.backdropUrl); put("logoUrl", r.logoUrl)
                 put("total", r.total); put("status", r.status.name); put("error", r.error)
                 put("addedAt", r.addedAt); put("usb", r.usb)
+                put("watchedAt", r.watchedAt); put("keep", r.keep); put("auto", r.auto)
             })
         }
     }
@@ -481,7 +500,8 @@ object Record666 {
                 headers = h?.keys()?.asSequence()?.associateWith { h.getString(it) } ?: emptyMap(),
                 path = o.getString("path"), posterUrl = s("posterUrl"), backdropUrl = s("backdropUrl"), logoUrl = s("logoUrl"),
                 total = o.optLong("total", -1), status = runCatching { Status.valueOf(o.getString("status")) }.getOrDefault(Status.FAILED),
-                error = s("error"), addedAt = o.optLong("addedAt"), usb = o.optBoolean("usb")
+                error = s("error"), addedAt = o.optLong("addedAt"), usb = o.optBoolean("usb"),
+                watchedAt = o.optLong("watchedAt"), keep = o.optBoolean("keep"), auto = o.optBoolean("auto")
             )
         }.getOrNull()
     }

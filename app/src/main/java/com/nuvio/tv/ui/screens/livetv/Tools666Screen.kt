@@ -287,6 +287,23 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 item { Text(line, modifier = Modifier.padding(horizontal = 18.dp), color = Color(0xFFC8C3BE)) }
             }
 
+            // ---------- Enregistrements (Shield du bas) ----------
+            if (com.nuvio.tv.core.tools.Record666.enabledHere()) {
+                item { Section("Enregistrements", "Shield du bas · pour regarder sans internet") }
+                item {
+                    val recPrefs = remember { context.getSharedPreferences("666tv_auto_rec", android.content.Context.MODE_PRIVATE) }
+                    var autoRec by remember { mutableStateOf(recPrefs.getBoolean("on", true)) }
+                    ActionRow(
+                        "Enregistrer tout seul les nouveaux épisodes VF : " + if (autoRec) "activé" else "coupé",
+                        "Quand la cloche annonce un épisode en VF, il s'enregistre tout seul (1080p VF qui tient sur la clé). Vu → effacé 3 jours après, sauf « Garder »",
+                        onClick = {
+                            autoRec = !autoRec
+                            recPrefs.edit().putBoolean("on", autoRec).apply()
+                        }
+                    )
+                }
+            }
+
             // ---------- Dernières annonces ----------
             item { Section("Dernières annonces", "Tout ce qui a fait sonner la cloche, le plus récent en haut (30 dernières)") }
             if (annonces.isEmpty()) {

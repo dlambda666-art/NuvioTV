@@ -351,6 +351,8 @@ fun GridHomeContent(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(NuvioTheme.colors.Background)) {
+        // 666TVF : fondu de 4 s vers le cimetière pendant qu'une porte s'ouvre
+        DoorFade666(Modifier.fillMaxSize())
         val contentFocusRequester = LocalContentFocusRequester.current
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val gridWidth = maxWidth

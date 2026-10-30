@@ -521,6 +521,8 @@ fun ClassicHomeContent(
         updatesPausedProvider = { isVerticalScrollingState.value },
         modifier = Modifier.fillMaxSize()
     )
+    // 666TVF : fondu de 4 s vers le cimetière pendant qu'une porte s'ouvre
+    DoorFade666(Modifier.fillMaxSize())
     LazyColumn(
         state = columnListState,
         modifier = Modifier

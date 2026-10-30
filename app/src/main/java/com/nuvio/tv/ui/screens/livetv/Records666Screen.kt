@@ -1,5 +1,6 @@
 package com.nuvio.tv.ui.screens.livetv
 
+import com.nuvio.tv.ui.components.ignoreHeldOk666
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -80,12 +81,16 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit) {
         )
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = 56.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 30.dp)) {
             item {
-                Text("ENREGISTREMENTS", fontSize = 40.sp, fontWeight = FontWeight.Black, color = RGreen)
+                Text(
+                    "ENREGISTREMENTS",
+                    style = com.nuvio.tv.ui.components.Font666.horror(androidx.tv.material3.MaterialTheme.typography.headlineLarge, 1.15f),
+                    color = com.nuvio.tv.ui.components.Font666.Green
+                )
                 val p = place
                 Text(
                     if (p == null) "Pas de stockage disponible"
                     else "${p.label} · ${Record666.gb(p.free)} libres sur ${Record666.gb(p.totalSpace)}" +
-                        if (p.maxFile < Long.MAX_VALUE) " · fichiers de 4 Go maximum" else "",
+                        if (p.maxFile < Long.MAX_VALUE) " · clé en FAT32 : 4 Go max par fichier" else "",
                     color = RGrey, fontSize = 16.sp
                 )
                 if (p != null && p.totalSpace > 0) {
@@ -128,7 +133,7 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit) {
                     }
                 }
                 item {
-                    Text("OK : regarder · appui long sur OK : reprendre du début / supprimer", color = RDim, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
+                    Text("OK : regarder · appui long sur OK : reprendre du début / garder / supprimer · vu → effacé 3 jours après", color = RDim, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
                 }
             }
         }
@@ -138,6 +143,7 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit) {
                 onPlayFromStart = { menuFor = null; onPlay(r, true) },
                 onRetry = { menuFor = null; Record666.retry(context, r.id) },
                 onDelete = { menuFor = null; Record666.delete(context, r.id) },
+                onToggleKeep = { menuFor = null; Record666.setKeep(context, r.id, !r.keep) },
                 onDismiss = { menuFor = null }
             )
         }
@@ -232,20 +238,33 @@ private fun ReadyCard(r: Record666.Rec, modifier: Modifier, onClick: () -> Unit,
             }
         }
         Text(r.label, color = Color(0xFFF2EFE9), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 8.dp))
-        Text(
-            listOfNotNull(r.total.takeIf { it > 0 }?.let { Record666.gb(it) }, r.quality.ifBlank { null }).joinToString(" · "),
-            color = RDim, fontSize = 13.sp
-        )
+        val now = System.currentTimeMillis()
+        when {
+            r.watchedAt > 0 && r.keep -> Text("Vu ✓ · 📌 gardé", color = RGreen, fontSize = 13.sp)
+            r.watchedAt > 0 -> {
+                val left = ((Record666.AUTO_DELETE_AFTER_MS - (now - r.watchedAt)) / (24L * 3600 * 1000)).coerceAtLeast(0) + 1
+                Text("Vu ✓ · effacé dans ${left} j", color = RGreen, fontSize = 13.sp)
+            }
+            else -> Text(
+                listOfNotNull(
+                    if (r.keep) "📌" else null,
+                    if (r.auto) "auto" else null,
+                    r.total.takeIf { it > 0 }?.let { Record666.gb(it) },
+                    r.quality.ifBlank { null }
+                ).joinToString(" · "),
+                color = RDim, fontSize = 13.sp
+            )
+        }
     }
 }
 
 @Composable
-private fun RecordMenu(r: Record666.Rec, onPlayFromStart: () -> Unit, onRetry: () -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit) {
+private fun RecordMenu(r: Record666.Rec, onPlayFromStart: () -> Unit, onRetry: () -> Unit, onDelete: () -> Unit, onToggleKeep: () -> Unit, onDismiss: () -> Unit) {
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Column(
-            Modifier.width(480.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xFF1C1A1A))
+            Modifier.ignoreHeldOk666().width(480.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xFF1C1A1A))
                 .border(2.dp, RMauve, RoundedCornerShape(16.dp)).padding(24.dp)
         ) {
             Text(r.label, color = Color(0xFFF2EFE9), fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2)
@@ -259,6 +278,15 @@ private fun RecordMenu(r: Record666.Rec, onPlayFromStart: () -> Unit, onRetry: (
             if (r.status == Record666.Status.DONE && r.file.exists()) {
                 Button(onClick = onPlayFromStart, colors = colors, modifier = Modifier.fillMaxWidth().firstOnce()) {
                     Text("▶  Reprendre du début", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                }
+                Spacer(Modifier.height(10.dp))
+            }
+            if (r.status == Record666.Status.DONE) {
+                Button(onClick = onToggleKeep, colors = colors, modifier = Modifier.fillMaxWidth().firstOnce()) {
+                    Text(
+                        if (r.keep) "Ne plus garder (effacé 3 jours après l'avoir vu)" else "📌  Garder (jamais effacé tout seul)",
+                        modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center
+                    )
                 }
                 Spacer(Modifier.height(10.dp))
             }

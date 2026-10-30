@@ -2,6 +2,7 @@
 
 package com.nuvio.tv.ui.screens.stream
 
+import com.nuvio.tv.ui.components.ignoreHeldOk666
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -1542,6 +1543,7 @@ private fun Record666Dialog(
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
+                .ignoreHeldOk666()
                 .width(560.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(androidx.compose.ui.graphics.Color(0xFF1C1A1A))
