@@ -55,6 +55,7 @@ import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
@@ -379,6 +380,15 @@ open class MainActivity : ComponentActivity() {
         com.nuvio.tv.core.tools.MenuOrder666.init(this)
         com.nuvio.tv.ui.screens.home.Door666.init(this)
         com.nuvio.tv.core.tools.PluginOrder666.init(this)
+        // 666TVF : enregistrements — un enregistrement coupé (Shield éteinte, appli fermée) repart tout seul.
+        if (com.nuvio.tv.core.tools.Record666.enabledHere()) {
+            com.nuvio.tv.core.tools.Record666.init(this)
+            if (com.nuvio.tv.core.tools.Record666.items.value.any {
+                    it.status == com.nuvio.tv.core.tools.Record666.Status.QUEUED ||
+                        it.status == com.nuvio.tv.core.tools.Record666.Status.RUNNING
+                }
+            ) com.nuvio.tv.core.tools.Record666Service.start(this)
+        }
         com.nuvio.tv.core.tools.Announce666.externalPlayback = { externalPlaybackTracker.awaitingExternal666 }
         run {
             val appCtx = applicationContext
@@ -910,6 +920,24 @@ open class MainActivity : ComponentActivity() {
                             runCatching { navController.navigate(Screen.Search.route) { launchSingleTop = true } }
                         }
                     }
+                    // 666TVF : panne d'internet à l'ouverture → directement sur les enregistrements.
+                    var offlineChecked666 by remember { mutableStateOf(false) }
+                    val homeRoute666 = navController.currentBackStackEntryAsState().value?.destination?.route
+                    LaunchedEffect(homeRoute666) {
+                        if (offlineChecked666 || homeRoute666 != Screen.Home.route) return@LaunchedEffect
+                        offlineChecked666 = true
+                        if (!com.nuvio.tv.core.tools.Record666.enabledHere()) return@LaunchedEffect
+                        val appCtx = applicationContext
+                        val goOffline = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            com.nuvio.tv.core.tools.Record666.init(appCtx)
+                            com.nuvio.tv.core.tools.Record666.ready().isNotEmpty() &&
+                                !com.nuvio.tv.core.tools.Record666.reachable(appCtx)
+                        }
+                        if (goOffline) {
+                            runCatching { navController.navigate(Screen.Records666.route) { launchSingleTop = true } }
+                            Toast.makeText(appCtx, "Pas d'internet : voici tes enregistrements", Toast.LENGTH_LONG).show()
+                        }
+                    }
                     var optimisticRoute by remember { mutableStateOf<String?>(null) }
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val actualRoute = navBackStackEntry?.destination?.route
@@ -1097,6 +1125,7 @@ open class MainActivity : ComponentActivity() {
                             add(Screen.MyApps.route)
                             add(Screen.Meteo666.route)
                             add(Screen.Roulette666.route)
+                            add(Screen.Records666.route)
                             add(Screen.Settings.route)
                             if (discoverLocation == DiscoverLocation.IN_SIDEBAR) {
                                 add(Screen.Discover.route)
@@ -1177,6 +1206,16 @@ open class MainActivity : ComponentActivity() {
                                     icon = Icons.Default.WbSunny
                                 )
                             )
+                            // 666TVF : enregistrements — Shield du bas seulement
+                            if (com.nuvio.tv.core.tools.Record666.enabledHere()) {
+                                add(
+                                    DrawerItem(
+                                        route = Screen.Records666.route,
+                                        label = "Enregistrements",
+                                        icon = Icons.Default.Download
+                                    )
+                                )
+                            }
                             add(
                                 DrawerItem(
                                     route = Screen.Roulette666.route,

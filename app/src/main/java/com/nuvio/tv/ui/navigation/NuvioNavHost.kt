@@ -1192,6 +1192,38 @@ private fun PlaybackNavHost(
         composable(Screen.Meteo666.route) {
             com.nuvio.tv.ui.screens.livetv.MeteoScreen666()
         }
+        composable(Screen.Records666.route) {
+            // 666TVF : enregistrements (Shield du bas) — lus directement depuis la clé / la Shield.
+            com.nuvio.tv.ui.screens.livetv.Records666Screen(
+                onPlay = { r, fromStart ->
+                    val img = { f: java.io.File, url: String? ->
+                        if (f.exists()) android.net.Uri.fromFile(f).toString() else url
+                    }
+                    navController.navigate(
+                        Screen.Player.createRoute(
+                            streamUrl = android.net.Uri.fromFile(r.file).toString(),
+                            title = r.title,
+                            streamName = "Enregistrement 666",
+                            year = r.year,
+                            contentId = r.contentId,
+                            contentType = r.contentType,
+                            contentName = r.contentName,
+                            poster = img(r.posterFile, r.posterUrl),
+                            backdrop = img(r.backdropFile, r.backdropUrl),
+                            logo = r.logoUrl,
+                            videoId = r.videoId,
+                            season = r.season,
+                            episode = r.episode,
+                            episodeTitle = r.episodeTitle,
+                            filename = r.file.name,
+                            videoSize = r.total.takeIf { it > 0 },
+                            startFromBeginning = fromStart,
+                            addonName = "Enregistrement"
+                        )
+                    )
+                }
+            )
+        }
         composable(Screen.Roulette666.route) {
             com.nuvio.tv.ui.screens.livetv.Roulette666Screen(
                 onOpenDetail = { itemId, itemType, addonBaseUrl ->

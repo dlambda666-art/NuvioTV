@@ -23,6 +23,7 @@ object MenuOrder666 {
         "my_apps" to "Mes applis",
         "meteo_666" to "Météo",
         "roulette_666" to "Roulette",
+        "records_666" to "Enregistrements",
         "settings" to "Paramètres"
     )
 

@@ -117,7 +117,9 @@ internal class PlayerMediaSourceFactory(private val context: Context) {
 
         val mp4SessionMode = !useParallelConnections && !isHls && !isDash &&
             resolvedMimeType == MimeTypes.VIDEO_MP4
-        val useChunkSessionSource = (useParallelConnections || mp4SessionMode) && !isHls && !isDash
+        // 666TVF : un enregistrement (fichier sur la clé / la Shield) se lit directement, sans réseau.
+        val isLocalFile666 = Uri.parse(url).scheme?.lowercase().let { it == "file" || it == "content" }
+        val useChunkSessionSource = (useParallelConnections || mp4SessionMode) && !isHls && !isDash && !isLocalFile666
         parallelStartupPrefetchUnlocked.set(!useChunkSessionSource)
         val progressiveUpstreamFactory: DataSource.Factory = if (useChunkSessionSource) {
             if (mp4SessionMode) {

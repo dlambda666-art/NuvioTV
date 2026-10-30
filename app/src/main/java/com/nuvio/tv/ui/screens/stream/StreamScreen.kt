@@ -15,6 +15,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -139,6 +140,9 @@ fun StreamScreen(
     var showPlayerChoiceDialog by remember { mutableStateOf(false) }
     var pendingPlaybackInfo by remember { mutableStateOf<StreamPlaybackInfo?>(null) }
     var showP2pConsentDialog by remember { mutableStateOf(false) }
+    // 666TVF : appui long sur un lien → « Enregistrer ce lien ? » (Shield du bas seulement)
+    var recordStream666 by remember { mutableStateOf<Stream?>(null) }
+    val record666Enabled = remember { com.nuvio.tv.core.tools.Record666.enabledHere() }
     var pendingTorrentPlaybackInfo by remember { mutableStateOf<StreamPlaybackInfo?>(null) }
     val p2pEnabled by viewModel.p2pEnabled.collectAsStateWithLifecycle(initialValue = false)
     val streamBadgeSettings by viewModel.streamBadgeSettings.collectAsStateWithLifecycle(
@@ -478,6 +482,7 @@ fun StreamScreen(
                             onSourceSelectionRestoreHandled()
                         }
                     },
+                    onStreamLongPress666 = if (record666Enabled) { st -> recordStream666 = st } else null,
                     onRetry = { viewModel.onEvent(StreamScreenEvent.OnRetry) },
                     onExpandStreams = { viewModel.expandFilteredStreamsIfNeeded() },
                     hazeState = streamHazeState,
@@ -509,6 +514,50 @@ fun StreamScreen(
                     showPlayerChoiceDialog = false
                     pendingPlaybackInfo = null
                 }
+            )
+        }
+
+        recordStream666?.let { st ->
+            Record666Dialog(
+                stream = st,
+                onRecord = {
+                    recordStream666 = null
+                    scope.coroutineLaunch {
+                        val info = viewModel.resolveStreamForPlayback(st)
+                        val url = info?.url
+                        val msg = when {
+                            info == null -> "Lien injoignable, essaie-en un autre"
+                            url.isNullOrBlank() || !url.startsWith("http") -> "Ce lien ne peut pas être enregistré, essaie-en un autre"
+                            else -> com.nuvio.tv.core.tools.Record666.enqueue(
+                                context,
+                                com.nuvio.tv.core.tools.Record666.Request666(
+                                    title = info.title,
+                                    contentName = info.contentName ?: info.title,
+                                    contentId = info.contentId,
+                                    contentType = info.contentType,
+                                    videoId = info.videoId,
+                                    season = info.season,
+                                    episode = info.episode,
+                                    episodeTitle = info.episodeTitle,
+                                    year = info.year,
+                                    quality = com.nuvio.tv.core.tools.Record666.qualityOf(
+                                        listOfNotNull(st.name, st.description, info.filename).joinToString(" ")
+                                    ),
+                                    url = url,
+                                    headers = info.headers ?: emptyMap(),
+                                    filename = info.filename,
+                                    size = info.videoSize ?: st.behaviorHints?.videoSize,
+                                    poster = info.poster,
+                                    backdrop = info.backdrop,
+                                    logo = info.logo
+                                )
+                            )
+                        }
+                        viewModel.onEvent(StreamScreenEvent.OnAutoPlayConsumed)
+                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                    }
+                },
+                onDismiss = { recordStream666 = null }
             )
         }
 
@@ -734,6 +783,7 @@ private fun RightStreamSection(
     onAddonFilterSelected: (String?) -> Unit,
     onRefresh: () -> Unit,
     onStreamSelected: (Stream) -> Unit,
+    onStreamLongPress666: ((Stream) -> Unit)? = null,
     focusedStreamIndex: Int,
     shouldRestoreFocusedStream: Boolean,
     onRestoreFocusedStreamHandled: () -> Unit,
@@ -909,6 +959,7 @@ private fun RightStreamSection(
                         StreamsList(
                             streams = streams,
                             onStreamSelected = onStreamSelected,
+                            onStreamLongPress666 = onStreamLongPress666,
                             focusedStreamIndex = focusedStreamIndex,
                             shouldRestoreFocusedStream = shouldRestoreFocusedStream,
                             onRestoreFocusedStreamHandled = onRestoreFocusedStreamHandled,
@@ -1029,6 +1080,7 @@ private fun EmptyState() {
 private fun StreamsList(
     streams: List<Stream>,
     onStreamSelected: (Stream) -> Unit,
+    onStreamLongPress666: ((Stream) -> Unit)? = null,
     focusedStreamIndex: Int = 0,
     shouldRestoreFocusedStream: Boolean = false,
     onRestoreFocusedStreamHandled: () -> Unit = {},
@@ -1166,6 +1218,7 @@ private fun StreamsList(
                     badgePlacement = badgePlacement,
                     reserveBadgeSpace = hasBadgeRules && stream.badges.isEmpty(),
                     onClick = { onStreamSelected(stream) },
+                    onLongClick = onStreamLongPress666?.let { cb -> { cb(stream) } },
                     focusRequester = when {
                         shouldRestoreFocusedStream && index == focusedStreamIndex.coerceIn(0, (streams.lastIndex).coerceAtLeast(0)) -> restoreFocusRequester
                         else -> streamFocusRequesters.getOrPut(streamKeys[index]) { FocusRequester() }
@@ -1195,6 +1248,7 @@ private fun StreamCard(
     badgePlacement: StreamBadgePlacement,
     reserveBadgeSpace: Boolean = false,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     focusRequester: FocusRequester? = null,
     onFocusChanged: ((Boolean) -> Unit)? = null,
     onUpKey: (() -> Unit)? = null
@@ -1233,6 +1287,7 @@ private fun StreamCard(
 
     Card(
         onClick = onClick,
+        onLongClick = onLongClick,
         modifier = Modifier
             .fillMaxWidth()
             .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
@@ -1455,6 +1510,82 @@ internal fun PlayerChoiceDialog(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+/** 666TVF : « Enregistrer ce lien ? » — dit tout de suite s'il tient sur la clé / la Shield. */
+@Composable
+private fun Record666Dialog(
+    stream: Stream,
+    onRecord: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val rec = com.nuvio.tv.core.tools.Record666
+    val place = remember { rec.place(context) }
+    val size = stream.behaviorHints?.videoSize
+    val fit = remember(place, size) {
+        place?.let { rec.fit(size, it.usable, it.maxFile, rec.queuedBytes()) }
+    }
+    val canRecord = fit == com.nuvio.tv.core.tools.Record666.Fit.Ok || fit == com.nuvio.tv.core.tools.Record666.Fit.Unknown
+    val quality = remember(stream) {
+        rec.qualityOf(listOfNotNull(stream.name, stream.description, stream.behaviorHints?.filename).joinToString(" "))
+    }
+    val green = androidx.compose.ui.graphics.Color(0xFF4CC36B)
+    val mauve = androidx.compose.ui.graphics.Color(0xFF9B30D9)
+    val mauveLight = androidx.compose.ui.graphics.Color(0xFFB57BE0)
+    val first = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .width(560.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(androidx.compose.ui.graphics.Color(0xFF1C1A1A))
+                .border(2.dp, mauve, RoundedCornerShape(16.dp))
+        ) {
+            Column(Modifier.padding(26.dp)) {
+                Text("Enregistrer ce lien ?", style = MaterialTheme.typography.headlineSmall, color = androidx.compose.ui.graphics.Color(0xFFF2EFE9))
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    listOfNotNull(quality.ifBlank { null }, size?.takeIf { it > 0 }?.let { rec.gb(it) }).joinToString(" · ").ifBlank { "Taille inconnue" },
+                    color = androidx.compose.ui.graphics.Color(0xFFC8C3BE)
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    if (place == null || fit == null) "Pas de stockage disponible" else rec.fitText(fit, place),
+                    color = if (fit == com.nuvio.tv.core.tools.Record666.Fit.Ok) green else mauveLight
+                )
+                Spacer(Modifier.height(20.dp))
+                androidx.tv.material3.Button(
+                    onClick = { if (canRecord) onRecord() },
+                    enabled = canRecord,
+                    modifier = Modifier.fillMaxWidth().then(if (canRecord) Modifier.focusRequester(first) else Modifier),
+                    colors = androidx.tv.material3.ButtonDefaults.colors(
+                        containerColor = androidx.compose.ui.graphics.Color(0xFF5C168C),
+                        contentColor = androidx.compose.ui.graphics.Color(0xFFF2EFE9),
+                        focusedContainerColor = mauve,
+                        focusedContentColor = androidx.compose.ui.graphics.Color.White
+                    )
+                ) { Text("⬇  Enregistrer", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) }
+                Spacer(Modifier.height(10.dp))
+                androidx.tv.material3.Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth().then(if (!canRecord) Modifier.focusRequester(first) else Modifier),
+                    colors = androidx.tv.material3.ButtonDefaults.colors(
+                        containerColor = androidx.compose.ui.graphics.Color(0xFF2A2626),
+                        contentColor = androidx.compose.ui.graphics.Color(0xFFF2EFE9)
+                    )
+                ) { Text("Annuler", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "Se met en pause tout seul pendant un film · à retrouver dans le menu « Enregistrements »",
+                    color = androidx.compose.ui.graphics.Color(0xFF8F8A85),
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
         }
     }
