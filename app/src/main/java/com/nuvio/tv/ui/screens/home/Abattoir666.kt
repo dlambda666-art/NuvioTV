@@ -221,7 +221,8 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
         if (deep > 0f) drawRect(Color.Black, alpha = deep * alpha)
         val u = iw / 1280f
         Abattoir666.SOURCES.forEachIndexed { i, s ->
-            drawDrop(Abattoir666.state(i, t), left + s.x * u, s.y0 * u, u, alpha)
+            // 666TVF : fond en miroir (les bocaux à droite, bien visibles) → x retourné
+            drawDrop(Abattoir666.state(i, t), left + (1280f - s.x) * u, s.y0 * u, u, alpha)
         }
     }
 }
