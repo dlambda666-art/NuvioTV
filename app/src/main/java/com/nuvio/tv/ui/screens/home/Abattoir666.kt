@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
@@ -98,6 +99,45 @@ object Abattoir666 {
         Triple(6.0, 0.45, 1f), Triple(6.55, 0.06, 1f), Triple(6.68, 0.04, 0.6f), Triple(8.2, 0.05, 0.5f)
     )
 
+    // ---------- La cloche coupe le néon, la porte le fait mourir (30/10) ----------
+    @Volatile var cutAt: Long = 0L
+        private set
+
+    /** Nouvel épisode VF annoncé : le néon coupe une seconde au moment du cri. */
+    fun requestCut(now: Long = System.currentTimeMillis()) { cutAt = now }
+
+    private val DOOR_FLICKER = floatArrayOf(1f, 0f, 1f, 0.4f, 0f, 1f, 1f, 0f, 0.6f, 1f, 0f, 1f, 1f)
+    const val DOOR_DIE_MS = 900L
+    const val CUT_MS = 1_200L
+
+    /**
+     * Règle pure (testée) : néon éteint (0 = allumé, 1 = éteint).
+     * Porte qui s'ouvre (sinceDoorMs ≥ 0) : grésille 0,9 s puis meurt. Cloche (sinceCutMs ≥ 0) :
+     * un clignement puis coupé 1 s. Sinon le clignotement normal.
+     */
+    fun neonLevel(t: Double, sinceCutMs: Long, sinceDoorMs: Long): Float {
+        if (sinceDoorMs >= 0) {
+            return if (sinceDoorMs < DOOR_DIE_MS) DOOR_FLICKER[((sinceDoorMs / 70) % DOOR_FLICKER.size).toInt()] else 1f
+        }
+        if (sinceCutMs in 0 until CUT_MS) return if (sinceCutMs in 120 until 200) 0f else 1f
+        return neonOff(t)
+    }
+
+    /** Le bzzt de la grosse coupure ne sonne qu'un cycle sur trois (toutes les 27 s), sinon ça lasse. */
+    fun bigCutBuzzes(t: Double): Boolean = ((t / 9.0).toLong() % 3L) == 0L
+
+    fun isBigCutStart(prevT: Double, t: Double): Boolean {
+        val a = prevT % 9.0; val b = t % 9.0
+        return (a < 6.0 && b >= 6.0 && b < 6.45) || (a > b && b >= 6.0 && b < 6.45)
+    }
+
+    /** Réglage Outils 666 : le bzzt du néon. */
+    fun buzzEnabled(context: android.content.Context): Boolean =
+        context.getSharedPreferences("666tv_neon", android.content.Context.MODE_PRIVATE).getBoolean("bzzt", true)
+
+    fun setBuzzEnabled(context: android.content.Context, on: Boolean) =
+        context.getSharedPreferences("666tv_neon", android.content.Context.MODE_PRIVATE).edit().putBoolean("bzzt", on).apply()
+
     /** Règle pure (testée) : néon éteint (0 = allumé, 1 = éteint), cycle de 9 s. */
     fun neonOff(t: Double): Float {
         val tt = t % 9.0
@@ -114,19 +154,49 @@ private val BloodShine = Color(0x55C8A096)
 /** À poser juste au-dessus de l'image de fond (Crop, aligné en haut à droite). */
 @Composable
 fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
+    val opening = Door666.opening
+    // la porte : le néon meurt d'abord (1,2 s dans le noir), puis le cimetière apparaît
     val alpha by animateFloatAsState(
-        targetValue = if (visible && !Door666.opening) 1f else 0f,
-        animationSpec = tween(durationMillis = if (Door666.opening) DOOR_FADE_MS_666 else 400, easing = LinearEasing),
+        targetValue = if (visible && !opening) 1f else 0f,
+        animationSpec = if (opening) {
+            tween(durationMillis = DOOR_FADE_MS_666 - 1_200, delayMillis = 1_200, easing = LinearEasing)
+        } else {
+            tween(durationMillis = 400, easing = LinearEasing)
+        },
         label = "abattoir666"
     )
     if (alpha <= 0f) return
+    val context = androidx.compose.ui.platform.LocalContext.current
     val neonOff: ImageBitmap = ImageBitmap.imageResource(R.drawable.neon_off_666)
     var time by remember { mutableFloatStateOf(0f) }
+    var level by remember { mutableFloatStateOf(0f) }
+    var deep by remember { mutableFloatStateOf(0f) }
+    var doorAt by remember { mutableStateOf(-1L) }
+    LaunchedEffect(opening) {
+        doorAt = if (opening) System.currentTimeMillis() else -1L
+        if (opening && Abattoir666.buzzEnabled(context)) Neon666Sound.play(context, R.raw.neon_meurt_666)
+    }
     LaunchedEffect(Unit) {
         val start = withFrameMillis { it }
+        var prevT = 0.0
+        var lastCutSeen = Abattoir666.cutAt
         while (true) {
             withFrameMillis { now ->
-                if (!com.nuvio.tv.core.tools.Announce666.inPlayer()) time = (now - start) / 1000f
+                if (com.nuvio.tv.core.tools.Announce666.inPlayer()) return@withFrameMillis
+                val t = (now - start) / 1000.0
+                val wall = System.currentTimeMillis()
+                val sinceDoor = if (doorAt >= 0) wall - doorAt else -1L
+                val sinceCut = if (Abattoir666.cutAt > 0) wall - Abattoir666.cutAt else -1L
+                level = Abattoir666.neonLevel(t, sinceCut, sinceDoor)
+                deep = if (sinceDoor > Abattoir666.DOOR_DIE_MS) min(0.6f, (sinceDoor - Abattoir666.DOOR_DIE_MS) / 666f) else 0f
+                val buzz = Abattoir666.buzzEnabled(context)
+                if (buzz && sinceDoor < 0) {
+                    if (Abattoir666.cutAt != lastCutSeen && sinceCut in 0 until 500) Neon666Sound.play(context, R.raw.neon_bzzt_666)
+                    else if (Abattoir666.isBigCutStart(prevT, t) && Abattoir666.bigCutBuzzes(t)) Neon666Sound.play(context, R.raw.neon_bzzt_666)
+                }
+                lastCutSeen = Abattoir666.cutAt
+                prevT = t
+                time = t.toFloat()
             }
         }
     }
@@ -137,7 +207,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
         val iw = 1920f * scale
         val ih = 1080f * scale
         val left = size.width - iw
-        val off = Abattoir666.neonOff(t)
+        val off = level
         if (off > 0f) {
             drawImage(
                 neonOff,
@@ -146,6 +216,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 alpha = off * alpha
             )
         }
+        if (deep > 0f) drawRect(Color.Black, alpha = deep * alpha)
         val u = iw / 1280f
         Abattoir666.SOURCES.forEachIndexed { i, s ->
             drawDrop(Abattoir666.state(i, t), left + s.x * u, s.y0 * u, u, alpha)
@@ -200,4 +271,21 @@ private fun DrawScope.bulb(cx: Float, cy: Float, r: Float, alpha: Float) {
     )
     val h = max(0.6f, r * 0.32f)
     drawOval(BloodShine, Offset(cx - r * 0.55f, cy - r * 0.75f), Size(h, h * 1.3f), alpha = alpha)
+}
+
+/** 666TVF : le bzzt du néon, joué doucement (jamais pendant un film). */
+object Neon666Sound {
+    @Volatile private var lastAt = 0L
+    fun play(context: android.content.Context, res: Int) {
+        val now = System.currentTimeMillis()
+        if (now - lastAt < 800 || com.nuvio.tv.core.tools.Announce666.inPlayer()) return
+        lastAt = now
+        runCatching {
+            android.media.MediaPlayer.create(context.applicationContext, res)?.apply {
+                setVolume(0.3f, 0.3f)
+                setOnCompletionListener { it.release() }
+                start()
+            }
+        }
+    }
 }

@@ -280,6 +280,17 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     }
                 )
             }
+            item {
+                var bzzt by remember { mutableStateOf(com.nuvio.tv.ui.screens.home.Abattoir666.buzzEnabled(context)) }
+                ActionRow(
+                    "Bzzt du néon de l'abattoir : " + if (bzzt) "activé" else "coupé",
+                    "Le petit grésillement quand le néon coupe (une fois toutes les 27 s, à la cloche et quand une porte s'ouvre)",
+                    onClick = {
+                        bzzt = !bzzt
+                        com.nuvio.tv.ui.screens.home.Abattoir666.setBuzzEnabled(context, bzzt)
+                    }
+                )
+            }
             if (canUndoReorg) {
                 item { ActionRow("Annuler la réorganisation", "Remet l'accueil exactement comme avant", onClick = { viewModel.undoReorganize() }) }
             }

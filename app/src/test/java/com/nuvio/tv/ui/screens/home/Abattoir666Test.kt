@@ -44,3 +44,29 @@ class Abattoir666Test {
         assertTrue(visc.minOf { maxLen(it) } > normal.maxOf { maxLen(it) })
     }
 }
+
+class Abattoir666NeonTest {
+    @Test fun `porte - le neon gresille puis meurt et reste eteint`() {
+        var saw0 = false; var saw1 = false
+        for (ms in 0L until Abattoir666.DOOR_DIE_MS step 10) {
+            val l = Abattoir666.neonLevel(1.0, -1, ms); if (l == 0f) saw0 = true; if (l == 1f) saw1 = true
+        }
+        assertTrue(saw0 && saw1)
+        assertEquals(1f, Abattoir666.neonLevel(1.0, -1, 2_000))
+        assertEquals(1f, Abattoir666.neonLevel(1.0, 50, 2_000)) // la porte passe avant la cloche
+    }
+
+    @Test fun `cloche - coupe une seconde puis revient au clignotement normal`() {
+        assertEquals(1f, Abattoir666.neonLevel(1.0, 50, -1))
+        assertEquals(0f, Abattoir666.neonLevel(1.0, 150, -1))
+        assertEquals(1f, Abattoir666.neonLevel(1.0, 800, -1))
+        assertEquals(0f, Abattoir666.neonLevel(1.0, 1_500, -1))
+    }
+
+    @Test fun `bzzt - une grosse coupure sur trois seulement`() {
+        assertTrue(Abattoir666.isBigCutStart(5.98, 6.01))
+        assertTrue(!Abattoir666.isBigCutStart(6.01, 6.03))
+        val cycles = (0 until 9).count { c -> Abattoir666.bigCutBuzzes(c * 9.0 + 6.1) }
+        assertEquals(3, cycles)
+    }
+}
