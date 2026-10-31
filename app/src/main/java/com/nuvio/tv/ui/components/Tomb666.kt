@@ -64,6 +64,9 @@ object Tomb666 {
 
     /** 666TVF (31/10) : « Continuer à regarder » dans des bocaux de formol (l'abattoir), plus petits que les tombes. */
     const val JAR_CARD_SCALE = 0.86f
+    /** 666TVF (31/10) : puis sur des étiquettes de morgue (petites, pour voir le corps sur la table). */
+    const val TAG_WIDTH_SCALE = 1.35f
+    const val TAG_ASPECT = 300f / 760f
 
     internal fun frame(context: Context, landscape: Boolean, jar: Boolean = false): Frame? = runCatching {
         if (jar && !landscape) {

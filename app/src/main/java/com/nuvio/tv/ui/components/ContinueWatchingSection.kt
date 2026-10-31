@@ -44,6 +44,8 @@ import com.nuvio.tv.R
 import com.nuvio.tv.domain.model.CardDepthSurface
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -661,6 +663,22 @@ fun ContinueWatchingCard(
         },
         scale = CardDefaults.scale(focusedScale = 1f)
     ) {
+        // 666TVF (31/10) : sur l'accueil (l'abattoir), « Continuer à regarder » sur des étiquettes de morgue
+        if (textBelowArtwork && Tomb666.enabled) {
+            MorgueTag666(
+                imageRequest = imageRequest,
+                hasImage = !effectiveImageModel.isNullOrBlank(),
+                titleText = titleText,
+                episodeStr = episodeStr,
+                badgeText = badgeText,
+                progressFraction = progressFraction,
+                hasProgress = progress != null,
+                isFocused = isFocused,
+                width = cardWidth,
+                height = imageHeight
+            )
+            return@Card
+        }
         if (isWideStyle) {
             WideCardContent(
                 imageRequest = imageRequest,
@@ -1201,5 +1219,115 @@ internal fun formatRemainingTime(
         hours > 0 -> strHoursMinLeft.format(hours, minutes)
         minutes > 0 -> strMinLeft.format(minutes)
         else -> strAlmostDone
+    }
+}
+
+
+/** 666TVF : étiquette de morgue — vignette de l'affiche + titre, épisode, état, progression à l'encre. */
+@Composable
+private fun MorgueTag666(
+    imageRequest: Any?,
+    hasImage: Boolean,
+    titleText: String,
+    episodeStr: String?,
+    badgeText: String,
+    progressFraction: Float,
+    hasProgress: Boolean,
+    isFocused: Boolean,
+    width: Dp,
+    height: Dp
+) {
+    val glow by androidx.compose.animation.core.animateFloatAsState(if (isFocused) 1f else 0f, label = "tag666")
+    val ink = Color(0xFF30201A)
+    val inkLight = Color(0xFF55372A)
+    val bloodInk = Color(0xFF7A0E0A)
+    Box(
+        modifier = Modifier
+            .width(width)
+            .height(height)
+            .graphicsLayer {
+                val s = 1f + 0.06f * glow
+                scaleX = s; scaleY = s
+                rotationZ = -1.2f * (1f - glow)
+            }
+            .drawBehind {
+                if (glow > 0.01f) {
+                    drawRoundRect(
+                        brush = Brush.radialGradient(
+                            listOf(Color(0xFF8A2BD0).copy(alpha = 0.6f * glow), Color.Transparent),
+                            center = Offset(size.width / 2f, size.height / 2f),
+                            radius = size.width * 0.62f
+                        ),
+                        topLeft = Offset(-size.width * 0.08f, -size.height * 0.25f),
+                        size = Size(size.width * 1.16f, size.height * 1.5f)
+                    )
+                }
+            }
+    ) {
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(R.drawable.etiquette_666),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxSize()
+        )
+        val thumbH = height * 0.78f
+        val thumbW = thumbH * (2f / 3f)
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = width * 0.135f, end = width * 0.04f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(thumbW)
+                    .height(thumbH)
+                    .border(1.dp, Color(0xFF5A4632))
+                    .background(Color(0xFF2A2420))
+            ) {
+                if (hasImage) {
+                    AsyncImage(
+                        model = imageRequest,
+                        contentDescription = titleText,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .padding(vertical = height * 0.1f),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = titleText,
+                    color = ink,
+                    fontSize = (height.value * 0.15f).sp,
+                    lineHeight = (height.value * 0.17f).sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (episodeStr != null) {
+                    Text(text = episodeStr, color = inkLight, fontSize = (height.value * 0.13f).sp, maxLines = 1)
+                }
+                Text(
+                    text = badgeText.uppercase(),
+                    color = bloodInk,
+                    fontFamily = Font666.Creepster,
+                    fontSize = (height.value * 0.15f).sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (hasProgress) {
+                    Box(Modifier.fillMaxWidth().height(3.dp).background(Color(0xFF8A6E4E))) {
+                        Box(Modifier.fillMaxWidth(progressFraction.coerceIn(0f, 1f)).height(3.dp).background(bloodInk))
+                    }
+                }
+            }
+        }
     }
 }

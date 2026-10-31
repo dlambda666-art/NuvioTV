@@ -645,15 +645,14 @@ fun ModernHomeContent(
     // Poster style reuses the portrait catalog dimensions so its artwork matches the catalogs below it.
     val continueWatchingStyle = uiState.continueWatchingCardStyle
     val continueWatchingScale = 1.34f
-    val jar666 = if (com.nuvio.tv.ui.components.Tomb666.enabled) com.nuvio.tv.ui.components.Tomb666.JAR_CARD_SCALE else 1f
     val continueWatchingCardWidth = when (continueWatchingStyle) {
-        ContinueWatchingCardStyle.POSTER -> portraitCatalogCardWidth * jar666
+        ContinueWatchingCardStyle.POSTER -> if (com.nuvio.tv.ui.components.Tomb666.enabled) portraitCatalogCardWidth * com.nuvio.tv.ui.components.Tomb666.TAG_WIDTH_SCALE else portraitCatalogCardWidth
         // Wide still scales with the poster width setting so it matches the rest of the row.
         ContinueWatchingCardStyle.WIDE -> landscapeBaseWidth * 2.1f
         ContinueWatchingCardStyle.CARD -> landscapeBaseWidth * 1.24f * continueWatchingScale
     }
     val continueWatchingCardHeight = when (continueWatchingStyle) {
-        ContinueWatchingCardStyle.POSTER -> portraitCatalogCardHeight * jar666
+        ContinueWatchingCardStyle.POSTER -> if (com.nuvio.tv.ui.components.Tomb666.enabled) continueWatchingCardWidth * com.nuvio.tv.ui.components.Tomb666.TAG_ASPECT else portraitCatalogCardHeight
         ContinueWatchingCardStyle.WIDE -> continueWatchingCardWidth * WIDE_CARD_HEIGHT_RATIO
         ContinueWatchingCardStyle.CARD -> com.nuvio.tv.ui.components.Tomb666.landscapeHeight(continueWatchingCardWidth / 1.77f)
     }
