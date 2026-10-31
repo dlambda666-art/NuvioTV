@@ -365,3 +365,48 @@ class TmdbService @Inject constructor(
 }
 
 data class TmdbImages(val backdropUrl: String?, val posterUrl: String?, val runtimeMinutes: Int? = null)
+
+/** 666TVF (31/10) : suggestion pendant qu'on tape (clavier 666). */
+data class Suggestion666(val title: String, val year: String?, val isSeries: Boolean, val poster: String?)
+
+private val suggestClient666 by lazy {
+    okhttp3.OkHttpClient.Builder()
+        .connectTimeout(6, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(6, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
+}
+
+/** Titres français les plus connus qui correspondent à ce qui est tapé (films et séries, 8 max). */
+suspend fun tmdbSuggest666(query: String): List<Suggestion666> = withContext(Dispatchers.IO) {
+    val q = query.trim()
+    if (q.length < 2) return@withContext emptyList()
+    runCatching {
+        val url = okhttp3.HttpUrl.Builder().scheme("https").host("api.themoviedb.org")
+            .addPathSegments("3/search/multi")
+            .addQueryParameter("api_key", TMDB_API_KEY)
+            .addQueryParameter("language", "fr-FR")
+            .addQueryParameter("query", q)
+            .addQueryParameter("include_adult", "false")
+            .build()
+        suggestClient666.newCall(okhttp3.Request.Builder().url(url).build()).execute().use { r ->
+            if (!r.isSuccessful) return@use emptyList()
+            val arr = org.json.JSONObject(r.body?.string().orEmpty()).optJSONArray("results") ?: return@use emptyList()
+            parseSuggestions666(arr)
+        }
+    }.getOrDefault(emptyList())
+}
+
+internal fun parseSuggestions666(arr: org.json.JSONArray): List<Suggestion666> =
+    (0 until arr.length()).mapNotNull { i ->
+        val o = arr.optJSONObject(i) ?: return@mapNotNull null
+        val type = o.optString("media_type")
+        if (type != "movie" && type != "tv") return@mapNotNull null
+        val title = (if (type == "movie") o.optString("title") else o.optString("name")).ifBlank { return@mapNotNull null }
+        val date = if (type == "movie") o.optString("release_date") else o.optString("first_air_date")
+        o.optDouble("popularity", 0.0) to Suggestion666(
+            title = title,
+            year = date.take(4).takeIf { it.length == 4 },
+            isSeries = type == "tv",
+            poster = o.optString("poster_path").takeIf { it.isNotBlank() && it != "null" }?.let { "https://image.tmdb.org/t/p/w154$it" }
+        )
+    }.sortedByDescending { it.first }.map { it.second }.distinctBy { it.title.lowercase() to it.year }.take(8)

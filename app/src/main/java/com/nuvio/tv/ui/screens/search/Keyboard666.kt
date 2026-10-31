@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -57,6 +59,13 @@ fun Keyboard666(
     var digits by remember { mutableStateOf(false) }
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+    // 666TVF (31/10) : suggestions pendant qu'on tape — OK sur une suggestion lance la recherche
+    var suggestions by remember { mutableStateOf<List<com.nuvio.tv.core.tmdb.Suggestion666>>(emptyList()) }
+    LaunchedEffect(query) {
+        if (query.trim().length < 2) { suggestions = emptyList(); return@LaunchedEffect }
+        kotlinx.coroutines.delay(350)
+        suggestions = com.nuvio.tv.core.tmdb.tmdbSuggest666(query)
+    }
 
     val rows = if (digits) listOf("1234567890", "-'&:!?.,", "") else listOf("AZERTYUIOP", "QSDFGHJKLM", "WXCVBN")
 
@@ -86,6 +95,21 @@ fun Keyboard666(
                     color = if (query.isEmpty()) Font666.Green.copy(alpha = 0.45f) else Font666.Green,
                     maxLines = 1
                 )
+            }
+            if (suggestions.isNotEmpty()) {
+                androidx.compose.foundation.lazy.LazyRow(
+                    modifier = Modifier.fillMaxWidth().height(84.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(suggestions.size) { i ->
+                        val sg = suggestions[i]
+                        Suggestion666Chip(sg) {
+                            onQueryChanged(sg.title)
+                            onSubmit()
+                            onDismiss()
+                        }
+                    }
+                }
             }
             rows.forEachIndexed { r, row ->
                 if (row.isEmpty()) return@forEachIndexed
@@ -173,5 +197,45 @@ private fun Pumpkin666(focused: Boolean) {
             lineTo(w * 0.70f, h * 0.80f); lineTo(w * 0.30f, h * 0.80f); close()
         }
         drawPath(mouth, carve)
+    }
+}
+
+
+/** 666TVF : une suggestion — petite affiche, titre, année · film/série. */
+@Composable
+private fun Suggestion666Chip(s: com.nuvio.tv.core.tmdb.Suggestion666, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(12.dp)
+    androidx.tv.material3.Surface(
+        onClick = onClick,
+        shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(shape),
+        colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
+            containerColor = Color(0xFF16181A),
+            focusedContainerColor = Color(0xFF2A1838)
+        ),
+        border = androidx.tv.material3.ClickableSurfaceDefaults.border(
+            border = androidx.tv.material3.Border(androidx.compose.foundation.BorderStroke(1.dp, Font666.Green.copy(alpha = 0.35f)), shape = shape),
+            focusedBorder = androidx.tv.material3.Border(androidx.compose.foundation.BorderStroke(3.dp, Blood666K), shape = shape)
+        ),
+        scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
+        modifier = Modifier.width(260.dp).height(80.dp)
+    ) {
+        Row(Modifier.fillMaxSize().padding(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(46.dp).height(68.dp).background(Color(0xFF2A2626), RoundedCornerShape(6.dp))) {
+                if (s.poster != null) {
+                    coil3.compose.AsyncImage(
+                        model = s.poster, contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(6.dp))
+                    )
+                }
+            }
+            Column(Modifier.padding(start = 10.dp)) {
+                Text(s.title, color = Color.White, fontSize = 16.sp, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Text(
+                    listOfNotNull(s.year, if (s.isSeries) "Série" else "Film").joinToString(" · "),
+                    color = Font666.Green, fontSize = 13.sp
+                )
+            }
+        }
     }
 }
