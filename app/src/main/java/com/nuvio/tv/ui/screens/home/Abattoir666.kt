@@ -51,7 +51,9 @@ object Abattoir666 {
         Src(610f, 474f, 630f, 1.4f), Src(650f, 470f, 628f, 1.9f), Src(690f, 468f, 625f, 1.1f), Src(740f, 465f, 622f, 1.7f),
         Src(780f, 462f, 620f, 1.3f), Src(815f, 440f, 600f, 2.2f),
         // 666TVF : le corps sur la table — ça goutte du bout des doigts (30/10)
-        Src(752f, 571f, 603f, 0.9f), Src(757f, 573f, 605f, 1.45f)
+        Src(752f, 571f, 603f, 0.9f), Src(757f, 573f, 605f, 1.45f),
+        // 666TVF : le corps pendu au crochet — ça goutte des doigts et du bas du drap (31/10)
+        Src(508f, 375f, 398f, 0.8f), Src(499f, 319f, 398f, 1.7f), Src(512f, 377f, 398f, 1.3f)
     )
 
     private const val GRAVITY = 1700f

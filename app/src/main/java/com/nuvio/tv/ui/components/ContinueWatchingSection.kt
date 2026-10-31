@@ -1248,7 +1248,6 @@ private fun MorgueTag666(
             .graphicsLayer {
                 val s = 1f + 0.06f * glow
                 scaleX = s; scaleY = s
-                rotationZ = -1.2f * (1f - glow)
             }
             .drawBehind {
                 if (glow > 0.01f) {
