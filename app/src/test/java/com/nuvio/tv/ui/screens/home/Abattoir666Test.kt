@@ -12,8 +12,9 @@ class Abattoir666Test {
         for (i in 0 until n) if (Abattoir666.neonOff(i / 1000.0) > 0f) off++
         assertTrue("éteint ${off * 100 / n} % du temps", off in 1..(n / 10))
         assertEquals(0f, Abattoir666.neonOff(1.0))
-        assertEquals(1f, Abattoir666.neonOff(6.2))
-        assertEquals(1f, Abattoir666.neonOff(9.0 + 6.2), 0f)
+        assertEquals(1f, Abattoir666.neonOff(6.1))
+        assertEquals(0f, Abattoir666.neonOff(6.23)) // le flash du starter
+        assertEquals(1f, Abattoir666.neonOff(9.0 + 6.1), 0f)
     }
 
     @Test fun `chaque goutte se forme, tombe, puis eclabousse au sol - jamais sous le sol`() {

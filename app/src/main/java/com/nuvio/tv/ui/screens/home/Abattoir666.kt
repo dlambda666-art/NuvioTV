@@ -50,10 +50,8 @@ object Abattoir666 {
         Src(420f, 474f, 630f, 1.0f), Src(470f, 470f, 628f, 1.6f), Src(520f, 476f, 630f, 1.25f), Src(560f, 478f, 632f, 2.1f),
         Src(610f, 474f, 630f, 1.4f), Src(650f, 470f, 628f, 1.9f), Src(690f, 468f, 625f, 1.1f), Src(740f, 465f, 622f, 1.7f),
         Src(780f, 462f, 620f, 1.3f), Src(815f, 440f, 600f, 2.2f),
-        // 666TVF : le corps sur la table — ça goutte du bout des doigts (30/10)
-        Src(752f, 571f, 603f, 0.9f), Src(757f, 573f, 605f, 1.45f),
-        // 666TVF : le corps pendu au crochet — ça goutte des doigts et du bas du drap (31/10)
-        Src(517f, 368f, 398f, 0.8f), Src(499f, 319f, 398f, 1.7f), Src(521f, 370f, 398f, 1.3f)
+        // 666TVF : le corps pendu à gauche du néon — ça goutte des doigts et du bas du drap (31/10)
+        Src(840f, 367f, 540f, 0.8f), Src(834f, 247f, 540f, 1.6f), Src(843f, 369f, 540f, 1.3f)
     )
 
     private const val GRAVITY = 1700f
@@ -100,7 +98,8 @@ object Abattoir666 {
 
     private val NEON = listOf(
         Triple(2.10, 0.07, 1f), Triple(2.24, 0.05, 1f), Triple(2.36, 0.12, 0.8f),
-        Triple(6.0, 0.45, 1f), Triple(6.55, 0.06, 1f), Triple(6.68, 0.04, 0.6f), Triple(8.2, 0.05, 0.5f)
+        // 666TVF : la grosse coupure suit le son du starter défectueux (tic-tic… flash… tic… rallumé)
+        Triple(6.0, 0.2, 1f), Triple(6.27, 0.2, 1f), Triple(6.62, 0.04, 0.6f), Triple(8.2, 0.05, 0.5f)
     )
 
     // ---------- La cloche coupe le néon, la porte le fait mourir (30/10) ----------
