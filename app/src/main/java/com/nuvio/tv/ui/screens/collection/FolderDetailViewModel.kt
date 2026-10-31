@@ -264,7 +264,10 @@ class FolderDetailViewModel @Inject constructor(
                         val catalog = addon?.catalogs?.find { it.id == source.catalogId && it.apiType == source.type }
                             ?: addon?.catalogs?.find { it.id == source.catalogId.substringBefore(",") && it.apiType == source.type }
                             ?: addons.firstNotNullOfOrNull { a -> a.catalogs.find { it.id == source.catalogId && it.apiType == source.type } }
-                        val labels = buildAddonTabLabels(source, catalog?.name)
+                        val labels = buildAddonTabLabels(
+                            source,
+                            catalog?.name ?: com.nuvio.tv.core.tools.Top10Folder666.rowFor(source.addonId)?.catalogName
+                        )
                         Triple(labels.first, labels.second, source.type)
                     }
                     is TmdbCollectionSource -> Triple(source.title, buildTmdbTypeLabel(source), source.mediaType.value.toCollectionRawType())
@@ -630,6 +633,25 @@ class FolderDetailViewModel @Inject constructor(
     }
 
     private fun loadAddonCatalogForTab(tabIndex: Int, source: AddonCatalogCollectionSource) {
+        // 666TVF : tuile « TOP 10 » — les listes sont calculées par l'accueil
+        if (com.nuvio.tv.core.tools.Top10Folder666.isTop10Source(source.addonId)) {
+            viewModelScope.launch {
+                var row = com.nuvio.tv.core.tools.Top10Folder666.rowFor(source.addonId)
+                var waited = 0
+                while (row == null && waited < 40) { kotlinx.coroutines.delay(500); waited++; row = com.nuvio.tv.core.tools.Top10Folder666.rowFor(source.addonId) }
+                _uiState.update { state ->
+                    val tabs = state.tabs.toMutableList()
+                    if (tabIndex < tabs.size) {
+                        tabs[tabIndex] = if (row != null) tabs[tabIndex].copy(catalogRow = row, isLoading = false)
+                        else tabs[tabIndex].copy(isLoading = false, error = "Top 10 pas encore prêt, réessaie dans un instant")
+                    }
+                    state.copy(tabs = tabs)
+                }
+                rebuildAllTab()
+                rebuildFollowLayoutState()
+            }
+            return
+        }
         viewModelScope.launch {
             val addons = addonRepository.getInstalledAddons().first().enabledAddons()
             val addon = addons.find { it.id == source.addonId }

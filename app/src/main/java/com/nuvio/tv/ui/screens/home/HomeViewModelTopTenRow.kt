@@ -20,16 +20,20 @@ import kotlinx.coroutines.launch
 internal fun HomeViewModel.observeTopTenVfRow() {
     viewModelScope.launch {
         runCatching { profileManager.activeProfileReady.first { it } }
+        // 666TVF : la tuile « TOP 10 » rejoint la 1re rangée (une fois)
+        runCatching { com.nuvio.tv.core.tools.Top10Folder666.ensure(collectionsDataStore) }
         delay(6_000L)
         while (true) {
             val row = runCatching { buildTopTenVfRow() }.getOrNull()
             if (row != null && row != topTenVfRow) {
                 topTenVfRow = row
+                com.nuvio.tv.core.tools.Top10Folder666.films = row
                 scheduleUpdateCatalogRows()
             }
             val seriesRow = runCatching { buildTopTenSeriesVfRow() }.getOrNull()
             if (seriesRow != null && seriesRow != topTenSeriesVfRow) {
                 topTenSeriesVfRow = seriesRow
+                com.nuvio.tv.core.tools.Top10Folder666.series = seriesRow
                 scheduleUpdateCatalogRows()
             }
             delay(if (row == null) 5L * 60L * 1000L else 12L * 60L * 60L * 1000L)

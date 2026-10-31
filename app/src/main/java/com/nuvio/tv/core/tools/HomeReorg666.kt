@@ -155,7 +155,8 @@ class HomeReorg666 @Inject constructor(
             val pourToi = all.firstOrNull(::isPourToi)
             val shudder = all.firstOrNull(::isShudder)
             val coming = all.firstOrNull(::isComingSoon)
-            val moved = (listOfNotNull(vfWeek, pourToi, shudder, coming, horror) +
+            val top10 = all.firstOrNull { Top10Folder666.isTop10(it) }
+            val moved = (listOfNotNull(vfWeek, pourToi, shudder, top10, coming, horror) +
                 listOfNotNull(all.firstOrNull { it.id != horror.id && isClassicsTile(it) })).map { it.id }.toSet()
             val removed = all.filter { it.id !in moved && isUnwanted(it) }
             removed.forEach { report += "Enlevé : ${it.title}" }
@@ -191,14 +192,14 @@ class HomeReorg666 @Inject constructor(
             collections.forEachIndexed { i, c ->
                 val kept = c.folders.filter { it.id !in gone }
                 if (i == firstRowIndex) {
-                    out += c.copy(folders = listOfNotNull(vfWeek, pourToi, shudder, coming) + kept)
+                    out += c.copy(folders = listOfNotNull(vfWeek, pourToi, shudder, top10, coming) + kept)
                     out += horrorRows
                 } else if (kept.isNotEmpty()) {
                     out += c.copy(folders = kept)
                 } else if (c.folders.isNotEmpty()) report += "Rangée vidée et retirée : ${c.title}"
             }
             if (firstRowIndex < 0) {
-                out.add(0, collections.first().copy(id = newId(), title = "666", folders = listOfNotNull(vfWeek, pourToi, shudder, coming)))
+                out.add(0, collections.first().copy(id = newId(), title = "666", folders = listOfNotNull(vfWeek, pourToi, shudder, top10, coming)))
                 out.addAll(1, horrorRows)
             }
             return Plan(out, report)

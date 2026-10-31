@@ -709,7 +709,8 @@ fun ContinueWatchingCard(
                     .fillMaxWidth()
                     .height(imageHeight)
                     // 666TV : plaque tombale (carte en largeur) ou tombe debout (style affiche).
-                    .tomb666(landscape = !textBelowArtwork, focused = isFocused)
+                    // 666TVF : sur l'accueil (l'abattoir), les affiches flottent dans des bocaux
+                    .tomb666(landscape = !textBelowArtwork, focused = isFocused, jar = textBelowArtwork)
                     .then(
                         if (textBelowArtwork && !Tomb666.enabled) {
                             Modifier.nuvioCardDepth(

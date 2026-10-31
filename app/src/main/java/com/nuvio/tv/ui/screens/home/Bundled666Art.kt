@@ -43,6 +43,7 @@ private val BUNDLED_ART = listOf(
     BundledArt("PrRXbjxT", coverRes = R.drawable.tile_horreur_666),
     BundledArt("FKYdvQR5", coverRes = R.drawable.tile_frankenstream_666),
     BundledArt("g0hvcfM4", coverRes = R.drawable.tile_popcorn_666, titleLogoRes = R.drawable.title_nouveaute_vf_666),
+    BundledArt(com.nuvio.tv.core.tools.Top10Folder666.COVER, coverRes = R.drawable.tile_top10_666, titleLogoRes = R.drawable.title_top10_666),
     BundledArt("cLGKrgcd", coverRes = R.drawable.tile_coming_soon_666, titleLogoRes = R.drawable.title_prochainement_666),
     BundledArt("\u0000", coverRes = R.drawable.tile_pour_toi_666, titleLogoRes = R.drawable.title_pour_toi_666, titleKey = "pour toi"),
     // Services de streaming : image néon + animation au survol.

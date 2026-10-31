@@ -60,9 +60,16 @@ object Tomb666 {
 
     private var portraitFrame: Frame? = null
     private var landscapeFrame: Frame? = null
+    private var jarFrame: Frame? = null
 
-    internal fun frame(context: Context, landscape: Boolean): Frame? = runCatching {
-        if (landscape) {
+    /** 666TVF (31/10) : « Continuer à regarder » dans des bocaux de formol (l'abattoir), plus petits que les tombes. */
+    const val JAR_CARD_SCALE = 0.86f
+
+    internal fun frame(context: Context, landscape: Boolean, jar: Boolean = false): Frame? = runCatching {
+        if (jar && !landscape) {
+            jarFrame ?: Frame(decode(context, R.drawable.frame_bocal_666), 0.1417f, 0.2f, 0.8583f, 0.9167f)
+                .also { jarFrame = it }
+        } else if (landscape) {
             landscapeFrame ?: Frame(decode(context, R.drawable.frame_plaque_666), 0.0518f, 0.0702f, 0.9475f, 0.7710f)
                 .also { landscapeFrame = it }
         } else {
@@ -80,10 +87,10 @@ object Tomb666 {
  * Pose le contenu (l'affiche) dans l'ouverture de la tombe, et dessine la pierre par-dessus.
  * À mettre sur la boîte de l'image, avant le clip. Sans effet si les tombes sont désactivées.
  */
-fun Modifier.tomb666(landscape: Boolean, focused: Boolean): Modifier = composed {
+fun Modifier.tomb666(landscape: Boolean, focused: Boolean, jar: Boolean = false): Modifier = composed {
     if (!Tomb666.enabled) return@composed this
     val context = LocalContext.current
-    val frame = Tomb666.frame(context, landscape) ?: return@composed this
+    val frame = Tomb666.frame(context, landscape, jar) ?: return@composed this
     val glow by animateFloatAsState(if (focused) 1f else 0f, label = "tombGlow")
     val rect = androidx.compose.runtime.remember { IntArray(4) }  // x, y, w, h de la tombe dans la case
     this

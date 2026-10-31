@@ -716,8 +716,9 @@ internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
         val computedHomeRows = buildList {
             // 666TV : la rangée « À venir » n'est plus sur l'accueil — le programme est dans « Calendrier » (menu de gauche).
             // 666TV : « Top 10 VF de la semaine » (sorties vidéo uniquement, jamais de CAM).
-            topTenVfRow?.let { add(HomeRow.Catalog(it)) }
-            topTenSeriesVfRow?.let { add(HomeRow.Catalog(it)) }
+            // 666TVF : les Top 10 sont rangés dans la tuile « TOP 10 » de la 1re rangée (31/10)
+            com.nuvio.tv.core.tools.Top10Folder666.films = topTenVfRow
+            com.nuvio.tv.core.tools.Top10Folder666.series = topTenSeriesVfRow
             val displayRowsByKey = displayRows.associateBy { it.legacyKey() }
             // Build a lookup of placeholder descriptors by key for lazy catalogs
             val placeholdersByKey = synchronized(catalogStateLock) {
