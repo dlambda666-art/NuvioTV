@@ -145,7 +145,7 @@ internal fun PlayerRuntimeController.updateAvailableTracks(tracks: Tracks) {
 
                     val hasForcedFlag = (format.selectionFlags and C.SELECTION_FLAG_FORCED) != 0
                     val trackTexts = listOfNotNull(format.label, format.language, format.id)
-                    val nameHintForced = trackTexts.any { it.contains("forced", ignoreCase = true) }
+                    val nameHintForced = trackTexts.any { Forced666.isForcedName(it) }
                     val isSongsAndSigns = trackTexts.any {
                         it.contains("songs", ignoreCase = true) && it.contains("sign", ignoreCase = true)
                     }
@@ -1427,9 +1427,7 @@ internal fun selectedAudioLanguageTarget(track: TrackInfo): String? {
 }
 
 private fun addonSubtitleIsForced(subtitle: Subtitle): Boolean {
-    return listOf(subtitle.id, subtitle.url, subtitle.addonName).any {
-        it.contains("forced", ignoreCase = true)
-    }
+    return listOf(subtitle.id, subtitle.url, subtitle.addonName).any { Forced666.isForcedName(it) }
 }
 
 private fun addonSubtitleMatchesLanguage(subtitle: Subtitle, target: String): Boolean {

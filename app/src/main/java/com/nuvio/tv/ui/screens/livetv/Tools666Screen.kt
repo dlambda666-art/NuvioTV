@@ -291,6 +291,17 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     }
                 )
             }
+            item {
+                var level by remember { mutableStateOf(com.nuvio.tv.ui.screens.player.Level666.enabled(context)) }
+                ActionRow(
+                    "Volume constant : " + if (level) "activé" else "coupé",
+                    "Tous les liens au même niveau (la barre sur 4 suffit partout). Le son est décodé par la Shield. Prend effet au prochain film.",
+                    onClick = {
+                        level = !level
+                        com.nuvio.tv.ui.screens.player.Level666.setEnabled(context, level)
+                    }
+                )
+            }
             if (canUndoReorg) {
                 item { ActionRow("Annuler la réorganisation", "Remet l'accueil exactement comme avant", onClick = { viewModel.undoReorganize() }) }
             }

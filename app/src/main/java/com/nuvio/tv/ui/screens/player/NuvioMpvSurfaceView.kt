@@ -578,7 +578,7 @@ class NuvioMpvSurfaceView @JvmOverloads constructor(
                 ?: mpv.getPropertyInt("track-list/$i/audio-channels")
                 ?: mpv.getPropertyInt("track-list/$i/channels")
             val forced = (mpv.getPropertyBoolean("track-list/$i/forced") == true) || listOfNotNull(title, language).any {
-                it.contains("forced", ignoreCase = true)
+                Forced666.isForcedName(it)
             }
             val selected = when (type) {
                 "audio" -> (selectedAudioTrackId != null && selectedAudioTrackId == id) || selectedByFlag

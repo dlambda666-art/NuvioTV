@@ -852,7 +852,10 @@ internal fun PlayerRuntimeController.initializePlayer(
             val isBluetoothAudioOutput = currentAudioOutputRoute?.isBluetooth == true ||
                 AudioOutputRouteDetector.isBluetoothMediaOutput(context)
             // Force-optical must never win over Bluetooth: AC3/DTS AudioTrack to A2DP fails hard.
-            val isForcePassthroughActive = !isBluetoothAudioOutput &&
+            // 666TVF : volume constant = la Shield décode le son (pas de passthrough), sinon impossible de le régler.
+            val level666 = Level666.enabled(context)
+            levelProcessor.setEnabled(level666)
+            val isForcePassthroughActive = !isBluetoothAudioOutput && !level666 &&
                 playerSettings.forceOpticalPassthrough &&
                 playerSettings.decoderPriority != 0
             soundbarWakeupEnabled = isForcePassthroughActive
@@ -860,6 +863,7 @@ internal fun PlayerRuntimeController.initializePlayer(
             // decode to stereo PCM even when the platform MediaCodec path is flaky.
             val effectiveDecoderPriority = if (
                 hasTriedAudioPcmFallback ||
+                level666 ||
                 isForcePassthroughActive ||
                 isBluetoothAudioOutput
             ) {
@@ -905,13 +909,14 @@ internal fun PlayerRuntimeController.initializePlayer(
                 gainAudioProcessor = gainAudioProcessor,
                 dialogueBoostProcessor = dialogueBoostProcessor,
                 nightModeProcessor = nightModeProcessor,
+                levelProcessor = levelProcessor,
                 downmixEnabled = effectiveDownmixEnabled,
                 audioOutputChannels = effectiveAudioOutputChannels,
                 downmixNormalizationEnabled = !playerSettings.maintainOriginalAudioOnDownmix,
                 forceOpticalPassthrough = isForcePassthroughActive,
                 bluetoothForcePcm = isBluetoothAudioOutput,
                 playbackSpeedProvider = { _uiState.value.playbackSpeed },
-                initialForcePcm = hasTriedAudioPcmFallback || isBluetoothAudioOutput,
+                initialForcePcm = hasTriedAudioPcmFallback || isBluetoothAudioOutput || level666,
                 preferSoftwareAudioOnly = isBluetoothAudioOutput,
                 onPlaybackSpeedAwareAudioSinkCreated = { playbackSpeedAwareAudioSink = it },
                 onFfmpegAudioRendererChanged = { renderer ->
@@ -2141,6 +2146,7 @@ private class SubtitleOffsetRenderersFactory(
     private val gainAudioProcessor: GainAudioProcessor,
     private val dialogueBoostProcessor: DialogueBoostAudioProcessor,
     private val nightModeProcessor: NightModeAudioProcessor,
+    private val levelProcessor: Level666AudioProcessor,
     private val downmixEnabled: Boolean,
     private val audioOutputChannels: com.nuvio.tv.data.local.AudioOutputChannels,
     private val downmixNormalizationEnabled: Boolean,
@@ -2205,7 +2211,7 @@ private class SubtitleOffsetRenderersFactory(
         }
             .setEnableFloatOutput(enableFloatOutput)
             .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-            .setAudioProcessors(arrayOf(dialogueBoostProcessor, nightModeProcessor, gainAudioProcessor))
+            .setAudioProcessors(arrayOf(dialogueBoostProcessor, levelProcessor, nightModeProcessor, gainAudioProcessor))
         val baseAudioSink = builder.build()
         val playbackSpeedAwareAudioSink = PlaybackSpeedAwareAudioSink(
             sink = baseAudioSink,

@@ -507,6 +507,7 @@ class PlayerRuntimeController(
     internal val gainAudioProcessor = GainAudioProcessor()
     internal val dialogueBoostProcessor = DialogueBoostAudioProcessor { ffmpegAudioRenderer?.isCenterMixActive() == true }
     internal val nightModeProcessor = NightModeAudioProcessor()
+    internal val levelProcessor = Level666AudioProcessor()
     internal var loudnessEnhancer: LoudnessEnhancer? = null
     internal var trackSelector: DefaultTrackSelector? = null
     internal var currentMediaSession: MediaSession? = null
