@@ -40,7 +40,23 @@ class CalendarViewModel @Inject constructor(
 
     private var loadJob: Job? = null
 
+    private var loadedAt = 0L
+
     init {
+        load(force = false)
+        // 666TVF (01/11) : la cloche a trouvé une VF → le calendrier passe tout de suite en « VF dispo »
+        // (avant, il gardait « pas encore » tant qu'on n'appuyait pas sur Actualiser : WWE du 01/11).
+        viewModelScope.launch {
+            repository.knownVfFlow().collect { known ->
+                _state.update { s -> s.copy(vf = applyKnownVf666(s.vf, known)) }
+            }
+        }
+    }
+
+    /** L'écran revient au premier plan : on revérifie ce qui n'avait pas encore de VF (pas plus d'une fois par 5 min). */
+    fun onShown() {
+        if (System.currentTimeMillis() - loadedAt < 5 * 60_000L) return
+        repository.clearVfNegativeCache()
         load(force = false)
     }
 
@@ -54,6 +70,7 @@ class CalendarViewModel @Inject constructor(
     }
 
     private fun load(force: Boolean) {
+        loadedAt = System.currentTimeMillis()
         loadJob?.cancel()
         viewModelScope.launch {
             val ufc = runCatching { ufcRepository.upcomingNumbered() }.getOrDefault(emptyList())
@@ -92,3 +109,7 @@ class CalendarViewModel @Inject constructor(
         }
     }
 }
+
+/** Règle pure (testée) : les épisodes affichés dont la VF est connue passent en « dispo » ; rien d'autre ne bouge. */
+internal fun applyKnownVf666(vf: Map<String, VfState>, known: Set<String>): Map<String, VfState> =
+    vf.mapValues { (key, state) -> if (key in known) VfState.AVAILABLE else state }

@@ -64,6 +64,8 @@ fun CalendarScreen(
     LaunchedEffect(state.isLoading) {
         if (!state.isLoading) runCatching { firstFocus.requestFocus() }
     }
+    // 666TVF (01/11) : à chaque retour sur le calendrier, les « pas encore de VF » sont revérifiés
+    LaunchedEffect(Unit) { viewModel.onShown() }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),

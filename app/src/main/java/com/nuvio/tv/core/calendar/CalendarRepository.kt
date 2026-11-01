@@ -195,6 +195,9 @@ class CalendarRepository @Inject constructor(
     /** VF déjà trouvée (mémorisée) pour cet épisode ? */
     suspend fun knownVf(): Set<String> = store().data.first()[vfFoundKey].orEmpty()
 
+    /** 666TVF (01/11) : suit en direct les VF trouvées (la cloche les note), pour que le calendrier se mette à jour tout seul. */
+    fun knownVfFlow(): Flow<Set<String>> = store().data.map { it[vfFoundKey].orEmpty() }
+
     /**
      * L'épisode est-il dispo en VF ?
      * 1. Déjà vu dans 666TV → oui (on ne regarde que de la VF).
