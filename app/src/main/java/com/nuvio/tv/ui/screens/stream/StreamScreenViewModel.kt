@@ -334,7 +334,7 @@ class StreamScreenViewModel @Inject constructor(
         playerPreference: PlayerPreference,
         streamAutoPlayMode: StreamAutoPlayMode
     ): Boolean {
-        return streamAutoPlayMode != StreamAutoPlayMode.MANUAL
+        return effectiveAutoPlayMode666(streamAutoPlayMode) != StreamAutoPlayMode.MANUAL
     }
 
     private fun loadStreams(forceRefresh: Boolean = false) {
@@ -519,7 +519,7 @@ class StreamScreenViewModel @Inject constructor(
                 } else {
                     StreamAutoPlaySelector.selectAutoPlayStream(
                         streams = allStreams,
-                        mode = playerSettings.streamAutoPlayMode,
+                        mode = effectiveAutoPlayMode666(playerSettings.streamAutoPlayMode),
                         regexPattern = playerSettings.streamAutoPlayRegex,
                         source = playerSettings.streamAutoPlaySource,
                         installedAddonNames = installedAddonOrder.toSet(),
@@ -717,7 +717,7 @@ class StreamScreenViewModel @Inject constructor(
                                 val allStreams = orderedStreams.flatMap { it.streams }
                                 val earlyMatch = StreamAutoPlaySelector.selectAutoPlayStream(
                                     streams = allStreams,
-                                    mode = playerSettings.streamAutoPlayMode,
+                                    mode = effectiveAutoPlayMode666(playerSettings.streamAutoPlayMode),
                                     regexPattern = playerSettings.streamAutoPlayRegex,
                                     source = playerSettings.streamAutoPlaySource,
                                     installedAddonNames = installedAddonOrder.toSet(),
@@ -1951,3 +1951,12 @@ private fun formatSpeed(context: android.content.Context, bytesPerSec: Long): St
 
 private fun formatMB(context: android.content.Context, bytes: Long): String =
     context.getString(R.string.unit_size_mb, String.format("%.1f", bytes / 1_048_576.0))
+
+
+/**
+ * 666TVF (01/11) : le bouton lecture lance toujours le meilleur lien VF, même pour un film jamais vu
+ * (avant, le réglage d'origine « manuel » ne lançait que les reprises). Pour choisir soi-même :
+ * « Regarder manuellement ». Les autres réglages (expression régulière…) restent tels quels.
+ */
+internal fun effectiveAutoPlayMode666(mode: StreamAutoPlayMode): StreamAutoPlayMode =
+    if (mode == StreamAutoPlayMode.MANUAL) StreamAutoPlayMode.FIRST_STREAM else mode
