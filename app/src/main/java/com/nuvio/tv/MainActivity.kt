@@ -1363,6 +1363,12 @@ open class MainActivity : ComponentActivity() {
                                             if (run != null) com.nuvio.tv.core.tools.Announce666.log(
                                                 this@MainActivity, com.nuvio.tv.core.tools.VfWatcher666.summary(run), "guetteur des sorties"
                                             )
+                                            // 666TVF (03/11) : un film trouvé en VF 1080p/4K → cri + bannière, une fois par film
+                                            val films = runCatching { vfWatcher666.takePendingFresh() }.getOrDefault(emptyList())
+                                            if (films.isNotEmpty()) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                pending666 = (pending666 + films.map { f -> filmAnnouncement666(f) })
+                                                    .distinctBy { "${it.seriesId}|${it.season}|${it.episode}" }
+                                            }
                                             vfWatcherRunning666 = false
                                         }
                                     }
@@ -1470,7 +1476,7 @@ open class MainActivity : ComponentActivity() {
                                 if (!bellLifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) &&
                                     !com.nuvio.tv.core.tools.Announce666.overlayShowing) {
                                     val names = calendarVfAnnouncements.joinToString(", ") { ep ->
-                                        if (ep.seriesId.startsWith("sport:") || ep.seriesId.startsWith("alerte:")) ep.seriesName else ep.seriesName + " " + ep.code
+                                        if (ep.seriesId.startsWith("sport:") || ep.seriesId.startsWith("alerte:") || ep.seriesId.startsWith("film:")) ep.seriesName else ep.seriesName + " " + ep.code
                                     }
                                     val sport = calendarVfAnnouncements.all { it.seriesId.startsWith("sport:") }
                                     val alerte = calendarVfAnnouncements.all { it.seriesId.startsWith("alerte:") }
@@ -2845,6 +2851,19 @@ private fun android.content.Context.markSportAnnounced666(shown: List<com.nuvio.
     prefs.edit().putStringSet("announced", (done + names).toList().takeLast(30).toSet()).apply()
 }
 
+// 666TVF (03/11) : film trouvé en VF par le guetteur, annoncé comme un épisode (cri + bannière).
+internal fun filmAnnouncement666(f: com.nuvio.tv.core.tools.VfWatcher666.Found) =
+    com.nuvio.tv.core.calendar.CalendarEpisode(
+        seriesId = "film:" + f.imdbId,
+        seriesName = f.name,
+        poster = f.poster,
+        season = 0,
+        episode = 0,
+        title = null,
+        airInstant = java.time.Instant.now(),
+        addonBaseUrl = null
+    )
+
 // 666TVF : textes des annonces (bannière dans 666TVF, bannière par-dessus Orange, journal).
 internal fun announceTitle666(episodes: List<com.nuvio.tv.core.calendar.CalendarEpisode>): String = when {
     episodes.all { it.seriesId.startsWith("alerte:") } -> "⚠️ Plugin en panne"
@@ -2854,6 +2873,7 @@ internal fun announceTitle666(episodes: List<com.nuvio.tv.core.calendar.Calendar
 }
 
 internal fun announceLine666(ep: com.nuvio.tv.core.calendar.CalendarEpisode): String = when {
+    ep.seriesId.startsWith("film:") -> "🎬 ${ep.seriesName} · film en VF"
     ep.seriesId.startsWith("alerte:") -> "⚠️ ${ep.seriesName} · ${ep.title.orEmpty()}"
     ep.seriesId.startsWith("sport:") -> "🥊 ${ep.seriesName} · ${ep.title.orEmpty()}"
     ep.seriesId.startsWith("test:") -> "🇫🇷 ${ep.seriesName} · ${ep.title.orEmpty()}"
@@ -2862,6 +2882,7 @@ internal fun announceLine666(ep: com.nuvio.tv.core.calendar.CalendarEpisode): St
 }
 
 internal fun announceLogText666(ep: com.nuvio.tv.core.calendar.CalendarEpisode): String = when {
+    ep.seriesId.startsWith("film:") -> "🔔 ${ep.seriesName} (film) en VF"
     ep.seriesId.startsWith("alerte:") -> "⚠️ ${ep.seriesName} ne renvoie plus rien"
     ep.seriesId.startsWith("sport:") -> "🥊 ${ep.seriesName} · c'est l'heure du combat"
     ep.seriesId.startsWith("test:") -> "🔔 Annonce d'essai"
