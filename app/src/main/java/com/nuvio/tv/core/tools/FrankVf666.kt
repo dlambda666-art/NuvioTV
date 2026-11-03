@@ -16,8 +16,10 @@ object FrankVf666 {
     private const val PREFS = "666tv_frank_vf"
     private const val RESEND_MS = 7L * 24 * 3600 * 1000
 
-    private val SURE_VF = Regex("""(?i)(?<![a-z0-9])(TRUE[ ._-]?FRENCH|VFF|VFQ|VF2|VFI)(?![a-z0-9])""")
-    private val UNSURE = Regex("""(?i)VF ?\?""")
+    // 666TVF (03/11) : « FRENCH » seul compte aussi (Resident Evil était en FRENCH et rien n'a crié).
+    // « SUBFRENCH », « FRENCH SUBS » ou un VOSTFR à côté = des sous-titres, pas une VF.
+    private val SURE_VF = Regex("""(?i)(?<![a-z0-9])(TRUE[ ._-]?FRENCH|FRENCH|VFF|VFQ|VF2|VFI)(?![a-z0-9])""")
+    private val UNSURE = Regex("""(?i)VF ?\?|(?<![a-z0-9])(VOST(FR)?|STFR|SUB[ ._-]?FRENCH|FRENCH[ ._-]?(SUBS?|SUBBED|SUBTITLES?))(?![a-z0-9])""")
 
     /** Vrai si le nom de la release annonce une VF sûre (pas un MULTi incertain). */
     fun isSureVfRelease(text: String?): Boolean =

@@ -18,6 +18,19 @@ class FrankVf666Test {
     }
 
     @Test
+    fun `FRENCH seul est une VF, mais pas les sous-titres francais`() {
+        assertTrue(FrankVf666.isSureVfRelease("Resident.Evil.2026.FRENCH.1080p.WEB.H264"))
+        assertTrue(FrankVf666.isSureVfRelease("Resident Evil 2026 FRENCH 1080p HDLight x264"))
+        assertFalse(FrankVf666.isSureVfRelease("Resident.Evil.2026.SUBFRENCH.1080p.WEB"))
+        assertFalse(FrankVf666.isSureVfRelease("Resident.Evil.2026.FRENCH.SUBS.1080p"))
+        assertFalse(FrankVf666.isSureVfRelease("Resident Evil 2026 FRENCH VOSTFR 1080p"))
+        assertFalse(FrankVf666.isSureVfRelease("Resident.Evil.2026.VOST.1080p"))
+        assertFalse(FrankVf666.isSureVfRelease("Resident.Evil.2026.MULTi.1080p"))
+        assertTrue(VfWatcher666.isCryRelease("Resident.Evil.2026.FRENCH.1080p.HDLight"))
+        assertFalse(VfWatcher666.isCryRelease("Resident.Evil.2026.FRENCH.720p.HDLight"))
+    }
+
+    @Test
     fun `frank id is the imdb id only`() {
         assertEquals("tt33249097", FrankVf666.frankId("tt33249097"))
         assertEquals("tt0185103", FrankVf666.frankId("tt0185103:2026:43"))
