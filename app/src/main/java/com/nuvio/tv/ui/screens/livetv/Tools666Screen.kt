@@ -25,6 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -333,18 +334,10 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     Text("Aucune annonce pour l'instant", modifier = Modifier.padding(horizontal = 18.dp), color = Color(0xFFC8C3BE))
                 }
             }
+            // 666TVF (03/11) : chaque annonce se sélectionne à la télécommande ; celle choisie
+            // s'ouvre en entier (tous les films trouvés par le guetteur, d'où elle a été vue).
             annonces.forEach { a ->
-                item {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            SimpleDateFormat("EEE d · HH:mm", Locale.FRANCE).format(Date(a.at)),
-                            modifier = Modifier.width(150.dp),
-                            color = Color(0xFFC8C3BE)
-                        )
-                        Text(a.text, modifier = Modifier.width(470.dp), color = Color.White, maxLines = 1)
-                        Text(a.where, color = Color(0xFFC8C3BE), maxLines = 1)
-                    }
-                }
+                item { AnnonceRow(a) }
             }
 
             // ---------- Annonces partout ----------
@@ -596,6 +589,40 @@ private fun Section(title: String, subtitle: String?) {
     Column(Modifier.padding(top = 14.dp)) {
         Text(title.uppercase(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Green666)
         if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Color(0xFFC8C3BE))
+    }
+}
+
+@Composable
+private fun AnnonceRow(a: com.nuvio.tv.core.tools.Announce666.Entry) {
+    var focused by remember { mutableStateOf(false) }
+    Surface(
+        onClick = {},
+        modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused },
+        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = Color.Transparent,
+            focusedContainerColor = Color(0x667B3FA0),
+            contentColor = Color.White,
+            focusedContentColor = Color.White
+        ),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1f)
+    ) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = if (focused) 8.dp else 2.dp), verticalAlignment = Alignment.Top) {
+            Text(
+                SimpleDateFormat("EEE d · HH:mm", Locale.FRANCE).format(Date(a.at)),
+                modifier = Modifier.width(150.dp),
+                color = if (focused) com.nuvio.tv.ui.components.Font666.Green else Color(0xFFC8C3BE)
+            )
+            if (focused) {
+                Column(Modifier.weight(1f)) {
+                    Text(a.text, color = Color.White)
+                    Text(a.where, style = MaterialTheme.typography.bodySmall, color = Color(0xFFE6E0DA))
+                }
+            } else {
+                Text(a.text, modifier = Modifier.width(470.dp), color = Color.White, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Text(a.where, color = Color(0xFFC8C3BE), maxLines = 1)
+            }
+        }
     }
 }
 
