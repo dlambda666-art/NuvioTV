@@ -3,6 +3,7 @@ package com.nuvio.tv.core.tools
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 /** 666TVF (03/11) : cas pièges du cri du guetteur — VF sûre, 1080p ou 4K seulement. */
 class VfWatcherCri666Test {
@@ -29,5 +30,19 @@ class VfWatcherCri666Test {
             ""
         ).forEach { assertFalse(it, VfWatcher666.isCryRelease(it)) }
         assertFalse(VfWatcher666.isCryRelease(null))
+    }
+
+    @Test fun `un film ne crie qu'une fois, et pas pour les vieux au premier passage`() {
+        val today = LocalDate.of(2026, 11, 3)
+        // passage normal : tout film nouveau en VF crie
+        assertTrue(VfWatcher666.shouldCry(false, false, null, today))
+        assertTrue(VfWatcher666.shouldCry(false, false, today.minusDays(60), today))
+        // jamais deux fois
+        assertFalse(VfWatcher666.shouldCry(false, true, today, today))
+        // premier passage : seulement une sortie de la semaine
+        assertTrue(VfWatcher666.shouldCry(true, false, today.minusDays(3), today))
+        assertFalse(VfWatcher666.shouldCry(true, false, today.minusDays(30), today))
+        assertFalse(VfWatcher666.shouldCry(true, false, null, today))
+        assertFalse(VfWatcher666.shouldCry(true, false, today.plusDays(2), today))
     }
 }

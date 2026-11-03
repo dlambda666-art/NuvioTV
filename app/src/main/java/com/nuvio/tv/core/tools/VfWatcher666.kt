@@ -33,7 +33,7 @@ class VfWatcher666 @Inject constructor(
     /** Film trouvé en VF pendant ce passage (pour la bannière et le cri). */
     data class Found(val imdbId: String, val name: String, val poster: String?)
 
-    private data class Cand(val name: String, val poster: String?)
+    private data class Cand(val name: String, val poster: String?, val released: LocalDate? = null)
 
     /** Null si pas encore l'heure, ou passage mis en pause (il reprendra). */
     suspend fun dailyRun(busy: () -> Boolean): Run? {
@@ -99,8 +99,10 @@ class VfWatcher666 @Inject constructor(
             }
             if (cry) {
                 val c = names[id]
-                // Premier passage avec les sorties TMDB : ce qui est déjà en VF depuis longtemps ne crie pas.
-                if (!firstTmdb && id !in prefs.getStringSet("vf_known", emptySet()).orEmpty()) addFresh(Found(id, c?.name ?: id, c?.poster))
+                // Premier passage avec les sorties TMDB : ce qui est déjà en VF depuis longtemps ne crie pas
+                // (sauf une sortie de la semaine : celle-là, on veut la savoir).
+                if (shouldCry(firstTmdb, id in prefs.getStringSet("vf_known", emptySet()).orEmpty(), c?.released, LocalDate.now()))
+                    addFresh(Found(id, c?.name ?: id, c?.poster))
                 remember(id)
             }
             done += id
@@ -156,7 +158,7 @@ class VfWatcher666 @Inject constructor(
                 "https://api.themoviedb.org/3/movie/${r.tmdbId}/external_ids?api_key=$key", 15_000
             )?.let { runCatching { JSONObject(it).optString("imdb_id") }.getOrNull() }
                 ?.takeIf { it.startsWith("tt") }?.also { idCache.edit().putString(r.tmdbId.toString(), it).apply() }
-            imdb?.let { it to Cand(r.title + (r.year?.let { y -> " ($y)" } ?: ""), r.poster) }
+            imdb?.let { it to Cand(r.title + (r.year?.let { y -> " ($y)" } ?: ""), r.poster, r.released) }
         }
     }
 
@@ -164,7 +166,7 @@ class VfWatcher666 @Inject constructor(
         prefs.edit().putStringSet("done", done).putString("found_names", found.joinToString("\n")).apply()
     }
 
-    data class TmdbRelease(val tmdbId: Int, val title: String, val year: String?, val poster: String?)
+    data class TmdbRelease(val tmdbId: Int, val title: String, val year: String?, val poster: String?, val released: LocalDate? = null)
 
     companion object {
         const val INTERVAL_MS = 12L * 3600 * 1000
@@ -188,10 +190,18 @@ class VfWatcher666 @Inject constructor(
                     o.optInt("id").takeIf { it > 0 } ?: return@mapNotNull null,
                     title,
                     o.optString("release_date").take(4).takeIf { it.length == 4 },
-                    o.optString("poster_path").takeIf { it.startsWith("/") }?.let { "https://image.tmdb.org/t/p/w342$it" }
+                    o.optString("poster_path").takeIf { it.startsWith("/") }?.let { "https://image.tmdb.org/t/p/w342$it" },
+                    runCatching { LocalDate.parse(o.optString("release_date")) }.getOrNull()
                 )
             }
         }.getOrDefault(emptyList())
+
+        /**
+         * Règle pure (testée) : un film trouvé en VF crie-t-il ? Jamais deux fois. Au tout premier
+         * passage, seulement une sortie des 7 derniers jours (le reste est en VF depuis longtemps).
+         */
+        fun shouldCry(firstPass: Boolean, alreadyKnown: Boolean, released: LocalDate?, today: LocalDate): Boolean =
+            !alreadyKnown && (!firstPass || (released != null && !released.isAfter(today) && !released.isBefore(today.minusDays(7))))
 
         /** Ligne de « Dernières annonces » (testée). */
         fun summary(run: Run): String =

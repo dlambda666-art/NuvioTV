@@ -231,8 +231,9 @@ private class Dream666View(context: Context) : View(context) {
         if (!Dream666Data.voiceAllowed(hour, now, lastVoiceAt)) return
         lastVoiceAt = now
         runCatching {
+            // 666TVF (03/11) : la longue plainte (19 s), à plein volume
             android.media.MediaPlayer.create(context, R.raw.voix_spectre_666)?.apply {
-                setVolume(0.7f, 0.7f)
+                setVolume(1f, 1f)
                 setOnCompletionListener { it.release() }
                 start()
             }
