@@ -126,8 +126,9 @@ object Abattoir666 {
         return neonOff(t)
     }
 
-    /** Le bzzt de la grosse coupure ne sonne qu'un cycle sur trois (toutes les 27 s), sinon ça lasse. */
-    fun bigCutBuzzes(t: Double): Boolean = ((t / 9.0).toLong() % 3L) == 0L
+    /** 666TVF (03/11) : le tic-tic du starter à chaque grosse coupure (toutes les 9 s, avant : 27 s). */
+    @Suppress("UNUSED_PARAMETER")
+    fun bigCutBuzzes(t: Double): Boolean = true
 
     fun isBigCutStart(prevT: Double, t: Double): Boolean {
         val a = prevT % 9.0; val b = t % 9.0

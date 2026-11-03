@@ -64,10 +64,10 @@ class Abattoir666NeonTest {
         assertEquals(0f, Abattoir666.neonLevel(1.0, 1_500, -1))
     }
 
-    @Test fun `bzzt - une grosse coupure sur trois seulement`() {
+    @Test fun `bzzt - le tic-tic a chaque grosse coupure`() {
         assertTrue(Abattoir666.isBigCutStart(5.98, 6.01))
         assertTrue(!Abattoir666.isBigCutStart(6.01, 6.03))
         val cycles = (0 until 9).count { c -> Abattoir666.bigCutBuzzes(c * 9.0 + 6.1) }
-        assertEquals(3, cycles)
+        assertEquals(9, cycles)
     }
 }
