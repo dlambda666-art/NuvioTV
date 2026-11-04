@@ -31,7 +31,7 @@ class VfWatcher666 @Inject constructor(
     data class Run(val checked: Int, val found: List<String>)
 
     /** Film trouvé en VF pendant ce passage (pour la bannière et le cri). */
-    data class Found(val imdbId: String, val name: String, val poster: String?)
+    data class Found(val imdbId: String, val name: String, val poster: String?, val ple: Boolean = false)
 
     private data class Cand(val name: String, val poster: String?, val released: LocalDate? = null)
 
@@ -117,7 +117,7 @@ class VfWatcher666 @Inject constructor(
     private fun addFresh(f: Found) {
         val list = (pendingFresh() + f).distinctBy { it.imdbId }
         val arr = JSONArray()
-        list.forEach { arr.put(JSONObject().put("id", it.imdbId).put("name", it.name).put("poster", it.poster ?: "")) }
+        list.forEach { arr.put(JSONObject().put("id", it.imdbId).put("name", it.name).put("poster", it.poster ?: "").put("ple", it.ple)) }
         prefs.edit().putString("fresh", arr.toString()).apply()
     }
 
@@ -130,8 +130,86 @@ class VfWatcher666 @Inject constructor(
 
     private fun pendingFresh(): List<Found> = runCatching {
         val arr = JSONArray(prefs.getString("fresh", "[]"))
-        (0 until arr.length()).map { i -> arr.getJSONObject(i).let { Found(it.getString("id"), it.optString("name"), it.optString("poster").ifBlank { null }) } }
+        (0 until arr.length()).map { i -> arr.getJSONObject(i).let { Found(it.getString("id"), it.optString("name"), it.optString("poster").ifBlank { null }, it.optBoolean("ple")) } }
     }.getOrDefault(emptyList())
+
+    // ---------- 666TVF (04/11) : les PLE de la WWE (Survivor Series, Royal Rumble, WrestleMania…) ----------
+
+    /**
+     * Toutes les 2 h : les PLE WWE / NXT sortis ces 4 derniers jours (TMDB les range comme des films)
+     * sont vérifiés par les cavaliers. VF sûre en 1080p / 4K → cri + bannière « 🤼 », une fois par PLE,
+     * et enregistrement auto en bas comme un film. Rien du tout s'il n'y a pas de PLE cette semaine.
+     */
+    suspend fun plePass(busy: () -> Boolean) {
+        if (System.currentTimeMillis() - prefs.getLong("ple_at", 0L) < PLE_INTERVAL_MS) return
+        val today = LocalDate.now()
+        val window = pleCalendar().filter { inPleWindow(it.released, today) }
+        val known = prefs.getStringSet("vf_known", emptySet()).orEmpty()
+        val todo = window.filter { it.imdbId !in known }
+        if (todo.isNotEmpty()) {
+            val order = PluginOrder666.order.map { it.lowercase() }
+            val cavaliers = runCatching { pluginManager.enabledScrapers.first() }.getOrDefault(emptyList())
+                .filter { s -> s.id.substringAfterLast(':').lowercase() in order && s.supportsType("movie") }
+                .sortedBy { s -> order.indexOf(s.id.substringAfterLast(':').lowercase()) }
+            if (cavaliers.isEmpty()) return
+            for (p in todo) {
+                if (busy()) return   // reprise au prochain tour (20 min), ple_at pas mis à jour
+                val cry = cavaliers.any { scraper ->
+                    if (busy()) return@any false
+                    val res = withTimeoutOrNull(30_000) {
+                        runCatching { pluginManager.executeScraper(scraper, p.imdbId, "movie", null, null) }.getOrNull()
+                    }.orEmpty()
+                    res.any { r -> isCryRelease(listOfNotNull(r.name, r.title).joinToString(" ")) }
+                }
+                if (cry) {
+                    FrankVf666.confirm(context, p.imdbId, "movie", "guetteur-ple")
+                    addFresh(Found(p.imdbId, p.title, p.poster, ple = true))
+                    remember(p.imdbId)
+                    Announce666.log(context, "🤼 Guetteur : ${p.title} trouvé en VF", "guetteur des PLE")
+                }
+            }
+        }
+        prefs.edit().putLong("ple_at", System.currentTimeMillis()).apply()
+    }
+
+    data class Ple(val imdbId: String, val title: String, val released: LocalDate?, val poster: String?)
+
+    /** Les PLE de l'année (TMDB), gardés 24 h. */
+    private suspend fun pleCalendar(): List<Ple> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val cachedAt = prefs.getLong("ple_cal_at", 0L)
+        if (System.currentTimeMillis() - cachedAt < 24L * 3600 * 1000) readPleCache()?.let { return@withContext it }
+        val key = BuildConfig.TMDB_API_KEY
+        if (key.isBlank()) return@withContext readPleCache().orEmpty()
+        val year = LocalDate.now().year
+        val seen = LinkedHashMap<Int, TmdbRelease>()
+        for (q in PLE_QUERIES) {
+            val url = "https://api.themoviedb.org/3/search/movie?api_key=$key&language=fr-FR&include_adult=false" +
+                "&year=$year&query=" + java.net.URLEncoder.encode(q, "UTF-8")
+            val raw = Http666.get(url, 15_000) ?: continue
+            parseDiscover(raw).filter { isPleTitle(it.title) }.forEach { seen.putIfAbsent(it.tmdbId, it) }
+        }
+        val idCache = context.getSharedPreferences("666tv_guetteur_ids", Context.MODE_PRIVATE)
+        val list = seen.values.mapNotNull { r ->
+            val imdb = idCache.getString(r.tmdbId.toString(), null) ?: Http666.get(
+                "https://api.themoviedb.org/3/movie/${r.tmdbId}/external_ids?api_key=$key", 15_000
+            )?.let { runCatching { JSONObject(it).optString("imdb_id") }.getOrNull() }
+                ?.takeIf { it.startsWith("tt") }?.also { idCache.edit().putString(r.tmdbId.toString(), it).apply() }
+            imdb?.let { Ple(it, r.title, r.released, r.poster) }
+        }
+        if (list.isNotEmpty()) {
+            val arr = JSONArray()
+            list.forEach { arr.put(JSONObject().put("id", it.imdbId).put("t", it.title).put("d", it.released?.toString() ?: "").put("p", it.poster ?: "")) }
+            prefs.edit().putString("ple_cal", arr.toString()).putLong("ple_cal_at", System.currentTimeMillis()).apply()
+        }
+        list.ifEmpty { readPleCache().orEmpty() }
+    }
+
+    private fun readPleCache(): List<Ple>? = runCatching {
+        val arr = JSONArray(prefs.getString("ple_cal", null) ?: return null)
+        (0 until arr.length()).map { i ->
+            arr.getJSONObject(i).let { Ple(it.getString("id"), it.optString("t"), runCatching { LocalDate.parse(it.optString("d")) }.getOrNull(), it.optString("p").ifBlank { null }) }
+        }
+    }.getOrNull()
 
     /** 666TVF (04/11) : l'affiche du film pour la bannière, quand Frank ne l'a pas donnée. */
     private suspend fun posterFor(imdbId: String): String? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -213,6 +291,27 @@ class VfWatcher666 @Inject constructor(
          */
         fun shouldCry(firstPass: Boolean, alreadyKnown: Boolean, released: LocalDate?, today: LocalDate): Boolean =
             !alreadyKnown && (!firstPass || (released != null && !released.isAfter(today) && !released.isBefore(today.minusDays(7))))
+
+        const val PLE_INTERVAL_MS = 2L * 3600 * 1000
+        val PLE_QUERIES = listOf(
+            "WWE", "NXT", "Survivor Series", "Royal Rumble", "WrestleMania", "SummerSlam", "Crown Jewel",
+            "Elimination Chamber", "Money in the Bank", "Saturday Night's Main Event", "Wrestlepalooza",
+            "Clash in Paris", "King and Queen of the Ring", "Night of Champions"
+        )
+        private val PLE_STRONG = Regex(
+            """(?i)survivor series|royal rumble|wrestlemania|summerslam|crown jewel|elimination chamber|money in the bank|""" +
+                """saturday night'?s main event|wrestlepalooza|clash in paris|king (and|&) queen of the ring"""
+        )
+        private val PLE_WWE = Regex("""(?i)(?<![a-z])(wwe|nxt)(?![a-z])""")
+        private val NOT_PLE = Regex("""(?i)documentary|documentaire|best of|greatest|top 10|untold|legends|biography|2k\d""")
+
+        /** Règle pure (testée) : un titre TMDB est-il un PLE WWE / NXT (pas un docu ni un « best of ») ? */
+        fun isPleTitle(title: String): Boolean =
+            !NOT_PLE.containsMatchIn(title) && (PLE_STRONG.containsMatchIn(title) || PLE_WWE.containsMatchIn(title))
+
+        /** Règle pure (testée) : le PLE est sorti entre aujourd'hui et il y a 4 jours (la VF arrive dans ce délai). */
+        fun inPleWindow(released: LocalDate?, today: LocalDate): Boolean =
+            released != null && !released.isAfter(today) && !released.isBefore(today.minusDays(4))
 
         /** Ligne de « Dernières annonces » (testée). */
         fun summary(run: Run): String =

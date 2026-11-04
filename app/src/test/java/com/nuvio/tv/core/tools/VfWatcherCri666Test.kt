@@ -45,4 +45,21 @@ class VfWatcherCri666Test {
         assertFalse(VfWatcher666.shouldCry(true, false, null, today))
         assertFalse(VfWatcher666.shouldCry(true, false, today.plusDays(2), today))
     }
+
+    @Test fun `PLE de la WWE reconnus, pas les docus ni les jeux`() {
+        listOf("WWE Survivor Series: WarGames 2026", "Survivor Series: WarGames", "WWE Crown Jewel 2026",
+            "Royal Rumble 2026", "NXT Halloween Havoc 2026", "WWE Saturday Night's Main Event", "WrestleMania 42")
+            .forEach { assertTrue(it, VfWatcher666.isPleTitle(it)) }
+        listOf("WWE Legends: Biography", "WWE Untold: The Streak", "The Best of WWE 2026", "WWE 2K26", "Évolution", "Backlash")
+            .forEach { assertFalse(it, VfWatcher666.isPleTitle(it)) }
+    }
+
+    @Test fun `PLE verifie seulement les 4 jours apres sa sortie`() {
+        val today = LocalDate.of(2026, 11, 30)
+        assertTrue(VfWatcher666.inPleWindow(today, today))
+        assertTrue(VfWatcher666.inPleWindow(today.minusDays(4), today))
+        assertFalse(VfWatcher666.inPleWindow(today.minusDays(5), today))
+        assertFalse(VfWatcher666.inPleWindow(today.plusDays(1), today))
+        assertFalse(VfWatcher666.inPleWindow(null, today))
+    }
 }
