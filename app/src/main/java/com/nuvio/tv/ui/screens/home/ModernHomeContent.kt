@@ -646,13 +646,13 @@ fun ModernHomeContent(
     val continueWatchingStyle = uiState.continueWatchingCardStyle
     val continueWatchingScale = 1.34f
     val continueWatchingCardWidth = when (continueWatchingStyle) {
-        ContinueWatchingCardStyle.POSTER -> if (com.nuvio.tv.ui.components.Tomb666.enabled) portraitCatalogCardWidth * com.nuvio.tv.ui.components.Tomb666.TAG_WIDTH_SCALE else portraitCatalogCardWidth
+        ContinueWatchingCardStyle.POSTER -> if (com.nuvio.tv.ui.components.Tomb666.enabled) portraitCatalogCardWidth * com.nuvio.tv.ui.components.Tomb666.CW_POSTER_SCALE else portraitCatalogCardWidth
         // Wide still scales with the poster width setting so it matches the rest of the row.
         ContinueWatchingCardStyle.WIDE -> landscapeBaseWidth * 2.1f
         ContinueWatchingCardStyle.CARD -> landscapeBaseWidth * 1.24f * continueWatchingScale
     }
     val continueWatchingCardHeight = when (continueWatchingStyle) {
-        ContinueWatchingCardStyle.POSTER -> if (com.nuvio.tv.ui.components.Tomb666.enabled) continueWatchingCardWidth * com.nuvio.tv.ui.components.Tomb666.TAG_ASPECT else portraitCatalogCardHeight
+        ContinueWatchingCardStyle.POSTER -> if (com.nuvio.tv.ui.components.Tomb666.enabled) continueWatchingCardWidth * com.nuvio.tv.ui.components.Tomb666.CW_POSTER_ASPECT + com.nuvio.tv.ui.components.Tomb666.CW_LABEL_HEIGHT else portraitCatalogCardHeight
         ContinueWatchingCardStyle.WIDE -> continueWatchingCardWidth * WIDE_CARD_HEIGHT_RATIO
         ContinueWatchingCardStyle.CARD -> com.nuvio.tv.ui.components.Tomb666.landscapeHeight(continueWatchingCardWidth / 1.77f)
     }

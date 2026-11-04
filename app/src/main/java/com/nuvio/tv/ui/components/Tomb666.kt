@@ -1,5 +1,7 @@
 package com.nuvio.tv.ui.components
 
+import androidx.compose.ui.unit.dp
+
 import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.compose.animation.core.animateFloatAsState
@@ -67,6 +69,11 @@ object Tomb666 {
     /** 666TVF (31/10) : puis sur des étiquettes de morgue (petites, pour voir le corps sur la table). */
     const val TAG_WIDTH_SCALE = 1.35f
     const val TAG_ASPECT = 300f / 760f
+
+    /** 666TVF (04/11) : « Continuer à regarder » épuré — petite affiche seule, SxxEyy dessous. */
+    const val CW_POSTER_SCALE = 0.42f
+    const val CW_POSTER_ASPECT = 1.5f
+    val CW_LABEL_HEIGHT = 24.dp
 
     internal fun frame(context: Context, landscape: Boolean, jar: Boolean = false): Frame? = runCatching {
         if (jar && !landscape) {

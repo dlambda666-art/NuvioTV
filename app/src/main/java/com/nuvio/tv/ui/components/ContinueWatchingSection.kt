@@ -1223,110 +1223,86 @@ internal fun formatRemainingTime(
 }
 
 
-/** 666TVF : étiquette de morgue — vignette de l'affiche + titre, épisode, état, progression à l'encre. */
+/**
+ * 666TVF (04/11) : « Continuer à regarder » épuré — la petite affiche seule, progression verte dessus,
+ * SxxEyy en dessous pour les séries. Pas de titre (il est sur l'affiche). Sélection : liseré + lueur mauves.
+ * (avant : étiquette de morgue, 31/10)
+ */
 @Composable
 private fun MorgueTag666(
     imageRequest: Any?,
     hasImage: Boolean,
     titleText: String,
     episodeStr: String?,
-    badgeText: String,
+    @Suppress("UNUSED_PARAMETER") badgeText: String,
     progressFraction: Float,
     hasProgress: Boolean,
     isFocused: Boolean,
     width: Dp,
     height: Dp
 ) {
-    val glow by androidx.compose.animation.core.animateFloatAsState(if (isFocused) 1f else 0f, label = "tag666")
-    val ink = Color(0xFF30201A)
-    val inkLight = Color(0xFF55372A)
-    val bloodInk = Color(0xFF7A0E0A)
-    Box(
-        modifier = Modifier
-            .width(width)
-            .height(height)
-            .graphicsLayer {
-                val s = 1f + 0.06f * glow
-                scaleX = s; scaleY = s
-            }
-            .drawBehind {
-                if (glow > 0.01f) {
-                    drawRoundRect(
-                        brush = Brush.radialGradient(
-                            listOf(Color(0xFF8A2BD0).copy(alpha = 0.6f * glow), Color.Transparent),
-                            center = Offset(size.width / 2f, size.height / 2f),
-                            radius = size.width * 0.62f
-                        ),
-                        topLeft = Offset(-size.width * 0.08f, -size.height * 0.25f),
-                        size = Size(size.width * 1.16f, size.height * 1.5f)
-                    )
-                }
-            }
+    val glow by androidx.compose.animation.core.animateFloatAsState(if (isFocused) 1f else 0f, label = "cw666")
+    val mauve = Color(0xFF9B30D9)
+    val posterH = (height - Tomb666.CW_LABEL_HEIGHT).coerceAtLeast(40.dp)
+    Column(
+        modifier = Modifier.width(width).height(height),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        androidx.compose.foundation.Image(
-            painter = androidx.compose.ui.res.painterResource(R.drawable.etiquette_666),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.fillMaxSize()
-        )
-        val thumbH = height * 0.78f
-        val thumbW = thumbH * (2f / 3f)
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(start = width * 0.135f, end = width * 0.04f),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(thumbW)
-                    .height(thumbH)
-                    .border(1.dp, Color(0xFF5A4632))
-                    .background(Color(0xFF2A2420))
-            ) {
-                if (hasImage) {
-                    AsyncImage(
-                        model = imageRequest,
-                        contentDescription = titleText,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                .width(width)
+                .height(posterH)
+                .graphicsLayer {
+                    val s = 1f + 0.08f * glow
+                    scaleX = s; scaleY = s
                 }
-            }
-            Column(
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .padding(vertical = height * 0.1f),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = titleText,
-                    color = ink,
-                    fontSize = (height.value * 0.15f).sp,
-                    lineHeight = (height.value * 0.17f).sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (episodeStr != null) {
-                    Text(text = episodeStr, color = inkLight, fontSize = (height.value * 0.13f).sp, maxLines = 1)
-                }
-                Text(
-                    text = badgeText.uppercase(),
-                    color = bloodInk,
-                    fontFamily = Font666.Creepster,
-                    fontSize = (height.value * 0.15f).sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (hasProgress) {
-                    Box(Modifier.fillMaxWidth().height(3.dp).background(Color(0xFF8A6E4E))) {
-                        Box(Modifier.fillMaxWidth(progressFraction.coerceIn(0f, 1f)).height(3.dp).background(bloodInk))
+                .drawBehind {
+                    if (glow > 0.01f) {
+                        drawRoundRect(
+                            brush = Brush.radialGradient(
+                                listOf(Color(0xFF8A2BD0).copy(alpha = 0.65f * glow), Color.Transparent),
+                                center = Offset(size.width / 2f, size.height / 2f),
+                                radius = size.height * 0.75f
+                            ),
+                            topLeft = Offset(-size.width * 0.35f, -size.height * 0.2f),
+                            size = Size(size.width * 1.7f, size.height * 1.4f)
+                        )
                     }
                 }
+                .clip(RoundedCornerShape(4.dp))
+                .background(Color(0xFF1E1A1C))
+                .border(if (isFocused) 2.dp else 0.dp, if (isFocused) mauve else Color.Transparent, RoundedCornerShape(4.dp))
+        ) {
+            if (hasImage) {
+                AsyncImage(
+                    model = imageRequest,
+                    contentDescription = titleText,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
+            if (hasProgress) {
+                Box(
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 5.dp, vertical = 5.dp)
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .background(Color(0xCC0A0808))
+                ) {
+                    Box(Modifier.fillMaxWidth(progressFraction.coerceIn(0f, 1f)).height(3.dp).background(Color(0xFF4CC36B)))
+                }
+            }
+        }
+        if (episodeStr != null) {
+            Text(
+                text = episodeStr,
+                color = Color(0xFFE6E0DA),
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 5.dp)
+            )
         }
     }
 }
