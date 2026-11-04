@@ -102,7 +102,7 @@ class VfWatcher666 @Inject constructor(
                 // Premier passage avec les sorties TMDB : ce qui est déjà en VF depuis longtemps ne crie pas
                 // (sauf une sortie de la semaine : celle-là, on veut la savoir).
                 if (shouldCry(firstTmdb, id in prefs.getStringSet("vf_known", emptySet()).orEmpty(), c?.released, LocalDate.now()))
-                    addFresh(Found(id, c?.name ?: id, c?.poster))
+                    addFresh(Found(id, c?.name ?: id, c?.poster ?: posterFor(id)))
                 remember(id)
             }
             done += id
@@ -132,6 +132,17 @@ class VfWatcher666 @Inject constructor(
         val arr = JSONArray(prefs.getString("fresh", "[]"))
         (0 until arr.length()).map { i -> arr.getJSONObject(i).let { Found(it.getString("id"), it.optString("name"), it.optString("poster").ifBlank { null }) } }
     }.getOrDefault(emptyList())
+
+    /** 666TVF (04/11) : l'affiche du film pour la bannière, quand Frank ne l'a pas donnée. */
+    private suspend fun posterFor(imdbId: String): String? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val key = BuildConfig.TMDB_API_KEY
+        if (key.isBlank()) return@withContext null
+        val raw = Http666.get("https://api.themoviedb.org/3/find/$imdbId?api_key=$key&external_source=imdb_id", 15_000) ?: return@withContext null
+        runCatching {
+            JSONObject(raw).optJSONArray("movie_results")?.optJSONObject(0)?.optString("poster_path")
+                ?.takeIf { it.startsWith("/") }?.let { "https://image.tmdb.org/t/p/w342$it" }
+        }.getOrNull()
+    }
 
     private fun remember(id: String) {
         val k = prefs.getStringSet("vf_known", emptySet()).orEmpty()

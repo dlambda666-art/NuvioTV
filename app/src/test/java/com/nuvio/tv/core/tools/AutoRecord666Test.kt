@@ -84,4 +84,16 @@ class AutoRecord666Test {
         // les flèches ne sont jamais avalées
         assertFalse(HeldOk666.swallow(BooleanArray(1), android.view.KeyEvent.KEYCODE_DPAD_DOWN, true, 3, 10))
     }
+
+    @Test fun `film du guetteur - 1080p en VF sure seulement, jamais VOSTFR ni MULTi seul`() {
+        val list = listOf(
+            s("Resident.Evil.2026.MULTi.1080p.WEB", 5 * GB),
+            s("Resident.Evil.2026.VOSTFR.1080p.WEB", 5 * GB),
+            s("Resident.Evil.2026.FRENCH.2160p.WEB", 20 * GB),
+            s("Resident.Evil.2026.FRENCH.720p.WEB", 2 * GB),
+            s("Resident.Evil.2026.FRENCH.1080p.HDLight", 4 * GB)
+        )
+        assertEquals(listOf("Resident.Evil.2026.FRENCH.1080p.HDLight"), AutoRecord666.pickFilm(list, 3000 * GB).map { it.name })
+        assertTrue(AutoRecord666.pickFilm(list, 2 * GB).isEmpty())
+    }
 }

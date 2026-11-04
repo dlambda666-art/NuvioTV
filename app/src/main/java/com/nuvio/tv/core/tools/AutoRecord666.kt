@@ -88,10 +88,101 @@ class AutoRecord666 @Inject constructor(
         prefs.edit().putString("pending", arr.toString()).apply()
     }
 
+    // ---------- Films trouvés en VF par le guetteur (04/11) ----------
+
+    data class FilmPending(val imdbId: String, val name: String, val poster: String?, val tries: Int, val nextAt: Long)
+
+    /** Le guetteur vient de crier pour ces films : on les enregistre aussi (Shield du bas). */
+    fun offerFilms(films: List<VfWatcher666.Found>) {
+        if (!enabled || !Record666.enabledHere()) return
+        val real = films.filter { it.imdbId.startsWith("tt") }
+        if (real.isEmpty()) return
+        val seen = prefs.getStringSet("films_seen", emptySet())!!.toMutableSet()
+        val list = filmsPending().toMutableList()
+        real.forEach { f ->
+            if (f.imdbId in seen) return@forEach
+            seen += f.imdbId
+            list += FilmPending(f.imdbId, f.name, f.poster, 0, 0)
+        }
+        prefs.edit().putStringSet("films_seen", seen.toList().takeLast(500).toSet()).apply()
+        saveFilms(list)
+    }
+
+    fun filmsPending(): List<FilmPending> = runCatching {
+        val arr = JSONArray(prefs.getString("films", "[]"))
+        (0 until arr.length()).map { i ->
+            val o = arr.getJSONObject(i)
+            FilmPending(o.getString("id"), o.optString("name"), o.optString("poster").ifBlank { null }, o.optInt("tries"), o.optLong("next"))
+        }
+    }.getOrDefault(emptyList())
+
+    private fun saveFilms(list: List<FilmPending>) {
+        val arr = JSONArray()
+        list.forEach { f ->
+            arr.put(JSONObject().put("id", f.imdbId).put("name", f.name).put("poster", f.poster ?: "").put("tries", f.tries).put("next", f.nextAt))
+        }
+        prefs.edit().putString("films", arr.toString()).apply()
+    }
+
+    private suspend fun runFilms(busy: () -> Boolean) {
+        val now = System.currentTimeMillis()
+        for (f in filmsPending()) {
+            if (busy()) return
+            if (f.nextAt > now) continue
+            val id = Record666.idFor(f.imdbId, null, null, null)
+            if (Record666.items.value.any { it.id == id && it.status != Record666.Status.FAILED }) { dropFilm(f); continue }
+            val msg = runCatching { tryRecordFilm(f) }.getOrElse { Log.w(TAG, "auto film ${f.imdbId}", it); null }
+            if (msg != null) {
+                dropFilm(f)
+                Announce666.log(context, "⬇ Enregistrement auto lancé : ${f.name}", "enregistrement")
+            } else if (f.tries + 1 >= MAX_TRIES) {
+                dropFilm(f)
+                Announce666.log(context, "Enregistrement auto : pas de lien 1080p VF qui tient sur le disque pour ${f.name}", "enregistrement")
+            } else {
+                saveFilms(filmsPending().map { if (it.imdbId == f.imdbId) it.copy(tries = it.tries + 1, nextAt = now + RETRY_MS) else it })
+            }
+        }
+    }
+
+    private fun dropFilm(f: FilmPending) = saveFilms(filmsPending().filterNot { it.imdbId == f.imdbId })
+
+    private suspend fun tryRecordFilm(f: FilmPending): String? {
+        val place = Record666.place(context) ?: return null
+        var last: List<Stream> = emptyList()
+        withTimeoutOrNull(180_000) {
+            streamRepository.getStreamsFromAllAddons("movie", f.imdbId, null, null).collect { r ->
+                if (r is NetworkResult.Success) last = r.data.flatMap { it.streams }
+            }
+        }
+        val room = minOf(place.maxFile, place.usable - Record666.queuedBytes())
+        val title = f.name.replace(Regex("""\s*\((\d{4})\)\s*$"""), "")
+        val year = Regex("""\((\d{4})\)\s*$""").find(f.name)?.groupValues?.get(1)
+        for (s in pickFilm(last, room).take(5)) {
+            val url = if (directDebridResolver.shouldResolveToPlayableStream(s)) {
+                (directDebridResolver.resolve(s, null, null) as? DirectDebridResolveResult.Success)?.url
+            } else s.getStreamUrl()
+            if (url.isNullOrBlank() || !url.startsWith("http")) continue
+            val msg = Record666.enqueue(
+                context,
+                Record666.Request666(
+                    title = title, contentName = title, contentId = f.imdbId, contentType = "movie",
+                    videoId = f.imdbId, season = null, episode = null, episodeTitle = null, year = year,
+                    quality = Record666.qualityOf(textOf(s)), url = url, headers = s.behaviorHints?.proxyHeaders?.request ?: emptyMap(),
+                    filename = s.behaviorHints?.filename, size = s.behaviorHints?.videoSize,
+                    poster = f.poster, backdrop = null, logo = null
+                ),
+                auto = true
+            )
+            if (msg.startsWith("⬇") || msg.startsWith("Déjà")) return msg
+        }
+        return null
+    }
+
     /** Un tour : cherche un lien pour chaque épisode en attente (quand tu ne regardes ni ne cherches rien). */
     suspend fun runOnce(busy: () -> Boolean) {
         if (!Record666.enabledHere()) return
         Record666.init(context)
+        runCatching { runFilms(busy) }
         val now = System.currentTimeMillis()
         for (p in pending()) {
             if (busy()) return
@@ -183,7 +274,7 @@ class AutoRecord666 @Inject constructor(
          * 1080p, VF sûre (pas « VF ? »), le bon épisode, taille connue qui tient, pas de DV sans HDR,
          * pas « pas en cache ». Ordre : épisode écrit d'abord, puis l'ordre des cavaliers (celui de la liste).
          */
-        fun pickAll(streams: List<Stream>, season: Int, episode: Int, roomBytes: Long): List<Stream> =
+        fun pickAll(streams: List<Stream>, season: Int?, episode: Int?, roomBytes: Long): List<Stream> =
             streams.withIndex().filter { (_, s) ->
                 val t = textOf(s)
                 val size = s.behaviorHints?.videoSize ?: 0L
@@ -198,5 +289,9 @@ class AutoRecord666 @Inject constructor(
                 compareBy<IndexedValue<Stream>> { StreamAutoPlaySelector.episodeRank(it.value, season, episode) }
                     .thenBy { it.index }
             ).map { it.value }
+
+        /** Règle pure (testée) : un film trouvé par le guetteur — comme un épisode, et en VF sûre seulement. */
+        fun pickFilm(streams: List<Stream>, roomBytes: Long): List<Stream> =
+            pickAll(streams, null, null, roomBytes).filter { FrankVf666.isSureVfRelease(textOf(it)) }
     }
 }

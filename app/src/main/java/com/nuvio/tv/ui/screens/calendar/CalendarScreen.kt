@@ -345,14 +345,32 @@ fun CalendarVfBanner(episodes: List<CalendarEpisode>, modifier: Modifier = Modif
             // 666TVF : « Nouveau en VF » en vert (28/10)
             color = if (vf) androidx.compose.ui.graphics.Color(0xFF4CC36B) else NuvioTheme.colors.TextPrimary
         )
+        // 666TVF (04/11) : l'affiche à côté du nom, pour voir tout de suite de quel film / série il s'agit
         episodes.take(4).forEach { ep ->
-            Text(
-                text = com.nuvio.tv.announceLine666(ep),
-                style = MaterialTheme.typography.bodyMedium,
-                color = NuvioTheme.colors.TextPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            androidx.compose.foundation.layout.Row(
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (!ep.poster.isNullOrBlank()) {
+                    coil3.compose.AsyncImage(
+                        model = ep.poster,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier
+                            .width(40.dp)
+                            .height(60.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .border(1.dp, androidx.compose.ui.graphics.Color(0x889B30D9), RoundedCornerShape(4.dp))
+                    )
+                }
+                Text(
+                    text = com.nuvio.tv.announceLine666(ep),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = NuvioTheme.colors.TextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
         if (episodes.size > 4) {
             Text(

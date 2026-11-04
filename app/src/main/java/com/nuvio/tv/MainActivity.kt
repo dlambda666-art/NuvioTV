@@ -1365,6 +1365,8 @@ open class MainActivity : ComponentActivity() {
                                             )
                                             // 666TVF (03/11) : un film trouvé en VF 1080p/4K → cri + bannière, une fois par film
                                             val films = runCatching { vfWatcher666.takePendingFresh() }.getOrDefault(emptyList())
+                                            // 666TVF (04/11) : et il s'enregistre tout seul sur le disque (Shield du bas)
+                                            if (films.isNotEmpty()) runCatching { autoRecord666.offerFilms(films) }
                                             if (films.isNotEmpty()) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                                                 pending666 = (pending666 + films.map { f -> filmAnnouncement666(f) })
                                                     .distinctBy { "${it.seriesId}|${it.season}|${it.episode}" }
