@@ -1454,7 +1454,8 @@ open class MainActivity : ComponentActivity() {
                                     title = announceTitle666(shown),
                                     titleGreen = shown.none { it.seriesId.startsWith("alerte:") || it.seriesId.startsWith("sport:") || it.seriesId.startsWith("retard:") },
                                     lines = shown.map { announceLine666(it) },
-                                    onDismiss = { announcements666.value = emptyList() }
+                                    onDismiss = { announcements666.value = emptyList() },
+                                    posters = shown.map { it.poster }
                                 )
                                 val where = when {
                                     inApp -> "vue dans 666TVF"

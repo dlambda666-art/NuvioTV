@@ -93,7 +93,20 @@ object Announce666 {
      * Affiche la bannière par-dessus l'appli en cours. Elle reste jusqu'à OK / Retour
      * (ce premier appui la ferme, il n'arrive pas à l'autre appli). À appeler sur le fil principal.
      */
-    fun showOverlay(context: Context, title: String, titleGreen: Boolean, lines: List<String>, onDismiss: () -> Unit): Boolean {
+    /** Affiche téléchargée hors du fil principal (petite taille), puis posée dans la bannière. */
+    private fun loadPoster(url: String, onLoaded: (android.graphics.Bitmap) -> Unit) {
+        Thread {
+            runCatching {
+                if (url.startsWith("file:")) android.graphics.BitmapFactory.decodeFile(android.net.Uri.parse(url).path)
+                else (java.net.URL(url).openConnection() as java.net.HttpURLConnection).run {
+                    connectTimeout = 8000; readTimeout = 8000
+                    try { inputStream.use { android.graphics.BitmapFactory.decodeStream(it) } } finally { disconnect() }
+                }
+            }.getOrNull()?.let(onLoaded)
+        }.start()
+    }
+
+    fun showOverlay(context: Context, title: String, titleGreen: Boolean, lines: List<String>, onDismiss: () -> Unit, posters: List<String?> = emptyList()): Boolean {
         if (!canOverlay(context)) return false
         val app = context.applicationContext
         val wm = app.getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return false
@@ -131,7 +144,25 @@ object Announce666 {
                 setPadding(0, dp(2), 0, dp(2))
             }
             box.addView(text(title, 20f, if (titleGreen) Color.rgb(0x4C, 0xC3, 0x6B) else Color.WHITE, bold = true))
-            lines.take(4).forEach { box.addView(text(it, 16f, Color.WHITE)) }
+            // 666TVF (04/11) : l'affiche à côté de chaque ligne, comme dans 666TVF (JT RTL sur Orange)
+            lines.take(4).forEachIndexed { i, line ->
+                val url = posters.getOrNull(i)
+                if (url.isNullOrBlank()) { box.addView(text(line, 16f, Color.WHITE)); return@forEachIndexed }
+                val row = LinearLayout(app).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(0, dp(3), 0, dp(3))
+                }
+                val img = android.widget.ImageView(app).apply {
+                    scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                    background = GradientDrawable().apply { cornerRadius = dp(4).toFloat(); setColor(Color.rgb(42, 38, 38)); setStroke(dp(1), Color.argb(136, 0x9B, 0x30, 0xD9)) }
+                    clipToOutline = true
+                }
+                row.addView(img, LinearLayout.LayoutParams(dp(40), dp(60)).apply { rightMargin = dp(10) })
+                row.addView(text(line, 16f, Color.WHITE), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                box.addView(row)
+                loadPoster(url) { bmp -> img.post { img.setImageBitmap(bmp) } }
+            }
             box.addView(text("Appuie sur OK pour fermer · Détails dans le Calendrier 666TVF", 13f, Color.rgb(0x8F, 0x8A, 0x85)))
             val params = WindowManager.LayoutParams(
                 dp(420),
