@@ -237,6 +237,8 @@ private fun PlaybackNavHost(
                     )
                 },
                 onContinueWatchingClick = onContinueWatchingClick@{ item ->
+                    // 666TVF (04/11) : en bas, s'il est sur le disque, on reprend le fichier (instantané, même sans internet)
+                    record666For(context, item)?.let { playRecord666(navController, it, false); return@onContinueWatchingClick }
                     if (!playbackAvailability.canStream(item)) {
                         Toast.makeText(context, R.string.playback_unavailable_message, Toast.LENGTH_SHORT).show()
                         return@onContinueWatchingClick
@@ -244,6 +246,7 @@ private fun PlaybackNavHost(
                     navController.navigate(createContinueWatchingRoute(item))
                 },
                 onContinueWatchingStartFromBeginning = onContinueWatchingStartFromBeginning@{ item ->
+                    record666For(context, item)?.let { playRecord666(navController, it, true); return@onContinueWatchingStartFromBeginning }
                     if (!playbackAvailability.canStream(item)) {
                         Toast.makeText(context, R.string.playback_unavailable_message, Toast.LENGTH_SHORT).show()
                         return@onContinueWatchingStartFromBeginning
@@ -1195,33 +1198,7 @@ private fun PlaybackNavHost(
         composable(Screen.Records666.route) {
             // 666TVF : enregistrements (Shield du bas) — lus directement depuis la clé / la Shield.
             com.nuvio.tv.ui.screens.livetv.Records666Screen(
-                onPlay = { r, fromStart ->
-                    val img = { f: java.io.File, url: String? ->
-                        if (f.exists()) android.net.Uri.fromFile(f).toString() else url
-                    }
-                    navController.navigate(
-                        Screen.Player.createRoute(
-                            streamUrl = android.net.Uri.fromFile(r.file).toString(),
-                            title = r.title,
-                            streamName = "Enregistrement 666",
-                            year = r.year,
-                            contentId = r.contentId,
-                            contentType = r.contentType,
-                            contentName = r.contentName,
-                            poster = img(r.posterFile, r.posterUrl),
-                            backdrop = img(r.backdropFile, r.backdropUrl),
-                            logo = r.logoUrl,
-                            videoId = r.videoId,
-                            season = r.season,
-                            episode = r.episode,
-                            episodeTitle = r.episodeTitle,
-                            filename = r.file.name,
-                            videoSize = r.total.takeIf { it > 0 },
-                            startFromBeginning = fromStart,
-                            addonName = "Enregistrement"
-                        )
-                    )
-                }
+                onPlay = { r, fromStart -> playRecord666(navController, r, fromStart) }
             )
         }
         composable(Screen.Roulette666.route) {
@@ -1532,5 +1509,48 @@ private fun PlaybackNavHost(
                 }
             )
         }
+    }
+}
+
+/** 666TVF : lit un enregistrement depuis la clé / le disque (menu Enregistrements, ou « Reprendre » en bas). */
+internal fun playRecord666(navController: androidx.navigation.NavController, r: com.nuvio.tv.core.tools.Record666.Rec, fromStart: Boolean) {
+    val img = { f: java.io.File, url: String? ->
+        if (f.exists()) android.net.Uri.fromFile(f).toString() else url
+    }
+    navController.navigate(
+        Screen.Player.createRoute(
+            streamUrl = android.net.Uri.fromFile(r.file).toString(),
+            title = r.title,
+            streamName = "Enregistrement 666",
+            year = r.year,
+            contentId = r.contentId,
+            contentType = r.contentType,
+            contentName = r.contentName,
+            poster = img(r.posterFile, r.posterUrl),
+            backdrop = img(r.backdropFile, r.backdropUrl),
+            logo = r.logoUrl,
+            videoId = r.videoId,
+            season = r.season,
+            episode = r.episode,
+            episodeTitle = r.episodeTitle,
+            filename = r.file.name,
+            videoSize = r.total.takeIf { it > 0 },
+            startFromBeginning = fromStart,
+            addonName = "Enregistrement"
+        )
+    )
+}
+
+/** 666TVF (04/11) : l'enregistrement terminé de ce « Continuer à regarder », s'il est sur le disque. */
+internal fun record666For(context: android.content.Context, item: com.nuvio.tv.ui.screens.home.ContinueWatchingItem): com.nuvio.tv.core.tools.Record666.Rec? {
+    if (!com.nuvio.tv.core.tools.Record666.enabledHere()) return null
+    com.nuvio.tv.core.tools.Record666.init(context)
+    val (cid, season, episode) = when (item) {
+        is com.nuvio.tv.ui.screens.home.ContinueWatchingItem.InProgress -> Triple(item.progress.contentId, item.progress.season, item.progress.episode)
+        is com.nuvio.tv.ui.screens.home.ContinueWatchingItem.NextUp -> Triple(item.info.contentId, item.info.season, item.info.episode)
+    }
+    val id = com.nuvio.tv.core.tools.Record666.idFor(cid, null, season, episode)
+    return com.nuvio.tv.core.tools.Record666.items.value.firstOrNull {
+        it.id == id && it.status == com.nuvio.tv.core.tools.Record666.Status.DONE && it.file.exists()
     }
 }
