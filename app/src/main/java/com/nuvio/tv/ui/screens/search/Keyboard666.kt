@@ -25,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -58,6 +60,18 @@ fun Keyboard666(
 ) {
     var digits by remember { mutableStateOf(false) }
     val first = remember { FocusRequester() }
+    // 666TVF (04/11) : curseur dans le texte (◀ ▶), on tape / efface à l'endroit du curseur
+    // texte tenu ici aussi : les répétitions rapides (appui long) ne lisent jamais un texte en retard
+    var typed by remember { mutableStateOf(query) }
+    var cursor by remember { mutableStateOf(query.length) }
+    // ce que le clavier a lui-même envoyé : seul un changement venu d'ailleurs remet le curseur au bout
+    val sent = remember { ArrayDeque<String>() }
+    LaunchedEffect(query) { if (query != typed && query !in sent) { typed = query; cursor = query.length } }
+    fun edit(r: Pair<String, Int>) {
+        typed = r.first; cursor = r.second
+        sent.addLast(r.first); while (sent.size > 64) sent.removeFirst()
+        onQueryChanged(r.first)
+    }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
     // 666TVF (31/10) : suggestions pendant qu'on tape — OK sur une suggestion lance la recherche
     var suggestions by remember { mutableStateOf<List<com.nuvio.tv.core.tmdb.Suggestion666>>(emptyList()) }
@@ -90,9 +104,10 @@ fun Keyboard666(
                 contentAlignment = Alignment.CenterStart
             ) {
                 Text(
-                    text = if (query.isEmpty()) "TAPE UN FILM OU UNE SÉRIE…" else query.uppercase() + "▏",
+                    text = if (typed.isEmpty()) "TAPE UN FILM OU UNE SÉRIE…"
+                        else typed.substring(0, cursor.coerceIn(0, typed.length)).uppercase() + "▏" + typed.substring(cursor.coerceIn(0, typed.length)).uppercase(),
                     style = Font666.horror(MaterialTheme.typography.headlineMedium, 1.3f),
-                    color = if (query.isEmpty()) Font666.Green.copy(alpha = 0.45f) else Font666.Green,
+                    color = if (typed.isEmpty()) Font666.Green.copy(alpha = 0.45f) else Font666.Green,
                     maxLines = 1
                 )
             }
@@ -113,25 +128,87 @@ fun Keyboard666(
             }
             rows.forEachIndexed { r, row ->
                 if (row.isEmpty()) return@forEachIndexed
+                // 666TVF (04/11) : au bout d'une rangée, on passe de l'autre côté (Q ◀ → M, M ▶ → Q)
+                val req = remember(row) { List(row.length) { FocusRequester() } }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     row.forEachIndexed { i, ch ->
                         Key666(
                             width = 76.dp,
-                            modifier = if (r == 0 && i == 0) Modifier.focusRequester(first) else Modifier,
-                            onClick = { onQueryChanged(query + ch.lowercaseChar()) }
+                            modifier = Modifier.focusRequester(req[i])
+                                .then(if (r == 0 && i == 0) Modifier.focusRequester(first) else Modifier)
+                                .wrap666(req, i),
+                            onClick = { edit(KeyText666.insert(typed, cursor, ch.lowercaseChar().toString())) }
                         ) { focused ->
                             if (ch == 'O') Pumpkin666(focused) else KeyLabel(ch.toString(), focused, 1.5f)
                         }
                     }
                 }
             }
+            val bottom = remember { List(6) { FocusRequester() } }
+            val holdL = remember { Hold666() }; val holdR = remember { Hold666() }; val holdDel = remember { Hold666() }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Key666(width = 330.dp, onClick = { onQueryChanged("$query ") }) { KeyLabel("ESPACE", it) }
-                Key666(width = 200.dp, onClick = { onQueryChanged(query.dropLast(1)) }) { KeyLabel("EFFACER", it) }
-                Key666(width = 120.dp, onClick = { digits = !digits }) { KeyLabel(if (digits) "ABC" else "123", it) }
-                Key666(width = 150.dp, onClick = { onSubmit(); onDismiss() }) { KeyLabel("OK", it) }
+                // ◀ ▶ : déplacer le curseur (appui long = ça défile vite)
+                Key666(width = 84.dp, modifier = Modifier.focusRequester(bottom[0]).wrap666(bottom, 0)
+                    .repeatOk666(holdL) { cursor = KeyText666.left(cursor) },
+                    onClick = { if (!holdL.endOfHold()) cursor = KeyText666.left(cursor) }) { KeyLabel("◀", it, 1.4f) }
+                Key666(width = 84.dp, modifier = Modifier.focusRequester(bottom[1]).wrap666(bottom, 1)
+                    .repeatOk666(holdR) { cursor = KeyText666.right(cursor, typed) },
+                    onClick = { if (!holdR.endOfHold()) cursor = KeyText666.right(cursor, typed) }) { KeyLabel("▶", it, 1.4f) }
+                Key666(width = 250.dp, modifier = Modifier.focusRequester(bottom[2]).wrap666(bottom, 2),
+                    onClick = { edit(KeyText666.insert(typed, cursor, " ")) }) { KeyLabel("ESPACE", it) }
+                // EFFACER : la lettre avant le curseur ; appui long = tout s'efface, lettre par lettre, vite
+                Key666(width = 200.dp, modifier = Modifier.focusRequester(bottom[3]).wrap666(bottom, 3)
+                    .repeatOk666(holdDel) { edit(KeyText666.backspace(typed, cursor)) },
+                    onClick = { if (!holdDel.endOfHold()) edit(KeyText666.backspace(typed, cursor)) }) { KeyLabel("EFFACER", it) }
+                Key666(width = 120.dp, modifier = Modifier.focusRequester(bottom[4]).wrap666(bottom, 4),
+                    onClick = { digits = !digits }) { KeyLabel(if (digits) "ABC" else "123", it) }
+                Key666(width = 150.dp, modifier = Modifier.focusRequester(bottom[5]).wrap666(bottom, 5),
+                    onClick = { onSubmit(); onDismiss() }) { KeyLabel("OK", it) }
             }
         }
+    }
+}
+
+/** 666TVF (04/11) : texte du clavier avec curseur — règles pures (testées). */
+object KeyText666 {
+    fun insert(q: String, c: Int, t: String): Pair<String, Int> {
+        val i = c.coerceIn(0, q.length); return (q.substring(0, i) + t + q.substring(i)) to (i + t.length)
+    }
+    fun backspace(q: String, c: Int): Pair<String, Int> {
+        val i = c.coerceIn(0, q.length); if (i == 0) return q to 0
+        return (q.substring(0, i - 1) + q.substring(i)) to (i - 1)
+    }
+    fun left(c: Int): Int = (c - 1).coerceAtLeast(0)
+    fun right(c: Int, q: String): Int = (c + 1).coerceAtMost(q.length)
+    /** Rangée en boucle : la touche voisine à gauche / à droite, en repassant par l'autre bout. */
+    fun wrapLeft(i: Int, n: Int): Int = if (i == 0) n - 1 else i - 1
+    fun wrapRight(i: Int, n: Int): Int = if (i == n - 1) 0 else i + 1
+}
+
+/** Gauche sur la première touche → dernière ; droite sur la dernière → première. */
+private fun Modifier.wrap666(req: List<FocusRequester>, i: Int): Modifier =
+    this.focusProperties {
+        if (i == 0) left = req[KeyText666.wrapLeft(i, req.size)]
+        if (i == req.size - 1) right = req[KeyText666.wrapRight(i, req.size)]
+    }
+
+/** Appui long en cours : le relâchement qui suit ne doit pas compter comme un clic en plus. */
+class Hold666 {
+    var held = false
+    /** Vrai (et remis à zéro) si ce clic est la fin d'un appui long. */
+    fun endOfHold(): Boolean { val h = held; held = false; return h }
+}
+
+/** Appui long sur OK : [action] se répète tant qu'on tient (la télécommande envoie des répétitions). */
+@Composable
+private fun Modifier.repeatOk666(hold: Hold666, action: () -> Unit): Modifier {
+    val latest = androidx.compose.runtime.rememberUpdatedState(action)
+    return this.onPreviewKeyEvent { e ->
+        val k = e.nativeKeyEvent
+        val ok = k.keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER || k.keyCode == android.view.KeyEvent.KEYCODE_ENTER ||
+            k.keyCode == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER
+        if (ok && k.action == android.view.KeyEvent.ACTION_DOWN && k.repeatCount == 0) hold.held = false
+        if (ok && k.action == android.view.KeyEvent.ACTION_DOWN && k.repeatCount > 0) { hold.held = true; latest.value(); true } else false
     }
 }
 
