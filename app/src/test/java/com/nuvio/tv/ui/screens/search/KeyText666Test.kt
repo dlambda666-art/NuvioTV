@@ -29,4 +29,13 @@ class KeyText666Test {
         assertEquals(0, KeyText666.wrapRight(9, 10))
         assertEquals(4, KeyText666.wrapLeft(5, 10))
     }
+
+    @Test fun `dernieres recherches - la plus recente devant, sans doublon, 8 max`() {
+        var l = emptyList<String>()
+        listOf("dune", "monstre", "Dune", " resident evil ", "").forEach { l = Recent666.merge(l, it) }
+        assertEquals(listOf("resident evil", "Dune", "monstre"), l)
+        repeat(12) { l = Recent666.merge(l, "film $it") }
+        assertEquals(8, l.size)
+        assertEquals("film 11", l.first())
+    }
 }

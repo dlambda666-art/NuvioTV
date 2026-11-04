@@ -73,6 +73,31 @@ fun Keyboard666(
         onQueryChanged(r.first)
     }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    // 666TVF (04/11) : dernières recherches (raccourcis quand le champ est vide)
+    val recent = remember { Recent666.list(ctx) }
+    fun submitWith(q: String) {
+        if (q.isNotBlank()) Recent666.add(ctx, q)
+        if (q != typed) { typed = q; cursor = q.length; onQueryChanged(q) }
+        onSubmit(); onDismiss()
+    }
+    // 666TVF (04/11) : recherche à la voix (reconnaissance Google de la Shield, en français)
+    val voice = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { res ->
+        val said = res.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.trim()
+        if (!said.isNullOrBlank()) edit(said to said.length)
+    }
+    fun startVoice() {
+        val intent = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "fr-FR")
+            putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Dis le titre…")
+            putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        }
+        val ok = runCatching { voice.launch(intent) }.isSuccess
+        if (!ok) android.widget.Toast.makeText(ctx, "Pas de reconnaissance vocale sur cette Shield", android.widget.Toast.LENGTH_SHORT).show()
+    }
     // 666TVF (31/10) : suggestions pendant qu'on tape — OK sur une suggestion lance la recherche
     var suggestions by remember { mutableStateOf<List<com.nuvio.tv.core.tmdb.Suggestion666>>(emptyList()) }
     LaunchedEffect(query) {
@@ -111,6 +136,14 @@ fun Keyboard666(
                     maxLines = 1
                 )
             }
+            if (typed.isEmpty() && recent.isNotEmpty()) {
+                androidx.compose.foundation.lazy.LazyRow(
+                    modifier = Modifier.fillMaxWidth().height(60.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(recent.size) { i -> Recent666Chip(recent[i]) { submitWith(recent[i]) } }
+                }
+            }
             if (suggestions.isNotEmpty()) {
                 androidx.compose.foundation.lazy.LazyRow(
                     modifier = Modifier.fillMaxWidth().height(84.dp),
@@ -118,11 +151,7 @@ fun Keyboard666(
                 ) {
                     items(suggestions.size) { i ->
                         val sg = suggestions[i]
-                        Suggestion666Chip(sg) {
-                            onQueryChanged(sg.title)
-                            onSubmit()
-                            onDismiss()
-                        }
+                        Suggestion666Chip(sg) { submitWith(sg.title) }
                     }
                 }
             }
@@ -144,7 +173,7 @@ fun Keyboard666(
                     }
                 }
             }
-            val bottom = remember { List(6) { FocusRequester() } }
+            val bottom = remember { List(7) { FocusRequester() } }
             val holdL = remember { Hold666() }; val holdR = remember { Hold666() }; val holdDel = remember { Hold666() }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 // ◀ ▶ : déplacer le curseur (appui long = ça défile vite)
@@ -154,17 +183,53 @@ fun Keyboard666(
                 Key666(width = 84.dp, modifier = Modifier.focusRequester(bottom[1]).wrap666(bottom, 1)
                     .repeatOk666(holdR) { cursor = KeyText666.right(cursor, typed) },
                     onClick = { if (!holdR.endOfHold()) cursor = KeyText666.right(cursor, typed) }) { KeyLabel("▶", it, 1.4f) }
-                Key666(width = 250.dp, modifier = Modifier.focusRequester(bottom[2]).wrap666(bottom, 2),
+                Key666(width = 200.dp, modifier = Modifier.focusRequester(bottom[2]).wrap666(bottom, 2),
                     onClick = { edit(KeyText666.insert(typed, cursor, " ")) }) { KeyLabel("ESPACE", it) }
                 // EFFACER : la lettre avant le curseur ; appui long = tout s'efface, lettre par lettre, vite
-                Key666(width = 200.dp, modifier = Modifier.focusRequester(bottom[3]).wrap666(bottom, 3)
+                Key666(width = 180.dp, modifier = Modifier.focusRequester(bottom[3]).wrap666(bottom, 3)
                     .repeatOk666(holdDel) { edit(KeyText666.backspace(typed, cursor)) },
                     onClick = { if (!holdDel.endOfHold()) edit(KeyText666.backspace(typed, cursor)) }) { KeyLabel("EFFACER", it) }
-                Key666(width = 120.dp, modifier = Modifier.focusRequester(bottom[4]).wrap666(bottom, 4),
+                Key666(width = 110.dp, modifier = Modifier.focusRequester(bottom[4]).wrap666(bottom, 4),
                     onClick = { digits = !digits }) { KeyLabel(if (digits) "ABC" else "123", it) }
-                Key666(width = 150.dp, modifier = Modifier.focusRequester(bottom[5]).wrap666(bottom, 5),
-                    onClick = { onSubmit(); onDismiss() }) { KeyLabel("OK", it) }
+                Key666(width = 90.dp, modifier = Modifier.focusRequester(bottom[5]).wrap666(bottom, 5),
+                    onClick = { startVoice() }) { Text("🎤", fontSize = 30.sp) }
+                Key666(width = 140.dp, modifier = Modifier.focusRequester(bottom[6]).wrap666(bottom, 6),
+                    onClick = { submitWith(typed) }) { KeyLabel("OK", it) }
             }
+        }
+    }
+}
+
+/** 666TVF (04/11) : les 8 dernières recherches (par Shield). */
+object Recent666 {
+    private const val PREFS = "666tv_recherches"
+    fun list(context: android.content.Context): List<String> =
+        context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE).getString("q", "").orEmpty()
+            .split("\n").filter { it.isNotBlank() }
+    fun add(context: android.content.Context, q: String) {
+        val l = merge(list(context), q)
+        context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE).edit().putString("q", l.joinToString("\n")).apply()
+    }
+    /** Règle pure (testée) : la plus récente en premier, sans doublon (casse ignorée), 8 max. */
+    fun merge(old: List<String>, q: String): List<String> {
+        val t = q.trim().replace("\n", " ")
+        if (t.isEmpty()) return old
+        return (listOf(t) + old.filterNot { it.equals(t, ignoreCase = true) }).take(8)
+    }
+}
+
+@Composable
+private fun Recent666Chip(q: String, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(10.dp)
+    Surface(
+        onClick = onClick,
+        shape = ClickableSurfaceDefaults.shape(shape),
+        colors = ClickableSurfaceDefaults.colors(containerColor = Color(0xFF16181A), focusedContainerColor = Blood666K),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
+        modifier = Modifier.height(54.dp)
+    ) {
+        Box(Modifier.height(54.dp).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+            Text("🕘 " + q.uppercase(), color = Font666.Green, fontSize = 18.sp, maxLines = 1)
         }
     }
 }
