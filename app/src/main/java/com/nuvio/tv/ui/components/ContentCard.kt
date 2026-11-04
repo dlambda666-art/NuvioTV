@@ -533,7 +533,8 @@ fun ContentCard(
         // When backdrop expand is enabled, both the labels state and the
         // expanded state share a single Column with a fixed minimum height
         // so the row never shifts vertically during the expand transition.
-        if (showLabels) {
+        // 666TVF (04/11) : pas de titre sous les tombes
+        if (showLabels && !Tomb666.enabled) {
             Box(modifier = Modifier.fillMaxWidth().clipToBounds().graphicsLayer {}) {
             Column(
                 modifier = Modifier
@@ -626,7 +627,7 @@ fun ContentCard(
             }
             } // Box clipToBounds
         }
-        if (!showLabels && focusedPosterBackdropExpandEnabled) {
+        if ((!showLabels || Tomb666.enabled) && focusedPosterBackdropExpandEnabled) {
             Spacer(modifier = Modifier.height(9.dp))
         }
     }

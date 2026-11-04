@@ -268,7 +268,8 @@ fun GridContentCard(
             }
         }
 
-        if (showLabel && (!showLogo || item.logo.isNullOrBlank())) {
+        // 666TVF (04/11) : pas de titre sous les tombes
+        if (showLabel && !Tomb666.enabled && (!showLogo || item.logo.isNullOrBlank())) {
             FocusMarqueeText(
                 text = item.name,
                 focused = isFocused,

@@ -1495,7 +1495,8 @@ private fun ModernCarouselCard(
             }
         }
 
-        if (showLabels && !isBackdropExpanded && item.title.isNotBlank()) {
+        // 666TVF (04/11) : pas de titre sous les tombes (il est sur l'affiche)
+        if (showLabels && !tomb666 && !isBackdropExpanded && item.title.isNotBlank()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
