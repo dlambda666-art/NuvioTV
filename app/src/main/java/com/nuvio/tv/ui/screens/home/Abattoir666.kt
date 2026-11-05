@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -102,6 +103,25 @@ object Abattoir666 {
         Triple(6.0, 0.2, 1f), Triple(6.27, 0.2, 1f), Triple(6.62, 0.04, 0.6f), Triple(8.2, 0.05, 0.5f)
     )
 
+    // ---------- 666TVF (05/11) : morceaux de zombie suspendus, qui se balancent ----------
+
+    /** Un morceau pendu : point d'accroche (image 1920×1080 telle qu'affichée), amplitude (°), période (s). */
+    data class Hang(val x: Float, val y: Float, val amp: Float, val period: Float, val phase: Float)
+
+    /** bras, jambe, main, pied — dans l'ordre des images pend_*_666. */
+    val HANGS = listOf(
+        Hang(1215f, 215f, 3.0f, 3.4f, 0.0f),
+        Hang(1830f, 130f, 2.5f, 4.1f, 1.3f),
+        Hang(1000f, 268f, 4.0f, 2.9f, 2.1f),
+        Hang(1550f, 652f, 5.0f, 3.7f, 0.7f)
+    )
+
+    /** Règle pure (testée) : angle du balancier à l'instant t (petit, lent, jamais au-delà de l'amplitude). */
+    fun swing(h: Hang, t: Double): Float = (h.amp * kotlin.math.sin(2.0 * Math.PI * t / h.period + h.phase)).toFloat()
+
+    /** Néon éteint : les morceaux s'assombrissent avec la pièce (1 = pleine lumière). */
+    fun hangLight(off: Float): Float = 1f - 0.5f * off.coerceIn(0f, 1f)
+
     // ---------- La cloche coupe le néon, la porte le fait mourir (30/10) ----------
     @Volatile var cutAt: Long = 0L
         private set
@@ -172,6 +192,12 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
     if (alpha <= 0f) return
     val context = androidx.compose.ui.platform.LocalContext.current
     val neonOff: ImageBitmap = ImageBitmap.imageResource(R.drawable.neon_off_666)
+    val hangs: List<ImageBitmap> = listOf(
+        ImageBitmap.imageResource(R.drawable.pend_bras_666),
+        ImageBitmap.imageResource(R.drawable.pend_jambe_666),
+        ImageBitmap.imageResource(R.drawable.pend_main_666),
+        ImageBitmap.imageResource(R.drawable.pend_pied_666)
+    )
     var time by remember { mutableFloatStateOf(0f) }
     var level by remember { mutableFloatStateOf(0f) }
     var deep by remember { mutableFloatStateOf(0f) }
@@ -219,6 +245,25 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 dstSize = IntSize(iw.toInt(), ih.toInt()),
                 alpha = off * alpha
             )
+        }
+        // 666TVF (05/11) : les morceaux pendus (chaîne + crochet + morceau), balancés autour de l'accroche
+        val light = Abattoir666.hangLight(off)
+        val tint = androidx.compose.ui.graphics.ColorFilter.tint(Color(light, light, light), androidx.compose.ui.graphics.BlendMode.Modulate)
+        Abattoir666.HANGS.forEachIndexed { i, h ->
+            val img = hangs.getOrNull(i) ?: return@forEachIndexed
+            val px = left + h.x * scale
+            val py = h.y * scale
+            val w = img.width * scale
+            val hh = img.height * scale
+            rotate(Abattoir666.swing(h, t), pivot = Offset(px, py)) {
+                drawImage(
+                    img,
+                    dstOffset = IntOffset((px - w / 2f).toInt(), py.toInt()),
+                    dstSize = IntSize(w.toInt(), hh.toInt()),
+                    alpha = alpha,
+                    colorFilter = tint
+                )
+            }
         }
         if (deep > 0f) drawRect(Color.Black, alpha = deep * alpha)
         val u = iw / 1280f

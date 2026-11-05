@@ -70,4 +70,13 @@ class Abattoir666NeonTest {
         val cycles = (0 until 9).count { c -> Abattoir666.bigCutBuzzes(c * 9.0 + 6.1) }
         assertEquals(9, cycles)
     }
+
+    @Test fun `morceaux pendus - balancier doux, jamais au-dela de l amplitude, assombris neon eteint`() {
+        Abattoir666.HANGS.forEach { h ->
+            for (i in 0 until 400) assertTrue(kotlin.math.abs(Abattoir666.swing(h, i * 0.05)) <= h.amp + 1e-4f)
+            assertTrue(h.amp <= 6f && h.period >= 2.5f)
+        }
+        assertEquals(1f, Abattoir666.hangLight(0f))
+        assertEquals(0.5f, Abattoir666.hangLight(1f))
+    }
 }
