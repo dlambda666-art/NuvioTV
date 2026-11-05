@@ -52,7 +52,7 @@ object Abattoir666 {
         Src(610f, 474f, 630f, 1.4f), Src(650f, 470f, 628f, 1.9f), Src(690f, 468f, 625f, 1.1f), Src(740f, 465f, 622f, 1.7f),
         Src(780f, 462f, 620f, 1.3f), Src(815f, 440f, 600f, 2.2f),
         // 666TVF : le corps pendu à gauche du néon — ça goutte des doigts et du bas du drap (31/10)
-        Src(839f, 378f, 540f, 0.8f), Src(834f, 247f, 540f, 1.6f), Src(836f, 379f, 540f, 1.3f)
+        Src(839f, 374f, 540f, 0.8f), Src(834f, 247f, 540f, 1.6f), Src(836f, 375f, 540f, 1.3f)
     )
 
     private const val GRAVITY = 1700f
