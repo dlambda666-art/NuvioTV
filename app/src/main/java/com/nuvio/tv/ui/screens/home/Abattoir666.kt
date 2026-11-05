@@ -52,7 +52,7 @@ object Abattoir666 {
         Src(610f, 474f, 630f, 1.4f), Src(650f, 470f, 628f, 1.9f), Src(690f, 468f, 625f, 1.1f), Src(740f, 465f, 622f, 1.7f),
         Src(780f, 462f, 620f, 1.3f), Src(815f, 440f, 600f, 2.2f),
         // 666TVF : le corps pendu à gauche du néon — ça goutte des doigts et du bas du drap (31/10)
-        Src(840f, 367f, 540f, 0.8f), Src(834f, 247f, 540f, 1.6f), Src(843f, 369f, 540f, 1.3f)
+        Src(839f, 378f, 540f, 0.8f), Src(834f, 247f, 540f, 1.6f), Src(836f, 379f, 540f, 1.3f)
     )
 
     private const val GRAVITY = 1700f
@@ -110,9 +110,9 @@ object Abattoir666 {
 
     /** bras, jambe, main, pied — dans l'ordre des images pend_*_666. */
     val HANGS = listOf(
-        Hang(1215f, 215f, 3.0f, 3.4f, 0.0f),
+        Hang(1000f, 250f, 3.0f, 3.4f, 0.0f),
         Hang(1830f, 130f, 2.5f, 4.1f, 1.3f),
-        Hang(1000f, 268f, 4.0f, 2.9f, 2.1f),
+        Hang(478f, 596f, 4.0f, 2.9f, 2.1f),
         Hang(1550f, 652f, 5.0f, 3.7f, 0.7f)
     )
 
