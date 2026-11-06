@@ -40,12 +40,13 @@ function frenchLabel(text) {
 
 function qualityOf(text) {
     if (/\b(2160p|4k|uhd)\b/i.test(text)) return '2160p';
+    if (/\b1440p\b|\b2K\b|\bQHD\b/i.test(text)) return '1440p';   // 06/11 : accepté aussi
     if (/\b1080p\b/i.test(text)) return '1080p';
     if (/\b720p\b/i.test(text)) return '720p';
     if (/\b480p\b/i.test(text)) return '480p';
     return null;
 }
-var QUALITY_RANK = { '2160p': 4, '1080p': 3, '720p': 2, '480p': 1 };
+var QUALITY_RANK = { '2160p': 4, '1440p': 3.5, '1080p': 3, '720p': 2, '480p': 1 };
 
 function extras(text) {
     var tags = [];
@@ -448,8 +449,8 @@ async function getStreams(tmdbId, mediaType, season, episode) {
             seenNames[key] = true;
             t.lang = lang;
             t.quality = qualityOf(t.text);
-            // 1080p et 4K seulement
-            if (t.quality !== '1080p' && t.quality !== '2160p') return;
+            // 1080p, 1440p et 4K seulement (jamais de 720p)
+            if (t.quality !== '1080p' && t.quality !== '1440p' && t.quality !== '2160p') return;
             found.push(t);
         });
     });
@@ -496,4 +497,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf };

@@ -197,6 +197,10 @@ const cases = [
         delete global.wsRequest;
         global.fetch = saved.fetch; global.SCRAPER_SETTINGS = saved.settings;
     }
+    // Qualité (06/11) : 1080p, 1440p et 4K gardés, jamais de 720p
+    if (comet._qualityOf ? (comet._qualityOf('Film.2026.FRENCH.1440p.WEB') !== '1440p' || comet._qualityOf('Film.2026.FRENCH.720p.WEB') !== '720p') : false) {
+        fails++; console.log('✗ Qualité 1440p / 720p mal lue');
+    } else console.log('✓ 1440p reconnu, 720p toujours écarté');
     // YggReborn (06/11) : recherche par titre avec la passkey, clé jamais affichée, bon titre seulement
     {
         const saved = { fetch: global.fetch, settings: global.SCRAPER_SETTINGS };
