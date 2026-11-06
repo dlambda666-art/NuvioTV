@@ -235,11 +235,11 @@ class CalendarRepository @Inject constructor(
                 season = episode.season,
                 episode = episode.episode
             )
-            checkers.any { scraper ->
+            suspend fun lookFor(ps: Int?, pe: Int?): Boolean = checkers.any { scraper ->
                 runCatching {
                     val results = withTimeoutOrNull(30_000) {
                         com.nuvio.tv.core.tools.Background666.paced {
-                            pluginManager.executeScraper(scraper, requestId, "tv", pluginSeason, pluginEpisode)
+                            pluginManager.executeScraper(scraper, requestId, "tv", ps, pe)
                         }
                     }.orEmpty()
                     val sure = results.filter { result ->
@@ -258,6 +258,17 @@ class CalendarRepository @Inject constructor(
                 }.onFailure { Log.d(TAG, "VF check ${scraper.id} failed for ${episode.key}: ${it.message}") }
                     .getOrDefault(false)
             }
+            if (lookFor(pluginSeason, pluginEpisode)) return@withPermit true
+            // 666TVF (06/11) : numérotation différente (le calendrier compte les PLE de NXT) → on
+            // retrouve l'épisode TMDB diffusé à la même date (jour américain) et on redemande.
+            val tmdbNum = tmdbId?.removePrefix("tmdb:")?.toIntOrNull()
+            val s0 = pluginSeason
+            if (tmdbNum != null && s0 != null && s0 > 0) {
+                val usDate = episode.airInstant.atZone(java.time.ZoneId.of("America/New_York")).toLocalDate()
+                val alt = runCatching { tmdbService.episodeNumberForAirDate666(tmdbNum, s0, usDate) }.getOrNull()
+                if (alt != null && alt != pluginEpisode) return@withPermit lookFor(s0, alt)
+            }
+            false
         }
         if (found) {
             rememberVf(episode)

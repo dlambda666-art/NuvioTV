@@ -206,6 +206,25 @@ class TmdbService @Inject constructor(
      * @param fallbackImdbId Optional IMDB ID from meta response
      * @return The TMDB ID as a string, or null if conversion failed
      */
+    private val seasonDates666 = ConcurrentHashMap<String, Pair<Long, List<Pair<Int, java.time.LocalDate?>>>>()
+
+    /**
+     * 666TVF (06/11) : numéro TMDB de l'épisode diffusé à cette date (shows à date : NXT, Raw…).
+     * Le calendrier peut compter les PLE comme des épisodes (NXT S20E49) alors que les liens suivent
+     * la numérotation TMDB (S20E44) : on retrouve le bon par sa date de diffusion.
+     */
+    suspend fun episodeNumberForAirDate666(tmdbId: Int, season: Int, date: java.time.LocalDate): Int? = withContext(Dispatchers.IO) {
+        val key = "$tmdbId:$season"
+        val cached = seasonDates666[key]?.takeIf { System.currentTimeMillis() - it.first < 6L * 3600 * 1000 }?.second
+        val list = cached ?: runCatching {
+            tmdbApi.getTvSeasonDetails(tmdbId, season, TMDB_API_KEY).body()?.episodes.orEmpty().mapNotNull { e ->
+                val n = e.episodeNumber ?: return@mapNotNull null
+                n to runCatching { java.time.LocalDate.parse(e.airDate.orEmpty()) }.getOrNull()
+            }
+        }.getOrNull()?.also { seasonDates666[key] = System.currentTimeMillis() to it } ?: return@withContext null
+        pickEpisodeByDate666(list, date)
+    }
+
     suspend fun ensureTmdbId(videoId: String, mediaType: String, fallbackImdbId: String? = null): String? {
         // Check if it's already a TMDB ID (numeric or prefixed)
         val cleanId = videoId
@@ -410,3 +429,12 @@ internal fun parseSuggestions666(arr: org.json.JSONArray): List<Suggestion666> =
             poster = o.optString("poster_path").takeIf { it.isNotBlank() && it != "null" }?.let { "https://image.tmdb.org/t/p/w154$it" }
         )
     }.sortedByDescending { it.first }.map { it.second }.distinctBy { it.title.lowercase() to it.year }.take(8)
+
+/** Règle pure (testée) : l'épisode diffusé le jour même, sinon la veille / le lendemain (fuseaux). */
+fun pickEpisodeByDate666(episodes: List<Pair<Int, java.time.LocalDate?>>, date: java.time.LocalDate): Int? {
+    for (d in listOf(0L, -1L, 1L)) {
+        val hits = episodes.filter { it.second == date.plusDays(d) }
+        if (hits.size == 1) return hits.first().first
+    }
+    return null
+}
