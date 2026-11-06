@@ -132,6 +132,7 @@
     <string name="error_meta_tried_none">Addons de métadonnées tentés : %1$s. Aucun d’entre eux n’a fourni de métadonnées pour l’ID=%2$s (type=%3$s).</string>
     <string name="error_meta_tried_generic">Addons de métadonnées tentés : %1$s. Impossible de charger les métadonnées pour l’ID=%2$s (type=%3$s).</string>
     <string name="error_meta_tried_issues">Addons de métadonnées tentés : %1$s. Impossible de charger les métadonnées pour l’ID=%2$s (type=%3$s). Problèmes : %4$s.</string>
+    <string name="error_stream_no_plugin_links666">Aucun lien VF trouvé par les 4 cavaliers pour ce titre pour l\'instant. Réessaie plus tard, ou regarde l\'état des cavaliers dans Outils 666.</string>
     <string name="error_stream_no_supported_addon">Aucun addon installé ne prend en charge les flux pour \"%1$s\".</string>
     <string name="error_stream_tried_none">Addons de flux tentés : %1$s. Aucun d’entre eux n’a renvoyé de flux pour l’ID=%2$s (type=%3$s).</string>
     <string name="error_stream_tried_generic">Addons de flux tentés : %1$s. Les flux n’ont pas pu être chargés pour l’ID=%2$s (type=%3$s).</string>

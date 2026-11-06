@@ -217,7 +217,8 @@ class CalendarRepository @Inject constructor(
         val checkers = pluginManager.enabledScrapers.first()
             .mapNotNull { scraper ->
                 val rank = VF_CHECKERS.indexOf(scraper.id.substringAfterLast(':').lowercase())
-                if (rank >= 0) rank to scraper else null
+                // 666TVF (06/11) : jamais StreamFusion en arrière-plan (HTTP 429)
+                if (rank >= 0 && com.nuvio.tv.core.tools.Background666.allowed(scraper.id)) rank to scraper else null
             }
             .sortedBy { it.first }
             .map { it.second }
@@ -237,7 +238,9 @@ class CalendarRepository @Inject constructor(
             checkers.any { scraper ->
                 runCatching {
                     val results = withTimeoutOrNull(30_000) {
-                        pluginManager.executeScraper(scraper, requestId, "tv", pluginSeason, pluginEpisode)
+                        com.nuvio.tv.core.tools.Background666.paced {
+                            pluginManager.executeScraper(scraper, requestId, "tv", pluginSeason, pluginEpisode)
+                        }
                     }.orEmpty()
                     val sure = results.filter { result ->
                         (result.url.isNotBlank() || !result.infoHash.isNullOrBlank()) &&

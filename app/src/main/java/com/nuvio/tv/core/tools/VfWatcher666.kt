@@ -70,7 +70,7 @@ class VfWatcher666 @Inject constructor(
         val list = names.keys.toList()
         val order = PluginOrder666.order.map { it.lowercase() }
         val cavaliers = runCatching { pluginManager.enabledScrapers.first() }.getOrDefault(emptyList())
-            .filter { s -> s.id.substringAfterLast(':').lowercase() in order && s.supportsType("movie") }
+            .filter { s -> s.id.substringAfterLast(':').lowercase() in order && s.supportsType("movie") && Background666.allowed(s.id) }
             .sortedBy { s -> order.indexOf(s.id.substringAfterLast(':').lowercase()) }
         if (cavaliers.isEmpty()) return null
         // Reprise : un passage mis en pause reprend là où il en était (films déjà vérifiés pas refaits).
@@ -87,7 +87,7 @@ class VfWatcher666 @Inject constructor(
             val cry = cavaliers.any { scraper ->
                 if (busy()) return@any false
                 val res = withTimeoutOrNull(30_000) {
-                    runCatching { pluginManager.executeScraper(scraper, id, "movie", null, null) }.getOrNull()
+                    runCatching { Background666.paced { pluginManager.executeScraper(scraper, id, "movie", null, null) } }.getOrNull()
                 }.orEmpty()
                 val texts = res.map { r -> listOfNotNull(r.name, r.title).joinToString(" ") }
                 if (texts.any { FrankVf666.isSureVfRelease(it) }) sure = true
@@ -149,7 +149,7 @@ class VfWatcher666 @Inject constructor(
         if (todo.isNotEmpty()) {
             val order = PluginOrder666.order.map { it.lowercase() }
             val cavaliers = runCatching { pluginManager.enabledScrapers.first() }.getOrDefault(emptyList())
-                .filter { s -> s.id.substringAfterLast(':').lowercase() in order && s.supportsType("movie") }
+                .filter { s -> s.id.substringAfterLast(':').lowercase() in order && s.supportsType("movie") && Background666.allowed(s.id) }
                 .sortedBy { s -> order.indexOf(s.id.substringAfterLast(':').lowercase()) }
             if (cavaliers.isEmpty()) return
             for (p in todo) {
@@ -157,7 +157,7 @@ class VfWatcher666 @Inject constructor(
                 val cry = cavaliers.any { scraper ->
                     if (busy()) return@any false
                     val res = withTimeoutOrNull(30_000) {
-                        runCatching { pluginManager.executeScraper(scraper, p.imdbId, "movie", null, null) }.getOrNull()
+                        runCatching { Background666.paced { pluginManager.executeScraper(scraper, p.imdbId, "movie", null, null) } }.getOrNull()
                     }.orEmpty()
                     res.any { r -> isCryRelease(listOfNotNull(r.name, r.title).joinToString(" ")) }
                 }

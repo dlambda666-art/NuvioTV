@@ -343,7 +343,8 @@ class StreamRepositoryImpl @Inject constructor(
                     type = type,
                     id = videoId,
                     attemptedAddonNames = attemptedAddonNames,
-                    failures = attemptedFailures.toList()
+                    failures = attemptedFailures.toList(),
+                    pluginsTried = hasCompatiblePlugins
                 )
                 if (errorMessage != null) {
                     emit(NetworkResult.Error(errorMessage))
@@ -801,9 +802,13 @@ class StreamRepositoryImpl @Inject constructor(
         type: String,
         id: String,
         attemptedAddonNames: List<String>,
-        failures: List<StreamAttemptFailure>
+        failures: List<StreamAttemptFailure>,
+        pluginsTried: Boolean = false
     ): String? {
         if (attemptedAddonNames.isEmpty()) {
+            // 666TVF (06/11) : tous les flux viennent des cavaliers ; s'ils n'ont rien trouvé, on le dit
+            // clairement (avant : « aucun addon installé… », trompeur).
+            if (pluginsTried) return context.getString(R.string.error_stream_no_plugin_links666)
             return context.getString(R.string.error_stream_no_supported_addon, type)
         }
 
