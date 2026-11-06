@@ -336,6 +336,34 @@ async function fromYgg(imdbId, isTv, season, episode) {
     return out;
 }
 
+// 666TVF (06/11) : YggReborn avec TA passkey (collée sur la Shield, jamais dans ce fichier).
+// API Torznab, mais recherche par titre seulement (pas d'id IMDb) : Frank donne les titres FR + VO,
+// l'année et les requêtes « Titre S03E04 » / « Titre S03 » / « Titre 2026 » ; on garde ce qui
+// porte vraiment le titre (et la bonne année pour un film, le bon épisode pour une série).
+var YGGREBORN_URL = 'https://www.yggreborn.org/api';
+async function fromYggReborn(imdbId, isTv, season, episode) {
+    var key = setting('yggreborn');
+    if (!key) return [];
+    var data = await getJson(FRANK_URL + '/ygg/' + (isTv ? 'series' : 'movie') + '/' + imdbId +
+        '?' + (isTv ? 'season=' + season + '&episode=' + episode + '&' : '') + 'norelay=1');
+    var titles = (data && data.titles) || [];
+    var year = data && data.year ? Number(data.year) : 0;
+    var queries = ((data && data.queries) || []).slice(0, 4);
+    var out = [], seen = {};
+    for (var i = 0; i < queries.length; i++) {
+        var xml = await getText(YGGREBORN_URL + '?t=search&limit=50&q=' + encodeURIComponent(queries[i]) +
+            '&apikey=' + encodeURIComponent(key));
+        parseTorznab(xml, isTv, season, episode, 'YggReborn').forEach(function (t) {
+            if (seen[t.hash]) return;
+            seen[t.hash] = 1;
+            if (releaseMatches(t.release, titles, year, isTv)) out.push(t);
+        });
+        // l'épisode exact a déjà répondu : pas besoin de la saison entière
+        if (isTv && out.length >= 3) break;
+    }
+    return out;
+}
+
 // TorrentsDB : addon public au format Stremio
 async function fromTorrentsDb(imdbId, isTv, season, episode) {
     var sid = isTv ? imdbId + ':' + season + ':' + episode : imdbId;
@@ -397,6 +425,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     var tmdbNum = String(tmdbId || '').replace(/^tmdb:/i, '');
     var lists = [
         await fromTrackers({ imdbId: ids.imdbId, tmdbId: /^\d+$/.test(tmdbNum) ? tmdbNum : null }, isTv, season, episode),
+        await fromYggReborn(ids.imdbId, isTv, season, episode),
         // YGG retiré (27/10) : le relais public répond 403 même depuis la Shield.
         await fromStremThru(ids.imdbId, isTv, season, episode),
         await fromTorrentio(ids.imdbId, isTv, season, episode),
@@ -455,7 +484,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         var raw = {}, kept = {};
         lists.forEach(function (l) { l.forEach(function (t) { var k = String(t.source).split(' ')[0]; raw[k] = (raw[k] || 0) + 1; }); });
         found.forEach(function (t) { var k = String(t.source).split(' ')[0]; kept[k] = (kept[k] || 0) + 1; });
-        var parts = ['C411', 'Tr4ker', 'StremThru', 'Torrentio', 'DMM', 'TorrentsDB'].filter(function (k) { return raw[k] || (k === 'C411' && setting('c411')) || (k === 'Tr4ker' && setting('tr4ker')); })
+        var parts = ['C411', 'Tr4ker', 'YggReborn', 'StremThru', 'Torrentio', 'DMM', 'TorrentsDB'].filter(function (k) { return raw[k] || (k === 'C411' && setting('c411')) || (k === 'Tr4ker' && setting('tr4ker')) || (k === 'YggReborn' && setting('yggreborn')); })
             .map(function (k) { return k + ' ' + (kept[k] || 0) + '/' + (raw[k] || 0); });
         Object.keys(raw).forEach(function (k) { if (parts.join(' ').indexOf(k) < 0) parts.push(k + ' ' + (kept[k] || 0) + '/' + raw[k]); });
         var diag = [{ title: 'Sources (VF gardés/trouvés) : ' + parts.slice(0, 4).join(' · ') }];

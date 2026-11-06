@@ -197,6 +197,38 @@ const cases = [
         delete global.wsRequest;
         global.fetch = saved.fetch; global.SCRAPER_SETTINGS = saved.settings;
     }
+    // YggReborn (06/11) : recherche par titre avec la passkey, clé jamais affichée, bon titre seulement
+    {
+        const saved = { fetch: global.fetch, settings: global.SCRAPER_SETTINGS };
+        global.SCRAPER_SETTINGS = { yggreborn: 'PASSKEY' };
+        const xml = '<rss><channel>' +
+            '<item><title>La.Quatrieme.Dimension.S03E04.FRENCH.1080p.WEB</title><size>9</size><torznab:attr name="infohash" value="dddddddddddddddddddddddddddddddddddddddd"/></item>' +
+            '<item><title>Twilight.Zone.2019.S03E04.MULTi.VFF.1080p</title><size>9</size><torznab:attr name="infohash" value="eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"/></item>' +
+            '<item><title>La.Quatrieme.Dimension.S03E05.FRENCH.1080p.WEB</title><size>9</size><torznab:attr name="infohash" value="ffffffffffffffffffffffffffffffffffffffff"/></item>' +
+            '</channel></rss>';
+        const urls = [];
+        global.fetch = async u => {
+            u = String(u); urls.push(u);
+            const ok = body => ({ ok: true, status: 200, text: async () => typeof body === 'string' ? body : JSON.stringify(body), json: async () => body });
+            if (u.startsWith('https://www.yggreborn.org/api')) return ok(xml);
+            if (u.includes('/ygg/series/')) return ok({ titles: ['La Quatrième Dimension', 'The Twilight Zone'], year: 1959,
+                queries: ['La Quatrième Dimension S03E04', 'La Quatrième Dimension S03'], items: [] });
+            return { ok: false, status: 404, text: async () => '', json: async () => null };
+        };
+        const out = await comet.getStreams('tt0052520', 'tv', 3, 4);
+        const keyHidden = !out.some(x => JSON.stringify(x).includes('PASSKEY'));
+        const hashes = out.map(x => String(x.infoHash || x.url || '')).join(' ');
+        const okFound = hashes.includes('dddd') && !hashes.includes('ffff');
+        if (!okFound || !keyHidden || !urls.some(u => u.includes('apikey=PASSKEY') && u.includes('t=search'))) {
+            fails++; console.log('✗ YggReborn : ' + out.map(x => (x.title || '').split('\n')[0]).join(' | '));
+        } else console.log('✓ YggReborn : bon épisode trouvé par le titre, passkey jamais affichée');
+        global.SCRAPER_SETTINGS = {};
+        urls.length = 0;
+        await comet.getStreams('tt0052520', 'tv', 3, 4);
+        if (urls.some(u => u.includes('yggreborn'))) { fails++; console.log('✗ YggReborn interrogé sans passkey'); }
+        else console.log('✓ Sans passkey, YggReborn n\'est pas interrogé');
+        global.fetch = saved.fetch; global.SCRAPER_SETTINGS = saved.settings;
+    }
     // WWE Raw (27/10) : Comet666 avait lancé un vieux Raw (fichier daté d'un autre jour)
     {
         const dm = comet._dateMismatch;
