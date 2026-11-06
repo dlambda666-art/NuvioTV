@@ -75,7 +75,8 @@ class CalendarRepository @Inject constructor(
     private val factory: ProfileDataStoreFactory,
     private val profileManager: ProfileManager,
     private val localDebridService: com.nuvio.tv.core.debrid.LocalDebridService,
-    private val debridSettingsDataStore: com.nuvio.tv.data.local.DebridSettingsDataStore
+    private val debridSettingsDataStore: com.nuvio.tv.data.local.DebridSettingsDataStore,
+    @param:dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context
 ) {
     private data class SeriesSeed(val id: String, val name: String, val poster: String?, val addonBaseUrl: String?)
 
@@ -185,9 +186,41 @@ class CalendarRepository @Inject constructor(
                 videoId = video.id.takeIf { it.isNotBlank() }
             )
         }
-        episodeCache[seed.id] = CachedEpisodes(System.currentTimeMillis(), episodes)
-        return episodes
+        val fixed = renumber666(seed, episodes)
+        episodeCache[seed.id] = CachedEpisodes(System.currentTimeMillis(), fixed)
+        return fixed
     }
+
+    /**
+     * 666TVF (06/11) : si les métadonnées numérotent autrement que les liens (NXT : PLE comptés comme
+     * épisodes → « S20E49 » au lieu de S20E44, et des épisodes 45-48 annoncés alors que pas diffusés),
+     * on reprend la numérotation TMDB par date de diffusion et on retire les PLE (le guetteur des PLE
+     * s'en occupe). Les séries normales ne changent pas.
+     */
+    private suspend fun renumber666(seed: SeriesSeed, episodes: List<CalendarEpisode>): List<CalendarEpisode> = runCatching {
+        val tmdbNum = tmdbService.ensureTmdbId(seed.id, "series")?.removePrefix("tmdb:")?.toIntOrNull() ?: return episodes
+        val ny = java.time.ZoneId.of("America/New_York")
+        val out = mutableListOf<CalendarEpisode>()
+        for ((season, eps) in episodes.groupBy { it.season }) {
+            val tmdb = tmdbService.seasonAirDates666(tmdbNum, season)
+            val map = if (tmdb == null) emptyMap()
+                else com.nuvio.tv.core.tmdb.renumberByDate666(eps.map { it.episode to it.airInstant.atZone(ny).toLocalDate() }, tmdb)
+            if (map.isEmpty()) { out += eps; continue }
+            val renamed = eps.mapNotNull { e ->
+                val n = map[e.episode] ?: return@mapNotNull null   // PLE / spécial sans équivalent : retiré
+                e.copy(episode = n, videoId = null)
+            }
+            out += renamed
+            // Les numéros notés avec l'ancienne numérotation au-delà du dernier épisode diffusé
+            // (ex. « S20E45-49 en VF ») désigneraient des épisodes futurs : on les oublie.
+            val now = java.time.Instant.now()
+            val lastAired = renamed.filter { !it.airInstant.isAfter(now) }.maxOfOrNull { it.episode } ?: 0
+            val stale = (eps.map { it.episode } + renamed.map { it.episode }).filter { it > lastAired }
+                .map { "${seed.id}:$season:$it" }.toSet()
+            if (stale.isNotEmpty()) forget666(stale)
+        }
+        out.distinctBy { "${it.season}:${it.episode}" }
+    }.getOrDefault(episodes)
 
     /** « Actualiser » : on revérifie tout de suite les épisodes marqués « pas encore de VF ». */
     fun clearVfNegativeCache() = vfNegativeCache.clear()
@@ -297,6 +330,14 @@ class CalendarRepository @Inject constructor(
         // 666TVF : un épisode simplement commencé ne prouve plus rien (AHS S13 : on lance,
         // c'est du polonais, on arrête). Seul un épisode vu jusqu'au bout compte comme VF.
     }.getOrDefault(false)
+
+    private suspend fun forget666(keys: Set<String>) {
+        store().edit {
+            it[vfFoundKey] = it[vfFoundKey].orEmpty() - keys
+            it[notifiedKey] = it[notifiedKey].orEmpty() - keys
+        }
+        com.nuvio.tv.core.tools.AutoRecord666.forget(appContext, keys)
+    }
 
     private suspend fun rememberVf(episode: CalendarEpisode) {
         store().edit { it[vfFoundKey] = (it[vfFoundKey].orEmpty() + episode.key).takeLast(MAX_REMEMBERED) }

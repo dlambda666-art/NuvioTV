@@ -213,7 +213,11 @@ class TmdbService @Inject constructor(
      * Le calendrier peut compter les PLE comme des épisodes (NXT S20E49) alors que les liens suivent
      * la numérotation TMDB (S20E44) : on retrouve le bon par sa date de diffusion.
      */
-    suspend fun episodeNumberForAirDate666(tmdbId: Int, season: Int, date: java.time.LocalDate): Int? = withContext(Dispatchers.IO) {
+    suspend fun episodeNumberForAirDate666(tmdbId: Int, season: Int, date: java.time.LocalDate): Int? =
+        seasonAirDates666(tmdbId, season)?.let { pickEpisodeByDate666(it, date) }
+
+    /** Les épisodes TMDB d'une saison avec leur date de diffusion (gardés 6 h). */
+    suspend fun seasonAirDates666(tmdbId: Int, season: Int): List<Pair<Int, java.time.LocalDate?>>? = withContext(Dispatchers.IO) {
         val key = "$tmdbId:$season"
         val cached = seasonDates666[key]?.takeIf { System.currentTimeMillis() - it.first < 6L * 3600 * 1000 }?.second
         val list = cached ?: runCatching {
@@ -222,7 +226,7 @@ class TmdbService @Inject constructor(
                 n to runCatching { java.time.LocalDate.parse(e.airDate.orEmpty()) }.getOrNull()
             }
         }.getOrNull()?.also { seasonDates666[key] = System.currentTimeMillis() to it } ?: return@withContext null
-        pickEpisodeByDate666(list, date)
+        list
     }
 
     suspend fun ensureTmdbId(videoId: String, mediaType: String, fallbackImdbId: String? = null): String? {
@@ -437,4 +441,23 @@ fun pickEpisodeByDate666(episodes: List<Pair<Int, java.time.LocalDate?>>, date: 
         if (hits.size == 1) return hits.first().first
     }
     return null
+}
+
+/**
+ * 666TVF (06/11) : règle pure (testée). Le calendrier (métadonnées de l'addon) peut numéroter autrement
+ * que TMDB et que les liens : NXT compte ses PLE comme des épisodes (calendrier S20E49 = vrai S20E44).
+ * Renvoie, pour chaque épisode du calendrier (numéro, date américaine), le bon numéro TMDB — ou une
+ * liste vide si la série n'est pas décalée (rien ne change pour les séries normales).
+ * Quand la série est décalée, les entrées sans équivalent TMDB (les PLE) valent null : on les retire.
+ */
+fun renumberByDate666(
+    calendar: List<Pair<Int, java.time.LocalDate>>,
+    tmdb: List<Pair<Int, java.time.LocalDate?>>
+): Map<Int, Int?> {
+    if (calendar.isEmpty() || tmdb.isEmpty()) return emptyMap()
+    val mapped = calendar.associate { (n, d) -> n to pickEpisodeByDate666(tmdb, d) }
+    val shifted = mapped.count { (n, m) -> m != null && m != n }
+    // décalage net (au moins 3 épisodes, et la majorité de ceux qu'on sait placer)
+    val placed = mapped.values.count { it != null }
+    return if (shifted >= 3 && shifted * 2 >= placed) mapped else emptyMap()
 }

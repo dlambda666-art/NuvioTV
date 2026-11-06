@@ -260,6 +260,21 @@ class AutoRecord666 @Inject constructor(
 
     companion object {
         private const val TAG = "AutoRecord666"
+
+        /** 666TVF (06/11) : oublie des épisodes notés sous une mauvaise numérotation (et leurs attentes). */
+        fun forget(context: Context, keys: Set<String>) {
+            val p = context.getSharedPreferences("666tv_auto_rec", Context.MODE_PRIVATE)
+            val seen = p.getStringSet("seen", emptySet()).orEmpty() - keys
+            val pend = runCatching {
+                val arr = JSONArray(p.getString("pending", "[]")); val out = JSONArray()
+                for (i in 0 until arr.length()) {
+                    val o = arr.getJSONObject(i)
+                    if ("${o.getString("id")}:${o.getInt("s")}:${o.getInt("e")}" !in keys) out.put(o)
+                }
+                out.toString()
+            }.getOrNull()
+            p.edit().putStringSet("seen", seen).apply { if (pend != null) putString("pending", pend) }.apply()
+        }
         const val MAX_TRIES = 8
         const val RETRY_MS = 3L * 3600 * 1000
 

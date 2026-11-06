@@ -21,4 +21,22 @@ class EpisodeByDate666Test {
         assertNull(pickEpisodeByDate666(listOf(1 to d, 2 to d), d))
         assertNull(pickEpisodeByDate666(listOf(1 to null), d))
     }
+
+    @Test fun `NXT - le calendrier compte 5 PLE, on reprend la vraie numerotation et on retire les PLE`() {
+        // calendrier : 44 vrais épisodes du mardi + 5 PLE (samedis) intercalés → numéros décalés
+        val ples = listOf(LocalDate.of(2026, 2, 14), LocalDate.of(2026, 4, 18), LocalDate.of(2026, 6, 6),
+            LocalDate.of(2026, 9, 26), LocalDate.of(2026, 10, 31))
+        val dates = (season.mapNotNull { it.second } + ples).sorted()
+        val calendar = dates.mapIndexed { i, dd -> (i + 1) to dd }
+        val map = renumberByDate666(calendar, season)
+        assertEquals(44, map[49])            // « S20E49 » du calendrier = vrai S20E44
+        assertNull(map[48])                  // Halloween Havoc (PLE) : retiré
+        assertEquals(1, map[1])
+    }
+
+    @Test fun `serie normale - rien ne change`() {
+        val calendar = season.map { (n, dd) -> n to dd!! }
+        assertEquals(emptyMap<Int, Int?>(), renumberByDate666(calendar, season))
+        assertEquals(emptyMap<Int, Int?>(), renumberByDate666(calendar, emptyList()))
+    }
 }
