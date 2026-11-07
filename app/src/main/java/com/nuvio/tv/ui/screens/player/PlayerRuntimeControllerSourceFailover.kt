@@ -36,6 +36,8 @@ internal object SourceFailoverRules {
 
     fun isPlayable(stream: Stream): Boolean {
         if (stream.isExternal()) return false
+        // 666TVF (07/11) : lignes « Comet666 enquête / diagnostic » : de l'info, jamais un lien à lancer
+        if (com.nuvio.tv.core.player.StreamAutoPlaySelector.isDiag666(stream)) return false
         when (stream.debridCacheStatus?.state) {
             null, StreamDebridCacheState.CACHED -> Unit
             else -> return false

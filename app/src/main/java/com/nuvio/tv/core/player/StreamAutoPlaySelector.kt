@@ -67,9 +67,14 @@ object StreamAutoPlaySelector {
         return com.nuvio.tv.core.tools.PluginOrder666.DEFAULT.firstOrNull { it.equals(id, ignoreCase = true) } ?: id
     }
 
+    /** 666TVF (07/11) : ligne d'info de Comet666 (enquête, diagnostic Matrix) — jamais lancée. */
+    fun isDiag666(stream: Stream): Boolean =
+        listOfNotNull(stream.url, stream.externalUrl).any { it.contains("diagnostic.invalid") }
+
     private fun isPlayable(stream: Stream): Boolean {
         // External URL streams (e.g. error pages, web links) are not playable.
         if (stream.isExternal()) return false
+        if (isDiag666(stream)) return false
         when (stream.debridCacheStatus?.state) {
             StreamDebridCacheState.CHECKING,
             StreamDebridCacheState.NOT_CACHED,

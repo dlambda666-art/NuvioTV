@@ -313,6 +313,21 @@ class StreamAutoPlaySelectorTest {
         }
     }
 
+    @Test
+    fun `ligne d'enquete Comet666 jamais lancee en auto`() {
+        val diag = stream(addonName = "Comet666", url = "https://diagnostic.invalid/comet", name = "Comet666 enquête")
+        val selected = StreamAutoPlaySelector.selectAutoPlayStream(
+            streams = listOf(diag),
+            mode = StreamAutoPlayMode.FIRST_STREAM,
+            regexPattern = "",
+            source = StreamAutoPlaySource.ALL_SOURCES,
+            installedAddonNames = emptySet(),
+            selectedAddons = emptySet(),
+            selectedPlugins = emptySet()
+        )
+        org.junit.Assert.assertNull(selected)
+    }
+
     private fun stream(
         addonName: String,
         url: String? = null,
