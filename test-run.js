@@ -1,4 +1,4 @@
-// Sonde ponctuelle : lecture des traces d'enquête de Comet666 chez Frank (07/11)
+// Sonde ponctuelle : lecture des traces d'enquête de Comet666 chez Frank (07/11, 2)
 const fs = require('fs');
 (async () => {
   let out = {};
