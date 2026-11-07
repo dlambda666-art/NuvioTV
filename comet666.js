@@ -358,6 +358,12 @@ var YGGREBORN_URL = 'https://www.yggreborn.org/api';
 function stripAccents(t) {
     try { return String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) { return String(t); }
 }
+// Lien YggReborn qui sera vraiment proposé (VF ou titre FR seul, 1080p / 1440p / 4K).
+function usableYgg(t) {
+    var q = qualityOf(t.text);
+    if (q !== '1080p' && q !== '1440p' && q !== '2160p') return false;
+    return !!frenchLabel(t.text) || (!!t.frTitle && !SUBTITLE_ONLY.test(t.text) && !CAM_RELEASE.test(t.text) && !OTHER_DUB.test(t.text));
+}
 // Vrai si la release porte le titre français (titres[0] de Frank) et pas le titre original.
 function frenchTitleOnly(release, titles) {
     if (!titles || titles.length < 2) return false;
@@ -402,8 +408,10 @@ async function fromYggReborn(imdbId, isTv, season, episode) {
             t.frTitle = frenchTitleOnly(t.release, titles);
             out.push(t);
         });
-        // l'épisode exact a déjà répondu : pas besoin de la saison entière
-        if (isTv && out.length >= 3) break;
+        // l'épisode exact a déjà répondu par 3 liens VF 1080p+ : pas besoin de la saison entière.
+        // 666TVF (07/11) : on ne compte que les liens utilisables (avant : 3 VOSTFR / 720p suffisaient
+        // à arrêter la recherche avant « La 4eme Dimension S03 »).
+        if (isTv && out.filter(usableYgg).length >= 3) break;
     }
     return out;
 }

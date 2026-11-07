@@ -320,6 +320,9 @@ const cases = [
         const json = o => ({ ok: true, json: async () => o, text: async () => (typeof o === 'string' ? o : JSON.stringify(o)) });
         global.fetch = async u => {
             if (u.includes('/ygg/')) return json({ titles, year: 1959, queries: ['La Quatrième Dimension S03E06', 'La Quatrième Dimension S03'] });
+            // les 1res requêtes répondent 3 VOSTFR / 720p : la recherche doit continuer jusqu'à « 4eme »
+            if (u.includes('yggreborn') && !decodeURIComponent(u).includes('4eme'))
+                return json('<rss>' + [1, 2, 3].map(i => '<item><title>La Quatrieme Dimension S03E06 VOSTFR 720p v' + i + '</title><torznab:attr name="infohash" value="' + String(i).repeat(40) + '"/></item>').join('') + '</rss>');
             if (u.includes('yggreborn') && decodeURIComponent(u).includes('La 4eme Dimension S03'))
                 return json('<rss><item><title>La 4eme dimension REMUX S03</title><size>148000000000</size><torznab:attr name="infohash" value="' + 'e'.repeat(40) + '"/></item></rss>');
             return { ok: false, json: async () => null, text: async () => '' };
