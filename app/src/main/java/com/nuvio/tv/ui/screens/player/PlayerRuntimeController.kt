@@ -191,6 +191,8 @@ class PlayerRuntimeController(
     internal var currentFilename: String? = navigationArgs.filename
         ?: initialStreamUrl.substringBefore('?').substringAfterLast('/', "")
             .takeIf { it.isNotBlank() && it.contains('.') }
+    /** 666TVF : nom de release du lien en cours (1re ligne du titre brut, sinon le fichier). */
+    internal var currentRelease666: String? = currentFilename
     internal var currentAddonName: String? = navigationArgs.addonName
     internal var currentAddonLogo: String? = navigationArgs.addonLogo
     internal var currentStreamDescription: String? = navigationArgs.streamDescription

@@ -637,6 +637,8 @@ private fun PlayerRuntimeController.applyStreamMetadata(stream: Stream) {
     currentAddonName = stream.addonName
     currentAddonLogo = stream.addonLogo
     currentStreamDescription = stream.description
+    currentRelease666 = stream.title?.lineSequence()?.firstOrNull()?.trim()?.takeIf { it.isNotBlank() }
+        ?: stream.behaviorHints?.filename
     currentVideoCodec = null
     currentVideoWidth = null
     currentVideoHeight = null

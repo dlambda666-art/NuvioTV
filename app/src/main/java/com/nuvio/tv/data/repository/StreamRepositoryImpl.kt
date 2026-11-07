@@ -333,6 +333,8 @@ class StreamRepositoryImpl @Inject constructor(
                             val hiddenUncached = !com.nuvio.tv.core.torrent.TorrentService.P2P_ENABLED &&
                                 stream.debridCacheStatus?.state == com.nuvio.tv.domain.model.StreamDebridCacheState.NOT_CACHED
                             if (hiddenUncached) return@filter false
+                            // 666TVF : fichier annoncé VF mais sans piste française (déjà essayé) → plus jamais proposé
+                            if (com.nuvio.tv.core.tools.NoFrench666.isLiar(context, stream.getEffectiveInfoHash())) return@filter false
                             val releaseKey = stream.pluginReleaseKey() ?: return@filter true
                             // Un lien « AllDebrid ? » ne remplace jamais une copie sûre : gardé seulement s'il est seul.
                             if (com.nuvio.tv.core.debrid.AllDebridFallback666.isGuess(stream)) {
@@ -557,22 +559,43 @@ class StreamRepositoryImpl @Inject constructor(
             }
 
             // Collect streaming results from each scraper
-            pluginManager.executeScrapersStreaming(
-                tmdbId = pluginId,
-                mediaType = mediaType,
-                season = season,
-                episode = episode
-            ).collect { (scraper, results) ->
-                if (results.isNotEmpty()) {
-                    val addonName = scraper.pluginAddonName(groupByRepository, repositoriesById)
-                    val addonStreams = AddonStreams(
-                        addonName = addonName,
-                        addonLogo = null,
-                        streams = results.map { result -> result.toPluginStream(scraper, addonName) }
-                    )
-                    resultChannel.send(addonStreams)
-                    Log.d(TAG, "Streamed ${results.size} results from ${scraper.name}")
+            suspend fun runScrapers(only: ((com.nuvio.tv.domain.model.ScraperInfo) -> Boolean)?): List<AddonStreams> {
+                val sent = mutableListOf<AddonStreams>()
+                pluginManager.executeScrapersStreaming(
+                    tmdbId = pluginId,
+                    mediaType = mediaType,
+                    season = season,
+                    episode = episode,
+                    only = only
+                ).collect { (scraper, results) ->
+                    if (results.isNotEmpty()) {
+                        val addonName = scraper.pluginAddonName(groupByRepository, repositoriesById)
+                        val addonStreams = AddonStreams(
+                            addonName = addonName,
+                            addonLogo = null,
+                            streams = results.map { result -> result.toPluginStream(scraper, addonName) }
+                        )
+                        resultChannel.send(addonStreams)
+                        sent += addonStreams
+                        Log.d(TAG, "Streamed ${results.size} results from ${scraper.name}")
+                    }
                 }
+                return sent
+            }
+            // 666TVF (07/11) : hibernation — le 1er cavalier d'abord, les autres seulement s'il ne trouve
+            // aucun lien VF lisible.
+            val leaderEnabled = pluginManager.enabledScrapers.first().any { com.nuvio.tv.core.tools.Hibernate666.isLeader(it.id) }
+            if (!com.nuvio.tv.core.tools.Hibernate666.enabled(context) || !leaderEnabled) {
+                runScrapers(null)
+            } else {
+                val leader = runScrapers { com.nuvio.tv.core.tools.Hibernate666.isLeader(it.id) }
+                val checked = runCatching { localDebridAvailabilityService.annotateCachedAvailability(leader) }.getOrDefault(leader)
+                val ready = if (allDebrid666.isConfigured) allDebrid666.readyHashes() else emptySet()
+                val wake = com.nuvio.tv.core.tools.Hibernate666.shouldWake(
+                    checked.flatMap { it.streams }, ready, com.nuvio.tv.core.tools.NoFrench666.hashes(context)
+                )
+                Log.d(TAG, "Hibernation : " + if (wake) "1er cavalier sans lien lisible → réveil des autres" else "1er cavalier suffit")
+                if (wake) runScrapers { !com.nuvio.tv.core.tools.Hibernate666.isLeader(it.id) }
             }
         } catch (e: Exception) {
             if (e is CancellationException) throw e

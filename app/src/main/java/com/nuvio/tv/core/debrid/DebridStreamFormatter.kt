@@ -47,7 +47,9 @@ class DebridStreamFormatter @Inject constructor(
         return stream.copy(
             name = formattedName.ifBlank { stream.name ?: DebridProviders.instantName(stream.clientResolve?.service) },
             description = (if (cavalier != null && description?.contains("🐎") != true) "🐎 $cavalier\n" + description.orEmpty() else description)
-                .let { d -> AllDebridFallback666.label(stream)?.takeIf { d?.contains(it) != true }?.let { "$it\n" + d.orEmpty() } ?: d },
+                .let { d -> AllDebridFallback666.label(stream)?.takeIf { d?.contains(it) != true }?.let { "$it\n" + d.orEmpty() } ?: d }
+                // 666TVF (07/11) : un « MULTi » d'équipe inconnue n'est pas une VF sûre, on le dit sur la carte
+                .let { d -> if (isPlugin666 && stream.isUncertainVf666() && d?.contains(UNSURE_VF_666) != true) "$UNSURE_VF_666\n" + d.orEmpty() else d },
             // 666TV : ne jamais effacer des badges déjà trouvés.
             badges = matchedBadges.ifEmpty { stream.badges }
         )
@@ -112,6 +114,10 @@ class DebridStreamFormatter @Inject constructor(
             "addon.name" to stream.addonName
         )
     }
+
+    /** 666TVF : « 🇫🇷 MULTi (VF ?) » sur la 2e ligne du titre brut du plugin. */
+    private fun Stream.isUncertainVf666(): Boolean =
+        title.orEmpty().lines().any { it.contains("\uD83C\uDDEB\uD83C\uDDF7") && it.contains("VF ?") }
 
     /** 666TV : flux de nos plugins (groupe Binge « 666|… »). */
     private fun Stream.isPlugin666(): Boolean =
@@ -258,3 +264,5 @@ class DebridStreamFormatter @Inject constructor(
         }
     }
 }
+
+internal const val UNSURE_VF_666 = "❔ VF à confirmer (MULTi)"

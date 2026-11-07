@@ -180,6 +180,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
     var lastBackup by remember { mutableStateOf(Backup666.lastBackupAt(context)) }
     var busy by remember { mutableStateOf(false) }
     val sourceStats = remember { com.nuvio.tv.core.tools.SourceStats666.summary(context) }
+    var hibernate by remember { mutableStateOf(com.nuvio.tv.core.tools.Hibernate666.enabled(context)) }
     var menuOrder by remember { mutableStateOf(com.nuvio.tv.core.tools.MenuOrder666.fullOrder()) }
     var movingRoute by remember { mutableStateOf<String?>(null) }
     var pluginOrder by remember { mutableStateOf(com.nuvio.tv.core.tools.PluginOrder666.order) }
@@ -545,6 +546,18 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                         )
                     }
                 }
+            }
+
+            item {
+                ActionRow(
+                    "Hibernation des cavaliers : " + if (hibernate) "activée 💤" else "coupée",
+                    if (hibernate) "Seul le 1er cavalier cherche ; les autres se réveillent s'il ne trouve aucun lien VF lisible. Le guetteur et la cloche gardent tous les cavaliers"
+                    else "Tous les cavaliers cherchent en même temps",
+                    onClick = {
+                        hibernate = !hibernate
+                        com.nuvio.tv.core.tools.Hibernate666.setEnabled(context, hibernate)
+                    }
+                )
             }
 
             // ---------- Affichage ----------

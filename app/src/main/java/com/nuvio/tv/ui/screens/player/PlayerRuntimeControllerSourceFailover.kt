@@ -143,13 +143,16 @@ internal fun PlayerRuntimeController.observeSourceFailover() {
             val hasFrench666 = tracks.any { it.isFrench666() }
             val surelyNoFrench666 = !hasFrench666 && tracks.all { it.knownOtherLanguage666() }
             if (hasFrench666 || surelyNoFrench666) {
-                val release = (currentStreamDescription ?: _uiState.value.currentStreamName).orEmpty().lineSequence().firstOrNull().orEmpty()
+                // 666TVF (07/11) : le vrai nom du fichier (avant : 1re ligne de la carte, « 🗣️ 🇫🇷 », inutile pour Frank)
+                val release = releaseNameForVerdict666(currentRelease666, currentStreamDescription, _uiState.value.currentStreamName)
                 if (release.isNotBlank()) reportReleaseVerdict666(release, hasFrench666)
             }
             // 666TVF : piste française entendue → Frank sait que ce titre est en VF (nouveautés VF).
             if (hasFrench666) com.nuvio.tv.core.tools.FrankVf666.confirm(context, contentId, contentType, "audio")
             if (tracks.none { it.isFrench666() } && tracks.all { it.knownOtherLanguage666() }) {
                 Log.i(PlayerRuntimeController.TAG, "No French audio track (${tracks.joinToString { it.language.orEmpty() }}) → next link")
+                // fichier menteur : plus jamais proposé (liste, lecture auto, guetteur, cloche)
+                com.nuvio.tv.core.tools.NoFrench666.remember(context, _uiState.value.currentStreamInfoHash)
                 _uiState.update { it.copy(error = NO_FRENCH_AUDIO_666) }
             }
         }
@@ -254,6 +257,15 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
 
 
 /** 666TVF : verdict de lecture envoyé à Frank (nom de release + VF oui/non, rien d'autre). */
+/** Règle pure (testée) : nom de release à envoyer à Frank (fichier, sinon une ligne qui ressemble à une release). */
+internal fun releaseNameForVerdict666(release: String?, description: String?, name: String?): String {
+    val looksLikeRelease = Regex("[A-Za-z0-9][._ ].*-[A-Za-z0-9]{2,20}(\\.(mkv|mp4|avi|ts|m2ts))?$")
+    release?.trim()?.substringAfterLast('/')?.takeIf { it.isNotBlank() }?.let { return it }
+    return listOfNotNull(description, name).flatMap { it.lines() }.map { it.trim() }
+        .firstOrNull { looksLikeRelease.containsMatchIn(it) && !it.startsWith("🐎") && !it.startsWith("⚡") && !it.startsWith("❔") }
+        .orEmpty()
+}
+
 private fun PlayerRuntimeController.reportReleaseVerdict666(release: String, hasFrench: Boolean) {
     scope.launch(kotlinx.coroutines.Dispatchers.IO) {
         runCatching {
