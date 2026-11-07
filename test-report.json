@@ -1,0 +1,1331 @@
+{
+  "at": "2026-11-07T14:59:14.738Z",
+  "traces": {
+    "status": 200,
+    "body": {
+      "traces": [
+        {
+          "at": "2026-11-07T14:55:34.390Z",
+          "phase": "end",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "ms": 2985,
+          "shown": 4,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 5 recherches · 0 réponse [info]",
+            "StremThru : 1 trouvé · 1 autre date [info]",
+            "1337x : 2 trouvés · 2 pas de VF [info]"
+          ],
+          "why": {
+            "StremThru": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "autre date": 1
+              }
+            },
+            "1337x": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            }
+          },
+          "ygg": {
+            "queries": 5,
+            "items": 0,
+            "episode": 0,
+            "title": 0,
+            "samples": []
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:55:31.229Z",
+          "phase": "start",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:55:30.290Z",
+          "phase": "cloche",
+          "s": 28,
+          "e": 45,
+          "cavalier": "lumio666",
+          "kind": "lien prêt",
+          "name": "WWE SmackDown",
+          "id": "tt0227972",
+          "text": "Lumio666 1080p WWE.SmackDown.2026.11.06.MULTI.VFF.1080p.WEB.AAC.h265-HEEL.mkv\n🇫🇷 VFF\n8.7 Go · Lumio"
+        },
+        {
+          "at": "2026-11-07T14:55:24.122Z",
+          "phase": "end",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "ms": 2375,
+          "shown": 4,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 5 recherches · 0 réponse [info]",
+            "StremThru : 1 trouvé · 1 autre date [info]",
+            "1337x : 2 trouvés · 2 pas de VF [info]"
+          ],
+          "why": {
+            "StremThru": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "autre date": 1
+              }
+            },
+            "1337x": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            }
+          },
+          "ygg": {
+            "queries": 5,
+            "items": 0,
+            "episode": 0,
+            "title": 0,
+            "samples": []
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:55:21.631Z",
+          "phase": "start",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:55:18.854Z",
+          "phase": "end",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "ms": 2470,
+          "shown": 6,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 3 recherches · 21 réponses · 21 autre épisode [info]",
+            "Tr4ker : 2 trouvés · 2 pas de VF [info]",
+            "StremThru : 42 trouvés · 42 pas de VF [info]",
+            "EZTV : 1 trouvé · 1 pas de VF [info]",
+            "1337x : 5 trouvés · 5 pas de VF [info]"
+          ],
+          "why": {
+            "Tr4ker": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            },
+            "StremThru": {
+              "found": 42,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 42
+              }
+            },
+            "EZTV": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 1
+              }
+            },
+            "1337x": {
+              "found": 5,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 5
+              }
+            }
+          },
+          "ygg": {
+            "queries": 3,
+            "items": 21,
+            "episode": 21,
+            "title": 0,
+            "samples": [
+              "American.Horror.Story.S13E06.The.Return.of.Devils.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.D",
+              "American.Horror.Story.S13E05.Date.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.H.264-Karr",
+              "American.Horror.Story.S13E04.Is.That.All.There.Is.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.",
+              "American.Horror.Story.S13E02.1.13.AM.1080p.DSNP.WEB-DL.DD+5.1.H.264-playWEB",
+              "American.Horror.Story.2011.S01.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S02.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S07.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S03.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH"
+            ]
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:55:16.280Z",
+          "phase": "start",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:55:06.493Z",
+          "phase": "end",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "ms": 4365,
+          "shown": 6,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 3 recherches · 21 réponses · 21 autre épisode [info]",
+            "Tr4ker : 2 trouvés · 2 pas de VF [info]",
+            "StremThru : 42 trouvés · 42 pas de VF [info]",
+            "EZTV : 1 trouvé · 1 pas de VF [info]",
+            "1337x : 5 trouvés · 5 pas de VF [info]"
+          ],
+          "why": {
+            "Tr4ker": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            },
+            "StremThru": {
+              "found": 42,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 42
+              }
+            },
+            "EZTV": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 1
+              }
+            },
+            "1337x": {
+              "found": 5,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 5
+              }
+            }
+          },
+          "ygg": {
+            "queries": 3,
+            "items": 21,
+            "episode": 21,
+            "title": 0,
+            "samples": [
+              "American.Horror.Story.S13E06.The.Return.of.Devils.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.D",
+              "American.Horror.Story.S13E05.Date.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.H.264-Karr",
+              "American.Horror.Story.S13E04.Is.That.All.There.Is.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.",
+              "American.Horror.Story.S13E02.1.13.AM.1080p.DSNP.WEB-DL.DD+5.1.H.264-playWEB",
+              "American.Horror.Story.2011.S01.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S02.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S07.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S03.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH"
+            ]
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:55:01.865Z",
+          "phase": "start",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:33:35.177Z",
+          "phase": "cloche",
+          "s": 28,
+          "e": 45,
+          "cavalier": "lumio666",
+          "kind": "lien prêt",
+          "name": "WWE SmackDown",
+          "id": "tt0227972",
+          "text": "Lumio666 1080p WWE.SmackDown.2026.11.06.MULTI.VFF.1080p.WEB.AAC.h265-HEEL.mkv\n🇫🇷 VFF\n8.7 Go · Lumio"
+        },
+        {
+          "at": "2026-11-07T14:15:04.059Z",
+          "phase": "end",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "ms": 2455,
+          "shown": 4,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 5 recherches · 0 réponse [info]",
+            "StremThru : 1 trouvé · 1 autre date [info]",
+            "1337x : 2 trouvés · 2 pas de VF [info]"
+          ],
+          "why": {
+            "StremThru": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "autre date": 1
+              }
+            },
+            "1337x": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            }
+          },
+          "ygg": {
+            "queries": 5,
+            "items": 0,
+            "episode": 0,
+            "title": 0,
+            "samples": []
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:15:01.500Z",
+          "phase": "start",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:14:43.852Z",
+          "phase": "end",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "ms": 2879,
+          "shown": 4,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 5 recherches · 0 réponse [info]",
+            "StremThru : 1 trouvé · 1 autre date [info]",
+            "1337x : 2 trouvés · 2 pas de VF [info]"
+          ],
+          "why": {
+            "StremThru": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "autre date": 1
+              }
+            },
+            "1337x": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            }
+          },
+          "ygg": {
+            "queries": 5,
+            "items": 0,
+            "episode": 0,
+            "title": 0,
+            "samples": []
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:14:40.926Z",
+          "phase": "start",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:14:38.170Z",
+          "phase": "end",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "ms": 2471,
+          "shown": 6,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 3 recherches · 21 réponses · 21 autre épisode [info]",
+            "Tr4ker : 2 trouvés · 2 pas de VF [info]",
+            "StremThru : 42 trouvés · 42 pas de VF [info]",
+            "EZTV : 1 trouvé · 1 pas de VF [info]",
+            "1337x : 5 trouvés · 5 pas de VF [info]"
+          ],
+          "why": {
+            "Tr4ker": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            },
+            "StremThru": {
+              "found": 42,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 42
+              }
+            },
+            "EZTV": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 1
+              }
+            },
+            "1337x": {
+              "found": 5,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 5
+              }
+            }
+          },
+          "ygg": {
+            "queries": 3,
+            "items": 21,
+            "episode": 21,
+            "title": 0,
+            "samples": [
+              "American.Horror.Story.S13E06.The.Return.of.Devils.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.D",
+              "American.Horror.Story.S13E05.Date.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.H.264-Karr",
+              "American.Horror.Story.S13E04.Is.That.All.There.Is.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.",
+              "American.Horror.Story.S13E02.1.13.AM.1080p.DSNP.WEB-DL.DD+5.1.H.264-playWEB",
+              "American.Horror.Story.2011.S01.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S02.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S07.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S03.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH"
+            ]
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:14:35.656Z",
+          "phase": "start",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:14:25.207Z",
+          "phase": "end",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "ms": 4089,
+          "shown": 6,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 3 recherches · 21 réponses · 21 autre épisode [info]",
+            "Tr4ker : 2 trouvés · 2 pas de VF [info]",
+            "StremThru : 42 trouvés · 42 pas de VF [info]",
+            "EZTV : 1 trouvé · 1 pas de VF [info]",
+            "1337x : 5 trouvés · 5 pas de VF [info]"
+          ],
+          "why": {
+            "Tr4ker": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            },
+            "StremThru": {
+              "found": 42,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 42
+              }
+            },
+            "EZTV": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 1
+              }
+            },
+            "1337x": {
+              "found": 5,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 5
+              }
+            }
+          },
+          "ygg": {
+            "queries": 3,
+            "items": 21,
+            "episode": 21,
+            "title": 0,
+            "samples": [
+              "American.Horror.Story.S13E06.The.Return.of.Devils.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.D",
+              "American.Horror.Story.S13E05.Date.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.H.264-Karr",
+              "American.Horror.Story.S13E04.Is.That.All.There.Is.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.",
+              "American.Horror.Story.S13E02.1.13.AM.1080p.DSNP.WEB-DL.DD+5.1.H.264-playWEB",
+              "American.Horror.Story.2011.S01.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S02.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S07.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S03.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH"
+            ]
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T14:14:21.116Z",
+          "phase": "start",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:57:24.992Z",
+          "phase": "end",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "ms": 10283,
+          "shown": 5,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 5 recherches · 0 réponse [info]",
+            "StremThru : 1 trouvé · 1 autre date [info]",
+            "1337x : 2 trouvés · 2 pas de VF [info]",
+            "⏱ lent : YggReborn 8 s [info]"
+          ],
+          "why": {
+            "StremThru": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "autre date": 1
+              }
+            },
+            "1337x": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            }
+          },
+          "ygg": {
+            "queries": 5,
+            "items": 0,
+            "episode": 0,
+            "title": 0,
+            "samples": []
+          },
+          "timing": {
+            "skipped": [],
+            "slow": [
+              "YggReborn 8 s"
+            ]
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:57:14.581Z",
+          "phase": "start",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:57:03.731Z",
+          "phase": "end",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "ms": 4179,
+          "shown": 6,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 3 recherches · 21 réponses · 21 autre épisode [info]",
+            "Tr4ker : 2 trouvés · 2 pas de VF [info]",
+            "StremThru : 42 trouvés · 42 pas de VF [info]",
+            "EZTV : 1 trouvé · 1 pas de VF [info]",
+            "1337x : 5 trouvés · 5 pas de VF [info]"
+          ],
+          "why": {
+            "Tr4ker": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            },
+            "StremThru": {
+              "found": 42,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 42
+              }
+            },
+            "EZTV": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 1
+              }
+            },
+            "1337x": {
+              "found": 5,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 5
+              }
+            }
+          },
+          "ygg": {
+            "queries": 3,
+            "items": 21,
+            "episode": 21,
+            "title": 0,
+            "samples": [
+              "American.Horror.Story.S13E06.The.Return.of.Devils.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.D",
+              "American.Horror.Story.S13E05.Date.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.H.264-Karr",
+              "American.Horror.Story.S13E04.Is.That.All.There.Is.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.",
+              "American.Horror.Story.S13E02.1.13.AM.1080p.DSNP.WEB-DL.DD+5.1.H.264-playWEB",
+              "American.Horror.Story.2011.S01.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S02.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S07.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S03.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH"
+            ]
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:56:59.564Z",
+          "phase": "start",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:37:03.630Z",
+          "phase": "end",
+          "id": "1483525",
+          "type": "movie",
+          "ms": 4025,
+          "shown": 9,
+          "top": [
+            "Possible.Love.2026.MULTi.AD.1080p.WEB.EAC3.5.1.x264-BYOR",
+            "Amours.Possibles.2026.MULTi.1080p.WEB.10bits.EAC3.5.1.x265-MTLQC",
+            "Possible.Love.2026.MULTi.1080p.WEB.EAC3.5.1.x264-GL0P",
+            "Possible.Love.2026.AD.MULTi.VFF.1080p.WEB.EAC3.5.1.x264-GL0P.FRENCH",
+            "Possible.Love.2026.MULTi.AD.1080p.WEB.EAC3.5.1.H265-BYOR",
+            "Possible.Love.2026.MULTi.AD.1080p.WEB.EAC3.5.1.AV1-BYOR",
+            "Possible.Love.2026.MULTi.1080p.WEB.10bits.EAC3.5.1.H265-GL0P",
+            "Possible.Love.2026.MULTi.VFF.1080p.WEB.EAC3.5.1.H265-GL0P.FRENCH"
+          ],
+          "why": {
+            "Tr4ker": {
+              "found": 7,
+              "kept": 6,
+              "reasons": {
+                "VOSTFR": 1
+              }
+            },
+            "YggReborn": {
+              "found": 2,
+              "kept": 2,
+              "reasons": {}
+            },
+            "AllDebrid": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "doublon": 1
+              }
+            },
+            "1337x": {
+              "found": 5,
+              "kept": 1,
+              "reasons": {
+                "pas de VF": 4
+              }
+            }
+          },
+          "ygg": {
+            "queries": 3,
+            "items": 52,
+            "episode": 0,
+            "title": 50,
+            "samples": [
+              "Possible.Love.2026.MULTi.VFF.1080p.WEB.EAC3.5.1.H265-GL0P.FRENCH",
+              "Possible.Love.2026.AD.MULTi.VFF.1080p.WEB.EAC3.5.1.x264-GL0P.FRENCH",
+              "La.Bataille.de.Gaulle.J.Ecris.Ton.Nom.2026.VFF.1080p.WEB.EAC3.5.1.H265-GL0P.FRENCH",
+              "Resident.Evil.2026.MULTI.VFQ.1080p.WEB.EAC3.5.1.H265-SUPERFLU.FRENCH",
+              "The.Dog.Stars.2026.MULTi.VFQ.1080p.WEBRip.10.bits.EAC3.5.1.x265-GL0P.FRENCH",
+              "Verity.2026.MULTi.VF2.1080p.WEB.H264-SUPPLY.FRENCH"
+            ]
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:36:59.734Z",
+          "phase": "start",
+          "id": "1483525",
+          "type": "movie",
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:16:50.672Z",
+          "phase": "end",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "ms": 2456,
+          "shown": 4,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 5 recherches · 0 réponse [info]",
+            "StremThru : 1 trouvé · 1 autre date [info]",
+            "1337x : 2 trouvés · 2 pas de VF [info]"
+          ],
+          "why": {
+            "StremThru": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "autre date": 1
+              }
+            },
+            "1337x": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            }
+          },
+          "ygg": {
+            "queries": 5,
+            "items": 0,
+            "episode": 0,
+            "title": 0,
+            "samples": []
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:16:48.166Z",
+          "phase": "start",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:16:38.091Z",
+          "phase": "end",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "ms": 3056,
+          "shown": 6,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 3 recherches · 21 réponses · 21 autre épisode [info]",
+            "Tr4ker : 2 trouvés · 2 pas de VF [info]",
+            "StremThru : 42 trouvés · 42 pas de VF [info]",
+            "EZTV : 1 trouvé · 1 pas de VF [info]",
+            "1337x : 5 trouvés · 5 pas de VF [info]"
+          ],
+          "why": {
+            "Tr4ker": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            },
+            "StremThru": {
+              "found": 42,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 42
+              }
+            },
+            "EZTV": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 1
+              }
+            },
+            "1337x": {
+              "found": 5,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 5
+              }
+            }
+          },
+          "ygg": {
+            "queries": 3,
+            "items": 21,
+            "episode": 21,
+            "title": 0,
+            "samples": [
+              "American.Horror.Story.S13E06.The.Return.of.Devils.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.D",
+              "American.Horror.Story.S13E05.Date.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.H.264-Karr",
+              "American.Horror.Story.S13E04.Is.That.All.There.Is.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.",
+              "American.Horror.Story.S13E02.1.13.AM.1080p.DSNP.WEB-DL.DD+5.1.H.264-playWEB",
+              "American.Horror.Story.2011.S01.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S02.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S07.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S03.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH"
+            ]
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:16:35.135Z",
+          "phase": "start",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:13:45.276Z",
+          "phase": "end",
+          "id": "tt13207736",
+          "type": "tv",
+          "s": 4,
+          "e": 5,
+          "ms": 563,
+          "shown": 1,
+          "top": [
+            "Monster.2022.S04E05.MULTi.AD.1080p.WEB.x264-BOUBA.FRENCH"
+          ],
+          "why": {
+            "StremThru": {
+              "found": 26,
+              "kept": 1,
+              "reasons": {
+                "pas de VF": 25
+              }
+            },
+            "1337x": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 1
+              }
+            },
+            "TorrentGalaxy": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 1
+              }
+            },
+            "TorrentsDB": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 1
+              }
+            }
+          },
+          "ygg": null,
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:13:44.712Z",
+          "phase": "start",
+          "id": "tt13207736",
+          "type": "tv",
+          "s": 4,
+          "e": 5,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:13:44.666Z",
+          "phase": "end",
+          "id": "tt3581920",
+          "type": "tv",
+          "s": 1,
+          "e": 1,
+          "ms": 1949,
+          "shown": 40,
+          "top": [
+            "The.Last.of.Us.S01.MULTI.VFI.2160p.UHD.BluRay.Remux.Custom.DV.HDR.TrueHD.Atmos.7.1.HEVC-HY",
+            "The Last of Us S01 MULTi HDR DV 2160p WEB x265-FW",
+            "The.Last.Of.Us.S01.MULTi.2160p.HMAX.WEB.DV.HDR.H265-BYOR",
+            "The Last of Us S01 MULTi HDR 2160p HMAX WEB-DL DDP5 1 x265-FRATERNiTY",
+            "[ Torrent911.ws ] The.Last.of.Us.S01.FRENCH.2160p.WEB.H265-FW",
+            "The.Last.of.Us.S01.FRENCH.2160p.WEB.H265-FW",
+            "The Last of Us S01 MULTi VFI 2160p 10bit 4KLight DV HDR BluRay TrueHD 7.1 Atmos x265-QTZ",
+            "The Last of Us S01 MULTi VFI 2160p 10bit 4KLight DV HDR BluRay DDP 7.1 x265-QTZ"
+          ],
+          "why": {
+            "StremThru": {
+              "found": 554,
+              "kept": 24,
+              "reasons": {
+                "pas de VF": 515,
+                "CAM": 2,
+                "VOSTFR": 1,
+                "définition ?": 3,
+                "doublon": 3,
+                "720p": 2,
+                "MULTi étranger": 4
+              }
+            },
+            "TorrentGalaxy": {
+              "found": 11,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 11
+              }
+            },
+            "Torrent9": {
+              "found": 4,
+              "kept": 0,
+              "reasons": {
+                "doublon": 4
+              }
+            },
+            "ThePirateBay": {
+              "found": 13,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 13
+              }
+            },
+            "1337x": {
+              "found": 16,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 16
+              }
+            },
+            "EZTV": {
+              "found": 6,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 6
+              }
+            },
+            "RARBG": {
+              "found": 5,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 5
+              }
+            },
+            "DMM": {
+              "found": 200,
+              "kept": 26,
+              "reasons": {
+                "doublon": 36,
+                "pas de VF": 135,
+                "720p": 2,
+                "définition ?": 1
+              }
+            },
+            "TorrentsDB": {
+              "found": 89,
+              "kept": 1,
+              "reasons": {
+                "pas de VF": 75,
+                "doublon": 13
+              }
+            }
+          },
+          "ygg": null,
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:13:42.713Z",
+          "phase": "start",
+          "id": "tt3581920",
+          "type": "tv",
+          "s": 1,
+          "e": 1,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:13:42.666Z",
+          "phase": "end",
+          "id": "tt15239678",
+          "type": "movie",
+          "ms": 2580,
+          "shown": 40,
+          "top": [
+            "Dune.Part.Two.2024.MULTi.VF2.SDR.2160p.WEB.H265-FW_45_9_BOTH_auto_subject_v1.7.0_LRF_Full_",
+            "Dune.Part.Two.2024.AD.MULTI.VF2.2160p.UHD.BLURAY.REMUX.DV.HDR10.TrueHD.Atmos.7.1.HEVC-SGF.",
+            "Dune.Part.Two.2024.MULTi.VFF.2160p.UHD.BluRay.REMUX.HYBRID.DV.HDR10Plus.HEVC.TrueHD.7.1.At",
+            "Dune.Part.Two.2024.Multi.Truefrench.2160p.Bluray.Remux.DV.HDR10.HEVC-BDHD.mkv",
+            "Dune.Part.Two.2024.PROPER.MULTI.VF2.2160p.UHD.BluRay.Remux.Custom.DV.HDR10+.TrueHD.Atmos.7",
+            "Dune.Part.Two.2024.MULTi.VFF.2160p.UHD.BluRay.REMUX.DV.HDR.HEVC-Zapax.mkv",
+            "Dune.Part.Two.2024.REPACK.MULTI.VF2.2160p.UHD.BluRay.Remux.DV.HDR10+.TrueHD.Atmos.7.1.HEVC",
+            "Dune.Part.Two.2024.MULTi.VFF.2160p.UHD.DV.HDR.CUSTOM.BLURAY.REMUX.TrueHD.Atmos.7.1.HEVC-BA"
+          ],
+          "why": {
+            "StremThru": {
+              "found": 1225,
+              "kept": 63,
+              "reasons": {
+                "pas de VF": 982,
+                "CAM": 114,
+                "VOSTFR": 6,
+                "définition ?": 5,
+                "doublon": 45,
+                "720p": 7,
+                "MULTi étranger": 3
+              }
+            },
+            "Torrent9": {
+              "found": 4,
+              "kept": 0,
+              "reasons": {
+                "doublon": 4
+              }
+            },
+            "TorrentGalaxy": {
+              "found": 36,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 36
+              }
+            },
+            "ThePirateBay": {
+              "found": 23,
+              "kept": 0,
+              "reasons": {
+                "doublon": 3,
+                "pas de VF": 20
+              }
+            },
+            "MagnetDL": {
+              "found": 7,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 7
+              }
+            },
+            "1337x": {
+              "found": 15,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 15
+              }
+            },
+            "YTS": {
+              "found": 4,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 4
+              }
+            },
+            "DMM": {
+              "found": 200,
+              "kept": 1,
+              "reasons": {
+                "pas de VF": 142,
+                "doublon": 38,
+                "CAM": 19
+              }
+            },
+            "TorrentsDB": {
+              "found": 216,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 190,
+                "doublon": 7,
+                "CAM": 19
+              }
+            }
+          },
+          "ygg": null,
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T13:13:40.190Z",
+          "phase": "start",
+          "id": "tt15239678",
+          "type": "movie",
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T12:56:36.597Z",
+          "phase": "end",
+          "id": "tt44954660",
+          "type": "movie",
+          "ms": 1933,
+          "shown": 2,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 1 recherche · 0 réponse [info]"
+          ],
+          "why": {},
+          "ygg": {
+            "queries": 1,
+            "items": 0,
+            "episode": 0,
+            "title": 0,
+            "samples": []
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T12:56:34.723Z",
+          "phase": "start",
+          "id": "tt44954660",
+          "type": "movie",
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T12:36:24.576Z",
+          "phase": "end",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "ms": 2241,
+          "shown": 4,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 5 recherches · 0 réponse [info]",
+            "StremThru : 1 trouvé · 1 autre date [info]",
+            "1337x : 1 trouvé · 1 pas de VF [info]"
+          ],
+          "why": {
+            "StremThru": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "autre date": 1
+              }
+            },
+            "1337x": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 1
+              }
+            }
+          },
+          "ygg": {
+            "queries": 5,
+            "items": 0,
+            "episode": 0,
+            "title": 0,
+            "samples": []
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T12:36:22.293Z",
+          "phase": "start",
+          "id": "1549",
+          "type": "tv",
+          "s": 28,
+          "e": 45,
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T12:36:11.821Z",
+          "phase": "end",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "ms": 2908,
+          "shown": 6,
+          "top": [
+            "🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi : [info]",
+            "YggReborn : 3 recherches · 21 réponses · 21 autre épisode [info]",
+            "Tr4ker : 2 trouvés · 2 pas de VF [info]",
+            "StremThru : 42 trouvés · 42 pas de VF [info]",
+            "EZTV : 1 trouvé · 1 pas de VF [info]",
+            "1337x : 5 trouvés · 5 pas de VF [info]"
+          ],
+          "why": {
+            "Tr4ker": {
+              "found": 2,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 2
+              }
+            },
+            "StremThru": {
+              "found": 42,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 42
+              }
+            },
+            "EZTV": {
+              "found": 1,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 1
+              }
+            },
+            "1337x": {
+              "found": 5,
+              "kept": 0,
+              "reasons": {
+                "pas de VF": 5
+              }
+            }
+          },
+          "ygg": {
+            "queries": 3,
+            "items": 21,
+            "episode": 21,
+            "title": 0,
+            "samples": [
+              "American.Horror.Story.S13E06.The.Return.of.Devils.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.D",
+              "American.Horror.Story.S13E05.Date.Night.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.H.264-Karr",
+              "American.Horror.Story.S13E04.Is.That.All.There.Is.1080p.VOSTFR.READNFO.AMZN.WEB-DL.DDP5.1.",
+              "American.Horror.Story.S13E02.1.13.AM.1080p.DSNP.WEB-DL.DD+5.1.H.264-playWEB",
+              "American.Horror.Story.2011.S01.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S02.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S07.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH",
+              "American.Horror.Story.2011.S03.MULTi.VFF.1080p.BluRay.AC3.5.1.x265-KFL.FRENCH"
+            ]
+          },
+          "timing": {
+            "skipped": [],
+            "slow": []
+          },
+          "v": "1.1.18"
+        },
+        {
+          "at": "2026-11-07T12:36:08.982Z",
+          "phase": "start",
+          "id": "1413",
+          "type": "tv",
+          "s": 13,
+          "e": 13,
+          "v": "1.1.18"
+        }
+      ]
+    }
+  }
+}
