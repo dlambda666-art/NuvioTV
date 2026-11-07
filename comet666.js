@@ -342,6 +342,27 @@ async function fromYgg(imdbId, isTv, season, episode) {
 // l'année et les requêtes « Titre S03E04 » / « Titre S03 » / « Titre 2026 » ; on garde ce qui
 // porte vraiment le titre (et la bonne année pour un film, le bon épisode pour une série).
 var YGGREBORN_URL = 'https://www.yggreborn.org/api';
+// 666TVF (07/11) : la 4e dimension S03 n'était pas trouvée. Les noms YGG s'écrivent sans accents
+// (« La.Quatrieme.Dimension ») et souvent avec l'année (« The.Twilight.Zone.1961.S03 ») : on ajoute
+// ces variantes aux recherches de Frank (6 max, l'épisode exact d'abord).
+function stripAccents(t) {
+    try { return String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) { return String(t); }
+}
+function yggQueries(frankQueries, titles, year, isTv, season, episode) {
+    var out = [];
+    function add(q) { q = String(q || '').replace(/\s+/g, ' ').trim(); if (q && out.indexOf(q) < 0) out.push(q); }
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var ep = isTv ? 'S' + pad(season) + 'E' + pad(episode) : '';
+    var sea = isTv ? 'S' + pad(season) : '';
+    var exact = [], wide = [];
+    frankQueries.forEach(function (q) { (isTv && q.indexOf(ep) < 0 ? wide : exact).push(q); });
+    exact.forEach(function (q) { add(q); add(stripAccents(q)); });
+    if (isTv) {
+        wide.forEach(function (q) { add(q); add(stripAccents(q)); });
+        if (year && titles.length) add(stripAccents(titles[titles.length - 1]) + ' ' + year);
+    }
+    return out.slice(0, 6);
+}
 async function fromYggReborn(imdbId, isTv, season, episode) {
     var key = setting('yggreborn');
     if (!key) return [];
@@ -349,7 +370,7 @@ async function fromYggReborn(imdbId, isTv, season, episode) {
         '?' + (isTv ? 'season=' + season + '&episode=' + episode + '&' : '') + 'norelay=1');
     var titles = (data && data.titles) || [];
     var year = data && data.year ? Number(data.year) : 0;
-    var queries = ((data && data.queries) || []).slice(0, 4);
+    var queries = yggQueries((data && data.queries) || [], titles, year, isTv, season, episode);
     var out = [], seen = {};
     for (var i = 0; i < queries.length; i++) {
         var xml = await getText(YGGREBORN_URL + '?t=search&limit=50&q=' + encodeURIComponent(queries[i]) +
@@ -530,4 +551,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries };

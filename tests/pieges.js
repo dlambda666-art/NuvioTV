@@ -286,6 +286,17 @@ const cases = [
         else console.log('✓ Sans clé, TorBox search n\'est pas interrogé');
         global.fetch = saved.fetch; global.SCRAPER_SETTINGS = saved.settings;
     }
+    // 4e dimension S03E06 (07/11) : YggReborn sans accents et avec l'année
+    {
+        const q = comet._yggQueries(['La Quatrième Dimension S03E06', 'La Quatrième Dimension S03', 'The Twilight Zone S03E06', 'The Twilight Zone S03'],
+            ['La Quatrième Dimension', 'The Twilight Zone'], 1959, true, 3, 6);
+        const want = ['La Quatrième Dimension S03E06', 'La Quatrieme Dimension S03E06', 'The Twilight Zone S03E06', 'La Quatrième Dimension S03', 'La Quatrieme Dimension S03', 'The Twilight Zone S03'];
+        if (JSON.stringify(q) !== JSON.stringify(want)) { fails++; console.log('✗ Requêtes YggReborn → ' + JSON.stringify(q)); }
+        else console.log('✓ YggReborn : variantes sans accents, épisode exact d\'abord, 6 max');
+        const f = comet._yggQueries(['Dune Deuxième Partie 2024'], ['Dune : Deuxième partie', 'Dune: Part Two'], 2024, false);
+        if (JSON.stringify(f) !== JSON.stringify(['Dune Deuxième Partie 2024', 'Dune Deuxieme Partie 2024'])) { fails++; console.log('✗ Requêtes film → ' + JSON.stringify(f)); }
+        else console.log('✓ YggReborn film : titre + variante sans accents');
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();
