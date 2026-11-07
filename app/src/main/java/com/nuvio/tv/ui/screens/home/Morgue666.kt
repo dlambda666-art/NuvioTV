@@ -327,11 +327,8 @@ fun Morgue666Overlay(
         ) {
             val sw = maxWidth; val sh = maxHeight
             Image(painterResource(R.drawable.bg_morgue_tiroirs_666), null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
-            Text(
-                "Continuer à regarder",
-                style = TextStyle(fontFamily = Creepster666Family, fontSize = 34.sp, color = Color(0xFF78E66E)),
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 22.dp)
-            )
+            // 666TVF (07/11) : à la place du néon du plafond, le titre en néon vert fluo (il grésille)
+            NeonTitle666(Modifier.align(Alignment.TopCenter).offset(y = sh * 0.035f))
             for (slot in 0 until Drawers666.PER_WALL) {
                 val index = wall * Drawers666.PER_WALL + slot
                 val item = items.getOrNull(index) ?: continue
@@ -438,5 +435,36 @@ private fun DrawerDoor666(
                     .fillMaxWidth(drawer.progress.coerceIn(0.02f, 1f) * 0.94f).height(5.dp).background(green)
             )
         }
+    }
+}
+
+/** « Continuer à regarder » en néon vert fluo : halo, tube clair au centre, grésillement de temps en temps. */
+@Composable
+private fun NeonTitle666(modifier: Modifier = Modifier) {
+    var flicker by remember { mutableStateOf(1f) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(5_000L + (Math.random() * 6_000).toLong())
+            for (v in listOf(0.35f, 1f, 0.5f, 1f, 0.2f, 1f)) { flicker = v; delay(55L + (Math.random() * 70).toLong()) }
+        }
+    }
+    val glow = Color(0xFF39FF14)
+    Box(modifier.graphicsLayer { alpha = 0.55f + 0.45f * flicker }) {
+        for ((blur, a) in listOf(46f to 0.9f, 22f to 0.9f)) {
+            Text(
+                "Continuer à regarder",
+                style = TextStyle(
+                    fontFamily = Creepster666Family, fontSize = 40.sp, color = glow.copy(alpha = 0.35f),
+                    shadow = androidx.compose.ui.graphics.Shadow(glow.copy(alpha = a), blurRadius = blur)
+                )
+            )
+        }
+        Text(
+            "Continuer à regarder",
+            style = TextStyle(
+                fontFamily = Creepster666Family, fontSize = 40.sp, color = Color(0xFFD8FFC8),
+                shadow = androidx.compose.ui.graphics.Shadow(glow, blurRadius = 8f)
+            )
+        )
     }
 }
