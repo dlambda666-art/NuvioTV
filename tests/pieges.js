@@ -403,6 +403,35 @@ const cases = [
         } else console.log('✓ Traces Frank : début + fin, titres trouvés, aucune clé');
         global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
     }
+    // 4e dimension (07/11) : le REMUX est dans le compte AllDebrid (ajouté par StreamFusion), pas sur YggReborn
+    {
+        const titles = ['La Quatrième Dimension', 'The Twilight Zone'];
+        const H = 'f'.repeat(40);
+        const acct = { status: 'success', data: { magnets: [
+            { hash: H, filename: 'La 4eme dimension REMUX S03', size: 148e9, statusCode: 4, status: 'Ready' },
+            { hash: 'a'.repeat(40), filename: 'The.Matrix.1999.2160p.UHD.BLURAY.REMUX-tlub.mkv', size: 5e10, statusCode: 4 },
+            { hash: 'b'.repeat(40), filename: 'La 4eme dimension REMUX S04', size: 1e11, statusCode: 4 },
+            { hash: 'c'.repeat(40), filename: 'La 4eme dimension REMUX S03', size: 1e11, statusCode: 1, status: 'Downloading' }
+        ] } };
+        const got = comet._parseAllDebridAccount(acct, titles, 1959, true, 3, 6);
+        if (got.length !== 1 || got[0].hash !== H || !got[0].frTitle) { fails++; console.log('✗ Compte AllDebrid mal lu → ' + JSON.stringify(got)); }
+        else console.log('✓ Compte AllDebrid : seul le REMUX S03 prêt correspond à S03E06');
+        const saved = { fetch: global.fetch, key: global.TMDB_API_KEY, settings: global.SCRAPER_SETTINGS };
+        global.TMDB_API_KEY = ''; global.SCRAPER_SETTINGS = { alldebrid_auto: 'CLE-AD' };
+        const json = o => ({ ok: true, json: async () => o, text: async () => JSON.stringify(o) });
+        let bodies = [];
+        global.fetch = async (u, o) => {
+            if (u.includes('/comet/trace')) { bodies.push(String(o && o.body)); return json({ ok: true }); }
+            if (u.includes('/ygg/')) return json({ titles, year: 1959, queries: [] });
+            if (u.includes('api.alldebrid.com')) return (o && o.headers && o.headers.Authorization === 'Bearer CLE-AD') ? json(acct) : { ok: false };
+            return { ok: false, json: async () => null, text: async () => '' };
+        };
+        const out = await comet.getStreams('tt0052520', 'tv', 3, 6);
+        const hit = out.find(x => x.infoHash === H);
+        if (!hit || !/VF \?/.test(hit.title) || /CLE-AD/.test(bodies.join(' '))) { fails++; console.log('✗ 4e dimension via compte AllDebrid → ' + JSON.stringify(out.map(x => x.title))); }
+        else console.log('✓ 4e dimension S03E06 sort de ton compte AllDebrid (VF ?), clé jamais envoyée à Frank');
+        global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();

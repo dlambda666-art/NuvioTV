@@ -397,8 +397,7 @@ var MAX_YGG_QUERIES = 8;
 async function fromYggReborn(imdbId, isTv, season, episode) {
     var key = setting('yggreborn');
     if (!key) return [];
-    var data = await getJson(FRANK_URL + '/ygg/' + (isTv ? 'series' : 'movie') + '/' + imdbId +
-        '?' + (isTv ? 'season=' + season + '&episode=' + episode + '&' : '') + 'norelay=1');
+    var data = await frankMeta(imdbId, isTv, season, episode);
     var titles = (data && data.titles) || [];
     var year = data && data.year ? Number(data.year) : 0;
     var queries = yggQueries((data && data.queries) || [], titles, year, isTv, season, episode);
@@ -428,6 +427,55 @@ async function fromYggReborn(imdbId, isTv, season, episode) {
         if (isTv && out.filter(usableYgg).length >= 3) break;
     }
     return out;
+}
+
+// 666TVF (07/11) : titres / année / requêtes de Frank, demandés une seule fois par recherche
+// (YggReborn et le compte AllDebrid s'en servent tous les deux).
+var FRANK_META = null;
+async function frankMeta(imdbId, isTv, season, episode) {
+    var url = FRANK_URL + '/ygg/' + (isTv ? 'series' : 'movie') + '/' + imdbId +
+        '?' + (isTv ? 'season=' + season + '&episode=' + episode + '&' : '') + 'norelay=1';
+    if (FRANK_META && FRANK_META.url === url) return FRANK_META.data;
+    var data = await getJson(url);
+    FRANK_META = { url: url, data: data };
+    return data;
+}
+
+// 666TVF (07/11) : ton compte AllDebrid comme source. Ce qui y est déjà prêt (ajouté par toi ou par
+// StreamFusion) et qui correspond au titre et à l'épisode sort chez Comet666 (⚡ AllDebrid ✓ dans 666TVF).
+// La clé est prêtée par 666TVF le temps de la recherche (jamais écrite ici ni enregistrée).
+function parseAllDebridAccount(data, titles, year, isTv, season, episode) {
+    var mags = data && data.status === 'success' && data.data && data.data.magnets;
+    if (mags && !Array.isArray(mags)) mags = Object.keys(mags).map(function (k) { return mags[k]; });
+    var out = [];
+    (mags || []).forEach(function (m) {
+        if (!m) return;
+        var ready = m.statusCode === 4 || String(m.status || '').toLowerCase() === 'ready';
+        var hash = String(m.hash || '').toLowerCase();
+        var name = String(m.filename || '');
+        if (!ready || !/^[0-9a-f]{40}$/.test(hash) || !name) return;
+        if (!releaseMatches(name, titles, year, isTv)) return;
+        if (isTv && !matchesEpisode(name, season, episode)) return;
+        out.push({ hash: hash, release: name, text: name, bytes: Number(m.size) || 0, seeders: null,
+            source: 'AllDebrid', frTitle: frenchTitleOnly(name, titles) });
+    });
+    return out;
+}
+async function fromAllDebridAccount(imdbId, isTv, season, episode) {
+    var key = setting('alldebrid_auto');
+    if (!key) return [];
+    var meta = await frankMeta(imdbId, isTv, season, episode);
+    var titles = (meta && meta.titles) || [];
+    if (!titles.length) return [];
+    try {
+        var res = await fetch('https://api.alldebrid.com/v4.1/magnet/status?agent=666TVF&status=ready',
+            { headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + key } });
+        if (!res || !res.ok) return [];
+        return parseAllDebridAccount(await res.json(), titles, meta && meta.year ? Number(meta.year) : 0, isTv, season, episode);
+    } catch (e) {
+        console.log('Comet666 compte AllDebrid : ' + (e && e.message));
+        return [];
+    }
 }
 
 // 666TVF (07/11) : moteur de recherche TorBox (sa propre base, cache inclus).
@@ -530,7 +578,7 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.17';
+var COMET_VERSION = '1.1.18';
 async function trace(data) {
     try {
         data.v = COMET_VERSION;
@@ -560,6 +608,7 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     var isTv = mediaType === 'tv' || mediaType === 'series';
     YGG_STATS = null;
     LAST_WHY = null;
+    FRANK_META = null;
     T0 = Date.now();
     var ids = await resolveIds(tmdbId, mediaType);
     if (!ids || !ids.imdbId) {
@@ -581,6 +630,7 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
         ['Trackers', function () { return fromTrackers({ imdbId: ids.imdbId, tmdbId: /^\d+$/.test(tmdbNum) ? tmdbNum : null }, isTv, season, episode); }],
         ['YggReborn', function () { return fromYggReborn(ids.imdbId, isTv, season, episode); }],
         ['TorBox', function () { return fromTorboxSearch(ids.imdbId, isTv, season, episode); }],
+        ['AllDebrid', function () { return fromAllDebridAccount(ids.imdbId, isTv, season, episode); }],
         ['StremThru', function () { return fromStremThru(ids.imdbId, isTv, season, episode); }],
         ['Torrentio', function () { return fromTorrentio(ids.imdbId, isTv, season, episode); }],
         ['DMM', function () { return fromZilean(ids.imdbId, isTv, season, episode); }],
@@ -675,7 +725,7 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
         var raw = {}, kept = {};
         lists.forEach(function (l) { l.forEach(function (t) { var k = String(t.source).split(' ')[0]; raw[k] = (raw[k] || 0) + 1; }); });
         found.forEach(function (t) { var k = String(t.source).split(' ')[0]; kept[k] = (kept[k] || 0) + 1; });
-        var parts = ['C411', 'Tr4ker', 'YggReborn', 'TorBox', 'StremThru', 'Torrentio', 'DMM', 'TorrentsDB'].filter(function (k) { return raw[k] || (k === 'C411' && setting('c411')) || (k === 'Tr4ker' && setting('tr4ker')) || (k === 'YggReborn' && setting('yggreborn')) || (k === 'TorBox' && setting('torbox_auto')); })
+        var parts = ['C411', 'Tr4ker', 'YggReborn', 'TorBox', 'AllDebrid', 'StremThru', 'Torrentio', 'DMM', 'TorrentsDB'].filter(function (k) { return raw[k] || (k === 'C411' && setting('c411')) || (k === 'Tr4ker' && setting('tr4ker')) || (k === 'YggReborn' && setting('yggreborn')) || (k === 'TorBox' && setting('torbox_auto')) || (k === 'AllDebrid' && setting('alldebrid_auto')); })
             .map(function (k) { return k + ' ' + (kept[k] || 0) + '/' + (raw[k] || 0); });
         Object.keys(raw).forEach(function (k) { if (parts.join(' ').indexOf(k) < 0) parts.push(k + ' ' + (kept[k] || 0) + '/' + raw[k]); });
         var diag = [{ title: 'Sources (VF gardés/trouvés) : ' + parts.slice(0, 4).join(' · ') }];
@@ -687,4 +737,4 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _budget: function (ms) { BUDGET_MS = ms; } };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _budget: function (ms) { BUDGET_MS = ms; } };
