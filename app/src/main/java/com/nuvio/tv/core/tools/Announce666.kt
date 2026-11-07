@@ -70,18 +70,31 @@ object Announce666 {
             val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             val old = JSONArray(prefs.getString("log", "[]") ?: "[]")
             val out = JSONArray().put(JSONObject().put("at", now).put("text", text).put("where", where))
-            for (i in 0 until minOf(old.length(), MAX - 1)) out.put(old.get(i))
+            for (i in 0 until minOf(old.length(), MAX - 1)) {
+                val o = old.optJSONObject(i) ?: continue
+                if (now - o.optLong("at") < KEEP_DAYS * 86_400_000L) out.put(o)
+            }
             prefs.edit().putString("log", out.toString()).apply()
         }
     }
 
-    fun entries(context: Context): List<Entry> = runCatching {
+    fun entries(context: Context, now: Long = System.currentTimeMillis()): List<Entry> = runCatching {
         val arr = JSONArray(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("log", "[]") ?: "[]")
-        (0 until arr.length()).map { i ->
+        keepRecent((0 until arr.length()).map { i ->
             val o = arr.getJSONObject(i)
             Entry(o.optLong("at"), o.optString("text"), o.optString("where"))
-        }
+        }, now)
     }.getOrDefault(emptyList())
+
+    /** 666TVF (07/11) : les annonces s'effacent toutes seules après [KEEP_DAYS] jours. */
+    const val KEEP_DAYS = 7
+    fun keepRecent(entries: List<Entry>, now: Long): List<Entry> =
+        entries.filter { now - it.at < KEEP_DAYS * 86_400_000L }
+
+    /** Bouton « Effacer les annonces » d'Outils 666. */
+    fun clear(context: Context) {
+        runCatching { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("log", "[]").apply() }
+    }
 
     // ---------- Par-dessus les autres applis ----------
     fun canOverlay(context: Context): Boolean =

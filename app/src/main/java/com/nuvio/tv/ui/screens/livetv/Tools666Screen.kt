@@ -346,7 +346,16 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
             }
 
             // ---------- Dernières annonces ----------
-            item { Section("Dernières annonces", "Tout ce qui a fait sonner la cloche, le plus récent en haut (30 dernières)") }
+            item { Section("Dernières annonces", "Tout ce qui a fait sonner la cloche, le plus récent en haut (30 dernières, effacées toutes seules après 7 jours)") }
+            if (annonces.isNotEmpty()) {
+                item {
+                    ActionRow("Effacer les annonces", "Vide la liste maintenant (" + annonces.size + if (annonces.size > 1) " annonces)" else " annonce)", onClick = {
+                        com.nuvio.tv.core.tools.Announce666.clear(context)
+                        annonces = emptyList()
+                        toast(context, "Annonces effacées")
+                    })
+                }
+            }
             if (annonces.isEmpty()) {
                 item {
                     Text("Aucune annonce pour l'instant", modifier = Modifier.padding(horizontal = 18.dp), color = Color(0xFFC8C3BE))
