@@ -290,12 +290,45 @@ const cases = [
     {
         const q = comet._yggQueries(['La Quatrième Dimension S03E06', 'La Quatrième Dimension S03', 'The Twilight Zone S03E06', 'The Twilight Zone S03'],
             ['La Quatrième Dimension', 'The Twilight Zone'], 1959, true, 3, 6);
-        const want = ['La Quatrième Dimension S03E06', 'La Quatrieme Dimension S03E06', 'The Twilight Zone S03E06', 'La Quatrième Dimension S03', 'La Quatrieme Dimension S03', 'The Twilight Zone S03'];
+        const want = ['La Quatrième Dimension S03E06', 'La Quatrieme Dimension S03E06', 'La 4eme Dimension S03E06', 'The Twilight Zone S03E06',
+            'La Quatrième Dimension S03', 'La Quatrieme Dimension S03', 'La 4eme Dimension S03', 'The Twilight Zone S03'];
         if (JSON.stringify(q) !== JSON.stringify(want)) { fails++; console.log('✗ Requêtes YggReborn → ' + JSON.stringify(q)); }
-        else console.log('✓ YggReborn : variantes sans accents, épisode exact d\'abord, 6 max');
+        else console.log('✓ YggReborn : variantes sans accents et « 4eme », épisode exact d\'abord, 8 max');
         const f = comet._yggQueries(['Dune Deuxième Partie 2024'], ['Dune : Deuxième partie', 'Dune: Part Two'], 2024, false);
-        if (JSON.stringify(f) !== JSON.stringify(['Dune Deuxième Partie 2024', 'Dune Deuxieme Partie 2024'])) { fails++; console.log('✗ Requêtes film → ' + JSON.stringify(f)); }
+        if (JSON.stringify(f) !== JSON.stringify(['Dune Deuxième Partie 2024', 'Dune Deuxieme Partie 2024', 'Dune 2eme Partie 2024'])) { fails++; console.log('✗ Requêtes film → ' + JSON.stringify(f)); }
         else console.log('✓ YggReborn film : titre + variante sans accents');
+    }
+    // 4e dimension (07/11) : « La 4eme dimension REMUX S03 » trouvé par StreamFusion, pas par Comet666
+    {
+        const rel = 'La 4eme dimension REMUX S03';
+        const titles = ['La Quatrième Dimension', 'The Twilight Zone'];
+        const checks = [
+            [comet._releaseMatches(rel, titles, 1959, true), true, 'titre « 4eme » reconnu'],
+            [comet._matchesEpisode(rel, 3, 6), true, 'pack S03 garde S03E06'],
+            [comet._qualityOf(rel), '1080p', 'REMUX sans définition = 1080p'],
+            [comet._qualityOf('Film DVD REMUX'), null, 'REMUX DVD jamais en 1080p'],
+            [comet._frenchTitleOnly(rel, titles), true, 'titre français seul = VF probable'],
+            [comet._frenchTitleOnly('The.Twilight.Zone.1961.S03.1080p.BluRay', titles), false, 'titre original = pas de VF supposée'],
+            [comet._normTitle('La 4e Dimension'), 'la 4eme dimension', '« 4e » = « 4eme »']
+        ];
+        for (const [got, want, label] of checks) {
+            if (got !== want) { fails++; console.log('✗ 4e dimension : ' + label + ' → ' + got); }
+            else console.log('✓ 4e dimension : ' + label);
+        }
+        const saved = { fetch: global.fetch, key: global.TMDB_API_KEY, settings: global.SCRAPER_SETTINGS };
+        global.TMDB_API_KEY = ''; global.SCRAPER_SETTINGS = { yggreborn: 'PK' };
+        const json = o => ({ ok: true, json: async () => o, text: async () => (typeof o === 'string' ? o : JSON.stringify(o)) });
+        global.fetch = async u => {
+            if (u.includes('/ygg/')) return json({ titles, year: 1959, queries: ['La Quatrième Dimension S03E06', 'La Quatrième Dimension S03'] });
+            if (u.includes('yggreborn') && decodeURIComponent(u).includes('La 4eme Dimension S03'))
+                return json('<rss><item><title>La 4eme dimension REMUX S03</title><size>148000000000</size><torznab:attr name="infohash" value="' + 'e'.repeat(40) + '"/></item></rss>');
+            return { ok: false, json: async () => null, text: async () => '' };
+        };
+        const out = await comet.getStreams('tt0052520', 'tv', 3, 6);
+        const hit = out.find(x => x.infoHash === 'e'.repeat(40));
+        if (!hit || !/VF \?/.test(hit.title)) { fails++; console.log('✗ 4e dimension S03E06 pas proposé (ou pas en « VF ? ») → ' + JSON.stringify(out.map(x => x.title))); }
+        else console.log('✓ 4e dimension S03E06 proposé en « VF ? » via YggReborn');
+        global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
     }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);

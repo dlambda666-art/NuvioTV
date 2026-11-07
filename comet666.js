@@ -43,6 +43,8 @@ function qualityOf(text) {
     if (/\b1440p\b|\b2K\b|\bQHD\b/i.test(text)) return '1440p';   // 06/11 : accepté aussi
     if (/\b1080p\b/i.test(text)) return '1080p';
     if (/\b720p\b/i.test(text)) return '720p';
+    // 666TVF (07/11) : « La 4eme dimension REMUX S03 » ne dit pas sa définition ; un REMUX Blu-ray = 1080p
+    if (/\bREMUX\b/i.test(text) && !/\bDVD/i.test(text)) return '1080p';
     if (/\b480p\b/i.test(text)) return '480p';
     return null;
 }
@@ -262,7 +264,15 @@ async function fromTrackers(ids, isTv, season, episode) {
 function normTitle(t) {
     var x = String(t || '');
     try { x = x.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) { }
-    return x.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+    return ordinalDigits(x.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim());
+}
+// 666TVF (07/11) : « Quatrième » = « 4eme » = « 4e » (YGG : « La 4eme dimension »)
+var ORDINALS = { premier: '1er', premiere: '1ere', deuxieme: '2eme', troisieme: '3eme', quatrieme: '4eme', cinquieme: '5eme',
+    sixieme: '6eme', septieme: '7eme', huitieme: '8eme', neuvieme: '9eme', dixieme: '10eme' };
+function ordinalDigits(t) {
+    return String(t).replace(/\b([A-Za-z]+)\b/g, function (w) {
+        return ORDINALS[w.toLowerCase()] || w;
+    }).replace(/\b(\d{1,2})(?:e|eme|ieme|ème|ième)\b/gi, '$1eme');
 }
 
 // Une release trouvée par recherche texte doit porter le titre (et la bonne année pour un film)
@@ -348,21 +358,30 @@ var YGGREBORN_URL = 'https://www.yggreborn.org/api';
 function stripAccents(t) {
     try { return String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) { return String(t); }
 }
+// Vrai si la release porte le titre français (titres[0] de Frank) et pas le titre original.
+function frenchTitleOnly(release, titles) {
+    if (!titles || titles.length < 2) return false;
+    var r = ' ' + normTitle(release) + ' ', fr = normTitle(titles[0]);
+    var others = titles.slice(1).map(normTitle).filter(function (n) { return n && n !== fr; });
+    if (!fr || !others.length) return false;
+    return r.indexOf(' ' + fr + ' ') >= 0 && !others.some(function (n) { return r.indexOf(' ' + n + ' ') >= 0; });
+}
 function yggQueries(frankQueries, titles, year, isTv, season, episode) {
     var out = [];
     function add(q) { q = String(q || '').replace(/\s+/g, ' ').trim(); if (q && out.indexOf(q) < 0) out.push(q); }
+    function variants(q) { add(q); add(stripAccents(q)); add(ordinalDigits(stripAccents(q))); }
     var pad = function (n) { return (n < 10 ? '0' : '') + n; };
     var ep = isTv ? 'S' + pad(season) + 'E' + pad(episode) : '';
-    var sea = isTv ? 'S' + pad(season) : '';
     var exact = [], wide = [];
     frankQueries.forEach(function (q) { (isTv && q.indexOf(ep) < 0 ? wide : exact).push(q); });
-    exact.forEach(function (q) { add(q); add(stripAccents(q)); });
+    exact.forEach(variants);
     if (isTv) {
-        wide.forEach(function (q) { add(q); add(stripAccents(q)); });
+        wide.forEach(variants);
         if (year && titles.length) add(stripAccents(titles[titles.length - 1]) + ' ' + year);
     }
-    return out.slice(0, 6);
+    return out.slice(0, MAX_YGG_QUERIES);
 }
+var MAX_YGG_QUERIES = 8;
 async function fromYggReborn(imdbId, isTv, season, episode) {
     var key = setting('yggreborn');
     if (!key) return [];
@@ -378,7 +397,10 @@ async function fromYggReborn(imdbId, isTv, season, episode) {
         parseTorznab(xml, isTv, season, episode, 'YggReborn').forEach(function (t) {
             if (seen[t.hash]) return;
             seen[t.hash] = 1;
-            if (releaseMatches(t.release, titles, year, isTv)) out.push(t);
+            if (!releaseMatches(t.release, titles, year, isTv)) return;
+            // nom français (« La 4eme dimension ») sur un tracker français, sans mot de langue : VF probable
+            t.frTitle = frenchTitleOnly(t.release, titles);
+            out.push(t);
         });
         // l'épisode exact a déjà répondu : pas besoin de la saison entière
         if (isTv && out.length >= 3) break;
@@ -498,6 +520,8 @@ async function getStreams(tmdbId, mediaType, season, episode) {
             var key = String(t.release).toLowerCase().replace(/[ ._-]*mkv$/, '').replace(/[^a-z0-9]+/g, ' ').trim();
             if (seen[t.hash] || seenNames[key]) return;
             var lang = frenchLabel(t.text);
+            // titre français seul, sans mot de langue (YggReborn) : proposé en « VF ? », jamais sûr
+            if (!lang && t.frTitle && !SUBTITLE_ONLY.test(t.text) && !CAM_RELEASE.test(t.text) && !OTHER_DUB.test(t.text)) lang = 'VF ? (titre FR)';
             if (!lang) return;
             seen[t.hash] = true;
             seenNames[key] = true;
@@ -551,4 +575,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle };
