@@ -441,6 +441,16 @@ const cases = [
         if (f.some(x => /20\d\d\.\d\d/.test(x))) { fails++; console.log('✗ Date ajoutée sans date de diffusion'); }
         else console.log('✓ Sans date de diffusion, pas de recherche par date');
     }
+    // SmackDown (07/11) : la release datée du bon jour est le bon épisode ; une autre date non
+    {
+        comet._setAirDate('2026-11-06');
+        const ok = comet._matchesEpisode('WWE.SmackDown.2026.11.06.MULTI.VFF.1080p.WEB.AAC.h265-HEEL.mkv', 28, 45);
+        const old = comet._matchesEpisode('WWE.SmackDown.2026.10.31.MULTI.VFF.1080p.WEB.AAC.h265-HEEL.mkv', 28, 45);
+        comet._setAirDate(null);
+        const none = comet._matchesEpisode('WWE.SmackDown.2026.11.06.MULTI.VFF.1080p.WEB-HEEL', 28, 45);
+        if (!ok || old || none) { fails++; console.log('✗ Épisode daté → bon jour ' + ok + ' · autre date ' + old + ' · sans date connue ' + none); }
+        else console.log('✓ SmackDown daté : bon jour gardé, 31/10 écarté, rien sans date de diffusion');
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();

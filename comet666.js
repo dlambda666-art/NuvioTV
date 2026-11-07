@@ -158,6 +158,8 @@ function matchesEpisode(title, season, episode) {
         if (range) return season >= parseInt(range[1], 10) && season <= parseInt(range[2], 10);
         return parseInt(sOnly[1], 10) === season;
     }
+    // 666TVF (07/11) : émission datée sans SxxEyy (« WWE.SmackDown.2026.11.06 ») : le bon jour = le bon épisode
+    if (AIR_DATE && /\b20\d\d[ ._-]\d\d[ ._-]\d\d\b/.test(t)) return !dateMismatch(t, AIR_DATE);
     return /\b(INTEGRALE|COMPLETE|COMPLETA|INT[ÉE]GRALE)\b/i.test(t);
 }
 
@@ -586,7 +588,7 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.19';
+var COMET_VERSION = '1.1.20';
 async function trace(data) {
     try {
         data.v = COMET_VERSION;
@@ -747,4 +749,4 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _budget: function (ms) { BUDGET_MS = ms; } };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _budget: function (ms) { BUDGET_MS = ms; } };
