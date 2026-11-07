@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -263,16 +264,44 @@ fun MorgueTile666(
     }
 }
 
-/** Dans la morgue : toutes tes étiquettes « Continuer à regarder », sur le fond de la morgue. */
+/** Portes des 8 tiroirs dans l'image du mur (fractions de l'écran 16:9), 4 colonnes × 2 rangées. */
+internal object Drawers666 {
+    val COLS = listOf(0.1161f to 0.2803f, 0.3188f to 0.4815f, 0.5220f to 0.6847f, 0.7257f to 0.8884f)
+    val ROWS = listOf(0.2242f to 0.5004f, 0.5336f to 0.8072f)
+    const val PER_WALL = 8
+
+    /** Règle pure (testée) : nombre de murs pour n en-cours. */
+    fun walls(n: Int): Int = if (n <= 0) 1 else (n + PER_WALL - 1) / PER_WALL
+
+    /** Règle pure (testée) : SxxEyy de l'étiquette, rien pour un film. */
+    fun code(season: Int?, episode: Int?): String =
+        if (season != null && episode != null && season > 0) "S%02dE%02d".format(season, episode) else ""
+}
+
+private data class Drawer666(val backdrop: String?, val logo: String?, val poster: String?, val code: String, val progress: Float)
+
+private fun ContinueWatchingItem.drawer666(): Drawer666 = when (this) {
+    is ContinueWatchingItem.InProgress -> Drawer666(
+        progress.backdrop, progress.logo, progress.poster,
+        Drawers666.code(progress.season, progress.episode), progress.progressPercentage
+    )
+    is ContinueWatchingItem.NextUp -> Drawer666(info.backdrop, info.logo, info.poster, Drawers666.code(info.season, info.episode), 0f)
+}
+
+/**
+ * Dans la morgue : le mur de tiroirs. Chaque porte porte l'image de fond de la série + son logo
+ * (sinon l'affiche), le SxxEyy dans le porte-étiquette et la progression verte. 8 par mur ; flèche
+ * bas / haut pour changer de mur. Appui long = options ; Retour = on ressort.
+ */
 @Composable
 fun Morgue666Overlay(
     items: List<ContinueWatchingItem>,
-    cardWidth: Dp,
-    cardHeight: Dp,
-    cardStyle: ContinueWatchingCardStyle,
-    cornerRadius: Dp,
-    blurUnwatchedEpisodes: Boolean,
-    useEpisodeThumbnails: Boolean,
+    @Suppress("UNUSED_PARAMETER") cardWidth: Dp,
+    @Suppress("UNUSED_PARAMETER") cardHeight: Dp,
+    @Suppress("UNUSED_PARAMETER") cardStyle: ContinueWatchingCardStyle,
+    @Suppress("UNUSED_PARAMETER") cornerRadius: Dp,
+    @Suppress("UNUSED_PARAMETER") blurUnwatchedEpisodes: Boolean,
+    @Suppress("UNUSED_PARAMETER") useEpisodeThumbnails: Boolean,
     onClick: (ContinueWatchingItem) -> Unit,
     onOptions: (ContinueWatchingItem) -> Unit,
     modifier: Modifier = Modifier
@@ -284,50 +313,130 @@ fun Morgue666Overlay(
         modifier = modifier
     ) {
         BackHandler(enabled = Morgue666.open) { Morgue666.open = false; Morgue666.opening = false }
-        val first = remember { FocusRequester() }
-        LaunchedEffect(Unit) { delay(80); runCatching { first.requestFocus() } }
         LaunchedEffect(items.isEmpty()) { if (items.isEmpty()) { Morgue666.open = false; Morgue666.opening = false } }
-        Box(Modifier.fillMaxSize().background(Color.Black)) {
-            Image(
-                painterResource(R.drawable.bg_morgue_666), null,
-                Modifier.fillMaxSize(), contentScale = ContentScale.Crop
+        var wall by remember { mutableStateOf(0) }
+        val walls = Drawers666.walls(items.size)
+        if (wall >= walls) wall = walls - 1
+        val requesters = remember { List(Drawers666.PER_WALL) { FocusRequester() } }
+        var focusSlot by remember { mutableStateOf(0) }
+        LaunchedEffect(wall) { delay(80); runCatching { requesters[focusSlot.coerceAtMost(((items.size - wall * Drawers666.PER_WALL) - 1).coerceAtLeast(0))].requestFocus() } }
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            Modifier.fillMaxSize().background(Color.Black)
+                .focusProperties { onExit = { cancelFocusChange() } }
+                .focusGroup()
+        ) {
+            val sw = maxWidth; val sh = maxHeight
+            Image(painterResource(R.drawable.bg_morgue_tiroirs_666), null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+            Text(
+                "Continuer à regarder",
+                style = TextStyle(fontFamily = Creepster666Family, fontSize = 34.sp, color = Color(0xFF78E66E)),
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 22.dp)
             )
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)))
-            Column(Modifier.fillMaxSize().padding(start = 48.dp, top = 34.dp, end = 48.dp)) {
-                Text(
-                    "Continuer à regarder",
-                    style = TextStyle(fontFamily = Creepster666Family, fontSize = 40.sp, color = Color(0xFF78E66E))
+            for (slot in 0 until Drawers666.PER_WALL) {
+                val index = wall * Drawers666.PER_WALL + slot
+                val item = items.getOrNull(index) ?: continue
+                val col = slot % 4; val row = slot / 4
+                val (x0, x1) = Drawers666.COLS[col]; val (y0, y1) = Drawers666.ROWS[row]
+                DrawerDoor666(
+                    drawer = item.drawer666(),
+                    requester = requesters[slot],
+                    modifier = Modifier.offset(sw * x0, sh * y0).size(sw * (x1 - x0), sh * (y1 - y0)),
+                    onFocused = { focusSlot = slot },
+                    onClick = { onClick(item) },
+                    onLongPress = { onOptions(item) },
+                    onDownEdge = if (row == 1 && wall < walls - 1) ({ focusSlot = col; wall += 1 }) else null,
+                    onUpEdge = if (row == 0 && wall > 0) ({ focusSlot = 4 + col; wall -= 1 }) else null
                 )
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(cardWidth + 8.dp),
-                    // le focus ne sort pas de la morgue (retour = touche Retour)
-                    modifier = Modifier.fillMaxSize()
-                        .focusProperties { onExit = { cancelFocusChange() } }
-                        .focusGroup(),
-                    contentPadding = PaddingValues(top = 24.dp, bottom = 48.dp),
-                    verticalArrangement = Arrangement.spacedBy(22.dp),
-                    horizontalArrangement = Arrangement.spacedBy(18.dp)
-                ) {
-                    itemsIndexed(items, key = { _, it -> it.contentId() + ":" + it.season() + ":" + it.episode() }) { index, item ->
-                        var focused by remember { mutableStateOf(false) }
-                        com.nuvio.tv.ui.components.ContinueWatchingCard(
-                            item = item,
-                            onClick = { onClick(item) },
-                            onLongPress = { onOptions(item) },
-                            cardWidth = cardWidth,
-                            imageHeight = cardHeight,
-                            blurUnwatchedEpisodes = blurUnwatchedEpisodes,
-                            useEpisodeThumbnails = useEpisodeThumbnails,
-                            cardStyle = cardStyle,
-                            cornerRadius = cornerRadius,
-                            isFocused = focused,
-                            modifier = Modifier
-                                .then(if (index == 0) Modifier.focusRequester(first) else Modifier)
-                                .onFocusChanged { focused = it.isFocused }
-                        )
+            }
+            if (walls > 1) {
+                Text(
+                    "Mur ${wall + 1}/$walls  ·  ▼ ▲ pour changer de mur",
+                    style = TextStyle(fontSize = 14.sp, color = Color(0xFFC8C3BE)),
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 18.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DrawerDoor666(
+    drawer: Drawer666,
+    requester: FocusRequester,
+    modifier: Modifier,
+    onFocused: () -> Unit,
+    onClick: () -> Unit,
+    onLongPress: () -> Unit,
+    onDownEdge: (() -> Unit)?,
+    onUpEdge: (() -> Unit)?
+) {
+    var focused by remember { mutableStateOf(false) }
+    var longFired by remember { mutableStateOf(false) }
+    val glow by animateFloatAsState(if (focused) 1f else 0f, tween(250), label = "drawer666")
+    val green = Color(0xFF78E66E)
+    val useLogo = !drawer.backdrop.isNullOrBlank() && !drawer.logo.isNullOrBlank()
+    val image = if (useLogo) drawer.backdrop else (drawer.poster ?: drawer.backdrop)
+    Box(
+        modifier
+            .graphicsLayer {
+                // le tiroir sélectionné s'entrouvre vers toi
+                val s = 1f + 0.05f * glow
+                scaleX = s; scaleY = s
+                shadowElevation = 18f * glow
+            }
+            .border(if (focused) 3.dp else 0.dp, if (focused) green else Color.Transparent, RoundedCornerShape(8.dp))
+            .focusRequester(requester)
+            .onFocusChanged { focused = it.isFocused; if (it.isFocused) onFocused() }
+            .onKeyEvent { e ->
+                val ok = e.key == Key.DirectionCenter || e.key == Key.Enter || e.key == Key.NumPadEnter
+                when {
+                    ok && e.type == KeyEventType.KeyDown -> {
+                        if (e.nativeKeyEvent.repeatCount >= 4 && !longFired) { longFired = true; onLongPress() }
+                        true
                     }
+                    ok && e.type == KeyEventType.KeyUp -> { if (!longFired) onClick(); longFired = false; true }
+                    e.key == Key.DirectionDown && e.type == KeyEventType.KeyDown && onDownEdge != null -> { onDownEdge(); true }
+                    e.key == Key.DirectionUp && e.type == KeyEventType.KeyDown && onUpEdge != null -> { onUpEdge(); true }
+                    else -> false
                 }
             }
+            .focusable()
+            .padding(6.dp)
+    ) {
+        // l'image collée sur la porte (un peu de métal sale reste visible au travers)
+        coil3.compose.AsyncImage(
+            model = image, contentDescription = null, contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)).graphicsLayer { alpha = 0.9f }
+        )
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.25f), Color.Transparent, Color.Black.copy(alpha = 0.55f)))))
+        if (useLogo) {
+            coil3.compose.AsyncImage(
+                model = drawer.logo, contentDescription = null, contentScale = ContentScale.Fit,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(start = 12.dp, end = 12.dp, bottom = 20.dp)
+                    .fillMaxWidth().height(46.dp)
+            )
+        }
+        // porte-étiquette : carte papier avec le SxxEyy
+        Box(
+            Modifier.align(Alignment.TopCenter).padding(top = 6.dp)
+                .background(Color(0xFF46423F), RoundedCornerShape(2.dp))
+                .border(2.dp, Color(0xFF242020), RoundedCornerShape(2.dp))
+                .padding(4.dp)
+                .background(Color(0xFFDECEAA))
+                .padding(horizontal = 10.dp, vertical = 2.dp)
+        ) {
+            Text(
+                drawer.code.ifBlank { "      " },
+                style = TextStyle(fontSize = 15.sp, color = Color(0xFF281912), fontWeight = FontWeight.SemiBold)
+            )
+        }
+        // progression
+        if (drawer.progress > 0f) {
+            Box(Modifier.align(Alignment.BottomStart).padding(start = 8.dp, end = 8.dp, bottom = 7.dp).fillMaxWidth().height(5.dp).background(Color.Black.copy(alpha = 0.8f)))
+            Box(
+                Modifier.align(Alignment.BottomStart).padding(start = 8.dp, bottom = 7.dp)
+                    .fillMaxWidth(drawer.progress.coerceIn(0.02f, 1f) * 0.94f).height(5.dp).background(green)
+            )
         }
     }
 }
