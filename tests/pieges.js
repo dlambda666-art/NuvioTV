@@ -333,6 +333,37 @@ const cases = [
         else console.log('✓ 4e dimension S03E06 proposé en « VF ? » via YggReborn');
         global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
     }
+    // Mode enquête (07/11) : rien de lisible → Comet666 dit pourquoi, source par source
+    {
+        const saved = { fetch: global.fetch, key: global.TMDB_API_KEY, settings: global.SCRAPER_SETTINGS };
+        global.TMDB_API_KEY = ''; global.SCRAPER_SETTINGS = { yggreborn: 'PK' };
+        const json = o => ({ ok: true, json: async () => o, text: async () => (typeof o === 'string' ? o : JSON.stringify(o)) });
+        global.fetch = async u => {
+            if (u.includes('/ygg/')) return json({ titles: ['La Quatrième Dimension', 'The Twilight Zone'], year: 1959, queries: ['La Quatrième Dimension S03E06'] });
+            if (u.includes('yggreborn')) return json('<rss>'
+                + '<item><title>La Quatrieme Dimension S03E06 VOSTFR 1080p</title><torznab:attr name="infohash" value="' + '1'.repeat(40) + '"/></item>'
+                + '<item><title>La Quatrieme Dimension S03E07 FRENCH 1080p</title><torznab:attr name="infohash" value="' + '2'.repeat(40) + '"/></item>'
+                + '</rss>');
+            if (u.includes('torrentio')) return json({ streams: [{ infoHash: '3'.repeat(40), title: 'The.Twilight.Zone.S03E06.FRENCH.720p.WEB\n👤 5' }] });
+            return { ok: false, json: async () => null, text: async () => '' };
+        };
+        const out = await comet.getStreams('tt0052520', 'tv', 3, 6);
+        const txt = out.map(x => x.title).join(' | ');
+        const okLines = out.length >= 2 && out.every(x => x.name === 'Comet666 enquête' && !x.infoHash);
+        if (!okLines || !/YggReborn : \d+ recherche/.test(txt) || !/1 VOSTFR/.test(txt) || !/autre épisode/.test(txt) || !/720p/.test(txt)) {
+            fails++; console.log('✗ Mode enquête → ' + txt);
+        } else console.log('✓ Mode enquête : VOSTFR, autre épisode et 720p expliqués, aucun lien lançable');
+        // un lien proposable → pas de ligne d'enquête
+        global.fetch = async u => {
+            if (u.includes('torrentio')) return json({ streams: [{ infoHash: '4'.repeat(40), title: 'The.Twilight.Zone.S03E06.FRENCH.1080p.WEB\n👤 5' }] });
+            return { ok: false, json: async () => null, text: async () => '' };
+        };
+        global.SCRAPER_SETTINGS = {};
+        const out2 = await comet.getStreams('tt0052520', 'tv', 3, 6);
+        if (out2.some(x => x.name === 'Comet666 enquête')) { fails++; console.log('✗ Ligne d\'enquête alors qu\'un lien existe'); }
+        else console.log('✓ Pas d\'enquête quand un lien VF 1080p existe');
+        global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();

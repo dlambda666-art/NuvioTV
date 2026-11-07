@@ -352,6 +352,8 @@ async function fromYgg(imdbId, isTv, season, episode) {
 // l'année et les requêtes « Titre S03E04 » / « Titre S03 » / « Titre 2026 » ; on garde ce qui
 // porte vraiment le titre (et la bonne année pour un film, le bon épisode pour une série).
 var YGGREBORN_URL = 'https://www.yggreborn.org/api';
+// 666TVF (07/11) : mode enquête — ce que YggReborn a renvoyé et pourquoi c'est écarté avant le tri
+var YGG_STATS = null;
 // 666TVF (07/11) : la 4e dimension S03 n'était pas trouvée. Les noms YGG s'écrivent sans accents
 // (« La.Quatrieme.Dimension ») et souvent avec l'année (« The.Twilight.Zone.1961.S03 ») : on ajoute
 // ces variantes aux recherches de Frank (6 max, l'épisode exact d'abord).
@@ -397,13 +399,19 @@ async function fromYggReborn(imdbId, isTv, season, episode) {
     var year = data && data.year ? Number(data.year) : 0;
     var queries = yggQueries((data && data.queries) || [], titles, year, isTv, season, episode);
     var out = [], seen = {};
+    YGG_STATS = { queries: 0, items: 0, episode: 0, title: 0 };
     for (var i = 0; i < queries.length; i++) {
         var xml = await getText(YGGREBORN_URL + '?t=search&limit=50&q=' + encodeURIComponent(queries[i]) +
             '&apikey=' + encodeURIComponent(key));
-        parseTorznab(xml, isTv, season, episode, 'YggReborn').forEach(function (t) {
+        YGG_STATS.queries++;
+        var all = parseTorznab(xml, false, 0, 0, 'YggReborn').filter(function (t) { return !seen[t.hash]; });
+        var good = parseTorznab(xml, isTv, season, episode, 'YggReborn');
+        YGG_STATS.items += all.length;
+        YGG_STATS.episode += Math.max(0, all.length - good.filter(function (t) { return !seen[t.hash]; }).length);
+        good.forEach(function (t) {
             if (seen[t.hash]) return;
             seen[t.hash] = 1;
-            if (!releaseMatches(t.release, titles, year, isTv)) return;
+            if (!releaseMatches(t.release, titles, year, isTv)) { YGG_STATS.title++; return; }
             // nom français (« La 4eme dimension ») sur un tracker français, sans mot de langue : VF probable
             t.frTitle = frenchTitleOnly(t.release, titles);
             out.push(t);
@@ -491,9 +499,30 @@ async function settleMulti(items) {
     });
 }
 
+// Mode enquête (pur, testé) : lignes courtes « Source : N trouvés · 2 VOSTFR · 1 720p ».
+function investigation(why, ygg) {
+    var lines = ['🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi :'];
+    var parts = [];
+    Object.keys(why).forEach(function (k) {
+        var w = why[k];
+        var r = Object.keys(w.reasons).sort(function (a, b) { return w.reasons[b] - w.reasons[a]; })
+            .map(function (x) { return w.reasons[x] + ' ' + x; });
+        parts.push(k + ' : ' + w.found + ' trouvé' + (w.found > 1 ? 's' : '') + (r.length ? ' · ' + r.join(' · ') : ''));
+    });
+    if (ygg) {
+        var y = 'YggReborn : ' + ygg.queries + ' recherche' + (ygg.queries > 1 ? 's' : '') + ' · ' + ygg.items + ' réponse' + (ygg.items > 1 ? 's' : '');
+        if (ygg.episode) y += ' · ' + ygg.episode + ' autre épisode';
+        if (ygg.title) y += ' · ' + ygg.title + ' autre titre';
+        parts.unshift(y);
+    } else if (setting('yggreborn')) parts.unshift('YggReborn : pas interrogé');
+    if (!parts.length) parts.push('aucune source n\'a répondu');
+    return lines.concat(parts.slice(0, 5)).map(function (l) { return l.slice(0, 90); });
+}
+
 // --- Point d'entrée appelé par 666TV --------------------------------------
 async function getStreams(tmdbId, mediaType, season, episode) {
     var isTv = mediaType === 'tv' || mediaType === 'series';
+    YGG_STATS = null;
     var ids = await resolveIds(tmdbId, mediaType);
     if (!ids || !ids.imdbId) {
         console.log('Comet666 : id IMDb introuvable pour ' + tmdbId);
@@ -520,29 +549,47 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     var airDate = isTv ? await episodeAirDate(tmdbId, season, episode) : null;
     var seen = {};
     var seenNames = {};
+    // 666TVF (07/11) : mode enquête — par source : trouvés, gardés, et pourquoi le reste est écarté
+    var why = {};
+    function srcOf(t) { return String(t.source || '?').split(' ')[0]; }
+    function note(t, reason) {
+        var k = srcOf(t);
+        why[k] = why[k] || { found: 0, kept: 0, reasons: {} };
+        if (reason) why[k].reasons[reason] = (why[k].reasons[reason] || 0) + 1;
+    }
+    lists.forEach(function (list) { list.forEach(function (t) { note(t); why[srcOf(t)].found++; }); });
     lists.forEach(function (list) {
         list.forEach(function (t) {
             // fichier daté d'un autre jour (vieux WWE Raw) : jamais
-            if (isTv && dateMismatch(String(t.release) + ' ' + String(t.text || ''), airDate)) return;
+            if (isTv && dateMismatch(String(t.release) + ' ' + String(t.text || ''), airDate)) { note(t, 'autre date'); return; }
             // même release publiée deux fois (avec ou sans « .mkv ») : une seule ligne
             var key = String(t.release).toLowerCase().replace(/[ ._-]*mkv$/, '').replace(/[^a-z0-9]+/g, ' ').trim();
-            if (seen[t.hash] || seenNames[key]) return;
+            if (seen[t.hash] || seenNames[key]) { note(t, 'doublon'); return; }
             var lang = frenchLabel(t.text);
             // titre français seul, sans mot de langue (YggReborn) : proposé en « VF ? », jamais sûr
             if (!lang && t.frTitle && !SUBTITLE_ONLY.test(t.text) && !CAM_RELEASE.test(t.text) && !OTHER_DUB.test(t.text)) lang = 'VF ? (titre FR)';
-            if (!lang) return;
+            if (!lang) {
+                note(t, SUBTITLE_ONLY.test(t.text) ? 'VOSTFR' : CAM_RELEASE.test(t.text) ? 'CAM' : 'pas de VF');
+                return;
+            }
             seen[t.hash] = true;
             seenNames[key] = true;
             t.lang = lang;
             t.quality = qualityOf(t.text);
             // 1080p, 1440p et 4K seulement (jamais de 720p)
-            if (t.quality !== '1080p' && t.quality !== '1440p' && t.quality !== '2160p') return;
+            if (t.quality !== '1080p' && t.quality !== '1440p' && t.quality !== '2160p') { note(t, t.quality || 'définition ?'); return; }
             found.push(t);
         });
     });
     // Les fichiers « autre saison » ne servent que s'il n'y a rien d'exact.
-    if (isTv && found.some(exactSeason)) found = found.filter(exactSeason);
+    if (isTv && found.some(exactSeason)) {
+        found.filter(function (t) { return !exactSeason(t); }).forEach(function (t) { note(t, 'autre saison'); });
+        found = found.filter(exactSeason);
+    }
+    var beforeMulti = found.slice();
     found = await settleMulti(found);
+    beforeMulti.filter(function (t) { return found.indexOf(t) < 0; }).forEach(function (t) { note(t, 'MULTi étranger'); });
+    found.forEach(function (t) { why[srcOf(t)].kept++; });
     found.sort(function (a, b) {
         // VF sûre d'abord, « MULTi (VF ?) » ensuite
         var c = (a.lang.indexOf('?') >= 0) - (b.lang.indexOf('?') >= 0);
@@ -566,6 +613,12 @@ async function getStreams(tmdbId, mediaType, season, episode) {
             type: 'torrent'
         };
     });
+    // 666TVF (07/11) : mode enquête — rien de proposable : on dit pourquoi, source par source.
+    if (!shown.length && String(tmdbId).replace(/^tmdb:/i, '') !== '603') {
+        investigation(why, YGG_STATS).reverse().forEach(function (line) {
+            shown.unshift({ name: 'Comet666 enquête', title: line, url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct' });
+        });
+    }
     // Bouton « Tester » (Matrix) : d'où viennent les liens (gardés / trouvés), en 1re ligne.
     if (String(tmdbId).replace(/^tmdb:/i, '') === '603') {
         var raw = {}, kept = {};
@@ -583,4 +636,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation };
