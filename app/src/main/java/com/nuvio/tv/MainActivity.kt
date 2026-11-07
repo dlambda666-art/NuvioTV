@@ -1361,6 +1361,8 @@ open class MainActivity : ComponentActivity() {
                                             val run = runCatching { vfWatcher666.dailyRun { com.nuvio.tv.core.tools.Announce666.watcherBusy() } }.getOrNull()
                                             // 666TVF (04/11) : les PLE de la WWE, toutes les 2 h les jours qui suivent
                                             runCatching { vfWatcher666.plePass { com.nuvio.tv.core.tools.Announce666.watcherBusy() } }
+                                            // 666TVF (07/11) : le guetteur séries (nouvelles saisons en VF de séries pas encore suivies)
+                                            runCatching { vfWatcher666.seriesPass { com.nuvio.tv.core.tools.Announce666.watcherBusy() } }
                                             // 666TVF : une ligne après chaque passage, avec le nom des films trouvés (29/10)
                                             if (run != null) com.nuvio.tv.core.tools.Announce666.log(
                                                 this@MainActivity, com.nuvio.tv.core.tools.VfWatcher666.summary(run), "guetteur des sorties"
@@ -1368,7 +1370,7 @@ open class MainActivity : ComponentActivity() {
                                             // 666TVF (03/11) : un film trouvé en VF 1080p/4K → cri + bannière, une fois par film
                                             val films = runCatching { vfWatcher666.takePendingFresh() }.getOrDefault(emptyList())
                                             // 666TVF (04/11) : et il s'enregistre tout seul sur le disque (Shield du bas)
-                                            if (films.isNotEmpty()) runCatching { autoRecord666.offerFilms(films) }
+                                            films.filter { it.season == 0 }.takeIf { it.isNotEmpty() }?.let { f -> runCatching { autoRecord666.offerFilms(f) } }
                                             if (films.isNotEmpty()) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                                                 pending666 = (pending666 + films.map { f -> filmAnnouncement666(f) })
                                                     .distinctBy { "${it.seriesId}|${it.season}|${it.episode}" }
@@ -1481,7 +1483,8 @@ open class MainActivity : ComponentActivity() {
                                 if (!bellLifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) &&
                                     !com.nuvio.tv.core.tools.Announce666.overlayShowing) {
                                     val names = calendarVfAnnouncements.joinToString(", ") { ep ->
-                                        if (ep.seriesId.startsWith("sport:") || ep.seriesId.startsWith("alerte:") || ep.seriesId.startsWith("film:") || ep.seriesId.startsWith("ple:")) ep.seriesName else ep.seriesName + " " + ep.code
+                                        if (ep.seriesId.startsWith("serie:")) ep.seriesName + " saison " + ep.season
+                                        else if (ep.seriesId.startsWith("sport:") || ep.seriesId.startsWith("alerte:") || ep.seriesId.startsWith("film:") || ep.seriesId.startsWith("ple:")) ep.seriesName else ep.seriesName + " " + ep.code
                                     }
                                     val sport = calendarVfAnnouncements.all { it.seriesId.startsWith("sport:") }
                                     val alerte = calendarVfAnnouncements.all { it.seriesId.startsWith("alerte:") }
@@ -2859,11 +2862,11 @@ private fun android.content.Context.markSportAnnounced666(shown: List<com.nuvio.
 // 666TVF (03/11) : film trouvé en VF par le guetteur, annoncé comme un épisode (cri + bannière).
 internal fun filmAnnouncement666(f: com.nuvio.tv.core.tools.VfWatcher666.Found) =
     com.nuvio.tv.core.calendar.CalendarEpisode(
-        seriesId = (if (f.ple) "ple:" else "film:") + f.imdbId,
+        seriesId = (if (f.season > 0) "serie:" else if (f.ple) "ple:" else "film:") + f.imdbId,
         seriesName = f.name,
         poster = f.poster,
-        season = 0,
-        episode = 0,
+        season = f.season,
+        episode = if (f.season > 0) 1 else 0,
         title = null,
         airInstant = java.time.Instant.now(),
         addonBaseUrl = null
@@ -2878,6 +2881,7 @@ internal fun announceTitle666(episodes: List<com.nuvio.tv.core.calendar.Calendar
 }
 
 internal fun announceLine666(ep: com.nuvio.tv.core.calendar.CalendarEpisode): String = when {
+    ep.seriesId.startsWith("serie:") -> "📺 ${ep.seriesName} · saison ${ep.season} en VF (pas encore suivie)"
     ep.seriesId.startsWith("film:") -> "🎬 ${ep.seriesName} · film en VF"
     ep.seriesId.startsWith("ple:") -> "🤼 ${ep.seriesName} · PLE en VF"
     ep.seriesId.startsWith("alerte:") -> "⚠️ ${ep.seriesName} · ${ep.title.orEmpty()}"
@@ -2888,6 +2892,7 @@ internal fun announceLine666(ep: com.nuvio.tv.core.calendar.CalendarEpisode): St
 }
 
 internal fun announceLogText666(ep: com.nuvio.tv.core.calendar.CalendarEpisode): String = when {
+    ep.seriesId.startsWith("serie:") -> "📺 ${ep.seriesName} saison ${ep.season} en VF (série pas encore suivie)"
     ep.seriesId.startsWith("film:") -> "🔔 ${ep.seriesName} (film) en VF"
     ep.seriesId.startsWith("ple:") -> "🤼 ${ep.seriesName} (PLE) en VF"
     ep.seriesId.startsWith("alerte:") -> "⚠️ ${ep.seriesName} ne renvoie plus rien"

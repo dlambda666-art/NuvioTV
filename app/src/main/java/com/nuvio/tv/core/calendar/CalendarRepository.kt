@@ -156,6 +156,11 @@ class CalendarRepository @Inject constructor(
         return seeds.values.take(MAX_SERIES)
     }
 
+    /** 666TVF (07/11) : ids (tt…) des séries déjà suivies par le calendrier (le guetteur séries les laisse à la cloche). */
+    suspend fun followedSeriesIds(): Set<String> = withContext(Dispatchers.IO) {
+        followedSeries().map { it.id.substringBefore(':').lowercase() }.toSet()
+    }
+
     /** Nombre de séries suivies au dernier chargement (affiché dans le calendrier). */
     @Volatile
     var lastFollowedCount: Int = 0

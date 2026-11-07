@@ -23,7 +23,8 @@ import javax.inject.Singleton
 @Singleton
 class VfWatcher666 @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val pluginManager: PluginManager
+    private val pluginManager: PluginManager,
+    private val calendarRepository: dagger.Lazy<com.nuvio.tv.core.calendar.CalendarRepository>
 ) {
     private val prefs by lazy { context.getSharedPreferences("666tv_guetteur", Context.MODE_PRIVATE) }
 
@@ -31,7 +32,7 @@ class VfWatcher666 @Inject constructor(
     data class Run(val checked: Int, val found: List<String>)
 
     /** Film trouvé en VF pendant ce passage (pour la bannière et le cri). */
-    data class Found(val imdbId: String, val name: String, val poster: String?, val ple: Boolean = false)
+    data class Found(val imdbId: String, val name: String, val poster: String?, val ple: Boolean = false, val season: Int = 0)
 
     private data class Cand(val name: String, val poster: String?, val released: LocalDate? = null)
 
@@ -115,9 +116,9 @@ class VfWatcher666 @Inject constructor(
     }
 
     private fun addFresh(f: Found) {
-        val list = (pendingFresh() + f).distinctBy { it.imdbId }
+        val list = (pendingFresh() + f).distinctBy { "${it.imdbId}|${it.season}" }
         val arr = JSONArray()
-        list.forEach { arr.put(JSONObject().put("id", it.imdbId).put("name", it.name).put("poster", it.poster ?: "").put("ple", it.ple)) }
+        list.forEach { arr.put(JSONObject().put("id", it.imdbId).put("name", it.name).put("poster", it.poster ?: "").put("ple", it.ple).put("season", it.season)) }
         prefs.edit().putString("fresh", arr.toString()).apply()
     }
 
@@ -130,8 +131,85 @@ class VfWatcher666 @Inject constructor(
 
     private fun pendingFresh(): List<Found> = runCatching {
         val arr = JSONArray(prefs.getString("fresh", "[]"))
-        (0 until arr.length()).map { i -> arr.getJSONObject(i).let { Found(it.getString("id"), it.optString("name"), it.optString("poster").ifBlank { null }, it.optBoolean("ple")) } }
+        (0 until arr.length()).map { i -> arr.getJSONObject(i).let { Found(it.getString("id"), it.optString("name"), it.optString("poster").ifBlank { null }, it.optBoolean("ple"), it.optInt("season", 0)) } }
     }.getOrDefault(emptyList())
+
+    // ---------- 666TVF (07/11) : le guetteur séries ----------
+
+    /**
+     * Toutes les 12 h : les séries qui démarrent ou reprennent une saison (TMDB, 45 derniers jours),
+     * que tu ne suis pas encore (les tiennes, c'est la cloche du calendrier). L'épisode 1 de la saison
+     * en VF sûre 1080p / 4K → cri + bannière « 📺 », une fois par saison.
+     */
+    suspend fun seriesPass(busy: () -> Boolean) {
+        if (System.currentTimeMillis() - prefs.getLong("series_at", 0L) < INTERVAL_MS) return
+        val today = LocalDate.now()
+        val followed = runCatching { calendarRepository.get().followedSeriesIds() }.getOrDefault(emptySet())
+        val known = prefs.getStringSet("series_known", emptySet()).orEmpty()
+        val firstPass = !prefs.getBoolean("series_baseline", false)
+        val cands = runCatching { recentSeasons(today) }.getOrDefault(emptyList())
+            .filter { it.imdbId.lowercase() !in followed && seasonKey(it) !in known }
+        val order = PluginOrder666.order.map { it.lowercase() }
+        val cavaliers = runCatching { pluginManager.enabledScrapers.first() }.getOrDefault(emptyList())
+            .filter { s -> s.id.substringAfterLast(':').lowercase() in order && s.supportsType("tv") && Background666.allowed(s.id) }
+            .sortedBy { s -> order.indexOf(s.id.substringAfterLast(':').lowercase()) }
+        if (cavaliers.isEmpty()) return
+        val done = prefs.getStringSet("series_done", emptySet()).orEmpty().toMutableSet()
+        for (c in cands) {
+            val key = seasonKey(c)
+            if (key in done) continue
+            if (busy()) { prefs.edit().putStringSet("series_done", done).apply(); return }   // reprise au prochain tour
+            val cry = cavaliers.any { scraper ->
+                if (busy()) return@any false
+                val res = withTimeoutOrNull(30_000) {
+                    runCatching { Background666.paced { pluginManager.executeScraper(scraper, c.imdbId, "tv", c.season, 1) } }.getOrNull()
+                }.orEmpty()
+                res.any { r -> isSeriesCryRelease(listOfNotNull(r.name, r.title).joinToString(" "), c.season) }
+            }
+            if (busy()) { prefs.edit().putStringSet("series_done", done).apply(); return }
+            if (cry) {
+                if (shouldCry(firstPass, false, c.seasonStart, today)) {
+                    addFresh(Found(c.imdbId, c.name, c.poster, season = c.season))
+                    Announce666.log(context, "📺 Guetteur séries : ${c.name} saison ${c.season} en VF", "guetteur des séries")
+                }
+                rememberSeason(key)
+            }
+            done += key
+        }
+        prefs.edit().putLong("series_at", System.currentTimeMillis()).putBoolean("series_baseline", true)
+            .remove("series_done").apply()
+    }
+
+    data class SeasonCand(val imdbId: String, val name: String, val poster: String?, val season: Int, val seasonStart: LocalDate?)
+
+    private fun seasonKey(c: SeasonCand) = "${c.imdbId.lowercase()}:${c.season}"
+
+    private fun rememberSeason(key: String) {
+        val k = prefs.getStringSet("series_known", emptySet()).orEmpty()
+        prefs.edit().putStringSet("series_known", (k.toList() + key).takeLast(800).toSet()).apply()
+    }
+
+    /** Séries avec un épisode diffusé ces 45 derniers jours, dont la saison en cours a démarré dans ce délai. */
+    private suspend fun recentSeasons(today: LocalDate): List<SeasonCand> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val key = BuildConfig.TMDB_API_KEY
+        if (key.isBlank()) return@withContext emptyList()
+        val from = today.minusDays(SERIES_WINDOW_DAYS)
+        val ids = LinkedHashSet<Int>()
+        for (page in 1..3) {
+            val url = "https://api.themoviedb.org/3/discover/tv?api_key=$key&language=fr-FR&air_date.gte=$from&air_date.lte=$today" +
+                "&without_genres=10762%2C10763%2C10764%2C10766%2C10767%2C99&sort_by=popularity.desc&include_adult=false&page=$page"
+            val raw = Http666.get(url, 20_000) ?: continue
+            runCatching {
+                val arr = JSONObject(raw).optJSONArray("results")
+                if (arr != null) for (i in 0 until arr.length()) arr.optJSONObject(i)?.optInt("id")?.takeIf { it > 0 }?.let { ids += it }
+            }
+        }
+        ids.take(MAX_SERIES_CANDIDATES).mapNotNull { id ->
+            val raw = Http666.get("https://api.themoviedb.org/3/tv/$id?api_key=$key&language=fr-FR&append_to_response=external_ids", 15_000)
+                ?: return@mapNotNull null
+            runCatching { parseSeason(raw, today) }.getOrNull()
+        }
+    }
 
     // ---------- 666TVF (04/11) : les PLE de la WWE (Survivor Series, Royal Rumble, WrestleMania…) ----------
 
@@ -291,6 +369,47 @@ class VfWatcher666 @Inject constructor(
          */
         fun shouldCry(firstPass: Boolean, alreadyKnown: Boolean, released: LocalDate?, today: LocalDate): Boolean =
             !alreadyKnown && (!firstPass || (released != null && !released.isAfter(today) && !released.isBefore(today.minusDays(7))))
+
+        const val SERIES_WINDOW_DAYS = 45L
+        const val MAX_SERIES_CANDIDATES = 30
+        private val SEASON_EP = Regex("""(?i)\bS(\d{1,2})[ ._-]?E(\d{1,3})\b""")
+        private val SEASON_ONLY = Regex("""(?i)\bS(\d{1,2})\b(?![ ._-]?E\d)|\bSaison[ ._-]?(\d{1,2})\b|\bSeason[ ._-]?(\d{1,2})\b""")
+
+        /**
+         * Règle pure (testée) : release qui fait crier le guetteur séries — comme un film (VF sûre, 1080p/4K)
+         * ET de la bonne saison (épisode 1 ou pack de la saison) : jamais la VF d'une vieille saison.
+         */
+        fun isSeriesCryRelease(text: String?, season: Int): Boolean {
+            if (!isCryRelease(text)) return false
+            val t = text!!
+            SEASON_EP.find(t)?.let { m -> return m.groupValues[1].toInt() == season && m.groupValues[2].toInt() == 1 }
+            SEASON_ONLY.find(t)?.let { m ->
+                val n = m.groupValues.drop(1).firstOrNull { it.isNotBlank() }?.toIntOrNull()
+                return n == season
+            }
+            return false
+        }
+
+        /**
+         * Lecture de /tv/{id} (Shield seulement) : saison en cours, son 1er jour, l'id IMDb.
+         * Null si la saison a démarré il y a plus de [SERIES_WINDOW_DAYS] jours, ou pas d'id IMDb.
+         */
+        fun parseSeason(raw: String, today: LocalDate): SeasonCand? {
+            val o = JSONObject(raw)
+            val imdb = o.optJSONObject("external_ids")?.optString("imdb_id")?.takeIf { it.startsWith("tt") } ?: return null
+            val last = o.optJSONObject("last_episode_to_air") ?: return null
+            val season = last.optInt("season_number", 0).takeIf { it > 0 } ?: return null
+            val seasons = o.optJSONArray("seasons")
+            var start: LocalDate? = null
+            if (seasons != null) for (i in 0 until seasons.length()) {
+                val s = seasons.optJSONObject(i) ?: continue
+                if (s.optInt("season_number") == season) start = runCatching { LocalDate.parse(s.optString("air_date")) }.getOrNull()
+            }
+            if (start == null || start.isAfter(today) || start.isBefore(today.minusDays(SERIES_WINDOW_DAYS))) return null
+            val name = o.optString("name").ifBlank { o.optString("original_name") }.ifBlank { return null }
+            val poster = o.optString("poster_path").takeIf { it.startsWith("/") }?.let { "https://image.tmdb.org/t/p/w342$it" }
+            return SeasonCand(imdb, name, poster, season, start)
+        }
 
         const val PLE_INTERVAL_MS = 2L * 3600 * 1000
         val PLE_QUERIES = listOf(
