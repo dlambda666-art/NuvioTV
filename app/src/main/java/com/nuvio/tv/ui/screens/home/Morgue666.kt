@@ -130,16 +130,18 @@ fun MorgueTile666(
     var leaves by remember { mutableStateOf(false) }
     val latestOnFocused by rememberUpdatedState(onFocused)
     val enter = {
-        Morgue666.opening = false
+        // la morgue reste au fond pendant qu'on est dedans (plus de retour éclair à la boucherie)
+        Morgue666.opening = true
         Morgue666.calmUntilBlur = true
         Morgue666.open = true
     }
     LaunchedEffect(focused) {
         if (!focused) {
+            // focus parti DANS la morgue : on ne touche à rien (portes ouvertes, fond morgue)
+            if (Morgue666.open) return@LaunchedEffect
             leaves = false
             Morgue666.opening = false
-            // focus parti dans la morgue : au retour, la porte reste calme
-            if (!Morgue666.open) Morgue666.calmUntilBlur = false
+            Morgue666.calmUntilBlur = false
             return@LaunchedEffect
         }
         latestOnFocused()
@@ -154,12 +156,15 @@ fun MorgueTile666(
     // retour de la morgue : le focus revient sur la porte (fermée, sans se rouvrir)
     var wasOpen by remember { mutableStateOf(false) }
     LaunchedEffect(Morgue666.open) {
-        if (wasOpen && !Morgue666.open) { delay(120); runCatching { requester.requestFocus() } }
+        if (wasOpen && !Morgue666.open) {
+            leaves = false
+            delay(120); runCatching { requester.requestFocus() }
+        }
         wasOpen = Morgue666.open
     }
     val p by animateFloatAsState(
         targetValue = if (leaves) 1f else 0f,
-        animationSpec = tween(durationMillis = if (leaves) Morgue666.LEAVES_MS else 300, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = if (leaves) Morgue666.LEAVES_MS else 900, easing = FastOutSlowInEasing),
         label = "morgueLeaves666"
     )
     val glow by animateFloatAsState(if (focused) 1f else 0f, label = "morgueGlow666")
@@ -226,16 +231,8 @@ fun MorgueTile666(
         }
         val textAlpha = 1f - (p * 2f).coerceAtMost(1f)
         if (textAlpha > 0f) {
-            // le nombre d'en-cours, à l'encre sur l'étiquette de la poignée
-            Text(
-                text = count.toString(),
-                style = TextStyle(fontFamily = Creepster666Family, fontSize = (height.value * 0.11f).sp, color = Color(0xFF46201A)),
-                modifier = Modifier.align(Alignment.TopStart)
-                    .offset(width * 0.535f, height * 0.69f)
-                    .graphicsLayer { alpha = textAlpha }
-            )
             Box(
-                Modifier.align(Alignment.BottomStart).fillMaxWidth().size(width, height * 0.42f)
+                Modifier.align(Alignment.BottomStart).size(width * 0.5f, height * 0.42f)
                     .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))))
                     .graphicsLayer { alpha = textAlpha }
             )
@@ -252,6 +249,16 @@ fun MorgueTile666(
                     )
                 }
             }
+            // le nombre d'en-cours, à l'encre sur l'étiquette de la poignée
+            Text(
+                text = count.toString(),
+                style = TextStyle(fontFamily = Creepster666Family, fontSize = (height.value * 0.12f).sp, color = Color(0xFF3A1712),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                modifier = Modifier.align(Alignment.TopStart)
+                    .offset(width * 0.524f, height * 0.68f)
+                    .size(width * 0.06f, height * 0.14f)
+                    .graphicsLayer { alpha = textAlpha }
+            )
         }
     }
 }
@@ -272,14 +279,14 @@ fun Morgue666Overlay(
 ) {
     AnimatedVisibility(
         visible = Morgue666.open,
-        enter = fadeIn(tween(500, easing = LinearEasing)),
-        exit = fadeOut(tween(400, easing = LinearEasing)),
+        enter = fadeIn(tween(700, easing = LinearEasing)),
+        exit = fadeOut(tween(600, easing = LinearEasing)),
         modifier = modifier
     ) {
-        BackHandler(enabled = Morgue666.open) { Morgue666.open = false }
+        BackHandler(enabled = Morgue666.open) { Morgue666.open = false; Morgue666.opening = false }
         val first = remember { FocusRequester() }
         LaunchedEffect(Unit) { delay(80); runCatching { first.requestFocus() } }
-        LaunchedEffect(items.isEmpty()) { if (items.isEmpty()) Morgue666.open = false }
+        LaunchedEffect(items.isEmpty()) { if (items.isEmpty()) { Morgue666.open = false; Morgue666.opening = false } }
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             Image(
                 painterResource(R.drawable.bg_morgue_666), null,
