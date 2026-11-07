@@ -142,6 +142,7 @@ class StreamRepositoryImpl @Inject constructor(
             val debridSettings = debridSettingsDataStore.settings.first()
             com.nuvio.tv.core.debrid.PluginKeys666.torbox =
                 debridSettings.apiKeyFor(com.nuvio.tv.core.debrid.DebridProviders.TORBOX_ID)
+            com.nuvio.tv.core.debrid.PluginKeys666.alldebrid = allDebrid666.apiKey.value
 
             if (profileManager.activeProfileId.value != profileId) continue
 
