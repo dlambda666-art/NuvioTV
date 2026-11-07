@@ -697,5 +697,9 @@ internal fun ContinueWatchingItem.episode(): Int? {
 internal val CEMETERY_BACKDROP_666: String =
     "android.resource://${com.nuvio.tv.BuildConfig.APPLICATION_ID}/${com.nuvio.tv.R.drawable.bg_cimetiere_666}"
 
+/** 666TVF (07/11) : fond de la morgue (Continuer à regarder). */
+internal val MORGUE_BACKDROP_666: String =
+    "android.resource://${com.nuvio.tv.BuildConfig.APPLICATION_ID}/${com.nuvio.tv.R.drawable.bg_morgue_666}"
+
 internal val COLLECTIONS_BACKDROP_666: String =
     "android.resource://${com.nuvio.tv.BuildConfig.APPLICATION_ID}/${com.nuvio.tv.R.drawable.fond_collections_666}"

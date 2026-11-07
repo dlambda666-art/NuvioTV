@@ -743,7 +743,9 @@ fun ModernHomeContent(
                             activeRowKeyVal?.startsWith(TOP_TEN_SERIES_VF_ROW_ADDON_ID + "_") == true)
                     // 666TVF : une porte de l'horreur s'ouvre → fondu vers le cimetière
                     val doorOpening666 = Door666.opening && activeCarouselItem?.payload is ModernPayload.CollectionFolder
-                    val heroBackdrop = if (forcedBackdrop666 != null) forcedBackdrop666 else if (doorOpening666) CEMETERY_BACKDROP_666 else if (fixed666Backdrop) COLLECTIONS_BACKDROP_666 else firstNonBlank(
+                    // 666TVF (07/11) : les battants de la morgue s'ouvrent → fondu vers la morgue
+                    val morgueOpening666 = Morgue666.opening && activeCarouselItem?.payload is ModernPayload.ContinueWatching
+                    val heroBackdrop = if (forcedBackdrop666 != null) forcedBackdrop666 else if (doorOpening666) CEMETERY_BACKDROP_666 else if (morgueOpening666) MORGUE_BACKDROP_666 else if (fixed666Backdrop) COLLECTIONS_BACKDROP_666 else firstNonBlank(
                         resolvedHero?.backdrop,
                         resolvedHero?.imageUrl,
                         resolvedHero?.poster,
@@ -1300,6 +1302,26 @@ fun ModernHomeContent(
                 items = uiState.continueWatchingItems,
                 onResume = onContinueWatchingClick,
                 modifier = Modifier.align(Alignment.TopCenter).padding(top = 22.dp)
+            )
+        }
+        // 666TVF (07/11) : la morgue (toutes les étiquettes « Continuer à regarder »)
+        if (forcedBackdrop666 == null) {
+            val morgueW = if (uiState.continueWatchingCardStyle == ContinueWatchingCardStyle.POSTER) continueWatchingCardWidth * 1.5f else continueWatchingCardWidth
+            val morgueH = if (uiState.continueWatchingCardStyle == ContinueWatchingCardStyle.POSTER && com.nuvio.tv.ui.components.Tomb666.enabled)
+                morgueW * com.nuvio.tv.ui.components.Tomb666.CW_POSTER_ASPECT + com.nuvio.tv.ui.components.Tomb666.CW_LABEL_HEIGHT
+            else if (uiState.continueWatchingCardStyle == ContinueWatchingCardStyle.POSTER) continueWatchingCardHeight * 1.5f
+            else continueWatchingCardHeight
+            Morgue666Overlay(
+                items = uiState.continueWatchingItems,
+                cardWidth = morgueW,
+                cardHeight = morgueH,
+                cardStyle = uiState.continueWatchingCardStyle,
+                cornerRadius = uiState.posterCardCornerRadiusDp.dp,
+                blurUnwatchedEpisodes = uiState.blurUnwatchedEpisodes,
+                useEpisodeThumbnails = uiState.useEpisodeThumbnailsInCw,
+                onClick = onContinueWatchingClick,
+                onOptions = { item -> optionsItem.value = item },
+                modifier = Modifier.fillMaxSize()
             )
         }
     }

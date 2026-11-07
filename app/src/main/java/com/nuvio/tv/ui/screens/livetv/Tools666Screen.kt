@@ -181,6 +181,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
     var busy by remember { mutableStateOf(false) }
     val sourceStats = remember { com.nuvio.tv.core.tools.SourceStats666.summary(context) }
     var hibernate by remember { mutableStateOf(com.nuvio.tv.core.tools.Hibernate666.enabled(context)) }
+    var morgue by remember { mutableStateOf(com.nuvio.tv.ui.screens.home.Morgue666.enabled(context)) }
     var menuOrder by remember { mutableStateOf(com.nuvio.tv.core.tools.MenuOrder666.fullOrder()) }
     var movingRoute by remember { mutableStateOf<String?>(null) }
     var pluginOrder by remember { mutableStateOf(com.nuvio.tv.core.tools.PluginOrder666.order) }
@@ -562,6 +563,17 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
 
             // ---------- Affichage ----------
             item { Section("Affichage", null) }
+            item {
+                ActionRow(
+                    "Morgue : " + if (morgue) "activée ⚰️" else "coupée",
+                    if (morgue) "« Continuer à regarder » derrière la porte de la morgue (on voit la boucherie). Relance 666TVF après un changement"
+                    else "« Continuer à regarder » en rangée de petites affiches",
+                    onClick = {
+                        morgue = !morgue
+                        com.nuvio.tv.ui.screens.home.Morgue666.setEnabled(context, morgue)
+                    }
+                )
+            }
             item {
                 val auto = if (Light666.lowEndDevice) "Auto (activé : petite Shield)" else "Auto (désactivé : Shield puissante)"
                 val label = when (Light666.mode) {

@@ -477,6 +477,8 @@ internal fun ModernRowSection(
     sharedPlaceholderShimmerOffsetState: State<Float>?,
     itemFocusRequesters: StableRef<MutableMap<Int, FocusRequester>> = StableRef(mutableMapOf())
 ) {
+    val morgueContext666 = LocalContext.current
+    val morgueEnabled666 = remember { Morgue666.enabled(morgueContext666) }
     // Unwrap StableRef wrappers
     @Suppress("NAME_SHADOWING") val focusedItemByRow = focusedItemByRow.value
     @Suppress("NAME_SHADOWING") val rowListStates = rowListStates.value
@@ -912,8 +914,10 @@ internal fun ModernRowSection(
                 contentPadding = PaddingValues(horizontal = rowStartPadding),
                 horizontalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.md)
             ) {
+                // 666TVF (07/11) : la morgue — une seule tuile-porte à la place des petites affiches
+                val morgueRow666 = row.key == MODERN_CONTINUE_WATCHING_ROW_KEY && morgueEnabled666
                 itemsIndexed(
-                    items = row.items.list,
+                    items = if (morgueRow666) row.items.list.take(1) else row.items.list,
                     key = { index, item ->
                         val pinned = pinnedItemKey.value
                         when {
@@ -955,7 +959,17 @@ internal fun ModernRowSection(
                     }
 
                     when (val payload = item.payload) {
-                        is ModernPayload.ContinueWatching -> {
+                        is ModernPayload.ContinueWatching -> if (morgueRow666) {
+                            LaunchedEffect(isTargetItem) { if (isTargetItem) runCatching { requester.requestFocus() } }
+                            MorgueTile666(
+                                count = row.items.list.size,
+                                last = Morgue666.lastLabel(payload.item),
+                                width = landscapeCatalogCardWidth,
+                                height = landscapeCatalogCardHeight,
+                                requester = requester,
+                                onFocused = onFocused
+                            )
+                        } else {
                             ModernContinueWatchingRowItem(
                                 payload = payload,
                                 requester = requester,

@@ -178,7 +178,7 @@ private val BloodShine = Color(0x55C8A096)
 /** À poser juste au-dessus de l'image de fond (Crop, aligné en haut à droite). */
 @Composable
 fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
-    val opening = Door666.opening
+    val opening = Door666.opening || Morgue666.opening
     // la porte : le néon meurt d'abord (1,2 s dans le noir), puis le cimetière apparaît
     val alpha by animateFloatAsState(
         targetValue = if (visible && !opening) 1f else 0f,
