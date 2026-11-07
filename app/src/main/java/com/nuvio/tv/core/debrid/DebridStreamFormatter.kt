@@ -48,7 +48,7 @@ class DebridStreamFormatter @Inject constructor(
             name = formattedName.ifBlank { stream.name ?: DebridProviders.instantName(stream.clientResolve?.service) },
             description = (if (cavalier != null && description?.contains("🐎") != true) "🐎 $cavalier\n" + description.orEmpty() else description)
                 .let { d -> AllDebridFallback666.label(stream)?.takeIf { d?.contains(it) != true }?.let { "$it\n" + d.orEmpty() } ?: d }
-                // 666TVF (07/11) : un « MULTi » d'équipe inconnue n'est pas une VF sûre, on le dit sur la carte
+                // 666TVF (07/11) : « MULTi » d'équipe inconnue ou titre FR seul : pas une VF sûre, on le dit sur la carte
                 .let { d -> if (isPlugin666 && stream.isUncertainVf666() && d?.contains(UNSURE_VF_666) != true) "$UNSURE_VF_666\n" + d.orEmpty() else d },
             // 666TV : ne jamais effacer des badges déjà trouvés.
             badges = matchedBadges.ifEmpty { stream.badges }
@@ -265,4 +265,4 @@ class DebridStreamFormatter @Inject constructor(
     }
 }
 
-internal const val UNSURE_VF_666 = "❔ VF à confirmer (MULTi)"
+internal const val UNSURE_VF_666 = "❔ VF à confirmer"
