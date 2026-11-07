@@ -355,6 +355,7 @@ var YGGREBORN_URL = 'https://www.yggreborn.org/api';
 // 666TVF (07/11) : mode enquête — ce que YggReborn a renvoyé et pourquoi c'est écarté avant le tri
 var YGG_STATS = null;
 var LAST_WHY = null;
+var AIR_DATE = null;
 // 666TVF (07/11) : budget de temps (voir getStreams)
 var BUDGET_MS = 55000, SLOW_MS = 8000, T0 = 0, TIMING = null;
 function late() { return T0 > 0 && Date.now() - T0 > BUDGET_MS; }
@@ -378,7 +379,7 @@ function frenchTitleOnly(release, titles) {
     if (!fr || !others.length) return false;
     return r.indexOf(' ' + fr + ' ') >= 0 && !others.some(function (n) { return r.indexOf(' ' + n + ' ') >= 0; });
 }
-function yggQueries(frankQueries, titles, year, isTv, season, episode) {
+function yggQueries(frankQueries, titles, year, isTv, season, episode, airDate) {
     var out = [];
     function add(q) { q = String(q || '').replace(/\s+/g, ' ').trim(); if (q && out.indexOf(q) < 0) out.push(q); }
     function variants(q) { add(q); add(stripAccents(q)); add(ordinalDigits(stripAccents(q))); }
@@ -386,6 +387,13 @@ function yggQueries(frankQueries, titles, year, isTv, season, episode) {
     var ep = isTv ? 'S' + pad(season) + 'E' + pad(episode) : '';
     var exact = [], wide = [];
     frankQueries.forEach(function (q) { (isTv && q.indexOf(ep) < 0 ? wide : exact).push(q); });
+    // 666TVF (07/11) : émissions datées (WWE, UFC…) — « WWE.SmackDown.2026.11.06 » : on cherche aussi par date
+    if (isTv && airDate && /^\d{4}-\d\d-\d\d$/.test(airDate)) {
+        var dot = airDate.replace(/-/g, '.');
+        exact.slice(0, 1).forEach(variants);
+        titles.map(stripAccents).filter(function (t, i, a) { return t && a.indexOf(t) === i; }).slice(0, 2)
+            .forEach(function (t) { add(t + ' ' + dot); });
+    }
     exact.forEach(variants);
     if (isTv) {
         wide.forEach(variants);
@@ -400,7 +408,7 @@ async function fromYggReborn(imdbId, isTv, season, episode) {
     var data = await frankMeta(imdbId, isTv, season, episode);
     var titles = (data && data.titles) || [];
     var year = data && data.year ? Number(data.year) : 0;
-    var queries = yggQueries((data && data.queries) || [], titles, year, isTv, season, episode);
+    var queries = yggQueries((data && data.queries) || [], titles, year, isTv, season, episode, AIR_DATE);
     var out = [], seen = {};
     YGG_STATS = { queries: 0, items: 0, episode: 0, title: 0, samples: [] };
     for (var i = 0; i < queries.length; i++) {
@@ -578,7 +586,7 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.18';
+var COMET_VERSION = '1.1.19';
 async function trace(data) {
     try {
         data.v = COMET_VERSION;
@@ -609,6 +617,7 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     YGG_STATS = null;
     LAST_WHY = null;
     FRANK_META = null;
+    AIR_DATE = null;
     T0 = Date.now();
     var ids = await resolveIds(tmdbId, mediaType);
     if (!ids || !ids.imdbId) {
@@ -636,6 +645,7 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
         ['DMM', function () { return fromZilean(ids.imdbId, isTv, season, episode); }],
         ['TorrentsDB', function () { return fromTorrentsDb(ids.imdbId, isTv, season, episode); }]
     ];
+    AIR_DATE = isTv ? await episodeAirDate(tmdbId, season, episode) : null;
     var lists = [];
     TIMING = { skipped: [], slow: [] };
     for (var si = 0; si < sources.length; si++) {
@@ -646,7 +656,7 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
         if (dt > SLOW_MS) TIMING.slow.push(sources[si][0] + ' ' + Math.round(dt / 1000) + ' s');
         lists.push(got);
     }
-    var airDate = isTv ? await episodeAirDate(tmdbId, season, episode) : null;
+    var airDate = AIR_DATE;
     var seen = {};
     var seenNames = {};
     // 666TVF (07/11) : mode enquête — par source : trouvés, gardés, et pourquoi le reste est écarté

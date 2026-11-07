@@ -432,6 +432,15 @@ const cases = [
         else console.log('✓ 4e dimension S03E06 sort de ton compte AllDebrid (VF ?), clé jamais envoyée à Frank');
         global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
     }
+    // SmackDown S28E45 (07/11) : YggReborn ne cherchait que « S28E45 », la release est datée
+    {
+        const q = comet._yggQueries(['WWE SmackDown S28E45', 'WWE SmackDown S28'], ['WWE SmackDown'], 1999, true, 28, 45, '2026-11-06');
+        if (q.indexOf('WWE SmackDown 2026.11.06') < 0 || q.indexOf('WWE SmackDown 2026.11.06') > 2) { fails++; console.log('✗ Recherche par date → ' + JSON.stringify(q)); }
+        else console.log('✓ YggReborn cherche aussi « WWE SmackDown 2026.11.06 », juste après l\'épisode');
+        const f = comet._yggQueries(['Show S01E02'], ['Show'], 2020, true, 1, 2, null);
+        if (f.some(x => /20\d\d\.\d\d/.test(x))) { fails++; console.log('✗ Date ajoutée sans date de diffusion'); }
+        else console.log('✓ Sans date de diffusion, pas de recherche par date');
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();
