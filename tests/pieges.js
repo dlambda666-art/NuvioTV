@@ -384,6 +384,25 @@ const cases = [
         comet._budget(55000);
         global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
     }
+    // Traces d'enquête envoyées à Frank (07/11) : jamais une clé ni une passkey
+    {
+        const saved = { fetch: global.fetch, key: global.TMDB_API_KEY, settings: global.SCRAPER_SETTINGS };
+        global.TMDB_API_KEY = ''; global.SCRAPER_SETTINGS = { yggreborn: 'PASSKEY-SECRETE', c411: 'CLE-C411', torbox_auto: 'CLE-TORBOX' };
+        const bodies = [];
+        const json = o => ({ ok: true, json: async () => o, text: async () => (typeof o === 'string' ? o : JSON.stringify(o)) });
+        global.fetch = async (u, opts) => {
+            if (u.includes('/comet/trace')) { bodies.push(String(opts && opts.body)); return json({ ok: true }); }
+            if (u.includes('/ygg/')) return json({ titles: ['La Quatrième Dimension', 'The Twilight Zone'], year: 1959, queries: ['La Quatrième Dimension S03E06'] });
+            if (u.includes('yggreborn')) return json('<rss><item><title>La 4eme dimension REMUX S03</title><torznab:attr name="infohash" value="' + 'e'.repeat(40) + '"/></item></rss>');
+            return { ok: false, json: async () => null, text: async () => '' };
+        };
+        await comet.getStreams('tt0052520', 'tv', 3, 6);
+        const all = bodies.join(' ');
+        if (bodies.length !== 2 || /PASSKEY-SECRETE|CLE-C411|CLE-TORBOX|apikey/i.test(all) || !/La 4eme dimension REMUX S03/.test(all)) {
+            fails++; console.log('✗ Traces Frank → ' + bodies.length + ' envois · ' + all.slice(0, 300));
+        } else console.log('✓ Traces Frank : début + fin, titres trouvés, aucune clé');
+        global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();

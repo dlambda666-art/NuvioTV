@@ -354,6 +354,7 @@ async function fromYgg(imdbId, isTv, season, episode) {
 var YGGREBORN_URL = 'https://www.yggreborn.org/api';
 // 666TVF (07/11) : mode enquête — ce que YggReborn a renvoyé et pourquoi c'est écarté avant le tri
 var YGG_STATS = null;
+var LAST_WHY = null;
 // 666TVF (07/11) : budget de temps (voir getStreams)
 var BUDGET_MS = 55000, SLOW_MS = 8000, T0 = 0, TIMING = null;
 function late() { return T0 > 0 && Date.now() - T0 > BUDGET_MS; }
@@ -402,7 +403,7 @@ async function fromYggReborn(imdbId, isTv, season, episode) {
     var year = data && data.year ? Number(data.year) : 0;
     var queries = yggQueries((data && data.queries) || [], titles, year, isTv, season, episode);
     var out = [], seen = {};
-    YGG_STATS = { queries: 0, items: 0, episode: 0, title: 0 };
+    YGG_STATS = { queries: 0, items: 0, episode: 0, title: 0, samples: [] };
     for (var i = 0; i < queries.length; i++) {
         if (late()) { YGG_STATS.cut = true; break; }
         var xml = await getText(YGGREBORN_URL + '?t=search&limit=50&q=' + encodeURIComponent(queries[i]) +
@@ -411,6 +412,7 @@ async function fromYggReborn(imdbId, isTv, season, episode) {
         var all = parseTorznab(xml, false, 0, 0, 'YggReborn').filter(function (t) { return !seen[t.hash]; });
         var good = parseTorznab(xml, isTv, season, episode, 'YggReborn');
         YGG_STATS.items += all.length;
+        all.slice(0, 4).forEach(function (t) { if (YGG_STATS.samples.length < 10) YGG_STATS.samples.push(String(t.release).slice(0, 90)); });
         YGG_STATS.episode += Math.max(0, all.length - good.filter(function (t) { return !seen[t.hash]; }).length);
         good.forEach(function (t) {
             if (seen[t.hash]) return;
@@ -526,11 +528,29 @@ function investigation(why, ygg) {
     return lines.concat(parts.slice(0, 7)).map(function (l) { return l.slice(0, 90); });
 }
 
+// 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
+// jamais de clé, de passkey ni d'adresse de source).
+var COMET_VERSION = '1.1.17';
+async function trace(data) {
+    try {
+        data.v = COMET_VERSION;
+        await fetch(FRANK_URL + '/comet/trace', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    } catch (e) { }
+}
+
 // --- Point d'entrée appelé par 666TV --------------------------------------
 async function getStreams(tmdbId, mediaType, season, episode) {
+    var t0 = Date.now();
+    var probe = String(tmdbId).replace(/^tmdb:/i, '') !== '603' && !(typeof SCRAPER_SETTINGS !== 'undefined' && SCRAPER_SETTINGS && SCRAPER_SETTINGS.__health);
+    if (probe) await trace({ phase: 'start', id: String(tmdbId), type: mediaType, s: season, e: episode });
     try {
-        return await getStreamsInner(tmdbId, mediaType, season, episode);
+        var out = await getStreamsInner(tmdbId, mediaType, season, episode);
+        if (probe) await trace({ phase: 'end', id: String(tmdbId), type: mediaType, s: season, e: episode, ms: Date.now() - t0,
+            shown: out.length, top: out.slice(0, 8).map(function (x) { return String(x.title || '').split('\n')[0].slice(0, 90) + (x.infoHash ? '' : ' [info]'); }),
+            why: LAST_WHY, ygg: YGG_STATS, timing: TIMING });
+        return out;
     } catch (e) {
+        if (probe) await trace({ phase: 'crash', id: String(tmdbId), s: season, e: episode, ms: Date.now() - t0, error: String(e && e.message || e).slice(0, 200) });
         // 666TVF (07/11) : un plantage se voit (avant : aucune ligne, comme si rien n'existait)
         console.log('Comet666 a planté : ' + (e && e.stack || e));
         return [{ name: 'Comet666 enquête', title: ('💥 Comet666 a planté : ' + (e && e.message || e)).slice(0, 90), url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct' }];
@@ -539,6 +559,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
 async function getStreamsInner(tmdbId, mediaType, season, episode) {
     var isTv = mediaType === 'tv' || mediaType === 'series';
     YGG_STATS = null;
+    LAST_WHY = null;
     T0 = Date.now();
     var ids = await resolveIds(tmdbId, mediaType);
     if (!ids || !ids.imdbId) {
@@ -619,6 +640,7 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     found = await settleMulti(found);
     beforeMulti.filter(function (t) { return found.indexOf(t) < 0; }).forEach(function (t) { note(t, 'MULTi étranger'); });
     found.forEach(function (t) { why[srcOf(t)].kept++; });
+    LAST_WHY = why;
     found.sort(function (a, b) {
         // VF sûre d'abord, « MULTi (VF ?) » ensuite
         var c = (a.lang.indexOf('?') >= 0) - (b.lang.indexOf('?') >= 0);
