@@ -106,6 +106,26 @@ class AllDebrid666 @Inject constructor(
         }
     }
 
+    @Volatile private var readyCache: Pair<Long, Set<String>>? = null
+
+    /**
+     * 666TVF : empreintes des torrents déjà prêts dans le compte AllDebrid (ce que tu vois dans ton
+     * tableau de bord). Gardé 3 min ; en cas d'erreur, liste vide (les liens restent « ? »).
+     */
+    suspend fun readyHashes(): Set<String> = withContext(Dispatchers.IO) {
+        val key = _apiKey.value.takeIf { it.isNotBlank() } ?: return@withContext emptySet()
+        readyCache?.let { (at, set) -> if (System.currentTimeMillis() - at < READY_TTL_MS) return@withContext set }
+        val set = try {
+            val json = get("/v4.1/magnet/status", key, mapOf("status" to "ready"))
+            parseReadyHashes(json)
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            null
+        }
+        if (set != null) readyCache = System.currentTimeMillis() to set
+        set ?: emptySet()
+    }
+
     internal data class AdFile(val name: String, val size: Long, val link: String)
 
     private fun flatten(array: JSONArray, out: MutableList<AdFile> = mutableListOf()): List<AdFile> {
@@ -155,4 +175,24 @@ class AllDebrid666 @Inject constructor(
             val text = response.body?.string().orEmpty()
             runCatching { JSONObject(text) }.getOrNull()
         }
+}
+
+private const val READY_TTL_MS = 3 * 60 * 1000L
+
+/** 666TVF : lecture pure (testée) de la réponse magnet/status d'AllDebrid → hash prêts (statusCode 4). */
+internal fun parseReadyHashes(json: JSONObject?): Set<String>? {
+    if (json == null || json.optString("status") != "success") return null
+    val data = json.optJSONObject("data") ?: return emptySet()
+    val out = HashSet<String>()
+    fun take(m: JSONObject?) {
+        if (m == null) return
+        val ready = m.optInt("statusCode", -1) == 4 || m.optString("status").equals("Ready", true)
+        val hash = m.optString("hash").trim().lowercase()
+        if (ready && hash.isNotBlank()) out += hash
+    }
+    data.optJSONArray("magnets")?.let { arr -> for (i in 0 until arr.length()) take(arr.optJSONObject(i)) }
+        ?: data.optJSONObject("magnets")?.let { obj ->
+            if (obj.has("hash")) take(obj) else obj.keys().forEach { k -> take(obj.optJSONObject(k)) }
+        }
+    return out
 }

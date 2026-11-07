@@ -2615,6 +2615,7 @@
     <string name="debrid_device_auth_missing_configuration">Cette méthode de connexion n’est pas configurée dans cette version.</string>
     <string name="debrid_device_auth_expired">Ce code a expiré. Réessayez.</string>
     <string name="debrid_key_invalid">Impossible de valider cette clé API.</string>
+    <string name="debrid_not_cached_alldebrid666">Pas en cache chez AllDebrid non plus : choisis un autre lien.</string>
     <string name="debrid_not_cached">Non mis en cache sur ce service.</string>
 
     <!-- Badges addons -->

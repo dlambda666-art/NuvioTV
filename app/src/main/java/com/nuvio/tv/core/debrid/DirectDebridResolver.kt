@@ -204,6 +204,12 @@ class DirectDebridResolver @Inject constructor(
         season: Int?,
         episode: Int?
     ): DirectDebridResolveResult {
+        // Lien hors cache TorBox proposé via AllDebrid : directement AllDebrid (TorBox ne télécharge rien).
+        if (AllDebridFallback666.isFallback(stream)) {
+            if (!allDebrid.isConfigured) return DirectDebridResolveResult.MissingApiKey
+            val magnet = DebridMagnetBuilder.fromStream(stream) ?: return DirectDebridResolveResult.Stale
+            return allDebrid.resolve(magnet, stream.getEffectiveFileIdx(), season, episode)
+        }
         val primary = kotlinx.coroutines.withTimeoutOrNull(PRIMARY_TIMEOUT_666_MS) {
             resolveLocalTorrentStreamPrimary(stream, season, episode)
         } ?: DirectDebridResolveResult.Error

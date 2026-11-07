@@ -54,7 +54,8 @@ class StreamRepositoryImpl @Inject constructor(
     private val debridSettingsDataStore: DebridSettingsDataStore,
     private val tmdbService: TmdbService,
     private val debridStreamPresentation: DebridStreamPresentation,
-    private val localDebridAvailabilityService: LocalDebridAvailabilityService
+    private val localDebridAvailabilityService: LocalDebridAvailabilityService,
+    private val allDebrid666: com.nuvio.tv.core.debrid.AllDebrid666
 ) : StreamRepository {
     private val streamSearchSessions = StreamSearchSessionCache()
     private val localPluginSearchPaused = MutableStateFlow(false)
@@ -292,7 +293,17 @@ class StreamRepositoryImpl @Inject constructor(
                 // Emit results as they arrive
                 for (result in resultChannel) {
                     val checkingResult = localDebridAvailabilityService.markChecking(listOf(result)).firstOrNull() ?: result
-                    val annotatedResult = localDebridAvailabilityService.annotateCachedAvailability(listOf(checkingResult)).firstOrNull() ?: checkingResult
+                    val torboxResult = localDebridAvailabilityService.annotateCachedAvailability(listOf(checkingResult)).firstOrNull() ?: checkingResult
+                    // 666TVF : hors cache TorBox → proposé via AllDebrid (✓ si prêt dans le compte, sinon ?).
+                    val annotatedResult = if (!com.nuvio.tv.core.torrent.TorrentService.P2P_ENABLED && allDebrid666.isConfigured &&
+                        torboxResult.streams.any { it.debridCacheStatus?.state == com.nuvio.tv.domain.model.StreamDebridCacheState.NOT_CACHED }
+                    ) {
+                        torboxResult.copy(
+                            streams = com.nuvio.tv.core.debrid.AllDebridFallback666.relabel(
+                                torboxResult.streams, allDebridConfigured = true, ready = allDebrid666.readyHashes()
+                            )
+                        )
+                    } else torboxResult
                     val displacedReleases = HashSet<String>()
                     val checkedResult = annotatedResult.copy(
                         streams = annotatedResult.streams.filter { stream ->
@@ -301,6 +312,10 @@ class StreamRepositoryImpl @Inject constructor(
                                 stream.debridCacheStatus?.state == com.nuvio.tv.domain.model.StreamDebridCacheState.NOT_CACHED
                             if (hiddenUncached) return@filter false
                             val releaseKey = stream.pluginReleaseKey() ?: return@filter true
+                            // Un lien « AllDebrid ? » ne remplace jamais une copie sûre : gardé seulement s'il est seul.
+                            if (com.nuvio.tv.core.debrid.AllDebridFallback666.isGuess(stream)) {
+                                return@filter releaseKey !in seenPluginReleases
+                            }
                             val rank = stream.plugin666Rank()
                             val keptRank = seenPluginReleases[releaseKey]
                             when {

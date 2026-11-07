@@ -177,7 +177,8 @@ class StreamRepositoryPluginIsolationTest {
                 debridSettingsDataStore = debridSettingsDataStore,
                 tmdbService = tmdbService,
                 debridStreamPresentation = presentation,
-                localDebridAvailabilityService = availability
+                localDebridAvailabilityService = availability,
+                allDebrid666 = mockk(relaxed = true)
             ),
             api = api,
             tmdbService = tmdbService,

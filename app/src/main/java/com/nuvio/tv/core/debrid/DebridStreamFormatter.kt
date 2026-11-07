@@ -46,7 +46,8 @@ class DebridStreamFormatter @Inject constructor(
         val description = formattedDescription.ifBlank { stream.description ?: stream.title }
         return stream.copy(
             name = formattedName.ifBlank { stream.name ?: DebridProviders.instantName(stream.clientResolve?.service) },
-            description = if (cavalier != null && description?.contains("🐎") != true) "🐎 $cavalier\n" + description.orEmpty() else description,
+            description = (if (cavalier != null && description?.contains("🐎") != true) "🐎 $cavalier\n" + description.orEmpty() else description)
+                .let { d -> AllDebridFallback666.label(stream)?.takeIf { d?.contains(it) != true }?.let { "$it\n" + d.orEmpty() } ?: d },
             // 666TV : ne jamais effacer des badges déjà trouvés.
             badges = matchedBadges.ifEmpty { stream.badges }
         )
@@ -172,8 +173,8 @@ class DebridStreamFormatter @Inject constructor(
         return when (stream.debridCacheStatus?.state) {
             StreamDebridCacheState.CACHED -> true
             StreamDebridCacheState.NOT_CACHED -> false
+            StreamDebridCacheState.UNKNOWN -> if (AllDebridFallback666.isFallback(stream)) false else resolve?.isCached
             StreamDebridCacheState.CHECKING,
-            StreamDebridCacheState.UNKNOWN,
             null -> resolve?.isCached
         }
     }
@@ -181,10 +182,12 @@ class DebridStreamFormatter @Inject constructor(
     private fun serviceShortName(stream: Stream, resolve: StreamClientResolve?): String {
         val extension = resolve?.serviceExtension?.takeIf { it.isNotBlank() }
         if (extension != null) return extension
+        if (AllDebridFallback666.isFallback(stream)) return "AD"
         return DebridProviders.shortName(serviceId(stream, resolve))
     }
 
     private fun serviceName(stream: Stream, resolve: StreamClientResolve?): String {
+        if (AllDebridFallback666.isFallback(stream)) return "AllDebrid"
         return DebridProviders.displayName(serviceId(stream, resolve))
     }
 

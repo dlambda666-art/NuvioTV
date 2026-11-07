@@ -1258,7 +1258,9 @@ class StreamScreenViewModel @Inject constructor(
                 null
             }
             DirectDebridResolveResult.NotCached -> {
-                showDirectDebridPlaybackError(context.getString(R.string.debrid_not_cached), refreshStreams = false)
+                val notCachedMsg = if (com.nuvio.tv.core.debrid.AllDebridFallback666.isFallback(stream))
+                    R.string.debrid_not_cached_alldebrid666 else R.string.debrid_not_cached
+                showDirectDebridPlaybackError(context.getString(notCachedMsg), refreshStreams = false)
                 null
             }
             DirectDebridResolveResult.Stale -> {
