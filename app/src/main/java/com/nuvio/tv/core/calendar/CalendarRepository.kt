@@ -192,6 +192,7 @@ class CalendarRepository @Inject constructor(
             )
         }
         val fixed = renumber666(seed, episodes)
+        recheckOnce666(fixed)
         episodeCache[seed.id] = CachedEpisodes(System.currentTimeMillis(), fixed)
         return fixed
     }
@@ -226,6 +227,24 @@ class CalendarRepository @Inject constructor(
         }
         out.distinctBy { "${it.season}:${it.episode}" }
     }.getOrDefault(episodes)
+
+    /**
+     * 666TVF (07/11) : une seule fois, les « VF dispo » des 10 derniers jours sont revérifiés avec la
+     * règle stricte (SmackDown / AHS annoncés à tort). S'ils sont vraiment en VF, la cloche resonnera.
+     */
+    private suspend fun recheckOnce666(episodes: List<CalendarEpisode>) {
+        val prefs = appContext.getSharedPreferences("666tv_calendar_recheck", android.content.Context.MODE_PRIVATE)
+        val done = prefs.getStringSet("done", emptySet()).orEmpty()
+        val seriesId = episodes.firstOrNull()?.seriesId ?: return
+        if (seriesId in done) return
+        val since = java.time.Instant.now().minus(java.time.Duration.ofDays(10))
+        val watchedOrOld = episodes.filter { it.airInstant.isBefore(since) || isWatched(it) }.map { it.key }.toSet()
+        val keys = episodes.map { it.key }.toSet() - watchedOrOld
+        val known = knownVf()
+        val toForget = keys.filter { it in known }.toSet()
+        if (toForget.isNotEmpty()) forget666(toForget)
+        prefs.edit().putStringSet("done", done + seriesId).apply()
+    }
 
     /** « Actualiser » : on revérifie tout de suite les épisodes marqués « pas encore de VF ». */
     fun clearVfNegativeCache() = vfNegativeCache.clear()
@@ -273,6 +292,10 @@ class CalendarRepository @Inject constructor(
                 season = episode.season,
                 episode = episode.episode
             )
+            val airDates666 = setOf(
+                episode.airInstant.atZone(java.time.ZoneId.of("America/New_York")).toLocalDate(),
+                episode.airInstant.atZone(java.time.ZoneId.of("Europe/Paris")).toLocalDate()
+            )
             suspend fun lookFor(ps: Int?, pe: Int?): Boolean = checkers.any { scraper ->
                 runCatching {
                     val results = withTimeoutOrNull(30_000) {
@@ -285,7 +308,12 @@ class CalendarRepository @Inject constructor(
                             result.name?.contains("diagnostic", ignoreCase = true) != true &&
                             // 666TVF : un « MULTi (VF ?) » ne prouve rien (AHS S13 : c'était du polonais).
                             // Le calendrier n'annonce que de la VF sûre.
-                            !result.title.contains("VF ?") && !result.title.contains("VF?")
+                            !result.title.contains("VF ?") && !result.title.contains("VF?") &&
+                            // 666TVF (07/11) : bon épisode, bonne date, pas de VOSTFR, pas de 720p
+                            CalendarVfRule666.counts(
+                                listOfNotNull(result.name, result.title).joinToString(" "),
+                                result.quality, ps, pe, airDates666
+                            )
                     }
                     // Lien prêt (http) : VF dispo. Torrent (Comet666) : seulement s'il est en cache
                     // chez le débrideur, sinon il ne se lancerait pas.
