@@ -9,16 +9,17 @@ async function get(u) {
 (async () => {
   const report = { at: new Date().toISOString() };
   report.cases = [];
-  for (const [se, ep] of [[1, 1], [1, 2], [2, 1], [3, 4], [5, 1]]) {
-    const t0 = Date.now(); let res = [], err = null;
-    try { res = await plugin.getStreams('tt0052520', 'tv', se, ep); } catch (x) { err = String(x); }
-    const torrentio = 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,torrent9|language=french|qualityfilter=720p,480p,other,scr,cam,unknown';
-    const t = await get(torrentio + '/stream/series/tt0052520:' + se + ':' + ep + '.json');
-    const db = await get('https://torrentsdb.com/stream/series/tt0052520:' + se + ':' + ep + '.json');
-    report.cases.push({ se, ep, ms: Date.now() - t0, err, count: res.length, comet: res.map(r => r.title.replace(/\n/g, ' | ')),
-      torrentioFr: ((t.json && t.json.streams) || []).filter(x => /fr|🇫🇷|multi/i.test(x.title || '')).map(x => (x.title || '').replace(/\n/g, ' | ').slice(0, 160)),
-      torrentsdbFr: ((db.json && db.json.streams) || []).filter(x => /french|🇫🇷|multi|vff|truefrench/i.test(x.title || '')).map(x => (x.title || '').replace(/\n/g, ' | ').slice(0, 160)) });
-  }
+  const FRANK = 'https://lambda666-frankenstream.hf.space';
+  report.yggQueries = await get(FRANK + '/ygg/series/tt0052520?season=3&episode=6&norelay=1');
+  const torrentioAll = 'https://torrentio.strem.fun';
+  const t = await get(torrentioAll + '/stream/series/tt0052520:3:6.json');
+  report.torrentioAll = ((t.json && t.json.streams) || []).map(x => (x.title || '').replace(/\n/g, ' | ').slice(0, 200));
+  const db = await get('https://torrentsdb.com/stream/series/tt0052520:3:6.json');
+  report.torrentsdbAll = ((db.json && db.json.streams) || []).map(x => (x.title || '').replace(/\n/g, ' | ').slice(0, 200));
+  const st = await get('https://stremthru.13377001.xyz/v0/torznab/api?t=search&imdbid=tt0052520');
+  report.stremthruAll = (st.text || '').split('<item>').slice(1).map(i => (i.match(/<title>([^<]*)<\/title>/) || [])[1]).slice(0, 60);
+  let res = []; try { res = await plugin.getStreams('tt0052520', 'tv', 3, 6); } catch (x) {}
+  report.comet = res.map(r => r.title.replace(/\n/g, ' | '));
   fs.writeFileSync('test-report.json', JSON.stringify(report, null, 2));
-  console.log(JSON.stringify(report.cases, null, 1).slice(0, 3000));
+  console.log('ok');
 })();
