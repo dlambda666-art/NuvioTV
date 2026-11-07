@@ -48,7 +48,9 @@ class PluginRuntime @Inject constructor() {
 
     private val httpClient = OkHttpClient.Builder()
         .dns(com.nuvio.tv.core.network.IPv4FirstDns())
-        .connectTimeout(30, TimeUnit.SECONDS)
+        // 666TVF (07/11) : un site éteint ne bloque plus un cavalier 30 s (Comet666 interroge ses sources
+        // une par une) ; la réponse garde 30 s (StreamFusion, Frank peuvent être lents à répondre).
+        .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .followRedirects(true)
