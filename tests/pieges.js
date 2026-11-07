@@ -364,6 +364,26 @@ const cases = [
         else console.log('✓ Pas d\'enquête quand un lien VF 1080p existe');
         global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
     }
+    // 4e dimension (07/11) : sources lentes → Comet666 ne dépasse jamais son budget, et le dit
+    {
+        const saved = { fetch: global.fetch, key: global.TMDB_API_KEY, settings: global.SCRAPER_SETTINGS };
+        global.TMDB_API_KEY = ''; global.SCRAPER_SETTINGS = { yggreborn: 'PK' };
+        comet._budget(300);
+        const json = o => ({ ok: true, json: async () => o, text: async () => (typeof o === 'string' ? o : JSON.stringify(o)) });
+        global.fetch = async u => {
+            if (u.includes('/ygg/')) return json({ titles: ['La Quatrième Dimension', 'The Twilight Zone'], year: 1959, queries: ['La Quatrième Dimension S03E06', 'La Quatrième Dimension S03'] });
+            if (u.includes('yggreborn')) { await new Promise(r => setTimeout(r, 200)); return json('<rss></rss>'); }
+            return { ok: false, json: async () => null, text: async () => '' };
+        };
+        const t0 = Date.now();
+        const out = await comet.getStreams('tt0052520', 'tv', 3, 6);
+        const ms = Date.now() - t0;
+        const txt = out.map(x => x.title).join(' | ');
+        if (ms > 1500 || !/pas interrogé \(temps écoulé\)|coupées/.test(txt)) { fails++; console.log('✗ Budget de temps (' + ms + ' ms) → ' + txt); }
+        else console.log('✓ Sources lentes : Comet666 s\'arrête à temps et le dit (' + ms + ' ms)');
+        comet._budget(55000);
+        global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();

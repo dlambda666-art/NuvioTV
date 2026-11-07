@@ -354,6 +354,9 @@ async function fromYgg(imdbId, isTv, season, episode) {
 var YGGREBORN_URL = 'https://www.yggreborn.org/api';
 // 666TVF (07/11) : mode enquête — ce que YggReborn a renvoyé et pourquoi c'est écarté avant le tri
 var YGG_STATS = null;
+// 666TVF (07/11) : budget de temps (voir getStreams)
+var BUDGET_MS = 55000, SLOW_MS = 8000, T0 = 0, TIMING = null;
+function late() { return T0 > 0 && Date.now() - T0 > BUDGET_MS; }
 // 666TVF (07/11) : la 4e dimension S03 n'était pas trouvée. Les noms YGG s'écrivent sans accents
 // (« La.Quatrieme.Dimension ») et souvent avec l'année (« The.Twilight.Zone.1961.S03 ») : on ajoute
 // ces variantes aux recherches de Frank (6 max, l'épisode exact d'abord).
@@ -401,6 +404,7 @@ async function fromYggReborn(imdbId, isTv, season, episode) {
     var out = [], seen = {};
     YGG_STATS = { queries: 0, items: 0, episode: 0, title: 0 };
     for (var i = 0; i < queries.length; i++) {
+        if (late()) { YGG_STATS.cut = true; break; }
         var xml = await getText(YGGREBORN_URL + '?t=search&limit=50&q=' + encodeURIComponent(queries[i]) +
             '&apikey=' + encodeURIComponent(key));
         YGG_STATS.queries++;
@@ -515,18 +519,31 @@ function investigation(why, ygg) {
         if (ygg.title) y += ' · ' + ygg.title + ' autre titre';
         parts.unshift(y);
     } else if (setting('yggreborn')) parts.unshift('YggReborn : pas interrogé');
+    if (ygg && ygg.cut) parts.push('YggReborn : recherches coupées (trop long)');
+    if (TIMING && TIMING.slow.length) parts.push('⏱ lent : ' + TIMING.slow.join(' · '));
+    if (TIMING && TIMING.skipped.length) parts.push('⏱ pas interrogé (temps écoulé) : ' + TIMING.skipped.join(', '));
     if (!parts.length) parts.push('aucune source n\'a répondu');
-    return lines.concat(parts.slice(0, 5)).map(function (l) { return l.slice(0, 90); });
+    return lines.concat(parts.slice(0, 7)).map(function (l) { return l.slice(0, 90); });
 }
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
 async function getStreams(tmdbId, mediaType, season, episode) {
+    try {
+        return await getStreamsInner(tmdbId, mediaType, season, episode);
+    } catch (e) {
+        // 666TVF (07/11) : un plantage se voit (avant : aucune ligne, comme si rien n'existait)
+        console.log('Comet666 a planté : ' + (e && e.stack || e));
+        return [{ name: 'Comet666 enquête', title: ('💥 Comet666 a planté : ' + (e && e.message || e)).slice(0, 90), url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct' }];
+    }
+}
+async function getStreamsInner(tmdbId, mediaType, season, episode) {
     var isTv = mediaType === 'tv' || mediaType === 'series';
     YGG_STATS = null;
+    T0 = Date.now();
     var ids = await resolveIds(tmdbId, mediaType);
     if (!ids || !ids.imdbId) {
         console.log('Comet666 : id IMDb introuvable pour ' + tmdbId);
-        return [];
+        return [{ name: 'Comet666 enquête', title: '🔎 Comet666 : id IMDb introuvable pour ' + tmdbId + ' (TMDB / Frank)', url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct' }];
     }
     var found = [];
     // Vrai si le nom annonce exactement la saison demandée (ou ne dit rien de précis).
@@ -536,16 +553,28 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     }
     // 666TVF : sources françaises d'abord (trackers avec ta clé, YGG), puis les index publics
     var tmdbNum = String(tmdbId || '').replace(/^tmdb:/i, '');
-    var lists = [
-        await fromTrackers({ imdbId: ids.imdbId, tmdbId: /^\d+$/.test(tmdbNum) ? tmdbNum : null }, isTv, season, episode),
-        await fromYggReborn(ids.imdbId, isTv, season, episode),
-        await fromTorboxSearch(ids.imdbId, isTv, season, episode),
-        // YGG retiré (27/10) : le relais public répond 403 même depuis la Shield.
-        await fromStremThru(ids.imdbId, isTv, season, episode),
-        await fromTorrentio(ids.imdbId, isTv, season, episode),
-        await fromZilean(ids.imdbId, isTv, season, episode),
-        await fromTorrentsDb(ids.imdbId, isTv, season, episode)
+    // 666TVF (07/11) : sur la Shield, chaque demande bloque jusqu'à sa réponse (une source en panne
+    // peut faire attendre 30 s et plus). Au-delà de BUDGET_MS, on n'en lance plus : Comet666 répond
+    // toujours avant que 666TVF ne l'abandonne (120 s), avec ce qu'il a — et l'enquête dit qui a traîné.
+    var sources = [
+        ['Trackers', function () { return fromTrackers({ imdbId: ids.imdbId, tmdbId: /^\d+$/.test(tmdbNum) ? tmdbNum : null }, isTv, season, episode); }],
+        ['YggReborn', function () { return fromYggReborn(ids.imdbId, isTv, season, episode); }],
+        ['TorBox', function () { return fromTorboxSearch(ids.imdbId, isTv, season, episode); }],
+        ['StremThru', function () { return fromStremThru(ids.imdbId, isTv, season, episode); }],
+        ['Torrentio', function () { return fromTorrentio(ids.imdbId, isTv, season, episode); }],
+        ['DMM', function () { return fromZilean(ids.imdbId, isTv, season, episode); }],
+        ['TorrentsDB', function () { return fromTorrentsDb(ids.imdbId, isTv, season, episode); }]
     ];
+    var lists = [];
+    TIMING = { skipped: [], slow: [] };
+    for (var si = 0; si < sources.length; si++) {
+        if (late()) { TIMING.skipped.push(sources[si][0]); lists.push([]); continue; }
+        var t1 = Date.now(), got = [];
+        try { got = (await sources[si][1]()) || []; } catch (e) { got = []; }
+        var dt = Date.now() - t1;
+        if (dt > SLOW_MS) TIMING.slow.push(sources[si][0] + ' ' + Math.round(dt / 1000) + ' s');
+        lists.push(got);
+    }
     var airDate = isTv ? await episodeAirDate(tmdbId, season, episode) : null;
     var seen = {};
     var seenNames = {};
@@ -636,4 +665,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _budget: function (ms) { BUDGET_MS = ms; } };
