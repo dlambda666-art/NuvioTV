@@ -264,6 +264,28 @@ const cases = [
         else console.log('✓ Raw : seul le Raw du bon jour est gardé');
         global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
     }
+    // TorBox search (07/11) : nouvelle source, clé passée par 666TVF uniquement
+    {
+        const p = comet._parseTorboxSearch;
+        const data = { success: true, data: { torrents: [
+            { hash: 'C'.repeat(40), raw_title: 'The.Twilight.Zone.S01E05.MULTi.1080p.WEB-TEAM', size: 2e9, last_known_seeders: 12, cached: true },
+            { hash: 'd'.repeat(40), raw_title: 'The.Twilight.Zone.S01E06.MULTi.1080p.WEB-TEAM', size: 2e9, last_known_seeders: 3 },
+            { hash: 'pasunhash', raw_title: 'The.Twilight.Zone.S01E05.FRENCH.1080p', size: 1 }
+        ] } };
+        const out = p(data, true, 1, 5);
+        if (out.length !== 1 || out[0].hash !== 'c'.repeat(40) || out[0].source !== 'TorBox ⚡') { fails++; console.log('✗ TorBox search mal lu → ' + JSON.stringify(out)); }
+        else console.log('✓ TorBox search : bon épisode, hash valide, marqué ⚡ si en cache');
+        if (p(null, false).length !== 0 || p({ success: false, data: null }, false).length !== 0) { fails++; console.log('✗ TorBox search : réponse vide mal gérée'); }
+        else console.log('✓ TorBox search : réponse vide ou en erreur → rien');
+        const saved = { fetch: global.fetch, settings: global.SCRAPER_SETTINGS };
+        const urls = [];
+        global.SCRAPER_SETTINGS = {};
+        global.fetch = async u => { urls.push(u); return { ok: false, json: async () => null, text: async () => '' }; };
+        await comet.getStreams('tt0052520', 'tv', 1, 5);
+        if (urls.some(u => u.includes('torbox'))) { fails++; console.log('✗ TorBox search interrogé sans clé'); }
+        else console.log('✓ Sans clé, TorBox search n\'est pas interrogé');
+        global.fetch = saved.fetch; global.SCRAPER_SETTINGS = saved.settings;
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();

@@ -365,6 +365,38 @@ async function fromYggReborn(imdbId, isTv, season, episode) {
     return out;
 }
 
+// 666TVF (07/11) : moteur de recherche TorBox (sa propre base, cache inclus).
+// La clé TorBox est passée par 666TVF au moment de la recherche (jamais écrite ici ni enregistrée).
+var TORBOX_SEARCH_URL = 'https://search-api.torbox.app';
+function parseTorboxSearch(data, isTv, season, episode) {
+    var list = (data && data.data && data.data.torrents) || [];
+    var out = [];
+    list.forEach(function (t) {
+        var hash = String((t && t.hash) || '').toLowerCase();
+        var title = String((t && (t.raw_title || t.title)) || '');
+        if (!/^[0-9a-f]{40}$/.test(hash) || !title) return;
+        if (isTv && !matchesEpisode(title, season, episode)) return;
+        out.push({ hash: hash, release: title, text: title, bytes: Number(t.size) || 0,
+            seeders: typeof t.last_known_seeders === 'number' ? t.last_known_seeders : null,
+            source: 'TorBox' + (t.cached ? ' ⚡' : '') });
+    });
+    return out;
+}
+async function fromTorboxSearch(imdbId, isTv, season, episode) {
+    var key = setting('torbox_auto');
+    if (!key) return [];
+    var url = TORBOX_SEARCH_URL + '/torrents/imdb_id:' + imdbId + '?check_cache=true&check_owned=false&metadata=false&search_user_engines=false' +
+        (isTv ? '&season=' + season + '&episode=' + episode : '');
+    try {
+        var res = await fetch(url, { headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + key } });
+        if (!res || !res.ok) return [];
+        return parseTorboxSearch(await res.json(), isTv, season, episode);
+    } catch (e) {
+        console.log('Comet666 TorBox search : ' + (e && e.message));
+        return [];
+    }
+}
+
 // TorrentsDB : addon public au format Stremio
 async function fromTorrentsDb(imdbId, isTv, season, episode) {
     var sid = isTv ? imdbId + ':' + season + ':' + episode : imdbId;
@@ -427,6 +459,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     var lists = [
         await fromTrackers({ imdbId: ids.imdbId, tmdbId: /^\d+$/.test(tmdbNum) ? tmdbNum : null }, isTv, season, episode),
         await fromYggReborn(ids.imdbId, isTv, season, episode),
+        await fromTorboxSearch(ids.imdbId, isTv, season, episode),
         // YGG retiré (27/10) : le relais public répond 403 même depuis la Shield.
         await fromStremThru(ids.imdbId, isTv, season, episode),
         await fromTorrentio(ids.imdbId, isTv, season, episode),
@@ -485,7 +518,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
         var raw = {}, kept = {};
         lists.forEach(function (l) { l.forEach(function (t) { var k = String(t.source).split(' ')[0]; raw[k] = (raw[k] || 0) + 1; }); });
         found.forEach(function (t) { var k = String(t.source).split(' ')[0]; kept[k] = (kept[k] || 0) + 1; });
-        var parts = ['C411', 'Tr4ker', 'YggReborn', 'StremThru', 'Torrentio', 'DMM', 'TorrentsDB'].filter(function (k) { return raw[k] || (k === 'C411' && setting('c411')) || (k === 'Tr4ker' && setting('tr4ker')) || (k === 'YggReborn' && setting('yggreborn')); })
+        var parts = ['C411', 'Tr4ker', 'YggReborn', 'TorBox', 'StremThru', 'Torrentio', 'DMM', 'TorrentsDB'].filter(function (k) { return raw[k] || (k === 'C411' && setting('c411')) || (k === 'Tr4ker' && setting('tr4ker')) || (k === 'YggReborn' && setting('yggreborn')) || (k === 'TorBox' && setting('torbox_auto')); })
             .map(function (k) { return k + ' ' + (kept[k] || 0) + '/' + (raw[k] || 0); });
         Object.keys(raw).forEach(function (k) { if (parts.join(' ').indexOf(k) < 0) parts.push(k + ' ' + (kept[k] || 0) + '/' + raw[k]); });
         var diag = [{ title: 'Sources (VF gardés/trouvés) : ' + parts.slice(0, 4).join(' · ') }];
@@ -497,4 +530,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch };
