@@ -225,6 +225,8 @@ object StreamAutoPlaySelector {
                 .sortedWith(
                     compareBy<Stream> { if (isUncertainFrench(it)) 1 else 0 }
                         .thenBy { episodeRank(it, season, episode) }
+                        // 666TVF : équipe de release qui a déjà marché sur cette série
+                        .thenBy { com.nuvio.tv.core.tools.Proven666.activeRank(it) }
                         .thenByDescending { it.qualityValue }
                 )
                 .firstOrNull()

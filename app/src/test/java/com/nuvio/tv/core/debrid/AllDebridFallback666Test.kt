@@ -80,4 +80,25 @@ class AllDebridFallback666Test {
         // ancien format (objet indexé)
         assertEquals(setOf("ccc"), parseReadyHashes(JSONObject("""{"status":"success","data":{"magnets":{"1":{"hash":"ccc","statusCode":4}}}}""")))
     }
+
+    @Test fun `verification en douce - pret devient coche, pas pret cache, sans reponse reste point d'interrogation`() {
+        val guesses = AllDebridFallback666.relabel(
+            listOf(s("p1", StreamDebridCacheState.NOT_CACHED), s("p2", StreamDebridCacheState.NOT_CACHED),
+                s("p3", StreamDebridCacheState.NOT_CACHED), s("tb", StreamDebridCacheState.CACHED)),
+            true, emptySet()
+        )
+        assertEquals(listOf("p1", "p2", "p3"), AllDebridFallback666.probeCandidates(guesses).map { it.infoHash })
+        val out = AllDebridFallback666.applyProbes(guesses, mapOf("p1" to false, "p2" to true, "p3" to null))
+        assertEquals(listOf("tb", "p2", "p1", "p3"), out.map { it.infoHash })
+        assertEquals(StreamDebridCacheState.CACHED, out[1].debridCacheStatus?.state)
+        assertEquals("⚡ AllDebrid ✓", AllDebridFallback666.label(out[1]))
+        assertEquals(StreamDebridCacheState.NOT_CACHED, out[2].debridCacheStatus?.state) // sera caché
+        assertNull(AllDebridFallback666.label(out[2]))
+        assertTrue(AllDebridFallback666.isGuess(out[3]))
+    }
+
+    @Test fun `au plus 3 verifications par recherche`() {
+        val guesses = AllDebridFallback666.relabel((1..6).map { s("g$it", StreamDebridCacheState.NOT_CACHED) }, true, emptySet())
+        assertEquals(AllDebridFallback666.MAX_PROBES, AllDebridFallback666.probeCandidates(guesses).size)
+    }
 }

@@ -21,12 +21,13 @@ object AllDebridFallback666 {
     fun isFallback(stream: Stream): Boolean = stream.debridCacheStatus?.providerId == PROVIDER_ID
 
     fun isGuess(stream: Stream): Boolean =
-        isFallback(stream) && stream.debridCacheStatus?.state != StreamDebridCacheState.CACHED
+        isFallback(stream) && stream.debridCacheStatus?.state == StreamDebridCacheState.UNKNOWN
 
     /** Ligne affichée sur la carte du lien, ou null. */
     fun label(stream: Stream): String? = when {
         !isFallback(stream) -> null
         isGuess(stream) -> "⚡ $NAME_GUESS"
+        stream.debridCacheStatus?.state != StreamDebridCacheState.CACHED -> null
         else -> "⚡ $NAME_READY"
     }
 
@@ -58,5 +59,40 @@ object AllDebridFallback666 {
             }
         }
         return keep + readyOnes + guesses
+    }
+
+    /** Nombre de liens « ? » vérifiés en douce chez AllDebrid à chaque recherche. */
+    const val MAX_PROBES = 3
+
+    /** Les « ? » à vérifier (les mieux placés d'abord) : hash → stream. */
+    fun probeCandidates(streams: List<Stream>): List<Stream> =
+        streams.filter { isGuess(it) && !it.getEffectiveInfoHash().isNullOrBlank() }.take(MAX_PROBES)
+
+    /**
+     * Règle pure (testée) : réponse des vérifications. Prêt → ✓ (avant les « ? »),
+     * pas prêt → caché comme avant (NOT_CACHED), pas de réponse → reste « ? ».
+     */
+    fun applyProbes(streams: List<Stream>, results: Map<String, Boolean?>): List<Stream> {
+        if (results.isEmpty()) return streams
+        val head = ArrayList<Stream>()
+        val ready = ArrayList<Stream>()
+        val tail = ArrayList<Stream>()
+        for (stream in streams) {
+            val hash = stream.getEffectiveInfoHash()?.trim()?.lowercase()
+            val verdict = if (isGuess(stream) && hash != null) results[hash] else null
+            when {
+                !isFallback(stream) -> head += stream
+                verdict == true -> ready += stream.copy(
+                    debridCacheStatus = StreamDebridCacheStatus(PROVIDER_ID, NAME_READY, StreamDebridCacheState.CACHED)
+                )
+                verdict == false -> tail += stream.copy(
+                    debridCacheStatus = StreamDebridCacheStatus(PROVIDER_ID, "AllDebrid", StreamDebridCacheState.NOT_CACHED)
+                )
+                isGuess(stream) -> tail += stream
+                else -> ready.add(stream) // déjà ✓
+            }
+        }
+        // ordre : liens normaux, puis ✓, puis « ? » restants (les « pas prêts » seront cachés)
+        return head + ready + tail
     }
 }

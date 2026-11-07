@@ -179,6 +179,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
     val canUndoReorg by viewModel.canUndoReorg.collectAsState()
     var lastBackup by remember { mutableStateOf(Backup666.lastBackupAt(context)) }
     var busy by remember { mutableStateOf(false) }
+    val sourceStats = remember { com.nuvio.tv.core.tools.SourceStats666.summary(context) }
     var menuOrder by remember { mutableStateOf(com.nuvio.tv.core.tools.MenuOrder666.fullOrder()) }
     var movingRoute by remember { mutableStateOf<String?>(null) }
     var pluginOrder by remember { mutableStateOf(com.nuvio.tv.core.tools.PluginOrder666.order) }
@@ -323,6 +324,23 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                             autoRec = !autoRec
                             recPrefs.edit().putBoolean("on", autoRec).apply()
                         }
+                    )
+                }
+            }
+
+            // ---------- Bilan des sources de Comet666 (07/11) ----------
+            item { Section("Bilan Comet666 (7 jours)", "D'où viennent tes liens VF : proposés · lancés. Une source à 0 lancé depuis longtemps ne sert à rien") }
+            if (sourceStats.isEmpty()) {
+                item {
+                    Text("Pas encore de chiffres : ça se remplit au fil des recherches", modifier = Modifier.padding(horizontal = 18.dp), color = Color(0xFFC8C3BE))
+                }
+            }
+            sourceStats.forEach { l ->
+                item {
+                    ActionRow(
+                        l.source + " : " + l.played + (if (l.played > 1) " lancés" else " lancé"),
+                        l.shown.toString() + (if (l.shown > 1) " liens VF proposés" else " lien VF proposé"),
+                        onClick = {}
                     )
                 }
             }

@@ -126,6 +126,36 @@ class AllDebrid666 @Inject constructor(
         set ?: emptySet()
     }
 
+    private val probed = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Boolean>>()
+
+    /**
+     * 666TVF : « AllDebrid l'a-t-il en cache ? » (AllDebrid n'a pas de question directe pour ça).
+     * On envoie le magnet, on regarde s'il est prêt aussitôt ; s'il ne l'est pas on le retire tout de
+     * suite (aucun téléchargement lancé). Réponse gardée 30 min. null = pas de réponse (erreur).
+     */
+    suspend fun probeReady(hash: String, magnet: String): Boolean? = withContext(Dispatchers.IO) {
+        val key = _apiKey.value.takeIf { it.isNotBlank() } ?: return@withContext null
+        val h = hash.trim().lowercase()
+        probed[h]?.let { (at, ok) -> if (System.currentTimeMillis() - at < PROBE_TTL_MS) return@withContext ok }
+        try {
+            val upload = post("/v4/magnet/upload", key, mapOf("magnets[]" to magnet)) ?: return@withContext null
+            if (upload.optString("status") != "success") return@withContext null
+            val m = upload.optJSONObject("data")?.optJSONArray("magnets")?.optJSONObject(0) ?: return@withContext null
+            val ok = if (m.has("error")) false else {
+                val ready = m.optBoolean("ready", false)
+                val id = m.optInt("id", -1)
+                if (!ready && id > 0) runCatching { get("/v4/magnet/delete", key, mapOf("id" to id.toString())) }
+                ready
+            }
+            probed[h] = System.currentTimeMillis() to ok
+            if (ok) readyCache = readyCache?.let { (at, set) -> at to (set + h) }
+            ok
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            null
+        }
+    }
+
     internal data class AdFile(val name: String, val size: Long, val link: String)
 
     private fun flatten(array: JSONArray, out: MutableList<AdFile> = mutableListOf()): List<AdFile> {
@@ -178,6 +208,7 @@ class AllDebrid666 @Inject constructor(
 }
 
 private const val READY_TTL_MS = 3 * 60 * 1000L
+private const val PROBE_TTL_MS = 30 * 60 * 1000L
 
 /** 666TVF : lecture pure (testée) de la réponse magnet/status d'AllDebrid → hash prêts (statusCode 4). */
 internal fun parseReadyHashes(json: JSONObject?): Set<String>? {

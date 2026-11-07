@@ -44,6 +44,7 @@ import java.security.MessageDigest
 import javax.inject.Inject
 
 private const val TAG = "StreamRepositoryImpl"
+private const val PROBE_TIMEOUT_666_MS = 4_000L
 
 class StreamRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -139,6 +140,8 @@ class StreamRepositoryImpl @Inject constructor(
             val groupPluginsByRepository = pluginsEnabled && pluginManager.groupStreamsByRepository.first()
             val pluginRepositories = if (groupPluginsByRepository) pluginManager.repositories.first() else emptyList()
             val debridSettings = debridSettingsDataStore.settings.first()
+            com.nuvio.tv.core.debrid.PluginKeys666.torbox =
+                debridSettings.apiKeyFor(com.nuvio.tv.core.debrid.DebridProviders.TORBOX_ID)
 
             if (profileManager.activeProfileId.value != profileId) continue
 
@@ -179,6 +182,8 @@ class StreamRepositoryImpl @Inject constructor(
 
             // Accumulate results as they arrive
             val accumulatedResults = mutableListOf<AddonStreams>()
+            // 666TVF : équipes de release qui ont déjà marché sur cette série
+            val provenTeams = com.nuvio.tv.core.tools.Proven666.begin(context, videoId)
 
             coroutineScope {
                 // Channel to receive results as they complete
@@ -304,9 +309,26 @@ class StreamRepositoryImpl @Inject constructor(
                             )
                         )
                     } else torboxResult
+                    // 666TVF : les 3 meilleurs « ? » sont vérifiés en douce chez AllDebrid (prêt → ✓, sinon caché).
+                    val probedResult = com.nuvio.tv.core.debrid.AllDebridFallback666.probeCandidates(annotatedResult.streams)
+                        .takeIf { it.isNotEmpty() }
+                        ?.let { candidates ->
+                            val verdicts = kotlinx.coroutines.coroutineScope {
+                                candidates.map { c ->
+                                    async {
+                                        val hash = c.getEffectiveInfoHash()!!.trim().lowercase()
+                                        val magnet = com.nuvio.tv.core.debrid.DebridMagnetBuilder.fromStream(c)
+                                        hash to magnet?.let {
+                                            kotlinx.coroutines.withTimeoutOrNull(PROBE_TIMEOUT_666_MS) { allDebrid666.probeReady(hash, it) }
+                                        }
+                                    }
+                                }.map { it.await() }.toMap()
+                            }
+                            annotatedResult.copy(streams = com.nuvio.tv.core.debrid.AllDebridFallback666.applyProbes(annotatedResult.streams, verdicts))
+                        } ?: annotatedResult
                     val displacedReleases = HashSet<String>()
-                    val checkedResult = annotatedResult.copy(
-                        streams = annotatedResult.streams.filter { stream ->
+                    val checkedResult = probedResult.copy(
+                        streams = probedResult.streams.filter { stream ->
                             // P2P coupé : un torrent absent du cache debrid ne se lancerait pas.
                             val hiddenUncached = !com.nuvio.tv.core.torrent.TorrentService.P2P_ENABLED &&
                                 stream.debridCacheStatus?.state == com.nuvio.tv.domain.model.StreamDebridCacheState.NOT_CACHED
@@ -333,6 +355,7 @@ class StreamRepositoryImpl @Inject constructor(
                         }
                     )
                     if (checkedResult.streams.isEmpty()) continue
+                    com.nuvio.tv.core.tools.SourceStats666.recordShown(context, checkedResult.streams)
                     if (displacedReleases.isNotEmpty()) {
                         // Retire la copie gardée jusque-là par un plugin moins bien placé.
                         val iterator = accumulatedResults.listIterator()
@@ -346,7 +369,11 @@ class StreamRepositoryImpl @Inject constructor(
                             }
                         }
                     }
-                    mergePresentedResult(accumulatedResults, checkedResult, debridSettings)
+                    mergePresentedResult(
+                        accumulatedResults,
+                        checkedResult.copy(streams = com.nuvio.tv.core.tools.Proven666.sortProven(checkedResult.streams, provenTeams)),
+                        debridSettings
+                    )
                     emit(NetworkResult.Success(accumulatedResults.toList()))
                     Log.d(TAG, "Emitted ${accumulatedResults.size} addon(s), latest: ${checkedResult.addonName} with ${checkedResult.streams.size} streams")
                 }

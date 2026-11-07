@@ -1234,6 +1234,8 @@ class StreamScreenViewModel @Inject constructor(
                     videoSize = result.videoSize ?: basePlaybackInfo.videoSize
                 )
                 StreamSidecarSubtitles.set(result.url, stream.subtitles)
+                com.nuvio.tv.core.tools.Proven666.remember(context, videoId, stream)
+                com.nuvio.tv.core.tools.SourceStats666.recordPlayed(context, stream)
                 // Save resolved URL to cache for reuse last link
                 if (!result.url.isNullOrBlank()) {
                     pendingCacheSaveJob = viewModelScope.launch {
