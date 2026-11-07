@@ -37,4 +37,16 @@ class CalendarVfRule666Test {
         assertTrue(CalendarVfRule666.counts("Show.S01.FRENCH.1080p.WEB", null, 1, 2, emptySet()))
         assertTrue(CalendarVfRule666.counts("Show.S01E01-E08.FRENCH.1080p.WEB", null, 1, 1, emptySet()))
     }
+
+    @Test fun `lien pret sans numero ni date - ne prouve rien (SmackDown Lumio)`() {
+        assertFalse(CalendarVfRule666.namesEpisode("Lumio 1080p VF", 28, 45, smackdown))
+        assertFalse(CalendarVfRule666.namesEpisode("WWE SmackDown VF 1080p", 28, 45, smackdown))
+        assertFalse(CalendarVfRule666.namesEpisode("WWE.SmackDown.2026.10.31.FRENCH", 28, 45, smackdown))
+    }
+
+    @Test fun `lien pret qui nomme l'episode - prouve`() {
+        assertTrue(CalendarVfRule666.namesEpisode("WWE.SmackDown.2026.11.07.FRENCH.1080p", 28, 45, smackdown))
+        assertTrue(CalendarVfRule666.namesEpisode("American Horror Story S13E13 VF 1080p", 13, 13, emptySet()))
+        assertFalse(CalendarVfRule666.namesEpisode("American Horror Story S13E12 VF 1080p", 13, 13, emptySet()))
+    }
 }

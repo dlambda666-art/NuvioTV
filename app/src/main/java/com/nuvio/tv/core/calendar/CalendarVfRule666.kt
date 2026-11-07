@@ -39,4 +39,18 @@ object CalendarVfRule666 {
 
     private fun date(y: String, m: String, d: String): LocalDate? =
         runCatching { LocalDate.of(y.toInt(), m.toInt(), d.toInt()) }.getOrNull()
+
+    /**
+     * Règle pure (testée) : le texte nomme-t-il CET épisode ? SxxEyy identique, ou une date de
+     * diffusion (à un jour près). Un titre sans numéro ni date ne prouve rien.
+     */
+    fun namesEpisode(text: String, season: Int?, episode: Int?, airDates: Set<LocalDate>): Boolean {
+        if (season != null && episode != null &&
+            EPISODE.findAll(text).any { it.groupValues[1].toInt() == season && it.groupValues[2].toInt() == episode }) return true
+        if (airDates.isEmpty()) return false
+        val ok = airDates.flatMap { listOf(it.minusDays(1), it, it.plusDays(1)) }.toSet()
+        val dates = YMD.findAll(text).mapNotNull { m -> date(m.groupValues[1], m.groupValues[2], m.groupValues[3]) } +
+            DMY.findAll(text).mapNotNull { m -> date(m.groupValues[3], m.groupValues[2], m.groupValues[1]) }
+        return dates.any { it in ok }
+    }
 }

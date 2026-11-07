@@ -233,7 +233,7 @@ class CalendarRepository @Inject constructor(
      * règle stricte (SmackDown / AHS annoncés à tort). S'ils sont vraiment en VF, la cloche resonnera.
      */
     private suspend fun recheckOnce666(episodes: List<CalendarEpisode>) {
-        val prefs = appContext.getSharedPreferences("666tv_calendar_recheck", android.content.Context.MODE_PRIVATE)
+        val prefs = appContext.getSharedPreferences("666tv_calendar_recheck2", android.content.Context.MODE_PRIVATE)
         val done = prefs.getStringSet("done", emptySet()).orEmpty()
         val seriesId = episodes.firstOrNull()?.seriesId ?: return
         if (seriesId in done) return
@@ -317,10 +317,23 @@ class CalendarRepository @Inject constructor(
                     }
                     // Lien prêt (http) : VF dispo. Torrent (Comet666) : seulement s'il est en cache
                     // chez le débrideur, sinon il ne se lancerait pas.
-                    if (sure.any { it.url.startsWith("http", ignoreCase = true) }) true
-                    else anyCached666(sure.mapNotNull { r ->
-                        r.infoHash?.lowercase() ?: Regex("btih:([0-9a-fA-F]{40})").find(r.url)?.groupValues?.get(1)?.lowercase()
-                    })
+                    // 666TVF (07/11, 2) : un lien prêt ne prouve la VF que s'il NOMME l'épisode (SxxEyy ou
+                    // date) : Lumio renvoyait le SmackDown de la semaine passée sous un titre sans numéro.
+                    val proof = sure.firstOrNull { r ->
+                        r.url.startsWith("http", ignoreCase = true) &&
+                            CalendarVfRule666.namesEpisode(listOfNotNull(r.name, r.title).joinToString(" "), ps, pe, airDates666)
+                    }
+                    if (proof != null) {
+                        trace666(episode, scraper.id, listOfNotNull(proof.name, proof.title).joinToString(" "), "lien prêt")
+                        true
+                    } else {
+                        val hashes = sure.mapNotNull { r ->
+                            r.infoHash?.lowercase() ?: Regex("btih:([0-9a-fA-F]{40})").find(r.url)?.groupValues?.get(1)?.lowercase()
+                        }
+                        val cached = anyCached666(hashes)
+                        if (cached) trace666(episode, scraper.id, sure.firstOrNull { !it.infoHash.isNullOrBlank() }?.let { listOfNotNull(it.name, it.title).joinToString(" ") }.orEmpty(), "torrent en cache")
+                        cached
+                    }
                 }.onFailure { Log.d(TAG, "VF check ${scraper.id} failed for ${episode.key}: ${it.message}") }
                     .getOrDefault(false)
             }
@@ -343,6 +356,29 @@ class CalendarRepository @Inject constructor(
             vfNegativeCache[episode.key] = System.currentTimeMillis()
             VfState.NOT_YET
         }
+    }
+
+    /**
+     * 666TVF (07/11) : la cloche dit à Frank POURQUOI elle sonne (épisode, cavalier, nom du lien qui
+     * prouve la VF). Jamais d'adresse de lien, de clé ni de config : le nom affiché seulement.
+     */
+    private fun trace666(episode: CalendarEpisode, scraperId: String, text: String, kind: String) {
+        Thread {
+            runCatching {
+                val body = org.json.JSONObject()
+                    .put("phase", "cloche").put("id", episode.seriesId).put("name", episode.seriesName)
+                    .put("s", episode.season).put("e", episode.episode)
+                    .put("cavalier", scraperId.substringAfterLast(':')).put("kind", kind)
+                    .put("text", text.replace(Regex("https?://\\S+"), "").take(200)).toString()
+                val conn = (java.net.URL("https://lambda666-frankenstream.hf.space/comet/trace").openConnection() as java.net.HttpURLConnection).apply {
+                    requestMethod = "POST"; doOutput = true; connectTimeout = 8_000; readTimeout = 8_000
+                    setRequestProperty("Content-Type", "application/json")
+                }
+                conn.outputStream.use { it.write(body.toByteArray()) }
+                conn.responseCode
+                conn.disconnect()
+            }
+        }.start()
     }
 
     private suspend fun anyCached666(hashes: List<String>): Boolean {
