@@ -397,6 +397,14 @@ function yggQueries(frankQueries, titles, year, isTv, season, episode, airDate) 
             .forEach(function (t) { add(t + ' ' + dot); });
     }
     exact.forEach(variants);
+    // 666TVF (08/11) : films — Frank ne donnait souvent qu'UNE recherche (titre français) : le guetteur
+    // passait à côté des releases au titre original. On ajoute chaque titre (avec l'année, puis seul).
+    if (!isTv && titles && titles.length) {
+        titles.map(stripAccents).filter(function (t, i, a) { return t && a.indexOf(t) === i; }).slice(0, 3).forEach(function (t) {
+            if (year) add(t + ' ' + year);
+        });
+        titles.map(stripAccents).filter(function (t, i, a) { return t && a.indexOf(t) === i; }).slice(0, 2).forEach(function (t) { add(t); });
+    }
     if (isTv) {
         wide.forEach(variants);
         if (year && titles.length) add(stripAccents(titles[titles.length - 1]) + ' ' + year);
@@ -588,7 +596,7 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.20';
+var COMET_VERSION = '1.1.21';
 async function trace(data) {
     try {
         data.v = COMET_VERSION;

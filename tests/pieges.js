@@ -295,7 +295,7 @@ const cases = [
         if (JSON.stringify(q) !== JSON.stringify(want)) { fails++; console.log('✗ Requêtes YggReborn → ' + JSON.stringify(q)); }
         else console.log('✓ YggReborn : variantes sans accents et « 4eme », épisode exact d\'abord, 8 max');
         const f = comet._yggQueries(['Dune Deuxième Partie 2024'], ['Dune : Deuxième partie', 'Dune: Part Two'], 2024, false);
-        if (JSON.stringify(f) !== JSON.stringify(['Dune Deuxième Partie 2024', 'Dune Deuxieme Partie 2024', 'Dune 2eme Partie 2024'])) { fails++; console.log('✗ Requêtes film → ' + JSON.stringify(f)); }
+        if (JSON.stringify(f.slice(0, 3)) !== JSON.stringify(['Dune Deuxième Partie 2024', 'Dune Deuxieme Partie 2024', 'Dune 2eme Partie 2024']) || f.indexOf('Dune: Part Two 2024') < 0) { fails++; console.log('✗ Requêtes film → ' + JSON.stringify(f)); }
         else console.log('✓ YggReborn film : titre + variante sans accents');
     }
     // 4e dimension (07/11) : « La 4eme dimension REMUX S03 » trouvé par StreamFusion, pas par Comet666
@@ -450,6 +450,12 @@ const cases = [
         const none = comet._matchesEpisode('WWE.SmackDown.2026.11.06.MULTI.VFF.1080p.WEB-HEEL', 28, 45);
         if (!ok || old || none) { fails++; console.log('✗ Épisode daté → bon jour ' + ok + ' · autre date ' + old + ' · sans date connue ' + none); }
         else console.log('✓ SmackDown daté : bon jour gardé, 31/10 écarté, rien sans date de diffusion');
+    }
+    // Guetteur films (08/11) : une seule recherche YggReborn (titre FR) → releases au titre original ratées
+    {
+        const q = comet._yggQueries(["L'Odyssée 2026"], ["L'Odyssée", 'The Odyssey'], 2026, false);
+        if (q.indexOf('The Odyssey 2026') < 0 || q.indexOf("L'Odyssee 2026") < 0 || q.length > 8) { fails++; console.log('✗ Recherches film → ' + JSON.stringify(q)); }
+        else console.log('✓ Film : titre français ET titre original (avec l\'année) cherchés sur YggReborn');
     }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
