@@ -319,8 +319,21 @@ class VfWatcher666 @Inject constructor(
             val raw = Http666.get(url, 20_000) ?: continue
             parseDiscover(raw).forEach { seen.putIfAbsent(it.tmdbId, it) }
         }
+        // 666TVF (08/11) : + les films encore au cinéma ou sortis en salle ces 5 derniers mois. L'Odyssée
+        // est passé en HDLight VF avant sa sortie VOD (17/11) : il n'était pas surveillé. Le cri garde ses
+        // règles (VF sûre, 1080p / 4K, jamais de CAM / TS / MD).
+        val vod = seen.values.take(MAX_TMDB).toList()
+        val cinema = LinkedHashMap<Int, TmdbRelease>()
+        val cinemaFrom = today.minusDays(CINEMA_WINDOW_DAYS)
+        for (region in listOf("FR", "US")) {
+            val url = "https://api.themoviedb.org/3/discover/movie?api_key=$key&language=fr-FR&region=$region" +
+                "&with_release_type=2%7C3&release_date.gte=$cinemaFrom&release_date.lte=$today" +
+                "&without_genres=99%2C10770&sort_by=popularity.desc&include_adult=false&page=1"
+            val raw = Http666.get(url, 20_000) ?: continue
+            parseDiscover(raw).forEach { if (it.tmdbId !in seen) cinema.putIfAbsent(it.tmdbId, it) }
+        }
         val idCache = context.getSharedPreferences("666tv_guetteur_ids", Context.MODE_PRIVATE)
-        seen.values.take(MAX_TMDB).mapNotNull { r ->
+        (vod + cinema.values.take(MAX_CINEMA)).mapNotNull { r ->
             val imdb = idCache.getString(r.tmdbId.toString(), null) ?: Http666.get(
                 "https://api.themoviedb.org/3/movie/${r.tmdbId}/external_ids?api_key=$key", 15_000
             )?.let { runCatching { JSONObject(it).optString("imdb_id") }.getOrNull() }
@@ -339,9 +352,11 @@ class VfWatcher666 @Inject constructor(
         const val INTERVAL_MS = 12L * 3600 * 1000
         const val MAX_CANDIDATES = 60
         const val MAX_TMDB = 40
+        const val MAX_CINEMA = 20
+        const val CINEMA_WINDOW_DAYS = 150L
 
-        private val HD = Regex("""(?i)(?<![0-9])(1080[pi]?|2160p|4k|uhd)(?![0-9])""")
-        private val LOW = Regex("""(?i)(?<![0-9])(720p|576p|480p|360p)(?![0-9])|\b(cam|hdcam|ts|telesync|hdts)\b""")
+        private val HD = Regex("""(?i)(?<![0-9])(1080[pi]?|2160p|4k|uhd)(?![0-9])|\bhd[ ._-]?light\b""")
+        private val LOW = Regex("""(?i)(?<![0-9])(720p|576p|480p|360p)(?![0-9])|\b(cam|hdcam|camrip|ts|telesync|hdts|tc|hdtc|telecine|md|scr|screener|dvdscr)\b""")
 
         /** Règle pure (testée) : release qui fait crier — VF sûre, 1080p ou 4K (HDLight compris), pas de 720p ni de CAM. */
         fun isCryRelease(text: String?): Boolean =

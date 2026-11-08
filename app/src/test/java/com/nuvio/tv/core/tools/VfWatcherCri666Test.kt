@@ -62,4 +62,13 @@ class VfWatcherCri666Test {
         assertFalse(VfWatcher666.inPleWindow(today.plusDays(1), today))
         assertFalse(VfWatcher666.inPleWindow(null, today))
     }
+
+    @Test fun `L Odyssee - HDLight VF sans 1080p ecrit crie, capture cine jamais`() {
+        assertTrue(VfWatcher666.isCryRelease("L'Odyssée 2026 FRENCH HDLight"))
+        assertTrue(VfWatcher666.isCryRelease("The.Odyssey.2026.TRUEFRENCH.HDLight.x264-TEAM"))
+        assertFalse(VfWatcher666.isCryRelease("The.Odyssey.2026.TRUEFRENCH.HDLight.720p.x264"))
+        assertFalse(VfWatcher666.isCryRelease("The.Odyssey.2026.FRENCH.MD.1080p.HDTS.x264"))
+        assertFalse(VfWatcher666.isCryRelease("The.Odyssey.2026.FRENCH.1080p.TC.x264"))
+        assertFalse(VfWatcher666.isCryRelease("L'Odyssée 2026 FRENCH HDCAM"))
+    }
 }
