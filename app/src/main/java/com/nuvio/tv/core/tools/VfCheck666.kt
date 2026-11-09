@@ -37,7 +37,13 @@ import java.time.LocalDate
 object VfCheck666 {
     private const val TAG = "VfCheck666"
     private const val PREFS = "666tv_vfcheck"
-    private const val FS = "https://maj.french-stream.pink"
+    /**
+     * Adresses de French-Stream (le site en change souvent). La 1re qui répond est retenue ;
+     * si elle tombe, on essaie les autres. Nouvelle adresse = l'ajouter ici (09/11 : fs23.lol).
+     */
+    val FS_HOSTS = listOf("https://fs23.lol", "https://maj.french-stream.pink")
+    @Volatile private var fsIndex = 0
+    private val FS: String get() = FS_HOSTS[fsIndex % FS_HOSTS.size]
 
     enum class Tag { DUB, DUB_SUB, SUB, NONE }
     fun isVf(t: Tag?) = t == Tag.DUB || t == Tag.DUB_SUB
@@ -231,51 +237,59 @@ object VfCheck666 {
         return tag
     }
 
-    private suspend fun fsRequest(url: String, body: String?): String? {
+    /** [path] commence par « / ». Essaie l'adresse retenue, puis les autres. */
+    private suspend fun fsRequest(path: String, body: String?): String? {
         if (System.currentTimeMillis() < fsBlockedUntil) return null
-        fsPace.withLock {
-            val wait = fsNextAt - System.currentTimeMillis()
-            if (wait > 0) delay(wait)
-            fsNextAt = System.currentTimeMillis() + 1_200
-        }
-        return runCatching {
-            val c = URL(url).openConnection() as HttpURLConnection
-            c.connectTimeout = 10_000; c.readTimeout = 15_000
-            c.setRequestProperty("User-Agent", "Mozilla/5.0")
-            c.setRequestProperty("Referer", "$FS/")
-            if (body != null) {
-                c.requestMethod = "POST"; c.doOutput = true
-                c.setRequestProperty("Origin", FS)
-                c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-                c.outputStream.use { it.write(body.toByteArray()) }
+        repeat(FS_HOSTS.size) {
+            val base = FS
+            fsPace.withLock {
+                val wait = fsNextAt - System.currentTimeMillis()
+                if (wait > 0) delay(wait)
+                fsNextAt = System.currentTimeMillis() + 1_200
             }
-            try {
-                if (c.responseCode !in 200..299) null else c.inputStream.bufferedReader().readText()
-            } finally { c.disconnect() }
-        }.getOrNull()?.also {
-            // French-Stream bloque : on ne prend pas un blocage pour un « pas de VF », on attend
-            if (Regex("just a moment|cf-chl|captcha|too many requests", RegexOption.IGNORE_CASE).containsMatchIn(it)) {
-                fsBlockedUntil = System.currentTimeMillis() + 15 * 60_000L
-                return null
+            val text = runCatching {
+                val c = URL(base + path).openConnection() as HttpURLConnection
+                c.connectTimeout = 10_000; c.readTimeout = 15_000
+                c.setRequestProperty("User-Agent", "Mozilla/5.0")
+                c.setRequestProperty("Referer", "$base/")
+                if (body != null) {
+                    c.requestMethod = "POST"; c.doOutput = true
+                    c.setRequestProperty("Origin", base)
+                    c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+                    c.outputStream.use { it.write(body.toByteArray()) }
+                }
+                try {
+                    if (c.responseCode !in 200..299) null else c.inputStream.bufferedReader().readText()
+                } finally { c.disconnect() }
+            }.getOrNull()
+            if (text != null) {
+                // French-Stream bloque : on ne prend pas un blocage pour un « pas de VF », on attend
+                if (Regex("just a moment|cf-chl|captcha|too many requests", RegexOption.IGNORE_CASE).containsMatchIn(text)) {
+                    fsBlockedUntil = System.currentTimeMillis() + 15 * 60_000L
+                    return null
+                }
+                return text
             }
+            fsIndex++   // cette adresse ne répond pas : la suivante
         }
+        return null
     }
 
     private suspend fun frenchStream(titles: List<String>, series: Boolean, year: Int?, recent: Boolean): Tag? {
         for (title in titles) {
-            val html = fsRequest("$FS/engine/ajax/search.php", "query=${URLEncoder.encode(title, "UTF-8")}&page=1") ?: return null
+            val html = fsRequest("/engine/ajax/search.php", "query=${URLEncoder.encode(title, "UTF-8")}&page=1") ?: return null
             val matches = parseSearch(html).filter { it.series == series && canon(it.title) == canon(title) &&
                 (series || year == null || it.year == null || kotlin.math.abs(it.year - year) <= 1) }
             if (matches.isEmpty()) continue
             var tag = merge(matches.map { it.tag })
             if (tag == Tag.NONE) {
-                val page = fsRequest(FS + matches.first().href.let { if (it.startsWith("/")) it else "/$it" }, null) ?: return null
+                val page = fsRequest(matches.first().href.let { if (it.startsWith("/")) it else "/$it" }, null) ?: return null
                 val field = Regex("""id=["']film_lang["'][^>]*>([\s\S]*?)</span>""", RegexOption.IGNORE_CASE).find(page)?.groupValues?.get(1)
                 tag = if (field == null) Tag.NONE else languageTag(field.replace(Regex("<[^>]+>"), " "))
             }
             // film récent en VF : pas une version cinéma (CAM, TS, MD…)
             if (isVf(tag) && !series && recent) {
-                val page = fsRequest(FS + matches.first().href.let { if (it.startsWith("/")) it else "/$it" }, null)
+                val page = fsRequest(matches.first().href.let { if (it.startsWith("/")) it else "/$it" }, null)
                 val quality = page?.let { Regex("""id=["']film_quality["'][^>]*>([\s\S]*?)</span>""", RegexOption.IGNORE_CASE).find(it)?.groupValues?.get(1) }
                     ?.replace(Regex("<[^>]+>"), " ")?.trim().orEmpty()
                 if (CAM_RELEASE.containsMatchIn(quality)) return if (tag == Tag.DUB_SUB) Tag.SUB else Tag.NONE
