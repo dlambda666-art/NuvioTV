@@ -134,6 +134,50 @@ object FrankFree666 {
         return fr(title.ifBlank { if (tv) "Séries" else "Films" }, media, popular, voteCount = 50)
     }
 
+    /** Listes déjà en panne pendant cette session (on passe directement au remplaçant). */
+    private val dead = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    fun keyOf(s: AddonCatalogCollectionSource) = "${s.addonId}|${s.type}|${s.catalogId}"
+    fun markDead(s: AddonCatalogCollectionSource) { dead += keyOf(s) }
+    fun isDead(s: AddonCatalogCollectionSource) = keyOf(s) in dead
+
+    /**
+     * 666TVF (09/11, 2) : une liste qui ne répond plus (écran noir), passée par aiometadata ou autre,
+     * reconnue à son NOM (« En VF cette semaine », « Pour toi », « Slasher », « Prochainement »…) →
+     * son remplaçant. Null si le nom ne dit rien (on ne remplace pas au hasard : WWE, UFC… restent).
+     */
+    fun fallbackFor(s: AddonCatalogCollectionSource, name: String?, folderTitle: String?, today: java.time.LocalDate = java.time.LocalDate.now()): CollectionSource? {
+        if (isFrank(s)) return replacement(s, name, folderTitle)
+        val n = HomeReorg666.norm(name)
+        val f = HomeReorg666.norm(folderTitle)
+        val tv = s.type == "series" || s.type == "tv"
+        val t = if (tv) "series" else "movie"
+        val media = if (tv) TmdbCollectionMediaType.TV else TmdbCollectionMediaType.MOVIE
+        val title = name?.takeIf { it.isNotBlank() } ?: folderTitle.orEmpty()
+        return when {
+            "vf cette semaine" in n || "nouveautes vf" in n || "nouveaute vf" in n ->
+                AddonCatalogCollectionSource(LocalCatalogs666.VFWEEK, t, "vf-week")
+            "pour toi" in n -> AddonCatalogCollectionSource(LocalCatalogs666.POURTOI, t, "pour-toi")
+            "classique" in n && ("horr" in n || "horr" in f) ->
+                replacement(AddonCatalogCollectionSource(FRANK_ADDON_ID, "movie", "fs-horreur-classiques"), name, folderTitle)
+            Regex("prochain|coming soon|bientot|a venir|upcoming").containsMatchIn(n) -> TmdbCollectionSource(
+                sourceType = TmdbCollectionSourceType.DISCOVER, title = title, mediaType = media,
+                sortBy = TmdbCollectionSort.POPULAR_DESC.value,
+                filters = TmdbCollectionFilters(
+                    releaseDateGte = today.plusDays(1).toString(), releaseDateLte = today.plusDays(120).toString(),
+                    withoutGenres = if (tv) NO_DOCS_TV else NO_DOCS_MOVIE
+                )
+            )
+            Regex("^(derniers? films?|dernieres? series?|nouveaux? films?|nouvelles? series?|nouveautes?)$").containsMatchIn(n) ->
+                if (tv) fr(title, media, TmdbCollectionSort.FIRST_AIR_DATE_DESC, voteCount = 10)
+                else fr(title, media, TmdbCollectionSort.RELEASE_DATE_DESC, voteCount = 20)
+            // listes de l'horreur : le nom de la liste (ou la tuile) parle d'horreur ou d'un sous-genre
+            SUBGENRES.any { it.first.containsMatchIn(n) } || Regex("horr|scary|epouvante").containsMatchIn(n) ||
+                (Regex("horr").containsMatchIn(f) && n.isNotBlank()) ->
+                replacement(AddonCatalogCollectionSource(FRANK_ADDON_ID, s.type, "fs-ext-0"), name, folderTitle)
+            else -> null
+        }
+    }
+
     data class Plan(val collections: List<Collection>, val report: List<String>)
 
     /** Règle pure (testée) : remplace les listes de Frank, ne touche à rien d'autre. */

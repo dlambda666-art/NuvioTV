@@ -128,6 +128,8 @@ class FolderDetailViewModel @Inject constructor(
 
     private val collectionId: String = savedStateHandle["collectionId"] ?: ""
     private val folderId: String = savedStateHandle["folderId"] ?: ""
+    // 666TVF (09/11, 2) : nom de la tuile, pour reconnaître une liste en panne et la remplacer
+    private var folderTitle666: String? = null
 
     private val _uiState = MutableStateFlow(FolderDetailUiState())
     val uiState: StateFlow<FolderDetailUiState> = _uiState.asStateFlow()
@@ -218,6 +220,7 @@ class FolderDetailViewModel @Inject constructor(
             val collections = collectionsDataStore.collections.first()
             val collection = collections.find { it.id == collectionId }
             val folder = collection?.folders?.find { it.id == folderId }
+            folderTitle666 = folder?.title
 
             if (folder == null || folder.sources.isEmpty()) {
                 _uiState.update {
@@ -483,7 +486,11 @@ class FolderDetailViewModel @Inject constructor(
             loadedRows
         }
 
-        if (allRows.isEmpty()) return
+        if (allRows.isEmpty()) {
+            // 666TVF (09/11, 2) : toutes les listes en panne → plus d'écran noir : la vue onglets montre l'erreur
+            if (sourceTabs.none { it.isLoading }) _uiState.update { it.copy(viewMode = FolderViewMode.TABBED_GRID) }
+            return
+        }
 
         val homeRows = allRows.map { HomeRow.Catalog(it) }
         // Only include real (non-placeholder) rows in grid items
@@ -673,10 +680,12 @@ class FolderDetailViewModel @Inject constructor(
             }
             return
         }
+        if (com.nuvio.tv.core.tools.FrankFree666.isDead(source) && fallback666(tabIndex, source)) return
         viewModelScope.launch {
             val addons = addonRepository.getInstalledAddons().first().enabledAddons()
             val addon = addons.find { it.id == source.addonId }
 
+            if (addon == null && fallback666(tabIndex, source)) return@launch
             if (addon == null) {
                 _uiState.update { state ->
                     val tabs = state.tabs.toMutableList()
@@ -714,6 +723,14 @@ class FolderDetailViewModel @Inject constructor(
             val skipStep = catalog?.skipStep() ?: 100
             val extraArgs = buildCatalogExtraArgs(source)
 
+            // 666TVF (09/11, 2) : une liste qui ne répond pas en 15 s est remplacée (plus d'écran noir)
+            val watchdog666 = viewModelScope.launch {
+                kotlinx.coroutines.delay(15_000L)
+                val t = _uiState.value.tabs.getOrNull(tabIndex)
+                if (t != null && t.isLoading && t.source == source && fallback666(tabIndex, source)) {
+                    com.nuvio.tv.core.tools.FrankFree666.markDead(source)
+                }
+            }
             catalogRepository.getCatalog(
                 addonBaseUrl = effectiveAddon.baseUrl,
                 addonId = effectiveAddon.id,
@@ -728,6 +745,11 @@ class FolderDetailViewModel @Inject constructor(
             ).collect { result ->
                 when (result) {
                     is NetworkResult.Success -> {
+                        if (_uiState.value.tabs.getOrNull(tabIndex)?.source != source) return@collect
+                        if (result.data.items.isEmpty() && fallback666(tabIndex, source)) {
+                            watchdog666.cancel(); com.nuvio.tv.core.tools.FrankFree666.markDead(source); return@collect
+                        }
+                        watchdog666.cancel()
                         _uiState.update { state ->
                             val tabs = state.tabs.toMutableList()
                             if (tabIndex < tabs.size) {
@@ -742,6 +764,9 @@ class FolderDetailViewModel @Inject constructor(
                         rebuildFollowLayoutState()
                     }
                     is NetworkResult.Error -> {
+                        watchdog666.cancel()
+                        if (_uiState.value.tabs.getOrNull(tabIndex)?.source != source) return@collect
+                        if (fallback666(tabIndex, source)) { com.nuvio.tv.core.tools.FrankFree666.markDead(source); return@collect }
                         _uiState.update { state ->
                             val tabs = state.tabs.toMutableList()
                             if (tabIndex < tabs.size) {
@@ -756,6 +781,24 @@ class FolderDetailViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * 666TVF (09/11, 2) : la liste ne répond pas (Frank en pause, aiometadata qui dépendait de lui…) →
+     * son remplaçant reconnu à son nom (TMDB, ou « En VF cette semaine » / « Pour toi » de la Shield).
+     * Faux si on ne sait pas la remplacer (l'erreur s'affiche alors comme avant).
+     */
+    private fun fallback666(tabIndex: Int, source: AddonCatalogCollectionSource): Boolean {
+        val tab = _uiState.value.tabs.getOrNull(tabIndex) ?: return false
+        val replacement = com.nuvio.tv.core.tools.FrankFree666.fallbackFor(source, tab.label, folderTitle666) ?: return false
+        _uiState.update { state ->
+            val tabs = state.tabs.toMutableList()
+            if (tabIndex < tabs.size) tabs[tabIndex] = tabs[tabIndex].copy(source = replacement, isLoading = true, error = null)
+            state.copy(tabs = tabs)
+        }
+        android.util.Log.i("FolderDetail666", "liste en panne « ${tab.label} » → remplacée")
+        loadSourceForTab(tabIndex, replacement)
+        return true
     }
 
     fun loadMoreItems(tabIndex: Int) {

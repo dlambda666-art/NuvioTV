@@ -242,10 +242,13 @@ fun ContentCard(
             with(density) { baseCardHeight.roundToPx() }.coerceAtLeast(1)
         }
 
+        // 666TVF (09/11) : affiche qui ne charge pas → affiche publique du titre (une seule fois)
+        var posterFailed666 by remember(item.id, item.poster) { mutableStateOf(false) }
+        val poster666 = if (posterFailed666) com.nuvio.tv.core.tools.Posters666.fallback(item.id, item.imdbId) ?: item.poster else item.poster
         val imageUrl = if (focusedPosterBackdropExpandEnabled && isBackdropExpanded) {
-            item.backdropUrl ?: item.poster
+            item.backdropUrl ?: poster666
         } else {
-            item.poster
+            poster666
         }
         val revalidationKey = com.nuvio.tv.core.image.rememberImageRevalidationKey(imageUrl)
         val imageModel = remember(imageUrl, requestWidthPx, requestHeightPx, revalidationKey) {
@@ -401,7 +404,10 @@ fun ContentCard(
                         placeholder = backgroundPainter,
                         error = backgroundPainter,
                         fallback = backgroundPainter,
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        onError = {
+                            if (!posterFailed666 && com.nuvio.tv.core.tools.Posters666.fallback(item.id, item.imdbId) != null) posterFailed666 = true
+                        }
                     )
                 } else {
                     MonochromePosterPlaceholder()

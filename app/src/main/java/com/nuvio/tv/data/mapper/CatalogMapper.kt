@@ -14,7 +14,8 @@ fun MetaPreviewDto.toDomainOrNull(catalogType: String, sourceAddonBaseUrl: Strin
         type = ContentType.fromString(resolvedType),
         rawType = resolvedType,
         name = resolvedName,
-        poster = poster,
+        // 666TVF (09/11) : affiches de Frank (en pause) remplacées par l'affiche publique du titre
+        poster = com.nuvio.tv.core.tools.Posters666.pick(poster, resolvedId, imdbId),
         posterShape = PosterShape.fromString(posterShape),
         background = background,
         logo = logo,

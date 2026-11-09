@@ -197,19 +197,22 @@ fun GridContentCard(
                 val context = LocalContext.current
                 val bgCardColor = NuvioTheme.colors.BackgroundCard
                 val bgPainter = remember(bgCardColor) { androidx.compose.ui.graphics.painter.ColorPainter(bgCardColor) }
-                val revalidationKey = com.nuvio.tv.core.image.rememberImageRevalidationKey(item.poster)
-                val imageModel = remember(item.poster, requestWidthPx, requestHeightPx, revalidationKey) {
+                // 666TVF (09/11) : affiche qui ne charge pas → affiche publique du titre (une seule fois)
+                var posterFailed666 by remember(item.id, item.poster) { mutableStateOf(false) }
+                val poster666 = if (posterFailed666) com.nuvio.tv.core.tools.Posters666.fallback(item.id, item.imdbId) ?: item.poster else item.poster
+                val revalidationKey = com.nuvio.tv.core.image.rememberImageRevalidationKey(poster666)
+                val imageModel = remember(poster666, requestWidthPx, requestHeightPx, revalidationKey) {
                     val builder = ImageRequest.Builder(context)
-                        .data(item.poster)
+                        .data(poster666)
                         .crossfade(imageCrossfade)
                         .size(width = requestWidthPx, height = requestHeightPx)
-                        .memoryCacheKey("${item.poster}_${requestWidthPx}x${requestHeightPx}_v$revalidationKey")
+                        .memoryCacheKey("${poster666}_${requestWidthPx}x${requestHeightPx}_v$revalidationKey")
                     if (revalidationKey > 0) {
-                        builder.placeholderMemoryCacheKey("${item.poster}_${requestWidthPx}x${requestHeightPx}_v${revalidationKey - 1}")
+                        builder.placeholderMemoryCacheKey("${poster666}_${requestWidthPx}x${requestHeightPx}_v${revalidationKey - 1}")
                     }
                     builder.build()
                 }
-                if (item.poster.isNullOrBlank()) {
+                if (poster666.isNullOrBlank()) {
                     MonochromePosterPlaceholder()
                 } else {
                     AsyncImage(
@@ -219,7 +222,10 @@ fun GridContentCard(
                         contentScale = ContentScale.Crop,
                         placeholder = bgPainter,
                         error = bgPainter,
-                        fallback = bgPainter
+                        fallback = bgPainter,
+                        onError = {
+                            if (!posterFailed666 && com.nuvio.tv.core.tools.Posters666.fallback(item.id, item.imdbId) != null) posterFailed666 = true
+                        }
                     )
                 }
 

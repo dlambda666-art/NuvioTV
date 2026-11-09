@@ -76,4 +76,28 @@ class FrankFree666Test {
     @Test fun `Frank via aiometadata (id prefixe) reconnu`() {
         assertTrue(FrankFree666.isFrank(AddonCatalogCollectionSource("aiometadata", "movie", "fse.fs-ext-4")))
     }
+
+    // 09/11 (2) : écran noir partout — les listes passaient par aiometadata (ids inconnus) : reconnues au nom
+    @Test fun `liste en panne via aiometadata - reconnue a son nom`() {
+        val aio = { id: String, t: String -> AddonCatalogCollectionSource("aiometadata", t, id) }
+        assertEquals(LocalCatalogs666.VFWEEK, (FrankFree666.fallbackFor(aio("x1", "series"), "S.En VF cette semaine", "🆕") as AddonCatalogCollectionSource).addonId)
+        assertEquals(LocalCatalogs666.POURTOI, (FrankFree666.fallbackFor(aio("x2", "movie"), "Pour toi, Lambda", "Pour toi") as AddonCatalogCollectionSource).addonId)
+        assertEquals("14895", tmdb(FrankFree666.fallbackFor(aio("x3", "movie"), "Cannibal", "Horreur")!!).filters.withKeywords)
+        assertEquals("1990-12-31", tmdb(FrankFree666.fallbackFor(aio("x4", "movie"), "Classiques de l'horreur en VF", "Horreur")!!).filters.releaseDateLte)
+        val soon = tmdb(FrankFree666.fallbackFor(aio("x5", "movie"), "Prochainement", "🎟", java.time.LocalDate.of(2026, 11, 9))!!)
+        assertEquals("2026-11-10", soon.filters.releaseDateGte)
+        assertEquals("primary_release_date.desc", tmdb(FrankFree666.fallbackFor(aio("x6", "movie"), "Derniers Films", "🆕")!!).sortBy)
+    }
+
+    @Test fun `liste en panne au nom inconnu - pas remplacee au hasard`() {
+        assertNull(FrankFree666.fallbackFor(AddonCatalogCollectionSource("aiometadata", "series", "wwe"), "WWE", "Catch"))
+    }
+
+    @Test fun `affiches de Frank remplacees, les autres gardees`() {
+        assertEquals("https://images.metahub.space/poster/medium/tt0081505/img",
+            Posters666.pick("https://lambda666-frankenstream.hf.space/poster/movie/tt0081505.jpg", "tt0081505"))
+        assertEquals("https://image.tmdb.org/t/p/w500/a.jpg", Posters666.pick("https://image.tmdb.org/t/p/w500/a.jpg", "tt1"))
+        assertEquals("https://images.metahub.space/poster/medium/tt2/img", Posters666.pick(null, "tmdb:5", "tt2"))
+        assertNull(Posters666.pick("https://lambda666-frankenstream.hf.space/poster/movie/x.jpg", "tmdb:5"))
+    }
 }
