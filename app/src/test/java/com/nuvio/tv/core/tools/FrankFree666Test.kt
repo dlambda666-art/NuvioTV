@@ -100,4 +100,16 @@ class FrankFree666Test {
         assertEquals("https://images.metahub.space/poster/medium/tt2/img", Posters666.pick(null, "tmdb:5", "tt2"))
         assertNull(Posters666.pick("https://lambda666-frankenstream.hf.space/poster/movie/x.jpg", "tmdb:5"))
     }
+
+    @Test fun `tombe Horreur - ne garde que ses listes, pas celles des autres tombes`() {
+        val horreur = src("fs-ext-0"); val slasher = src("fs-ext-1"); val vamp = src("fs-ext-2")
+        val cols = listOf(Collection(id = "c", title = "Horreur", folders = listOf(
+            CollectionFolder(id = "h", title = "Horreur", sources = listOf(horreur, slasher, vamp)),
+            CollectionFolder(id = "s", title = "Slasher", sources = listOf(slasher)),
+            CollectionFolder(id = "v", title = "Vampires", sources = listOf(vamp))
+        )))
+        val out = FrankFree666.dedupeHorror(cols)
+        assertEquals(listOf(horreur), out[0].folders[0].sources)
+        assertEquals(out, FrankFree666.dedupeHorror(out))
+    }
 }

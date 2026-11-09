@@ -178,6 +178,19 @@ object FrankFree666 {
         }
     }
 
+    /**
+     * Règle pure (testée) : la tombe « Horreur » reprenait toutes les listes des autres tombes
+     * (Slasher, Vampire…). Elle ne garde que celles qu'aucune autre tuile n'a (au moins une reste).
+     */
+    fun dedupeHorror(collections: List<Collection>): List<Collection> {
+        val all = collections.flatMap { it.folders }
+        val horror = all.firstOrNull { HomeReorg666.isHorror(it) } ?: return collections
+        val elsewhere = all.filter { it.id != horror.id }.flatMap { it.sources }.toSet()
+        val kept = horror.sources.filter { it !in elsewhere }
+        if (kept.isEmpty() || kept.size == horror.sources.size) return collections
+        return collections.map { c -> c.copy(folders = c.folders.map { f -> if (f.id == horror.id) f.copy(sources = kept) else f }) }
+    }
+
     data class Plan(val collections: List<Collection>, val report: List<String>)
 
     /** Règle pure (testée) : remplace les listes de Frank, ne touche à rien d'autre. */
@@ -206,7 +219,13 @@ object FrankFree666 {
 
     /** Au démarrage. Renvoie le compte rendu (vide si rien à faire). */
     suspend fun ensure(context: Context, store: CollectionsDataStore, addons: AddonRepository): List<String> {
-        val current = runCatching { store.getCurrentCollections() }.getOrNull() ?: return emptyList()
+        val loaded = runCatching { store.getCurrentCollections() }.getOrNull() ?: return emptyList()
+        // 666TVF (09/11, 3) : la 1re tombe « Horreur » ne garde que ses listes à elle
+        val current = dedupeHorror(loaded)
+        if (current != loaded) {
+            store.setCollections(current)
+            runCatching { pushCollections(context) }
+        }
         if (current.none { c -> c.folders.any { f -> f.sources.any { it is AddonCatalogCollectionSource && isFrank(it) } } }) return emptyList()
         val installed = withTimeoutOrNull(5_000) { addons.getInstalledAddons().first() }.orEmpty()
         val names = HashMap<String, String>()

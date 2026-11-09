@@ -418,6 +418,8 @@ fun ContentCard(
                 } else {
                     MonochromePosterPlaceholder()
                 }
+                // 666TVF (09/11) : badge « VF » (comme sur les affiches de Frank)
+                if (!isPlaceholderItem && item.posterShape == PosterShape.POSTER && !isBackdropExpanded) VfBadge666(item.id, item.imdbId)
 
                 val shouldPlayTrailerPreview = isBackdropExpanded &&
                     focusedPosterBackdropTrailerEnabled &&

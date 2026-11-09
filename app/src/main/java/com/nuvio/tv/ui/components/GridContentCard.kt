@@ -235,6 +235,9 @@ fun GridContentCard(
                     )
                 }
 
+                // 666TVF (09/11) : badge « VF » (comme sur les affiches de Frank)
+                if (item.posterShape == PosterShape.POSTER && item.poster != com.nuvio.tv.domain.model.PLACEHOLDER_IMAGE_URL) VfBadge666(item.id, item.imdbId)
+
                 if (showLogo && !item.logo.isNullOrBlank()) {
                     Box(
                         modifier = Modifier

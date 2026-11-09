@@ -646,8 +646,12 @@ class FolderDetailViewModel @Inject constructor(
           viewModelScope.launch {
             val raw = com.nuvio.tv.core.tools.LocalCatalogs666.row(source.addonId, source.type)
             // « Pour toi » : seulement les titres confirmés en VF (« En VF cette semaine » l'est déjà)
-            val row = if (raw != null && source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.POURTOI)
-                raw.copy(items = com.nuvio.tv.core.tools.VfCheck666.keepVf(raw.items)) else raw
+            val row = when {
+                raw == null -> null
+                source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.POURTOI ->
+                    raw.copy(items = betterPosters666(com.nuvio.tv.core.tools.VfCheck666.keepVf(raw.items)))
+                else -> raw.copy(items = betterPosters666(raw.items))
+            }
             _uiState.update { state ->
                 val tabs = state.tabs.toMutableList()
                 if (tabIndex < tabs.size) {
@@ -995,6 +999,12 @@ class FolderDetailViewModel @Inject constructor(
         }
     }
 
+    /** 666TVF (09/11, 3) : les affiches BetterPosters des anciennes listes de Frank (ou ton modèle d'affiche). */
+    private suspend fun betterPosters666(items: List<MetaPreview>): List<MetaPreview> {
+        val pattern = runCatching { layoutPreferenceDataStore.customPosterUrlPattern.first() }.getOrDefault("")
+        return items.map { com.nuvio.tv.core.tools.Posters666.better(it, pattern) }
+    }
+
     /** 666TVF (09/11) : une liste TMDB « sorties en France » (région seule) = une liste VF. */
     private fun isVfList666(source: TmdbCollectionSource): Boolean =
         source.filters.watchRegion.equals("FR", ignoreCase = true) &&
@@ -1018,7 +1028,7 @@ class FolderDetailViewModel @Inject constructor(
                         // 666TVF (09/11) : listes « sorties en France » → seulement les titres confirmés en VF
                         // (règles de Frank, vérifiées sur la Shield)
                         val vfList666 = isVfList666(source)
-                        val data666 = if (vfList666) result.data.copy(items = com.nuvio.tv.core.tools.VfCheck666.keepVf(result.data.items)) else result.data
+                        val data666 = if (vfList666) result.data.copy(items = betterPosters666(com.nuvio.tv.core.tools.VfCheck666.keepVf(result.data.items))) else result.data
                         _uiState.update { s ->
                             val tabs = s.tabs.toMutableList()
                             val currentRow = tabs.getOrNull(tabIndex)?.catalogRow

@@ -139,6 +139,19 @@ object VfCheck666 {
         p.edit().apply { ids.filter { it.isNotBlank() }.forEach { putString(key(it), v) } }.apply()
     }
 
+    /** Identifiant IMDb connu d'un titre (tmdb:N → tt…), pour les affiches et le badge VF. */
+    fun imdbFor(id: String?): String? = when {
+        id == null -> null
+        id.startsWith("tt") -> id.substringBefore(':')
+        id.startsWith("tmdb:") -> prefs()?.getString("imdb:$id", null)
+        else -> null
+    }
+
+    /** Vrai si ce titre est confirmé en VF (badge « VF » sur l'affiche). Lecture du cache seulement. */
+    fun isKnownVf(id: String?, imdbId: String? = null): Boolean =
+        listOfNotNull(imdbId, id?.substringBefore(":")?.takeIf { it.startsWith("tt") }, id?.takeIf { it.startsWith("tmdb:") })
+            .any { runCatching { isVf(known(it)) }.getOrDefault(false) }
+
     /** Preuve directe (piste française entendue, guetteur, cloche) : VF pour de bon. */
     fun confirm(id: String?) {
         val i = id?.substringBefore(':')?.takeIf { it.startsWith("tt") } ?: return
@@ -178,6 +191,7 @@ object VfCheck666 {
         val d = tmdb("/$kind/$tmdbId?language=fr-FR&append_to_response=external_ids,watch/providers") ?: return null
         val imdb = d.optJSONObject("external_ids")?.optString("imdb_id").orEmpty().ifBlank { d.optString("imdb_id") }
         val ids = listOf(id, "tmdb:$tmdbId", imdb).distinct()
+        if (imdb.startsWith("tt")) prefs()?.edit()?.putString("imdb:tmdb:$tmdbId", imdb)?.apply()
         val date = d.optString(if (series) "first_air_date" else "release_date")
         val year = date.take(4).toIntOrNull()
         val recent = year != null && year >= LocalDate.now().year - 1
@@ -257,6 +271,6 @@ object VfCheck666 {
             items.map { m -> scope.async { m.id to check(m.imdbId?.takeIf { it.startsWith("tt") } ?: m.id, m.rawType) } }.awaitAll().toMap()
         } ?: items.associate { m -> m.id to (known(m.imdbId ?: m.id) ?: known(m.id)) }
         // (les vérifications pas finies à temps continuent en douce : prêtes à la prochaine ouverture)
-        return items.filter { isVf(verdicts[it.id]) }
+        return items.filter { isVf(verdicts[it.id]) }.map { m -> if (m.imdbId == null) m.copy(imdbId = imdbFor(m.id)) else m }
     }
 }
