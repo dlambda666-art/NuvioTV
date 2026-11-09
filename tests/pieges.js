@@ -205,6 +205,9 @@ const cases = [
         await comet.getStreams('tt0133093', 'movie');
         if (urls.some(u => u.includes('c411.org'))) { fails++; console.log('✗ C411 interrogé sans clé'); }
         else console.log('✓ Sans clé, C411 n\'est pas interrogé');
+        // 666TVF (09/11) : Frank mis en pause par Hugging Face — Comet666 ne l'appelle plus jamais
+        if (urls.some(u => u.includes('hf.space'))) { fails++; console.log('✗ Comet666 appelle encore Frank'); }
+        else console.log('✓ Comet666 n\'appelle plus Frank (titres via TMDB)');
         delete global.wsRequest;
         global.fetch = saved.fetch; global.SCRAPER_SETTINGS = saved.settings;
     }

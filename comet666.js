@@ -6,7 +6,6 @@
  * lien. 666TV ne lit jamais un torrent en P2P.
  */
 
-var FRANK_URL = 'https://lambda666-frankenstream.hf.space';
 var TORRENTIO_URL = 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,torrent9|language=french|qualityfilter=720p,480p,other,scr,cam,unknown';
 var ZILEAN_URL = 'https://zileanfortheweebs.midnightignite.me';
 var STREMTHRU_URL = 'https://stremthru.13377001.xyz';
@@ -95,8 +94,7 @@ async function resolveIds(tmdbId, mediaType) {
             '/external_ids?api_key=' + encodeURIComponent(TMDB_API_KEY));
         if (data && data.imdb_id) return { imdbId: data.imdb_id };
     }
-    var info = await getJson(FRANK_URL + '/lookup/' + (isTv ? 'series' : 'movie') + '/' + id);
-    return info && info.imdbId ? { imdbId: info.imdbId } : null;
+    return null;   // 666TVF (09/11) : plus de Frank
 }
 
 // --- Sources --------------------------------------------------------------
@@ -321,11 +319,11 @@ function fixLatin(t) {
 async function fromYgg(imdbId, isTv, season, episode) {
     var direct = typeof wsRequest === 'function';
     YGG_DIAG = direct ? '' : '666TVF trop ancien (≥ 1.0.64 pour YGG)';
-    var data = await getJson(FRANK_URL + '/ygg/' + (isTv ? 'series' : 'movie') + '/' + imdbId +
-        '?' + (isTv ? 'season=' + season + '&episode=' + episode + '&' : '') + (direct ? 'norelay=1' : ''));
+    // 666TVF (09/11) : titres et recherches via TMDB (avant : Frank, mis en pause par Hugging Face)
+    var data = direct ? await frankMeta(imdbId, isTv, season, episode) : null;
     var titles = (data && data.titles) || [];
     var year = data && data.year ? Number(data.year) : 0;
-    var items = (data && data.items) || [];
+    var items = [];
     if (direct) {
         ((data && data.queries) || []).forEach(function (q) {
             var r = wsRequest(YGG_RELAY, {
@@ -643,14 +641,8 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.22';
-async function trace(data) {
-    return; // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
-    try {
-        data.v = COMET_VERSION;
-        await fetch(FRANK_URL + '/comet/trace', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    } catch (e) { }
-}
+var COMET_VERSION = '1.1.23';
+async function trace(data) { }   // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
 async function getStreams(tmdbId, mediaType, season, episode) {
