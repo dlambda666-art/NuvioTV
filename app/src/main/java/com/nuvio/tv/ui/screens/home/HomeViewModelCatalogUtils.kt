@@ -322,6 +322,8 @@ internal fun HomeViewModel.isCatalogDisabled(
     catalogId: String,
     catalogName: String
 ): Boolean {
+    // 666TVF (09/11) : Cinemeta ne sert qu'aux fiches — ses catalogues (Popular, New, Featured) restent hors de l'accueil
+    if (addonBaseUrl.contains("cinemeta", ignoreCase = true) || addonId.contains("cinemeta", ignoreCase = true)) return true
     if (disableCatalogKey(addonBaseUrl, type, catalogId, catalogName) in disabledHomeCatalogKeys) {
         return true
     }

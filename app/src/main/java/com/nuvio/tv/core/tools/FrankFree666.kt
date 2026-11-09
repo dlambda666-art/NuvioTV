@@ -319,6 +319,21 @@ object FrankFree666 {
         return plan.report
     }
 
+    /**
+     * 666TVF (09/11, 5) : aiometa n'est plus utilisé (David a validé les fiches sans lui) → retiré de
+     * l'appli, Cinemeta installé pour les fiches. Seulement si plus aucune tuile ne s'en sert.
+     */
+    suspend fun retireAiometa(store: CollectionsDataStore, addons: AddonRepository) {
+        val all = withTimeoutOrNull(5_000) { addons.getInstalledAddons().first() } ?: return
+        val aio = all.filter { it.baseUrl.contains("aiometa", true) || it.id.contains("aiometadata", true) }
+        if (aio.isEmpty()) return
+        val cols = runCatching { store.getCurrentCollections() }.getOrNull() ?: return
+        val stillUsed = cols.any { c -> c.folders.any { f -> f.sources.any { s -> s is AddonCatalogCollectionSource && aio.any { it.id == s.addonId } } } }
+        if (stillUsed) return
+        if (all.none { it.baseUrl.contains("cinemeta", true) }) addons.addAddon("https://v3-cinemeta.strem.io/manifest.json")
+        aio.forEach { addons.removeAddon(it.baseUrl) }
+    }
+
     fun lastReport(context: Context): List<String> =
         context.getSharedPreferences("666tv_frankfree", Context.MODE_PRIVATE).getString("report", null)
             ?.split("\n")?.filter { it.isNotBlank() }.orEmpty()
