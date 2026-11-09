@@ -643,7 +643,11 @@ class FolderDetailViewModel @Inject constructor(
     private fun loadAddonCatalogForTab(tabIndex: Int, source: AddonCatalogCollectionSource) {
         // 666TVF (09/11) : « En VF cette semaine » et « Pour toi » tenus sur la Shield (plus de Frank)
         if (com.nuvio.tv.core.tools.LocalCatalogs666.isLocal(source.addonId)) {
-            val row = com.nuvio.tv.core.tools.LocalCatalogs666.row(source.addonId, source.type)
+          viewModelScope.launch {
+            val raw = com.nuvio.tv.core.tools.LocalCatalogs666.row(source.addonId, source.type)
+            // « Pour toi » : seulement les titres confirmés en VF (« En VF cette semaine » l'est déjà)
+            val row = if (raw != null && source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.POURTOI)
+                raw.copy(items = com.nuvio.tv.core.tools.VfCheck666.keepVf(raw.items)) else raw
             _uiState.update { state ->
                 val tabs = state.tabs.toMutableList()
                 if (tabIndex < tabs.size) {
@@ -652,14 +656,15 @@ class FolderDetailViewModel @Inject constructor(
                         isLoading = false,
                         error = if (source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.VFWEEK)
                             "Rien de nouveau en VF ces 7 derniers jours (le guetteur passe deux fois par jour)"
-                        else "Recommandations en préparation, reviens dans quelques minutes"
+                        else "Recommandations en préparation (vérif VF en cours), reviens dans quelques minutes"
                     )
                 }
                 state.copy(tabs = tabs)
             }
             rebuildAllTab()
             rebuildFollowLayoutState()
-            return
+          }
+          return
         }
         // 666TVF : tuile « TOP 10 » — les listes sont calculées par l'accueil
         if (com.nuvio.tv.core.tools.Top10Folder666.isTop10Source(source.addonId)) {
@@ -990,6 +995,11 @@ class FolderDetailViewModel @Inject constructor(
         }
     }
 
+    /** 666TVF (09/11) : une liste TMDB « sorties en France » (région seule) = une liste VF. */
+    private fun isVfList666(source: TmdbCollectionSource): Boolean =
+        source.filters.watchRegion.equals("FR", ignoreCase = true) &&
+            source.filters.withWatchProviders.isNullOrBlank() && source.filters.withoutWatchProviders.isNullOrBlank()
+
     private fun loadTmdbSourceForTab(tabIndex: Int, source: TmdbCollectionSource, page: Int, append: Boolean) {
         if (append) {
             _uiState.update { s ->
@@ -1005,10 +1015,14 @@ class FolderDetailViewModel @Inject constructor(
             tmdbCollectionSourceResolver.resolve(source, page).collect { result ->
                 when (result) {
                     is NetworkResult.Success -> {
+                        // 666TVF (09/11) : listes « sorties en France » → seulement les titres confirmés en VF
+                        // (règles de Frank, vérifiées sur la Shield)
+                        val vfList666 = isVfList666(source)
+                        val data666 = if (vfList666) result.data.copy(items = com.nuvio.tv.core.tools.VfCheck666.keepVf(result.data.items)) else result.data
                         _uiState.update { s ->
                             val tabs = s.tabs.toMutableList()
                             val currentRow = tabs.getOrNull(tabIndex)?.catalogRow
-                            val filteredData = result.data.filteredForRelease(
+                            val filteredData = data666.filteredForRelease(
                                 hideUnreleased = s.hideUnreleasedContent,
                                 treatMissingDateAsUnreleased = true
                             )
@@ -1028,6 +1042,11 @@ class FolderDetailViewModel @Inject constructor(
                         }
                         rebuildAllTab()
                         rebuildFollowLayoutState()
+                        // peu de titres VF sur cette page : on va chercher la suivante (5 pages max)
+                        val shown = _uiState.value.tabs.getOrNull(tabIndex)?.catalogRow?.items?.size ?: 0
+                        if (vfList666 && shown < 12 && result.data.hasMore && page < 5) {
+                            loadTmdbSourceForTab(tabIndex, source, page + 1, append = true)
+                        }
                     }
                     is NetworkResult.Error -> {
                         _uiState.update { s ->

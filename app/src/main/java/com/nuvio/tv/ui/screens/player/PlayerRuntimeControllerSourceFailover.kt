@@ -149,6 +149,8 @@ internal fun PlayerRuntimeController.observeSourceFailover() {
                 val release = releaseNameForVerdict666(currentRelease666, currentStreamDescription, _uiState.value.currentStreamName)
                 if (release.isNotBlank()) reportReleaseVerdict666(release, hasFrench666)
             }
+            // 666TVF (09/11) : piste française entendue → ce titre est confirmé en VF (listes VF)
+            if (hasFrench666) com.nuvio.tv.core.tools.VfCheck666.confirm(contentId)
             if (tracks.none { it.isFrench666() } && tracks.all { it.knownOtherLanguage666() }) {
                 Log.i(PlayerRuntimeController.TAG, "No French audio track (${tracks.joinToString { it.language.orEmpty() }}) → next link")
                 // fichier menteur : plus jamais proposé (liste, lecture auto, guetteur, cloche)

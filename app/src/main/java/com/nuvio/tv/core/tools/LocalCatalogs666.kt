@@ -54,6 +54,7 @@ object LocalCatalogs666 {
     fun recordVf(id: String, type: String, name: String, poster: String?, now: Long = System.currentTimeMillis()) {
         val p = prefs() ?: return
         if (!id.startsWith("tt")) return
+        VfCheck666.confirm(id)   // trouvé en VF par le guetteur / la cloche : VF pour de bon
         val t = if (type == "series" || type == "tv") "series" else "movie"
         synchronized(this) {
             val list = mergeWeek(readWeek(), Entry(id, t, name, poster, now), now)

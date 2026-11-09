@@ -82,6 +82,7 @@ class NuvioApplication : Application(), SingletonImageLoader.Factory {
         // 666TVF (09/11) : ce que Frank tenait, maintenant gardé sur la Shield
         com.nuvio.tv.core.tools.Groups666.init(this)
         com.nuvio.tv.core.tools.LocalCatalogs666.init(this)
+        com.nuvio.tv.core.tools.VfCheck666.init(this)
         androidTvChannelSyncService.start()
         // Load locale synchronously so it's available before Activity.attachBaseContext.
         // SharedPreferences reads are fast (cached in memory after first access).
