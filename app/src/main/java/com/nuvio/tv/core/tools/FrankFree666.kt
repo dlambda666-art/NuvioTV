@@ -334,6 +334,15 @@ object FrankFree666 {
         aio.forEach { addons.removeAddon(it.baseUrl) }
     }
 
+    /** 666TVF (09/11) : Cinemeta (fiches, calendrier) installé ET activé. */
+    suspend fun ensureCinemeta(addons: AddonRepository) {
+        val all = withTimeoutOrNull(5_000) { addons.getInstalledAddons().first() } ?: return
+        if (all.any { it.baseUrl.contains("aiometa", true) && it.enabled }) return   // aiometa encore là : rien à faire
+        val cm = all.firstOrNull { it.baseUrl.contains("cinemeta", true) }
+        if (cm == null) addons.addAddon("https://v3-cinemeta.strem.io/manifest.json")
+        else if (!cm.enabled) addons.setAddonEnabled(cm.baseUrl, true)
+    }
+
     fun lastReport(context: Context): List<String> =
         context.getSharedPreferences("666tv_frankfree", Context.MODE_PRIVATE).getString("report", null)
             ?.split("\n")?.filter { it.isNotBlank() }.orEmpty()

@@ -27,6 +27,7 @@ internal fun HomeViewModel.observeTopTenVfRow() {
             runCatching { com.nuvio.tv.core.tools.FrankFree666.ensure(appContext, collectionsDataStore, addonRepository) }
             // puis aiometa est retiré (fiches : Cinemeta + TMDB en français)
             runCatching { com.nuvio.tv.core.tools.FrankFree666.retireAiometa(collectionsDataStore, addonRepository) }
+            runCatching { com.nuvio.tv.core.tools.FrankFree666.ensureCinemeta(addonRepository) }
         }
         delay(6_000L)
         while (true) {

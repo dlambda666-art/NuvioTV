@@ -171,9 +171,10 @@ class CalendarRepository @Inject constructor(
         if (!force && cached != null && System.currentTimeMillis() - cached.at < META_TTL_MS) return cached.episodes
         val meta: Meta = withTimeoutOrNull(15_000) {
             metaRepository.getMetaFromPrimaryAddon("series", seed.id)
-                .firstOrNull { it is NetworkResult.Success }
-                ?.let { (it as NetworkResult.Success).data }
-        } ?: return cached?.episodes.orEmpty()
+                .firstOrNull { it is NetworkResult.Success || it is NetworkResult.Error }
+                ?.let { (it as? NetworkResult.Success)?.data }
+                ?.takeIf { it.videos.isNotEmpty() }
+        } ?: cinemeta666(seed.id) ?: return cached?.episodes.orEmpty()
         val episodes = meta.videos.mapNotNull { video ->
             val season = video.season ?: return@mapNotNull null
             val episode = video.episode ?: return@mapNotNull null
@@ -196,6 +197,22 @@ class CalendarRepository @Inject constructor(
         episodeCache[seed.id] = CachedEpisodes(System.currentTimeMillis(), fixed)
         return fixed
     }
+
+    /**
+     * 666TVF (09/11) : aiometa retiré — les épisodes viennent de Cinemeta, demandé directement (même s'il
+     * n'est pas activé dans les addons) ; un id TMDB est d'abord traduit en id IMDb.
+     */
+    private suspend fun cinemeta666(id: String): Meta? = runCatching {
+        val base = id.substringBefore(':')
+        val imdb = if (base.startsWith("tt")) base else
+            id.removePrefix("tmdb:").substringBefore(':').toIntOrNull()?.let { tmdbService.tmdbToImdb(it, "series") }
+        if (imdb.isNullOrBlank()) return null
+        withTimeoutOrNull(15_000) {
+            metaRepository.getMeta("https://v3-cinemeta.strem.io", "series", imdb)
+                .firstOrNull { it is NetworkResult.Success || it is NetworkResult.Error }
+                ?.let { (it as? NetworkResult.Success)?.data }
+        }
+    }.getOrNull()
 
     /**
      * 666TVF (06/11) : si les métadonnées numérotent autrement que les liens (NXT : PLE comptés comme
