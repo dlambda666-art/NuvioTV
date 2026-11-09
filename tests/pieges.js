@@ -1,3 +1,11 @@
+// 666TVF (09/11) : Frank en pause — les titres viennent de TMDB (faux TMDB pour les cas pièges)
+function tmdbMock666(u) {
+    const j = o => ({ ok: true, json: async () => o, text: async () => JSON.stringify(o) });
+    if (u.includes('/find/tt0052520')) return j({ tv_results: [{ id: 6357 }], movie_results: [] });
+    if (u.includes('/tv/6357') && u.includes('fr-FR')) return j({ name: 'La Quatrième Dimension', original_name: 'The Twilight Zone', first_air_date: '1959-10-02' });
+    if (u.includes('/tv/6357')) return j({ name: 'The Twilight Zone', original_name: 'The Twilight Zone', first_air_date: '1959-10-02' });
+    return { ok: false, json: async () => null, text: async () => '' };
+}
 // 666TV — « cas pièges » des plugins : chaque panne trouvée devient un test.
 // Sans réseau : les réponses (TMDB, addon, Frank) sont simulées avec des noms
 // de fichiers réels. À lancer avant chaque publication : node tests/pieges.js
@@ -203,8 +211,8 @@ const cases = [
     } else console.log('✓ 1440p reconnu, 720p toujours écarté');
     // YggReborn (06/11) : recherche par titre avec la passkey, clé jamais affichée, bon titre seulement
     {
-        const saved = { fetch: global.fetch, settings: global.SCRAPER_SETTINGS };
-        global.SCRAPER_SETTINGS = { yggreborn: 'PASSKEY' };
+        const saved = { fetch: global.fetch, settings: global.SCRAPER_SETTINGS, key: global.TMDB_API_KEY };
+        global.SCRAPER_SETTINGS = { yggreborn: 'PASSKEY' }; global.TMDB_API_KEY = 'K';
         const xml = '<rss><channel>' +
             '<item><title>La.Quatrieme.Dimension.S03E04.FRENCH.1080p.WEB</title><size>9</size><torznab:attr name="infohash" value="dddddddddddddddddddddddddddddddddddddddd"/></item>' +
             '<item><title>Twilight.Zone.2019.S03E04.MULTi.VFF.1080p</title><size>9</size><torznab:attr name="infohash" value="eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"/></item>' +
@@ -215,8 +223,7 @@ const cases = [
             u = String(u); urls.push(u);
             const ok = body => ({ ok: true, status: 200, text: async () => typeof body === 'string' ? body : JSON.stringify(body), json: async () => body });
             if (u.startsWith('https://www.yggreborn.org/api')) return ok(xml);
-            if (u.includes('/ygg/series/')) return ok({ titles: ['La Quatrième Dimension', 'The Twilight Zone'], year: 1959,
-                queries: ['La Quatrième Dimension S03E04', 'La Quatrième Dimension S03'], items: [] });
+            if (u.includes('themoviedb')) return tmdbMock666(u);
             return { ok: false, status: 404, text: async () => '', json: async () => null };
         };
         const out = await comet.getStreams('tt0052520', 'tv', 3, 4);
@@ -231,7 +238,7 @@ const cases = [
         await comet.getStreams('tt0052520', 'tv', 3, 4);
         if (urls.some(u => u.includes('yggreborn'))) { fails++; console.log('✗ YggReborn interrogé sans passkey'); }
         else console.log('✓ Sans passkey, YggReborn n\'est pas interrogé');
-        global.fetch = saved.fetch; global.SCRAPER_SETTINGS = saved.settings;
+        global.fetch = saved.fetch; global.SCRAPER_SETTINGS = saved.settings; global.TMDB_API_KEY = saved.key;
     }
     // WWE Raw (27/10) : Comet666 avait lancé un vieux Raw (fichier daté d'un autre jour)
     {
@@ -316,10 +323,10 @@ const cases = [
             else console.log('✓ 4e dimension : ' + label);
         }
         const saved = { fetch: global.fetch, key: global.TMDB_API_KEY, settings: global.SCRAPER_SETTINGS };
-        global.TMDB_API_KEY = ''; global.SCRAPER_SETTINGS = { yggreborn: 'PK' };
+        global.TMDB_API_KEY = 'K'; global.SCRAPER_SETTINGS = { yggreborn: 'PK' };
         const json = o => ({ ok: true, json: async () => o, text: async () => (typeof o === 'string' ? o : JSON.stringify(o)) });
         global.fetch = async u => {
-            if (u.includes('/ygg/')) return json({ titles, year: 1959, queries: ['La Quatrième Dimension S03E06', 'La Quatrième Dimension S03'] });
+            if (u.includes('themoviedb')) return tmdbMock666(u);
             // les 1res requêtes répondent 3 VOSTFR / 720p : la recherche doit continuer jusqu'à « 4eme »
             if (u.includes('yggreborn') && !decodeURIComponent(u).includes('4eme'))
                 return json('<rss>' + [1, 2, 3].map(i => '<item><title>La Quatrieme Dimension S03E06 VOSTFR 720p v' + i + '</title><torznab:attr name="infohash" value="' + String(i).repeat(40) + '"/></item>').join('') + '</rss>');
@@ -336,10 +343,10 @@ const cases = [
     // Mode enquête (07/11) : rien de lisible → Comet666 dit pourquoi, source par source
     {
         const saved = { fetch: global.fetch, key: global.TMDB_API_KEY, settings: global.SCRAPER_SETTINGS };
-        global.TMDB_API_KEY = ''; global.SCRAPER_SETTINGS = { yggreborn: 'PK' };
+        global.TMDB_API_KEY = 'K'; global.SCRAPER_SETTINGS = { yggreborn: 'PK' };
         const json = o => ({ ok: true, json: async () => o, text: async () => (typeof o === 'string' ? o : JSON.stringify(o)) });
         global.fetch = async u => {
-            if (u.includes('/ygg/')) return json({ titles: ['La Quatrième Dimension', 'The Twilight Zone'], year: 1959, queries: ['La Quatrième Dimension S03E06'] });
+            if (u.includes('themoviedb')) return tmdbMock666(u);
             if (u.includes('yggreborn')) return json('<rss>'
                 + '<item><title>La Quatrieme Dimension S03E06 VOSTFR 1080p</title><torznab:attr name="infohash" value="' + '1'.repeat(40) + '"/></item>'
                 + '<item><title>La Quatrieme Dimension S03E07 FRENCH 1080p</title><torznab:attr name="infohash" value="' + '2'.repeat(40) + '"/></item>'
@@ -367,11 +374,11 @@ const cases = [
     // 4e dimension (07/11) : sources lentes → Comet666 ne dépasse jamais son budget, et le dit
     {
         const saved = { fetch: global.fetch, key: global.TMDB_API_KEY, settings: global.SCRAPER_SETTINGS };
-        global.TMDB_API_KEY = ''; global.SCRAPER_SETTINGS = { yggreborn: 'PK' };
+        global.TMDB_API_KEY = 'K'; global.SCRAPER_SETTINGS = { yggreborn: 'PK' };
         comet._budget(300);
         const json = o => ({ ok: true, json: async () => o, text: async () => (typeof o === 'string' ? o : JSON.stringify(o)) });
         global.fetch = async u => {
-            if (u.includes('/ygg/')) return json({ titles: ['La Quatrième Dimension', 'The Twilight Zone'], year: 1959, queries: ['La Quatrième Dimension S03E06', 'La Quatrième Dimension S03'] });
+            if (u.includes('themoviedb')) return tmdbMock666(u);
             if (u.includes('yggreborn')) { await new Promise(r => setTimeout(r, 200)); return json('<rss></rss>'); }
             return { ok: false, json: async () => null, text: async () => '' };
         };
@@ -387,20 +394,20 @@ const cases = [
     // Traces d'enquête envoyées à Frank (07/11) : jamais une clé ni une passkey
     {
         const saved = { fetch: global.fetch, key: global.TMDB_API_KEY, settings: global.SCRAPER_SETTINGS };
-        global.TMDB_API_KEY = ''; global.SCRAPER_SETTINGS = { yggreborn: 'PASSKEY-SECRETE', c411: 'CLE-C411', torbox_auto: 'CLE-TORBOX' };
+        global.TMDB_API_KEY = 'K'; global.SCRAPER_SETTINGS = { yggreborn: 'PASSKEY-SECRETE', c411: 'CLE-C411', torbox_auto: 'CLE-TORBOX' };
         const bodies = [];
         const json = o => ({ ok: true, json: async () => o, text: async () => (typeof o === 'string' ? o : JSON.stringify(o)) });
         global.fetch = async (u, opts) => {
             if (u.includes('/comet/trace')) { bodies.push(String(opts && opts.body)); return json({ ok: true }); }
-            if (u.includes('/ygg/')) return json({ titles: ['La Quatrième Dimension', 'The Twilight Zone'], year: 1959, queries: ['La Quatrième Dimension S03E06'] });
+            if (u.includes('themoviedb')) return tmdbMock666(u);
             if (u.includes('yggreborn')) return json('<rss><item><title>La 4eme dimension REMUX S03</title><torznab:attr name="infohash" value="' + 'e'.repeat(40) + '"/></item></rss>');
             return { ok: false, json: async () => null, text: async () => '' };
         };
         await comet.getStreams('tt0052520', 'tv', 3, 6);
         const all = bodies.join(' ');
-        if (bodies.length !== 2 || /PASSKEY-SECRETE|CLE-C411|CLE-TORBOX|apikey/i.test(all) || !/La 4eme dimension REMUX S03/.test(all)) {
+        if (bodies.length !== 0) {
             fails++; console.log('✗ Traces Frank → ' + bodies.length + ' envois · ' + all.slice(0, 300));
-        } else console.log('✓ Traces Frank : début + fin, titres trouvés, aucune clé');
+        } else console.log('✓ Frank en pause : plus aucune trace envoyée');
         global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
     }
     // 4e dimension (07/11) : le REMUX est dans le compte AllDebrid (ajouté par StreamFusion), pas sur YggReborn
@@ -417,12 +424,12 @@ const cases = [
         if (got.length !== 1 || got[0].hash !== H || !got[0].frTitle) { fails++; console.log('✗ Compte AllDebrid mal lu → ' + JSON.stringify(got)); }
         else console.log('✓ Compte AllDebrid : seul le REMUX S03 prêt correspond à S03E06');
         const saved = { fetch: global.fetch, key: global.TMDB_API_KEY, settings: global.SCRAPER_SETTINGS };
-        global.TMDB_API_KEY = ''; global.SCRAPER_SETTINGS = { alldebrid_auto: 'CLE-AD' };
+        global.TMDB_API_KEY = 'K'; global.SCRAPER_SETTINGS = { alldebrid_auto: 'CLE-AD' };
         const json = o => ({ ok: true, json: async () => o, text: async () => JSON.stringify(o) });
         let bodies = [];
         global.fetch = async (u, o) => {
             if (u.includes('/comet/trace')) { bodies.push(String(o && o.body)); return json({ ok: true }); }
-            if (u.includes('/ygg/')) return json({ titles, year: 1959, queries: [] });
+            if (u.includes('themoviedb')) return tmdbMock666(u);
             if (u.includes('api.alldebrid.com')) return (o && o.headers && o.headers.Authorization === 'Bearer CLE-AD') ? json(acct) : { ok: false };
             return { ok: false, json: async () => null, text: async () => '' };
         };
@@ -456,6 +463,22 @@ const cases = [
         const q = comet._yggQueries(["L'Odyssée 2026"], ["L'Odyssée", 'The Odyssey'], 2026, false);
         if (q.indexOf('The Odyssey 2026') < 0 || q.indexOf("L'Odyssee 2026") < 0 || q.length > 8) { fails++; console.log('✗ Recherches film → ' + JSON.stringify(q)); }
         else console.log('✓ Film : titre français ET titre original (avec l\'année) cherchés sur YggReborn');
+    }
+    // Frank en pause (09/11) : recherches et groupes sans lui
+    {
+        const q = comet._baseQueries(['La Quatrième Dimension', 'The Twilight Zone'], 1959, true, 3, 6);
+        const want = ['La Quatrième Dimension S03E06', 'The Twilight Zone S03E06', 'La Quatrième Dimension S03', 'The Twilight Zone S03'];
+        const f = comet._baseQueries(["L'Odyssée", 'The Odyssey'], 2026, false);
+        if (JSON.stringify(q) !== JSON.stringify(want) || JSON.stringify(f) !== JSON.stringify(["L'Odyssée 2026", 'The Odyssey 2026'])) { fails++; console.log('✗ Recherches sans Frank → ' + JSON.stringify([q, f])); }
+        else console.log('✓ Sans Frank : recherches TMDB (titre français + original, épisode puis saison)');
+        const saved = global.SCRAPER_SETTINGS;
+        global.SCRAPER_SETTINGS = { groups_fr_auto: 'NEWFR, mixio', groups_other_auto: 'BADTEAM' };
+        const g = comet._groupsLists();
+        global.SCRAPER_SETTINGS = saved;
+        const ok = g.other.includes('BADTEAM') && g.fr.includes('NEWFR') && g.fr.includes('HEEL') && !g.other.includes('MIXIO') && g.fr.includes('MIXIO');
+        const base = comet._groupsLists();
+        if (!ok || !base.other.includes('MIXIO')) { fails++; console.log('✗ Groupes sans Frank → ' + JSON.stringify(g).slice(0, 300)); }
+        else console.log('✓ Groupes : base intégrée (Mixio étranger) + ce que la Shield apprend (la lecture l\'emporte)');
     }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);

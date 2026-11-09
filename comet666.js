@@ -358,6 +358,7 @@ var YGGREBORN_URL = 'https://www.yggreborn.org/api';
 var YGG_STATS = null;
 var LAST_WHY = null;
 var AIR_DATE = null;
+var TMDB_NUM = null;
 // 666TVF (07/11) : budget de temps (voir getStreams)
 var BUDGET_MS = 55000, SLOW_MS = 8000, T0 = 0, TIMING = null;
 function late() { return T0 > 0 && Date.now() - T0 > BUDGET_MS; }
@@ -447,15 +448,51 @@ async function fromYggReborn(imdbId, isTv, season, episode) {
     return out;
 }
 
-// 666TVF (07/11) : titres / année / requêtes de Frank, demandés une seule fois par recherche
-// (YggReborn et le compte AllDebrid s'en servent tous les deux).
+// 666TVF (09/11) : Frank a été mis en pause par Hugging Face. Titres / année / recherches viennent
+// maintenant directement de TMDB (la clé TMDB est fournie par 666TVF). Une seule fois par recherche.
 var FRANK_META = null;
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+/** Règle pure (testée) : recherches de base, comme celles que donnait Frank. */
+function baseQueries(titles, year, isTv, season, episode) {
+    var out = [];
+    titles.forEach(function (t) {
+        if (!t) return;
+        if (isTv) { out.push(t + ' S' + pad2(season) + 'E' + pad2(episode)); }
+        else if (year) { out.push(t + ' ' + year); }
+        else { out.push(t); }
+    });
+    if (isTv) titles.forEach(function (t) { if (t) out.push(t + ' S' + pad2(season)); });
+    return out.filter(function (q, i, a) { return a.indexOf(q) === i; }).slice(0, 4);
+}
+async function tmdbJson(path) {
+    if (typeof TMDB_API_KEY === 'undefined' || !TMDB_API_KEY) return null;
+    return getJson('https://api.themoviedb.org/3' + path + (path.indexOf('?') >= 0 ? '&' : '?') + 'api_key=' + encodeURIComponent(TMDB_API_KEY));
+}
 async function frankMeta(imdbId, isTv, season, episode) {
-    var url = FRANK_URL + '/ygg/' + (isTv ? 'series' : 'movie') + '/' + imdbId +
-        '?' + (isTv ? 'season=' + season + '&episode=' + episode + '&' : '') + 'norelay=1';
-    if (FRANK_META && FRANK_META.url === url) return FRANK_META.data;
-    var data = await getJson(url);
-    FRANK_META = { url: url, data: data };
+    var key = imdbId + '|' + isTv;
+    if (FRANK_META && FRANK_META.key === key) return FRANK_META.data;
+    var data = null;
+    try {
+        var tmdbId = TMDB_NUM && /^\d+$/.test(TMDB_NUM) ? TMDB_NUM : null;
+        if (!tmdbId) {
+            var found = await tmdbJson('/find/' + imdbId + '?external_source=imdb_id');
+            var hit = found && ((isTv ? found.tv_results : found.movie_results) || [])[0];
+            tmdbId = hit && hit.id ? String(hit.id) : null;
+        }
+        if (tmdbId) {
+            var kind = isTv ? 'tv' : 'movie';
+            var fr = await tmdbJson('/' + kind + '/' + tmdbId + '?language=fr-FR');
+            var en = await tmdbJson('/' + kind + '/' + tmdbId + '?language=en-US');
+            var titles = [];
+            [fr && (fr.title || fr.name), en && (en.title || en.name), fr && (fr.original_title || fr.original_name)].forEach(function (t) {
+                t = String(t || '').trim(); if (t && titles.indexOf(t) < 0) titles.push(t);
+            });
+            var date = String((fr && (fr.release_date || fr.first_air_date)) || '');
+            var year = /^\d{4}/.test(date) ? Number(date.slice(0, 4)) : 0;
+            data = { titles: titles, year: year, queries: baseQueries(titles.slice(0, 2), year, isTv, season, episode) };
+        }
+    } catch (e) { data = null; }
+    FRANK_META = { key: key, data: data };
     return data;
 }
 
@@ -555,10 +592,20 @@ function releaseGroup(release) {
     var g = m[1].toUpperCase();
     return NOT_GROUP[g] || /^\d+$/.test(g) ? null : g;
 }
+// Groupes connus quand Frank tournait encore (09/11), puis ce que 666TVF apprend à la lecture.
+var GROUPS_FR_SEED = ['0VERFLOW', '2D', 'ALN', 'AMEN', 'ARTEFAC', 'ASUGAR', 'BATGIRL', 'BLL', 'BOUBA', 'BOUC', 'BRAD', 'BYOR', 'CHRISJ72',
+    'FW', 'HEEL', 'FTMVHD', 'TFA', 'QTZ', 'LIBERTY', 'NORRIS', 'FRATERNITY', 'EXTREME', 'SUPPLY', 'MYSTERIOUS', 'LAZARUS', 'TLUB', 'REBIRTH', 'HYPERION', 'FAN2', 'TTK', 'CHEW'];
+var GROUPS_OTHER_SEED = ['A4O', 'ALEKARTEM', 'ANONIMO_CREW', 'ARPI', 'AVC_BY_BATHORY', 'AWS', 'B9R', 'BAMAX71', 'BG', 'BLACKBIT', 'BOLLYROCKERS', 'BONE', 'MIXIO'];
+function groupsLists() {
+    function csv(k) { return String(setting(k) || '').split(',').map(function (g) { return g.trim().toUpperCase(); }).filter(Boolean); }
+    var other = GROUPS_OTHER_SEED.concat(csv('groups_other_auto'));
+    var fr = GROUPS_FR_SEED.concat(csv('groups_fr_auto')).filter(function (g) { return other.indexOf(g) < 0 || csv('groups_fr_auto').indexOf(g) >= 0; });
+    return { fr: fr, other: other.filter(function (g) { return csv('groups_fr_auto').indexOf(g) < 0; }) };
+}
 async function settleMulti(items) {
     if (!items.some(function (t) { return t.lang.indexOf('?') >= 0; })) return items;
-    var data = await getJson(FRANK_URL + '/groupes-vf');
-    if (!data) return items;
+    // 666TVF (09/11) : groupes appris par 666TVF sur tes Shield (prêtés comme les clés), + la base de Frank
+    var data = groupsLists();
     var fr = {}, other = {};
     (data.fr || []).forEach(function (g) { fr[g] = 1; });
     (data.other || []).forEach(function (g) { other[g] = 1; });
@@ -596,8 +643,9 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.21';
+var COMET_VERSION = '1.1.22';
 async function trace(data) {
+    return; // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
     try {
         data.v = COMET_VERSION;
         await fetch(FRANK_URL + '/comet/trace', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
@@ -642,6 +690,7 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     }
     // 666TVF : sources françaises d'abord (trackers avec ta clé, YGG), puis les index publics
     var tmdbNum = String(tmdbId || '').replace(/^tmdb:/i, '');
+    TMDB_NUM = tmdbNum;
     // 666TVF (07/11) : sur la Shield, chaque demande bloque jusqu'à sa réponse (une source en panne
     // peut faire attendre 30 s et plus). Au-delà de BUDGET_MS, on n'en lance plus : Comet666 répond
     // toujours avant que 666TVF ne l'abandonne (120 s), avec ce qu'il a — et l'enquête dit qui a traîné.
@@ -757,4 +806,4 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _budget: function (ms) { BUDGET_MS = ms; } };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; } };
