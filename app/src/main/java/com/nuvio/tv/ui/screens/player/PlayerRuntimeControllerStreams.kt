@@ -877,7 +877,10 @@ internal fun PlayerRuntimeController.switchToSourceStream(
             showSourcesPanel = false,
             isLoadingSourceStreams = false,
             sourceStreamsError = null,
-            isTorrentStream = false
+            isTorrentStream = false,
+            detectedFrameRateRaw = 0f,
+            detectedFrameRate = 0f,
+            detectedFrameRateSource = null
         )
     }
     showStreamSourceIndicator(stream)
@@ -988,7 +991,10 @@ private fun PlayerRuntimeController.switchToTorrentSourceStream(
             showSourcesPanel = false,
             isLoadingSourceStreams = false,
             sourceStreamsError = null,
-            isTorrentStream = true
+            isTorrentStream = true,
+            detectedFrameRateRaw = 0f,
+            detectedFrameRate = 0f,
+            detectedFrameRateSource = null
         )
     }
     applyStreamMetadata(stream)
@@ -1458,6 +1464,9 @@ internal fun PlayerRuntimeController.switchToEpisodeStream(
             postPlayDismissedForCurrentEpisode = true,
             playbackEnded = false,
             isNextEpisodeMetadataResolved = false,
+            detectedFrameRateRaw = 0f,
+            detectedFrameRate = 0f,
+            detectedFrameRateSource = null,
         )
     }
     showStreamSourceIndicator(stream)
@@ -1570,6 +1579,9 @@ private fun PlayerRuntimeController.switchToEpisodeStreamCommon(
             postPlayDismissedForCurrentEpisode = true,
             playbackEnded = false,
             isNextEpisodeMetadataResolved = false,
+            detectedFrameRateRaw = 0f,
+            detectedFrameRate = 0f,
+            detectedFrameRateSource = null,
         )
     }
     showStreamSourceIndicator(stream)
