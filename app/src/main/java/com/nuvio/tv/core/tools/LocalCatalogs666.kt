@@ -73,8 +73,56 @@ object LocalCatalogs666 {
             .take(80)
     }
 
-    fun week(type: String, now: Long = System.currentTimeMillis()): List<Entry> =
-        readWeek().filter { it.type == type && now - it.at < WEEK_MS }.sortedByDescending { it.at }
+    fun week(type: String, now: Long = System.currentTimeMillis()): List<Entry> {
+        val found = readWeek().filter { it.type == type && now - it.at < WEEK_MS }.sortedByDescending { it.at }
+        // + les sorties de la semaine confirmées en VF (règles de Frank), comme le faisait Frank
+        val seed = readEntries(prefs()?.getString("vfweek_seed_$type", null))
+        return (found + seed).distinctBy { it.id }
+    }
+
+    /**
+     * 666TVF (09/11, 3) : « En VF cette semaine » était vide (le guetteur part de zéro). Comme Frank :
+     * les sorties récentes (films sortis en VOD / Blu-ray en France ces 14 jours, séries avec un
+     * épisode ces 7 jours, sur une plateforme FR) gardées seulement si la VF est confirmée.
+     */
+    private suspend fun refreshVfWeek() = withContext(Dispatchers.IO) {
+        val key = BuildConfig.TMDB_API_KEY
+        if (key.isBlank()) return@withContext
+        val today = LocalDate.now()
+        val sources = mapOf(
+            "movie" to (1..2).map { page ->
+                "/discover/movie?language=fr-FR&region=FR&with_release_type=4%7C5&release_date.gte=${today.minusDays(14)}" +
+                    "&release_date.lte=$today&without_genres=99%2C10770&sort_by=popularity.desc&include_adult=false&page=$page"
+            },
+            "series" to (1..2).map { page ->
+                "/discover/tv?language=fr-FR&watch_region=FR&with_watch_monetization_types=flatrate%7Cfree%7Cads&air_date.gte=${today.minusDays(7)}" +
+                    "&air_date.lte=$today&without_genres=99%2C10763%2C10764%2C10767%2C10762&vote_count.gte=10&sort_by=popularity.desc&page=$page"
+            }
+        )
+        for ((type, paths) in sources) {
+            val cands = LinkedHashMap<Int, Pair<String, String?>>()
+            for (path in paths) {
+                val arr = tmdb(path, key)?.optJSONArray("results") ?: continue
+                for (i in 0 until arr.length()) {
+                    val o = arr.optJSONObject(i) ?: continue
+                    val name = o.optString("title").ifBlank { o.optString("name") }
+                    if (SPORT.containsMatchIn(name)) continue
+                    val poster = o.optString("poster_path").takeIf { it.startsWith("/") }?.let { "https://image.tmdb.org/t/p/w342$it" }
+                    o.optInt("id").takeIf { it > 0 }?.let { cands.putIfAbsent(it, name to poster) }
+                }
+            }
+            val now = System.currentTimeMillis()
+            val kept = ArrayList<Entry>()
+            for ((id, np) in cands.entries.take(40)) {
+                val tag = withTimeoutOrNull(60_000) { VfCheck666.check("tmdb:$id", type) } ?: continue
+                if (!VfCheck666.isVf(tag)) continue
+                val imdb = VfCheck666.imdbFor("tmdb:$id") ?: continue
+                kept += Entry(imdb, type, np.first, np.second, now)
+            }
+            prefs()?.edit()?.putString("vfweek_seed_$type", writeEntries(kept))?.apply()
+            Log.i(TAG, "vf semaine $type : ${kept.size} / ${cands.size}")
+        }
+    }
 
     private fun readWeek(): List<Entry> = readEntries(prefs()?.getString("vfweek", null))
 
@@ -86,6 +134,7 @@ object LocalCatalogs666 {
     suspend fun pourToiLoop(repo: WatchProgressRepository) {
         delay(30_000L) // laisse l'appli démarrer tranquillement
         while (true) {
+            runCatching { refreshVfWeek() }.onFailure { Log.w(TAG, "vf semaine: ${it.message}") }
             runCatching { refreshPourToi(repo) }.onFailure { Log.w(TAG, "pour toi: ${it.message}") }
             delay(POURTOI_EVERY_MS)
         }
