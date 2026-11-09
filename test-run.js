@@ -1,13 +1,14 @@
-// Sonde ponctuelle (09/11) : Cinemeta a-t-il les derniers épisodes WWE / séries suivies (calendrier, cloche) ?
+// Sonde ponctuelle (09/11) : nouvelle adresse French-Stream (fs23.lol) — même recherche que l'ancienne ?
 const fs = require('fs');
 (async () => {
   const r = { at: new Date().toISOString() };
-  for (const [n, id] of [['Raw', 'tt0185103'], ['SmackDown', 'tt0227972'], ['NXT', 'tt1601141'], ['AHS', 'tt1844624'], ['Monstre', 'tt13207736']]) {
+  for (const base of ['https://fs23.lol', 'https://maj.french-stream.pink']) {
     try {
-      const j = await (await fetch('https://v3-cinemeta.strem.io/meta/series/' + id + '.json')).json();
-      const v = ((j.meta && j.meta.videos) || []).filter(x => x.released).sort((a, b) => String(b.released).localeCompare(String(a.released)));
-      r[n] = { name: j.meta && j.meta.name, count: v.length, latest: v.slice(0, 3).map(x => `S${x.season}E${x.episode} ${String(x.released).slice(0, 10)} ${x.name || ''}`) };
-    } catch (e) { r[n] = { err: String(e) }; }
+      const res = await fetch(base + '/engine/ajax/search.php', { method: 'POST', redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0', Referer: base + '/', Origin: base, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'query=Evil%20Dead%20Burn&page=1' });
+      const t = await res.text();
+      r[base] = { status: res.status, location: res.headers.get('location'), len: t.length, head: t.slice(0, 900) };
+    } catch (e) { r[base] = { err: String(e) }; }
+    try { const h = await fetch(base + '/', { redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0' } }); r[base + ' home'] = { status: h.status, location: h.headers.get('location') }; } catch (e) { r[base + ' home'] = { err: String(e) }; }
   }
   fs.writeFileSync('test-report.json', JSON.stringify(r, null, 2)); console.log('ok');
 })();
