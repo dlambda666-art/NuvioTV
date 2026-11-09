@@ -152,6 +152,28 @@ object VfCheck666 {
         listOfNotNull(imdbId, id?.substringBefore(":")?.takeIf { it.startsWith("tt") }, id?.takeIf { it.startsWith("tmdb:") })
             .any { runCatching { isVf(known(it)) }.getOrDefault(false) }
 
+    // ---------- dernier recours : les cavaliers ----------
+
+    private fun enqueueStreamCheck(imdb: String, type: String) {
+        val p = prefs() ?: return
+        synchronized(this) {
+            val q = p.getStringSet("stream_queue", emptySet()).orEmpty()
+            if (q.size < 300) p.edit().putStringSet("stream_queue", q + "$imdb|$type").apply()
+        }
+    }
+
+    /** Titres à faire vérifier par les cavaliers (imdb, type), au plus [max]. */
+    fun pendingStreamChecks(max: Int): List<Pair<String, String>> =
+        prefs()?.getStringSet("stream_queue", emptySet()).orEmpty().take(max)
+            .map { it.substringBefore('|') to it.substringAfter('|', "movie") }
+
+    fun streamChecked(imdb: String, type: String) {
+        val p = prefs() ?: return
+        synchronized(this) {
+            p.edit().putStringSet("stream_queue", p.getStringSet("stream_queue", emptySet()).orEmpty() - "$imdb|$type").apply()
+        }
+    }
+
     /** Preuve directe (piste française entendue, guetteur, cloche) : VF pour de bon. */
     fun confirm(id: String?) {
         val i = id?.substringBefore(':')?.takeIf { it.startsWith("tt") } ?: return
@@ -204,6 +226,8 @@ object VfCheck666 {
             .filter { it.isNotBlank() }.distinctBy { canon(it) }
         val tag = frenchStream(titles, series, year, recent) ?: return null
         store(ids, tag, recent)
+        // 4. dernier recours de Frank : tes sources de liens, en douce (le 1er cavalier, quand tu ne regardes rien)
+        if (!isVf(tag) && imdb.startsWith("tt")) enqueueStreamCheck(imdb, if (series) "series" else "movie")
         return tag
     }
 

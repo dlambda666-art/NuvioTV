@@ -124,6 +124,37 @@ class VfWatcher666 @Inject constructor(
         (0 until arr.length()).map { i -> arr.getJSONObject(i).let { Found(it.getString("id"), it.optString("name"), it.optString("poster").ifBlank { null }, it.optBoolean("ple"), it.optInt("season", 0)) } }
     }.getOrDefault(emptyList())
 
+    // ---------- 666TVF (09/11) : dernier recours du moteur VF de Frank ----------
+
+    /**
+     * Les titres des listes VF que ni les plateformes ni French-Stream n'ont confirmés : le 1er
+     * cavalier cherche, en douce (jamais pendant un film). Une release VF sûre (TRUEFRENCH, VFF,
+     * FRENCH…, jamais CAM) → le titre est confirmé en VF. 15 titres par passage.
+     */
+    suspend fun vfStreamPass(busy: () -> Boolean) {
+        val todo = VfCheck666.pendingStreamChecks(15)
+        if (todo.isEmpty()) return
+        val order = PluginOrder666.order.map { it.lowercase() }
+        val all = runCatching { pluginManager.enabledScrapers.first() }.getOrDefault(emptyList())
+            .filter { s -> s.id.substringAfterLast(':').lowercase() in order && Background666.allowed(s.id) }
+            .sortedBy { s -> order.indexOf(s.id.substringAfterLast(':').lowercase()) }
+        for ((imdb, type) in todo) {
+            if (busy()) return
+            val tv = type == "series"
+            val scraper = all.firstOrNull { it.supportsType(if (tv) "tv" else "movie") } ?: return
+            val res = withTimeoutOrNull(30_000) {
+                runCatching {
+                    Background666.paced { pluginManager.executeScraper(scraper, imdb, if (tv) "tv" else "movie", if (tv) 1 else null, if (tv) 1 else null) }
+                }.getOrNull()
+            }
+            if (res == null && busy()) return
+            val texts = res.orEmpty().map { r -> listOfNotNull(r.name, r.title).joinToString(" ") }
+            Groups666.observe(texts)
+            if (texts.any { FrankVf666.isSureVfRelease(it) && !VfCheck666.CAM_RELEASE.containsMatchIn(it) }) VfCheck666.confirm(imdb)
+            VfCheck666.streamChecked(imdb, type)
+        }
+    }
+
     // ---------- 666TVF (07/11) : le guetteur séries ----------
 
     /**

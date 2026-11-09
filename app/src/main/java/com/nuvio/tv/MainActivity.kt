@@ -1363,6 +1363,8 @@ open class MainActivity : ComponentActivity() {
                                             runCatching { vfWatcher666.plePass { com.nuvio.tv.core.tools.Announce666.watcherBusy() } }
                                             // 666TVF (07/11) : le guetteur séries (nouvelles saisons en VF de séries pas encore suivies)
                                             runCatching { vfWatcher666.seriesPass { com.nuvio.tv.core.tools.Announce666.watcherBusy() } }
+                                            // 666TVF (09/11) : moteur VF de Frank, dernier recours (le 1er cavalier, en douce)
+                                            runCatching { vfWatcher666.vfStreamPass { com.nuvio.tv.core.tools.Announce666.watcherBusy() } }
                                             // 666TVF : une ligne après chaque passage, avec le nom des films trouvés (29/10)
                                             if (run != null) com.nuvio.tv.core.tools.Announce666.log(
                                                 this@MainActivity, com.nuvio.tv.core.tools.VfWatcher666.summary(run), "guetteur des sorties"
