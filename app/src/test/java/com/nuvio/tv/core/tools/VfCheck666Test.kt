@@ -24,7 +24,7 @@ class VfCheck666Test {
         assertTrue(s.series); assertEquals("Stranger Things", s.title); assertEquals(VfCheck666.Tag.DUB_SUB, s.tag)
     }
 
-    @Test fun `grande plateforme FR ou BE qui double - oui ; chaine de niche ou location - non`() {
+    @Test fun `grande plateforme FR ou BE qui double oui, chaine de niche ou location non`() {
         val netflix = JSONObject("""{"FR":{"flatrate":[{"provider_name":"Netflix"}]}}""")
         assertTrue(VfCheck666.onDubbingPlatform(netflix))
         val auvio = JSONObject("""{"BE":{"free":[{"provider_name":"RTBF Auvio"}]}}""")
