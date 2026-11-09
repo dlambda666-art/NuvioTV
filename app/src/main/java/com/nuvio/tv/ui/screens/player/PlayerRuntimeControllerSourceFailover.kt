@@ -140,8 +140,8 @@ internal fun PlayerRuntimeController.observeSourceFailover() {
             if (url.isNullOrBlank() || tracks.isEmpty() || url == checkedFor) return@collect
             if (contentType.equals("cloud", ignoreCase = true)) return@collect
             checkedFor = url
-            // 666TVF : on dit à Frank ce que contient vraiment ce fichier (VF ou pas) :
-            // il apprend ainsi quels groupes de release « MULTi » ont la VF.
+            // 666TVF : ce que contient vraiment ce fichier (VF ou pas) : la Shield
+            // apprend ainsi quels groupes de release « MULTi » ont la VF.
             val hasFrench666 = tracks.any { it.isFrench666() }
             val surelyNoFrench666 = !hasFrench666 && tracks.all { it.knownOtherLanguage666() }
             if (hasFrench666 || surelyNoFrench666) {
@@ -149,8 +149,6 @@ internal fun PlayerRuntimeController.observeSourceFailover() {
                 val release = releaseNameForVerdict666(currentRelease666, currentStreamDescription, _uiState.value.currentStreamName)
                 if (release.isNotBlank()) reportReleaseVerdict666(release, hasFrench666)
             }
-            // 666TVF : piste française entendue → Frank sait que ce titre est en VF (nouveautés VF).
-            if (hasFrench666) com.nuvio.tv.core.tools.FrankVf666.confirm(context, contentId, contentType, "audio")
             if (tracks.none { it.isFrench666() } && tracks.all { it.knownOtherLanguage666() }) {
                 Log.i(PlayerRuntimeController.TAG, "No French audio track (${tracks.joinToString { it.language.orEmpty() }}) → next link")
                 // fichier menteur : plus jamais proposé (liste, lecture auto, guetteur, cloche)
@@ -258,7 +256,7 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
 }
 
 
-/** 666TVF : verdict de lecture envoyé à Frank (nom de release + VF oui/non, rien d'autre). */
+/** 666TVF : verdict de lecture (nom de release + VF oui/non) gardé sur la Shield. */
 /** Règle pure (testée) : nom de release à envoyer à Frank (fichier, sinon une ligne qui ressemble à une release). */
 internal fun releaseNameForVerdict666(release: String?, description: String?, name: String?): String {
     val looksLikeRelease = Regex("[A-Za-z0-9][._ ].*-[A-Za-z0-9]{2,20}(\\.(mkv|mp4|avi|ts|m2ts))?$")
@@ -269,19 +267,6 @@ internal fun releaseNameForVerdict666(release: String?, description: String?, na
 }
 
 private fun PlayerRuntimeController.reportReleaseVerdict666(release: String, hasFrench: Boolean) {
-    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-        runCatching {
-            val body = org.json.JSONObject().put("release", release.take(300)).put("fr", hasFrench).toString()
-            val conn = (java.net.URL("https://lambda666-frankenstream.hf.space/groupes/verdict").openConnection() as java.net.HttpURLConnection).apply {
-                requestMethod = "POST"
-                doOutput = true
-                connectTimeout = 8_000
-                readTimeout = 8_000
-                setRequestProperty("Content-Type", "application/json")
-            }
-            conn.outputStream.use { it.write(body.toByteArray()) }
-            conn.responseCode
-            conn.disconnect()
-        }
-    }
+    // 666TVF (09/11) : appris sur la Shield (Frank n'est plus là). Le nom de release seulement.
+    com.nuvio.tv.core.tools.Groups666.verdict(release, hasFrench)
 }

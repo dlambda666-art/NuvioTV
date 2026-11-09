@@ -398,8 +398,8 @@ open class MainActivity : ComponentActivity() {
         run {
             val appCtx = applicationContext
             Thread { com.nuvio.tv.core.tools.Backup666.autoBackupIfDue(appCtx) }.apply { priority = Thread.MIN_PRIORITY }.start()
-            // 666TV : « Pour toi, Lambda » — envoie tes visionnages à Frank (démarrage + toutes les 3 h).
-            lifecycleScope.launch { com.nuvio.tv.core.tools.PourToi666.loop(watchProgressRepository666) }
+            // 666TVF (09/11) : « Pour toi, Lambda » calculé sur la Shield (démarrage + toutes les 3 h).
+            lifecycleScope.launch { com.nuvio.tv.core.tools.LocalCatalogs666.pourToiLoop(watchProgressRepository666) }
         }
         isFirstResumeAfterCreate = true
         window?.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))

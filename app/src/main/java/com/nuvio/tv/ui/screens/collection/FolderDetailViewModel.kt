@@ -267,6 +267,7 @@ class FolderDetailViewModel @Inject constructor(
                         val labels = buildAddonTabLabels(
                             source,
                             catalog?.name ?: com.nuvio.tv.core.tools.Top10Folder666.rowFor(source.addonId)?.catalogName
+                                ?: com.nuvio.tv.core.tools.LocalCatalogs666.nameFor(source.addonId, source.type)
                         )
                         Triple(labels.first, labels.second, source.type)
                     }
@@ -633,6 +634,26 @@ class FolderDetailViewModel @Inject constructor(
     }
 
     private fun loadAddonCatalogForTab(tabIndex: Int, source: AddonCatalogCollectionSource) {
+        // 666TVF (09/11) : « En VF cette semaine » et « Pour toi » tenus sur la Shield (plus de Frank)
+        if (com.nuvio.tv.core.tools.LocalCatalogs666.isLocal(source.addonId)) {
+            val row = com.nuvio.tv.core.tools.LocalCatalogs666.row(source.addonId, source.type)
+            _uiState.update { state ->
+                val tabs = state.tabs.toMutableList()
+                if (tabIndex < tabs.size) {
+                    tabs[tabIndex] = if (row != null && row.items.isNotEmpty()) tabs[tabIndex].copy(catalogRow = row, isLoading = false)
+                    else tabs[tabIndex].copy(
+                        isLoading = false,
+                        error = if (source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.VFWEEK)
+                            "Rien de nouveau en VF ces 7 derniers jours (le guetteur passe deux fois par jour)"
+                        else "Recommandations en préparation, reviens dans quelques minutes"
+                    )
+                }
+                state.copy(tabs = tabs)
+            }
+            rebuildAllTab()
+            rebuildFollowLayoutState()
+            return
+        }
         // 666TVF : tuile « TOP 10 » — les listes sont calculées par l'accueil
         if (com.nuvio.tv.core.tools.Top10Folder666.isTop10Source(source.addonId)) {
             viewModelScope.launch {

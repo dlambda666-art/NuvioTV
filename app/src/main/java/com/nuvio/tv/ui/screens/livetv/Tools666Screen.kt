@@ -312,6 +312,18 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
             reorgReport.forEach { line ->
                 item { Text(line, modifier = Modifier.padding(horizontal = 18.dp), color = Color(0xFFC8C3BE)) }
             }
+            // 666TVF (09/11) : ce qui a remplacé les listes de Frank dans les tuiles
+            item {
+                val frankFree = remember { com.nuvio.tv.core.tools.FrankFree666.lastReport(context) }
+                var open by remember { mutableStateOf(false) }
+                ActionRow(
+                    "Tuiles sans Frank : " + if (frankFree.isEmpty()) "rien à remplacer" else "${frankFree.size} liste(s) remplacée(s)",
+                    "Listes TMDB (sorties en France) et « En VF cette semaine » / « Pour toi » tenus sur la Shield. " +
+                        "Groupes VF appris ici : ${com.nuvio.tv.core.tools.Groups666.knownCount()}",
+                    onClick = { open = !open }
+                )
+                if (open) Column { frankFree.forEach { Text(it, modifier = Modifier.padding(horizontal = 18.dp), color = Color(0xFFC8C3BE)) } }
+            }
 
             // ---------- Enregistrements (Shield du bas) ----------
             if (com.nuvio.tv.core.tools.Record666.enabledHere()) {

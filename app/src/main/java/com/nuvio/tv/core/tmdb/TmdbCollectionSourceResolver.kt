@@ -256,11 +256,12 @@ class TmdbCollectionSourceResolver @Inject constructor(
                 withKeywords = filters.withKeywords,
                 withoutKeywords = filters.withoutKeywords,
                 year = filters.year,
+                // 666TVF (09/11) : une région seule (sans plateforme) = « sorti dans ce pays » (FR → VF)
                 watchRegion = if (!filters.withWatchProviders.isNullOrBlank() || !filters.withoutWatchProviders.isNullOrBlank()) {
                     filters.watchRegion?.takeIf { it.isNotBlank() } ?: "US"
-                } else null,
+                } else filters.watchRegion?.takeIf { it.isNotBlank() },
                 withWatchProviders = filters.withWatchProviders,
-                withWatchMonetizationTypes = if (!filters.withWatchProviders.isNullOrBlank()) "flatrate|free|ads|rent|buy" else null,
+                withWatchMonetizationTypes = if (!filters.withWatchProviders.isNullOrBlank() || !filters.watchRegion.isNullOrBlank()) "flatrate|free|ads|rent|buy" else null,
                 withoutCompanies = filters.withoutCompanies,
                 withoutGenres = filters.withoutGenres,
                 withoutWatchProviders = filters.withoutWatchProviders
@@ -290,11 +291,12 @@ class TmdbCollectionSourceResolver @Inject constructor(
                 withKeywords = filters.withKeywords,
                 withoutKeywords = filters.withoutKeywords,
                 firstAirDateYear = filters.year,
+                // 666TVF (09/11) : une région seule (sans plateforme) = « sorti dans ce pays » (FR → VF)
                 watchRegion = if (!filters.withWatchProviders.isNullOrBlank() || !filters.withoutWatchProviders.isNullOrBlank()) {
                     filters.watchRegion?.takeIf { it.isNotBlank() } ?: "US"
-                } else null,
+                } else filters.watchRegion?.takeIf { it.isNotBlank() },
                 withWatchProviders = filters.withWatchProviders,
-                withWatchMonetizationTypes = if (!filters.withWatchProviders.isNullOrBlank()) "flatrate|free|ads|rent|buy" else null,
+                withWatchMonetizationTypes = if (!filters.withWatchProviders.isNullOrBlank() || !filters.watchRegion.isNullOrBlank()) "flatrate|free|ads|rent|buy" else null,
                 withoutCompanies = filters.withoutCompanies,
                 withoutGenres = filters.withoutGenres,
                 withoutWatchProviders = filters.withoutWatchProviders

@@ -16,7 +16,7 @@ import javax.inject.Singleton
  * 666TVF : le guetteur des sorties. Deux fois par jour, la Shield fait vérifier par les cavaliers
  * les films récents : ceux que Frank croit encore sans VF, et (03/11) les films sortis récemment en
  * VOD / Blu-ray (TMDB, France et USA), sans rien présélectionner. Une vraie release VF (TRUEFRENCH,
- * VFF, VFQ…) en 1080p ou 4K (HDLight compris, jamais 720p) → Frank est prévenu, le film arrive dans
+ * VFF, VFQ…) en 1080p ou 4K (HDLight compris, jamais 720p) → le film arrive dans
  * « En VF cette semaine », et (03/11) cri + bannière, une seule fois par film.
  * Jamais pendant un film : il s'arrête dès qu'on lance et reprend au passage suivant.
  */
@@ -48,19 +48,7 @@ class VfWatcher666 @Inject constructor(
         }
         if (System.currentTimeMillis() - prefs.getLong("at", 0L) < INTERVAL_MS) return null
         val names = LinkedHashMap<String, Cand>()
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            Http666.get("https://lambda666-frankenstream.hf.space/vf/candidates/movie", 60_000)
-        }?.let { raw ->
-            runCatching {
-                val arr = JSONObject(raw).optJSONArray("candidates")
-                if (arr != null) for (i in 0 until arr.length()) {
-                    val o = arr.optJSONObject(i) ?: continue
-                    val id = o.optString("imdbId").takeIf { it.startsWith("tt") } ?: continue
-                    val year = o.optString("year").takeIf { it.isNotBlank() && it != "null" }
-                    names[id] = Cand(o.optString("name").ifBlank { id } + (year?.let { " ($it)" } ?: ""), null)
-                }
-            }
-        }
+        // 666TVF (09/11) : plus de liste de Frank (mis en pause par Hugging Face) : TMDB seulement.
         // 666TVF (03/11) : + les sorties VOD / Blu-ray récentes, sans présélection
         val known = prefs.getStringSet("vf_known", emptySet()).orEmpty()
         val firstTmdb = !prefs.getBoolean("tmdb_baseline", false)
@@ -83,7 +71,7 @@ class VfWatcher666 @Inject constructor(
             if (id in done) continue
             // fiche / liste de flux ouverte ou film lancé : pause, reprise au prochain passage (20 min)
             if (busy()) { save(done, found); return null }
-            // VF sûre (comme avant, pour Frank) ; le cri seulement en 1080p / 4K (jamais 720p ni CAM).
+            // VF sûre ; le cri seulement en 1080p / 4K (jamais 720p ni CAM).
             var sure = false
             val cry = cavaliers.any { scraper ->
                 if (busy()) return@any false
@@ -91,19 +79,21 @@ class VfWatcher666 @Inject constructor(
                     runCatching { Background666.paced { pluginManager.executeScraper(scraper, id, "movie", null, null) } }.getOrNull()
                 }.orEmpty()
                 val texts = res.map { r -> listOfNotNull(r.name, r.title).joinToString(" ") }
+                Groups666.observe(texts)
                 if (texts.any { FrankVf666.isSureVfRelease(it) }) sure = true
                 texts.any { isCryRelease(it) }
             }
-            if (sure || cry) {
-                FrankVf666.confirm(context, id, "movie", "guetteur")
-                found += names[id]?.name ?: id
-            }
+            if (sure || cry) found += names[id]?.name ?: id
             if (cry) {
                 val c = names[id]
                 // Premier passage avec les sorties TMDB : ce qui est déjà en VF depuis longtemps ne crie pas
                 // (sauf une sortie de la semaine : celle-là, on veut la savoir).
-                if (shouldCry(firstTmdb, id in prefs.getStringSet("vf_known", emptySet()).orEmpty(), c?.released, LocalDate.now()))
-                    addFresh(Found(id, c?.name ?: id, c?.poster ?: posterFor(id)))
+                if (shouldCry(firstTmdb, id in prefs.getStringSet("vf_known", emptySet()).orEmpty(), c?.released, LocalDate.now())) {
+                    val poster = c?.poster ?: posterFor(id)
+                    addFresh(Found(id, c?.name ?: id, poster))
+                    // 666TVF (09/11) : « En VF cette semaine » est maintenant tenu sur la Shield
+                    LocalCatalogs666.recordVf(id, "movie", (c?.name ?: id).replace(Regex("""\s*\(\d{4}\)$"""), ""), poster)
+                }
                 remember(id)
             }
             done += id
@@ -170,6 +160,7 @@ class VfWatcher666 @Inject constructor(
             if (cry) {
                 if (shouldCry(firstPass, false, c.seasonStart, today)) {
                     addFresh(Found(c.imdbId, c.name, c.poster, season = c.season))
+                    LocalCatalogs666.recordVf(c.imdbId, "series", c.name, c.poster)
                     Announce666.log(context, "📺 Guetteur séries : ${c.name} saison ${c.season} en VF", "guetteur des séries")
                 }
                 rememberSeason(key)
@@ -240,7 +231,7 @@ class VfWatcher666 @Inject constructor(
                     res.any { r -> isCryRelease(listOfNotNull(r.name, r.title).joinToString(" ")) }
                 }
                 if (cry) {
-                    FrankVf666.confirm(context, p.imdbId, "movie", "guetteur-ple")
+                    LocalCatalogs666.recordVf(p.imdbId, "movie", p.title, p.poster)
                     addFresh(Found(p.imdbId, p.title, p.poster, ple = true))
                     remember(p.imdbId)
                     Announce666.log(context, "🤼 Guetteur : ${p.title} trouvé en VF", "guetteur des PLE")

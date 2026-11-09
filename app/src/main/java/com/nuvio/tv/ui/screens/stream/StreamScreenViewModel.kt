@@ -503,12 +503,10 @@ class StreamScreenViewModel @Inject constructor(
 
                 val allStreams = mergedAddonStreams.flatMap { it.streams }
                 val availableAddons = mergedAddonStreams.map { it.addonName }
-                // 666TVF : un cavalier trouve une release VF sûre → Frank l'ajoute aux nouveautés VF.
-                if (isAllLoaded && allStreams.any { st ->
-                        com.nuvio.tv.core.tools.FrankVf666.isSureVfRelease(listOfNotNull(st.name, st.title, st.description).joinToString(" "))
-                    }) {
-                    com.nuvio.tv.core.tools.FrankVf666.confirm(context, contentId ?: videoId, contentType, "release")
-                }
+                // 666TVF (09/11) : les noms de releases vus apprennent à la Shield quels groupes ont la VF.
+                if (isAllLoaded) com.nuvio.tv.core.tools.Groups666.observe(
+                    allStreams.flatMap { st -> listOfNotNull(st.title, st.description).flatMap { it.lines() } }
+                )
                 // Auto-select only after all addons have responded or the
                 // configured timeout has elapsed. This gives slower addons a
                 // chance to return higher-quality streams before the selector

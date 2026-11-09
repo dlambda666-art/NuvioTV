@@ -359,26 +359,14 @@ class CalendarRepository @Inject constructor(
     }
 
     /**
-     * 666TVF (07/11) : la cloche dit à Frank POURQUOI elle sonne (épisode, cavalier, nom du lien qui
-     * prouve la VF). Jamais d'adresse de lien, de clé ni de config : le nom affiché seulement.
+     * 666TVF (09/11) : la cloche a sonné (VF prouvée) → la série rejoint « Séries en VF cette semaine »
+     * (tenu sur la Shield ; avant, la cloche prévenait Frank). Rien ne sort de la Shield.
      */
+    @Suppress("UNUSED_PARAMETER")
     private fun trace666(episode: CalendarEpisode, scraperId: String, text: String, kind: String) {
-        Thread {
-            runCatching {
-                val body = org.json.JSONObject()
-                    .put("phase", "cloche").put("id", episode.seriesId).put("name", episode.seriesName)
-                    .put("s", episode.season).put("e", episode.episode)
-                    .put("cavalier", scraperId.substringAfterLast(':')).put("kind", kind)
-                    .put("text", text.replace(Regex("https?://\\S+"), "").take(200)).toString()
-                val conn = (java.net.URL("https://lambda666-frankenstream.hf.space/comet/trace").openConnection() as java.net.HttpURLConnection).apply {
-                    requestMethod = "POST"; doOutput = true; connectTimeout = 8_000; readTimeout = 8_000
-                    setRequestProperty("Content-Type", "application/json")
-                }
-                conn.outputStream.use { it.write(body.toByteArray()) }
-                conn.responseCode
-                conn.disconnect()
-            }
-        }.start()
+        runCatching {
+            com.nuvio.tv.core.tools.LocalCatalogs666.recordVf(episode.seriesId.substringBefore(':'), "series", episode.seriesName, episode.poster)
+        }
     }
 
     private suspend fun anyCached666(hashes: List<String>): Boolean {

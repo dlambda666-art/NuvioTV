@@ -57,11 +57,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 
-private const val FRANK_URL = "https://lambda666-frankenstream.hf.space"
 private val RGreen = Color(0xFF4CC36B)
 private val RMauve = Color(0xFF9B30D9)
 
-/** Un film de la roulette (toujours en VF : il vient des catalogues VF de Frank). */
+/** Un film de la roulette (sorti en France, donc en VF : classiques de l'horreur TMDB + « Pour toi »). */
 data class RouletteFilm(val id: String, val name: String, val poster: String?, val year: String?, val info: String?)
 
 @HiltViewModel
@@ -75,36 +74,42 @@ class Roulette666ViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val addons = withTimeoutOrNull(5_000) { addonRepository.getInstalledAddons().first() }.orEmpty()
-            val frank = addons.firstOrNull { it.baseUrl.contains("frankenstream", ignoreCase = true) }
-            frankBase = frank?.baseUrl?.trimEnd('/')
+            // 666TVF (09/11) : plus de Frank (mis en pause par Hugging Face) : TMDB + « Pour toi » de la Shield
             _films.value = withContext(Dispatchers.IO) {
-                // 666TVF : Frank est souvent installé via aiometadata (pas d'addon « frankenstream »
-                // dans la liste) : on va directement chez lui (29/10, « Frank ne répond pas »).
-                val bases = listOfNotNull(frankBase, FRANK_URL).distinct()
-                bases.firstNotNullOfOrNull { base ->
-                    listOf("fs-horreur-classiques", "fs-pour-toi").flatMap { load(base, it) }
-                        .distinctBy { it.id }.takeIf { it.isNotEmpty() }
-                }.orEmpty().shuffled()
+                val mine = com.nuvio.tv.core.tools.LocalCatalogs666.pourToi("movie").map {
+                    RouletteFilm(it.id, it.name, it.poster, null, null)
+                }
+                (classics() + mine).distinctBy { it.id }.shuffled()
             }
         }
     }
 
-    private fun load(base: String, catalog: String): List<RouletteFilm> = runCatching {
-        val raw = com.nuvio.tv.core.tools.Http666.get("$base/catalog/movie/$catalog.json", 40_000) ?: return emptyList()
-        val arr = JSONObject(raw).optJSONArray("metas") ?: return emptyList()
-        (0 until arr.length()).mapNotNull { i ->
-            val m = arr.getJSONObject(i)
-            val id = m.optString("id").takeIf { it.startsWith("tt") } ?: return@mapNotNull null
-            RouletteFilm(
-                id = id,
-                name = cleanName(m.optString("name")),
-                poster = m.optString("poster").takeIf { it.startsWith("http") },
-                year = m.optString("releaseInfo").takeIf { it.isNotBlank() }?.take(4),
-                info = m.optString("description").takeIf { it.isNotBlank() }
-            )
+    /** Classiques de l'horreur (1930 → 1990) sortis en France, quelques pages au hasard. */
+    private fun classics(): List<RouletteFilm> {
+        val key = com.nuvio.tv.BuildConfig.TMDB_API_KEY
+        if (key.isBlank()) return emptyList()
+        return (1..10).shuffled().take(3).flatMap { page ->
+            runCatching {
+                val url = "https://api.themoviedb.org/3/discover/movie?api_key=$key&language=fr-FR&with_genres=27" +
+                    "&primary_release_date.gte=1930-01-01&primary_release_date.lte=1990-12-31&vote_count.gte=25" +
+                    "&without_genres=99,10770&watch_region=FR&with_watch_monetization_types=flatrate%7Cfree%7Cads%7Crent%7Cbuy" +
+                    "&sort_by=vote_count.desc&include_adult=false&page=$page"
+                val raw = com.nuvio.tv.core.tools.Http666.get(url, 20_000) ?: return@runCatching emptyList()
+                val arr = JSONObject(raw).optJSONArray("results") ?: return@runCatching emptyList()
+                (0 until arr.length()).mapNotNull { i ->
+                    val m = arr.getJSONObject(i)
+                    val id = m.optInt("id").takeIf { it > 0 } ?: return@mapNotNull null
+                    RouletteFilm(
+                        id = "tmdb:$id",
+                        name = m.optString("title").ifBlank { m.optString("original_title") },
+                        poster = m.optString("poster_path").takeIf { it.startsWith("/") }?.let { "https://image.tmdb.org/t/p/w500$it" },
+                        year = m.optString("release_date").take(4).takeIf { it.length == 4 },
+                        info = m.optString("overview").takeIf { it.isNotBlank() }
+                    )
+                }
+            }.getOrDefault(emptyList())
         }
-    }.getOrDefault(emptyList())
+    }
 }
 
 /** « [VF] The Thing » → « The Thing ». */
@@ -200,7 +205,7 @@ fun Roulette666Screen(
                     Spacer(Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                         RouletteButton("▶ Voir la fiche", primary = true, modifier = Modifier.focusRequester(open)) {
-                            if (!spinning) onOpenDetail(f.id, "movie", viewModel.frankBase)
+                            if (!spinning) onOpenDetail(f.id, "movie", null)
                         }
                         RouletteButton("🎲 Relancer", primary = false) { spin() }
                     }

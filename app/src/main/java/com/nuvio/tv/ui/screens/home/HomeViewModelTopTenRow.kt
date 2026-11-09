@@ -22,6 +22,10 @@ internal fun HomeViewModel.observeTopTenVfRow() {
         runCatching { profileManager.activeProfileReady.first { it } }
         // 666TVF : la tuile « TOP 10 » rejoint la 1re rangée (une fois)
         runCatching { com.nuvio.tv.core.tools.Top10Folder666.ensure(collectionsDataStore) }
+        // 666TVF (09/11) : les listes de Frank (mis en pause par Hugging Face) remplacées dans les tuiles
+        if (!com.nuvio.tv.core.tools.FrankFree666.isDisabled(appContext)) {
+            runCatching { com.nuvio.tv.core.tools.FrankFree666.ensure(appContext, collectionsDataStore, addonRepository) }
+        }
         delay(6_000L)
         while (true) {
             val row = runCatching { buildTopTenVfRow() }.getOrNull()
