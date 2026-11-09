@@ -1,6 +1,6 @@
 {
   "name": "Les 4 cavaliers de l'apocalypse",
-  "version": "1.2.41",
+  "version": "1.2.42",
   "description": "Plugins perso de 666TVF",
   "author": "Lambda666",
   "scrapers": [
@@ -23,7 +23,7 @@
       "id": "streamfusion666",
       "name": "StreamFusion666",
       "description": "Ton addon StreamFusion avec ta config, interrogé depuis la Shield. VF, 1080p/4K, liens debrid en cache. Adresse à coller dans Plugins → « mes sources ».",
-      "version": "1.0.9",
+      "version": "1.0.10",
       "filename": "streamfusion666.js",
       "supportedTypes": [
         "movie",
@@ -38,7 +38,7 @@
       "id": "lumio666",
       "name": "Lumio666",
       "description": "Ton addon Lumio avec ta config, interrogé depuis la Shield. VF, 1080p/4K, liens debrid en cache. Adresse à coller dans Plugins → « mes sources ».",
-      "version": "1.0.9",
+      "version": "1.0.10",
       "filename": "lumio666.js",
       "supportedTypes": [
         "movie",
@@ -53,7 +53,7 @@
       "id": "wastream666",
       "name": "Wastream666",
       "description": "Ton addon Wastream (téléchargement direct FR) avec ta config, interrogé depuis la Shield. VF, 1080p/4K. Adresse à coller dans Plugins → « mes sources ».",
-      "version": "1.0.8",
+      "version": "1.0.9",
       "filename": "wastream666.js",
       "supportedTypes": [
         "movie",

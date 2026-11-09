@@ -15,12 +15,14 @@ const vm = require('vm');
 
 const NOW = Date.parse('2026-10-23T12:00:00Z');
 
-function loadTemplate(fixture) {
+function loadTemplate(fixture, groupes) {
     const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'addon666.js'), 'utf8').replace(/__NAME__/g, 'Test');
     const ctx = {
         console: { log() {} },
         Date: class extends Date { constructor(...a) { super(...(a.length ? a : [NOW])); } static now() { return NOW; } },
-        SCRAPER_SETTINGS: { url: 'https://addon.test/cfg' },
+        SCRAPER_SETTINGS: Object.assign({ url: 'https://addon.test/cfg' }, groupes ? {
+            groups_fr_auto: (groupes.fr || []).join(','), groups_other_auto: (groupes.other || []).join(',')
+        } : {}),
         TMDB_API_KEY: 'k',
         module: { exports: {} },
         setTimeout, Promise, JSON, Math, Number, String, Object, Array, RegExp, encodeURIComponent, parseInt, isNaN,
@@ -122,12 +124,13 @@ const cases = [
                 original_language: c.movie.lang, release_date: c.movie.year, title: c.movie.title, original_title: c.movie.title,
                 external_ids: { imdb_id: c.movie.imdb }, release_dates: { results: [{ iso_3166_1: 'FR', release_dates: c.movie.fr }] }
             };
-            if (url.includes('/groupes-vf')) return c.groupes || { fr: [], other: [] };
+            if (url.includes('hf.space')) throw new Error('Frank appelé alors qu\'il est en pause');
             if (url.includes('/find/')) return { tv_results: [{ id: 1 }] };
             if (url.startsWith('https://addon.test/cfg/stream/')) return { streams: c.streams.map(stream) };
             return undefined;
         };
-        const plugin = loadTemplate(fixture);
+        // 666TVF (09/11) : les groupes viennent de l'appli (réglages prêtés), plus de Frank
+        const plugin = loadTemplate(fixture, c.groupes);
         const out = await plugin.getStreams(...c.args);
         const titles = out.map(s => s.title.split('\n')[0]);
         const problems = [];

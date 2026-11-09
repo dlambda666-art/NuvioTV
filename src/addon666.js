@@ -9,7 +9,6 @@
  */
 
 var ADDON_NAME = '__NAME__';
-var FRANK_URL = 'https://lambda666-frankenstream.hf.space';
 var MAX_RESULTS = 30;
 
 // --- Règles de langue (mêmes que Frank et Comet666) -----------------------
@@ -148,8 +147,7 @@ async function resolveImdb(tmdbId, mediaType) {
             '/external_ids?api_key=' + encodeURIComponent(TMDB_API_KEY), 'TMDB');
         if (data && data.imdb_id) return data.imdb_id;
     }
-    var info = await getJson(FRANK_URL + '/lookup/' + (isTv ? 'series' : 'movie') + '/' + id, 'lookup');
-    return info && info.imdbId ? info.imdbId : null;
+    return null;   // 666TVF (09/11) : plus de Frank (mis en pause par Hugging Face)
 }
 
 function streamHeaders(s) {
@@ -259,7 +257,18 @@ function frenchFilmInCinema(m) {
 
 
 // --- 666TVF : « MULTi » d'un groupe français = VF, d'un groupe étranger = écarté ---
-// Liste tenue à jour par Frank (noms de releases vus + lectures des Shield).
+// Groupes « MULTi avec VF » : base intégrée + ce que tes Shield apprennent (noms vus + lectures).
+var GROUPS_FR_SEED = ['0VERFLOW', '2D', 'ALN', 'AMEN', 'ARTEFAC', 'ASUGAR', 'BATGIRL', 'BLL', 'BOUBA', 'BOUC', 'BRAD', 'BYOR', 'CHRISJ72',
+    'FW', 'HEEL', 'FTMVHD', 'TFA', 'QTZ', 'LIBERTY', 'NORRIS', 'FRATERNITY', 'EXTREME', 'SUPPLY', 'MYSTERIOUS', 'LAZARUS', 'TLUB', 'REBIRTH', 'HYPERION', 'FAN2', 'TTK', 'CHEW'];
+var GROUPS_OTHER_SEED = ['A4O', 'ALEKARTEM', 'ANONIMO_CREW', 'ARPI', 'AVC_BY_BATHORY', 'AWS', 'B9R', 'BAMAX71', 'BG', 'BLACKBIT', 'BOLLYROCKERS', 'BONE', 'MIXIO'];
+function groupsLists() {
+    var s = (typeof SCRAPER_SETTINGS !== 'undefined' && SCRAPER_SETTINGS) ? SCRAPER_SETTINGS : {};
+    function csv(k) { return String(s[k] || '').split(',').map(function (g) { return g.trim().toUpperCase(); }).filter(Boolean); }
+    var frAuto = csv('groups_fr_auto');
+    var other = GROUPS_OTHER_SEED.concat(csv('groups_other_auto'));
+    var fr = GROUPS_FR_SEED.concat(frAuto).filter(function (g) { return other.indexOf(g) < 0 || frAuto.indexOf(g) >= 0; });
+    return { fr: fr, other: other.filter(function (g) { return frAuto.indexOf(g) < 0; }) };
+}
 var NOT_GROUP = { MKV: 1, MP4: 1, AVI: 1, X264: 1, X265: 1, H264: 1, H265: 1, HEVC: 1, WEB: 1, WEBDL: 1, WEBRIP: 1, DL: 1, HDR: 1, DV: 1, REMUX: 1, BLURAY: 1, MULTI: 1, FRENCH: 1, VFF: 1, VFQ: 1, VOSTFR: 1, AAC: 1, AC3: 1, DTS: 1, ATMOS: 1, SDR: 1, '1080P': 1, '2160P': 1, '720P': 1, PROPER: 1, REPACK: 1 };
 function releaseGroup(release) {
     var line = String(release || '').split('\n')[0].trim().replace(/\s*\[[^\]]*\]\s*$/, '').replace(/\.(mkv|mp4|avi|ts|m2ts)$/i, '');
@@ -270,8 +279,8 @@ function releaseGroup(release) {
 }
 async function settleMulti(items) {
     if (!items.some(function (t) { return t.lang.indexOf('?') >= 0; })) return items;
-    var data = await getJson(FRANK_URL + '/groupes-vf');
-    if (!data) return items;
+    // 666TVF (09/11) : groupes appris sur tes Shield (prêtés par l'appli), + la base intégrée (avant : Frank)
+    var data = groupsLists();
     var fr = {}, other = {};
     (data.fr || []).forEach(function (g) { fr[g] = 1; });
     (data.other || []).forEach(function (g) { other[g] = 1; });
@@ -394,4 +403,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     });
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _addonBase: addonBase };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _groupsLists: groupsLists, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _addonBase: addonBase };
