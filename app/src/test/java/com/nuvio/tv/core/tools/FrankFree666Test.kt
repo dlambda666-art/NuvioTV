@@ -112,4 +112,24 @@ class FrankFree666Test {
         assertEquals(listOf(horreur), out[0].folders[0].sources)
         assertEquals(out, FrankFree666.dedupeHorror(out))
     }
+
+    // 09/11 (4) : étape 2 — les catalogues d'aiometa de David (captures) deviennent intégrés
+    @Test fun `catalogues aiometa - Shudder, Blumhouse, genres, prochainement ; recherche retiree ; inconnu garde`() {
+        val aio = { id: String, t: String -> AddonCatalogCollectionSource("aiometadata.elfhosted", t, id) }
+        val names = mapOf("a1" to "Shudder", "a2" to "Blumhouse", "a3" to "S.Action", "a4" to "Recherche French Stream - Films",
+            "a5" to "Coming Soon Movies", "a6" to "Voyage temporel", "a7" to "WWE Raw", "a8" to "Documentaires")
+        val cols = listOf(Collection(id = "c", title = "A", folders = listOf(
+            CollectionFolder(id = "f", title = "⚫", sources = listOf(aio("a1", "movie"), aio("a2", "movie"), aio("a3", "series"),
+                aio("a4", "movie"), aio("a5", "movie"), aio("a6", "movie"), aio("a7", "series"), aio("a8", "movie")))
+        )))
+        val out = FrankFree666.planAiometa(cols) { names[it.catalogId] }.collections[0].folders[0].sources
+        assertEquals(7, out.size)   // recherche French-Stream retirée
+        assertEquals("99", tmdb(out[0]).filters.withWatchProviders)
+        assertEquals("3172", tmdb(out[1]).filters.withCompanies)
+        assertEquals("10759", tmdb(out[2]).filters.withGenres)
+        assertEquals(LocalCatalogs666.UPCOMING, (out[3] as AddonCatalogCollectionSource).addonId)
+        assertEquals("4379", tmdb(out[4]).filters.withKeywords)
+        assertEquals("a7", (out[5] as AddonCatalogCollectionSource).catalogId)   // WWE : gardé
+        assertNull(tmdb(out[6]).filters.withoutGenres)                           // documentaires pas exclus
+    }
 }

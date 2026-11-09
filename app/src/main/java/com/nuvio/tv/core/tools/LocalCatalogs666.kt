@@ -29,6 +29,7 @@ import java.time.LocalDate
 object LocalCatalogs666 {
     const val VFWEEK = "666tv.vfweek"
     const val POURTOI = "666tv.pourtoi"
+    const val UPCOMING = "666tv.upcoming"
     private const val TAG = "LocalCatalogs666"
     private const val PREFS = "666tv_local_catalogs"
     private const val WEEK_MS = 7L * 24 * 3600 * 1000
@@ -38,11 +39,12 @@ object LocalCatalogs666 {
     fun init(context: Context) { if (ctx == null) ctx = context.applicationContext }
     private fun prefs() = ctx?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun isLocal(addonId: String) = addonId == VFWEEK || addonId == POURTOI
+    fun isLocal(addonId: String) = addonId == VFWEEK || addonId == POURTOI || addonId == UPCOMING
 
     fun nameFor(addonId: String, type: String): String? = when (addonId) {
         VFWEEK -> if (type == "series") "Séries en VF cette semaine" else "En VF cette semaine"
         POURTOI -> "Pour toi, Lambda"
+        UPCOMING -> if (type == "series") "Séries à venir" else "Prochainement"
         else -> null
     }
 
@@ -219,6 +221,41 @@ object LocalCatalogs666 {
         val sep = if ('?' in path) '&' else '?'
         val raw = Http666.get("https://api.themoviedb.org/3$path${sep}api_key=$key", 15_000) ?: return null
         return runCatching { JSONObject(raw) }.getOrNull()
+    }
+
+    // ---------------- Prochainement (aiometa → intégré, 09/11) ----------------
+
+    /** Films à venir au cinéma en France, séries dont le 1er épisode arrive (TMDB, en français). */
+    suspend fun upcoming(type: String): CatalogRow? = withContext(Dispatchers.IO) {
+        val key = BuildConfig.TMDB_API_KEY.takeIf { it.isNotBlank() } ?: return@withContext null
+        val t = if (type == "series") "series" else "movie"
+        val today = LocalDate.now()
+        val paths = if (t == "movie") (1..3).map { "/movie/upcoming?language=fr-FR&region=FR&page=$it" }
+        else (1..2).map { "/discover/tv?language=fr-FR&first_air_date.gte=${today.plusDays(1)}&first_air_date.lte=${today.plusDays(120)}" +
+            "&without_genres=99%2C10763%2C10764%2C10767%2C10762&sort_by=popularity.desc&page=$it" }
+        val ct = if (t == "series") ContentType.SERIES else ContentType.MOVIE
+        val items = paths.flatMap { path ->
+            val arr = tmdb(path, key)?.optJSONArray("results") ?: return@flatMap emptyList()
+            (0 until arr.length()).mapNotNull { i ->
+                val o = arr.optJSONObject(i) ?: return@mapNotNull null
+                val date = o.optString("release_date").ifBlank { o.optString("first_air_date") }
+                if (date.isBlank() || date <= today.toString()) return@mapNotNull null
+                val id = o.optInt("id").takeIf { it > 0 } ?: return@mapNotNull null
+                MetaPreview(
+                    id = "tmdb:$id", type = ct, rawType = t,
+                    name = o.optString("title").ifBlank { o.optString("name") },
+                    poster = o.optString("poster_path").takeIf { it.startsWith("/") }?.let { "https://image.tmdb.org/t/p/w342$it" },
+                    posterShape = PosterShape.POSTER,
+                    background = o.optString("backdrop_path").takeIf { it.startsWith("/") }?.let { "https://image.tmdb.org/t/p/w1280$it" },
+                    logo = null, description = o.optString("overview").ifBlank { null },
+                    releaseInfo = date.take(4), imdbRating = null, genres = emptyList(), released = date
+                )
+            }
+        }.distinctBy { it.id }.sortedBy { it.released }
+        CatalogRow(
+            addonId = UPCOMING, addonName = "666TVF", addonBaseUrl = "", catalogId = "upcoming",
+            catalogName = nameFor(UPCOMING, t).orEmpty(), type = ct, rawType = t, items = items, isLoading = false, hasMore = false
+        )
     }
 
     // ---------------- Lignes pour les tuiles ----------------

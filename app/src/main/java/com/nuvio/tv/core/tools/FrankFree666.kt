@@ -147,7 +147,8 @@ object FrankFree666 {
      */
     fun fallbackFor(s: AddonCatalogCollectionSource, name: String?, folderTitle: String?, today: java.time.LocalDate = java.time.LocalDate.now()): CollectionSource? {
         if (isFrank(s)) return replacement(s, name, folderTitle)
-        val n = HomeReorg666.norm(name)
+        // « S.Action » (séries d'aiometa) → « action »
+        val n = HomeReorg666.norm(name).replace(Regex("^s\\.\\s*"), "")
         val f = HomeReorg666.norm(folderTitle)
         val tv = s.type == "series" || s.type == "tv"
         val t = if (tv) "series" else "movie"
@@ -159,14 +160,25 @@ object FrankFree666 {
             "pour toi" in n -> AddonCatalogCollectionSource(LocalCatalogs666.POURTOI, t, "pour-toi")
             "classique" in n && ("horr" in n || "horr" in f) ->
                 replacement(AddonCatalogCollectionSource(FRANK_ADDON_ID, "movie", "fs-horreur-classiques"), name, folderTitle)
-            Regex("prochain|coming soon|bientot|a venir|upcoming").containsMatchIn(n) -> TmdbCollectionSource(
+            Regex("prochain|coming soon|bientot|a venir|upcoming").containsMatchIn(n) ->
+                AddonCatalogCollectionSource(LocalCatalogs666.UPCOMING, t, "upcoming")
+            "recherche french stream" in n -> REMOVE
+            "shudder" in n -> TmdbCollectionSource(
                 sourceType = TmdbCollectionSourceType.DISCOVER, title = title, mediaType = media,
                 sortBy = TmdbCollectionSort.POPULAR_DESC.value,
-                filters = TmdbCollectionFilters(
-                    releaseDateGte = today.plusDays(1).toString(), releaseDateLte = today.plusDays(120).toString(),
-                    withoutGenres = if (tv) NO_DOCS_TV else NO_DOCS_MOVIE
-                )
+                filters = TmdbCollectionFilters(watchRegion = "US", withWatchProviders = "99",
+                    withoutGenres = if (tv) NO_DOCS_TV else NO_DOCS_MOVIE)
             )
+            "blumhouse" in n -> fr(title, media, TmdbCollectionSort.POPULAR_DESC, voteCount = 20).let {
+                it.copy(filters = it.filters.copy(withCompanies = if (tv) "68884|3172" else "3172"))
+            }
+            "betterposters" in n -> fr(title, media, TmdbCollectionSort.POPULAR_DESC, voteCount = 50)
+            SUBGENRES.any { it.first.containsMatchIn(n) } ->
+                replacement(AddonCatalogCollectionSource(FRANK_ADDON_ID, s.type, "fs-ext-0"), name, folderTitle)
+            theme(n, tv) != null -> theme(n, tv)!!.let { (genres, kw) ->
+                val src = fr(title, media, TmdbCollectionSort.POPULAR_DESC, genres = genres, keywords = kw, voteCount = 20)
+                if (genres == "99") src.copy(filters = src.filters.copy(withoutGenres = null)) else src
+            }
             Regex("^(derniers? films?|dernieres? series?|nouveaux? films?|nouvelles? series?|nouveautes?)$").containsMatchIn(n) ->
                 if (tv) fr(title, media, TmdbCollectionSort.FIRST_AIR_DATE_DESC, voteCount = 10)
                 else fr(title, media, TmdbCollectionSort.RELEASE_DATE_DESC, voteCount = 20)
@@ -176,6 +188,68 @@ object FrankFree666 {
                 replacement(AddonCatalogCollectionSource(FRANK_ADDON_ID, s.type, "fs-ext-0"), name, folderTitle)
             else -> null
         }
+    }
+
+    /** Marqueur : liste à retirer (la recherche French-Stream de Frank n'existe plus). */
+    val REMOVE = AddonCatalogCollectionSource("666tv.remove", "movie", "remove")
+
+    /** Catalogues à thème (genres et mots-clés TMDB vérifiés le 09/11) : (genres, mots-clés). */
+    fun theme(n: String, tv: Boolean): Pair<String?, String?>? {
+        fun g(movie: String, series: String) = if (tv) series else movie
+        return when {
+            Regex("found ?footage").containsMatchIn(n) -> (if (tv) null else HORROR) to "163053"
+            Regex("supernatural|surnaturel").containsMatchIn(n) -> null to "6152"
+            Regex("animation pour adultes|adult animation").containsMatchIn(n) -> "16" to "161919"
+            Regex("alien").containsMatchIn(n) -> null to "9951|14909"
+            Regex("intelligence artificielle|\\bia\\b").containsMatchIn(n) -> null to "310"
+            Regex("dystop").containsMatchIn(n) -> null to "4565"
+            Regex("voyage spatial|espace").containsMatchIn(n) -> null to "3801|1612"
+            Regex("super.?hero").containsMatchIn(n) -> null to "9715"
+            Regex("voyage temporel|voyage dans le temps").containsMatchIn(n) -> null to "4379"
+            Regex("survie").containsMatchIn(n) -> null to "10349"
+            Regex("anthologie").containsMatchIn(n) -> null to "9706"
+            Regex("mini.?serie").containsMatchIn(n) -> null to "11162"
+            Regex("biopic|biograph").containsMatchIn(n) -> null to "5565"
+            Regex("enquete").containsMatchIn(n) -> (if (tv) "80|9648" else null) to (if (tv) null else "703")
+            Regex("documentaire").containsMatchIn(n) -> "99" to null
+            Regex("science.?fiction").containsMatchIn(n) -> g("878", "10765") to null
+            Regex("fantastique").containsMatchIn(n) -> g("14", "10765") to null
+            Regex("histori").containsMatchIn(n) -> g("36", "10768") to null
+            Regex("policier").containsMatchIn(n) -> "80" to null
+            Regex("thriller").containsMatchIn(n) -> g("53", "9648") to null
+            Regex("aventure").containsMatchIn(n) -> g("12", "10759") to null
+            Regex("^action").containsMatchIn(n) -> g("28", "10759") to null
+            Regex("comedie").containsMatchIn(n) -> "35" to null
+            Regex("drame").containsMatchIn(n) -> "18" to null
+            else -> null
+        }
+    }
+
+    fun isAiometa(s: AddonCatalogCollectionSource) =
+        s.addonId.contains("aiometadata", true) || s.addonId.contains("aiometa", true)
+
+    /**
+     * 666TVF (09/11, 4) : étape 2 — les catalogues d'aiometa remplacés par leurs équivalents intégrés
+     * (TMDB, ou tenus sur la Shield), reconnus à leur nom. Ceux qu'on ne sait pas remplacer restent.
+     */
+    fun planAiometa(collections: List<Collection>, catalogName: (AddonCatalogCollectionSource) -> String?): Plan {
+        val report = mutableListOf<String>()
+        val out = collections.map { c ->
+            c.copy(folders = c.folders.map { f ->
+                if (f.sources.none { it is AddonCatalogCollectionSource && isAiometa(it) }) f
+                else f.copy(sources = f.sources.mapNotNull { s ->
+                    if (s !is AddonCatalogCollectionSource || !isAiometa(s)) return@mapNotNull s
+                    val name = catalogName(s)
+                    val r = fallbackFor(s, name, f.title)
+                    when {
+                        r == null -> { report += "${f.title} : « ${name ?: s.catalogId} » gardé (pas d'équivalent)"; s }
+                        r == REMOVE -> { report += "${f.title} : « $name » retiré"; null }
+                        else -> { report += "${f.title} : « ${name ?: s.catalogId} » → intégré"; r }
+                    }
+                }.distinct().ifEmpty { f.sources })
+            })
+        }
+        return Plan(out, report)
     }
 
     /**
@@ -226,11 +300,15 @@ object FrankFree666 {
             store.setCollections(current)
             runCatching { pushCollections(context) }
         }
-        if (current.none { c -> c.folders.any { f -> f.sources.any { it is AddonCatalogCollectionSource && isFrank(it) } } }) return emptyList()
+        if (current.none { c -> c.folders.any { f -> f.sources.any { it is AddonCatalogCollectionSource && (isFrank(it) || isAiometa(it)) } } }) return emptyList()
         val installed = withTimeoutOrNull(5_000) { addons.getInstalledAddons().first() }.orEmpty()
         val names = HashMap<String, String>()
         installed.forEach { a -> a.catalogs.forEach { cat -> names["${a.id}|${cat.apiType}|${cat.id}"] = cat.name; names.putIfAbsent("*|${cat.apiType}|${cat.id}", cat.name) } }
-        val plan = plan(current) { s -> names["${s.addonId}|${s.type}|${s.catalogId}"] ?: names["*|${s.type}|${s.catalogId}"] }
+        val nameOf: (AddonCatalogCollectionSource) -> String? = { s -> names["${s.addonId}|${s.type}|${s.catalogId}"] ?: names["*|${s.type}|${s.catalogId}"] }
+        val first = plan(current, nameOf)
+        // les noms d'aiometa ne sont connus que tant qu'il est installé : on remplace maintenant
+        val second = planAiometa(first.collections) { s -> nameOf(s) }
+        val plan = Plan(second.collections, first.report + second.report)
         if (plan.collections == current) return emptyList()
         val prefs = context.getSharedPreferences("666tv_frankfree", Context.MODE_PRIVATE)
         if (prefs.getString("before", null) == null) store.exportCurrentProfileJson()?.let { prefs.edit().putString("before", it).apply() }

@@ -644,12 +644,15 @@ class FolderDetailViewModel @Inject constructor(
         // 666TVF (09/11) : « En VF cette semaine » et « Pour toi » tenus sur la Shield (plus de Frank)
         if (com.nuvio.tv.core.tools.LocalCatalogs666.isLocal(source.addonId)) {
           viewModelScope.launch {
-            val raw = com.nuvio.tv.core.tools.LocalCatalogs666.row(source.addonId, source.type)
+            val raw = if (source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.UPCOMING)
+                com.nuvio.tv.core.tools.LocalCatalogs666.upcoming(source.type)
+            else com.nuvio.tv.core.tools.LocalCatalogs666.row(source.addonId, source.type)
             // « Pour toi » : seulement les titres confirmés en VF (« En VF cette semaine » l'est déjà)
             val row = when {
                 raw == null -> null
                 source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.POURTOI ->
-                    raw.copy(items = betterPosters666(com.nuvio.tv.core.tools.VfCheck666.keepVf(raw.items)))
+                    raw.copy(items = betterPosters666(com.nuvio.tv.core.tools.VfCheck666.keepVf(raw.items, 3_000)))
+                source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.UPCOMING -> raw
                 else -> raw.copy(items = betterPosters666(raw.items))
             }
             _uiState.update { state ->
@@ -660,6 +663,7 @@ class FolderDetailViewModel @Inject constructor(
                         isLoading = false,
                         error = if (source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.VFWEEK)
                             "Rien de nouveau en VF ces 7 derniers jours (le guetteur passe deux fois par jour)"
+                        else if (source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.UPCOMING) "TMDB ne répond pas, réessaie dans un instant"
                         else "Recommandations en préparation (vérif VF en cours), reviens dans quelques minutes"
                     )
                 }
@@ -999,10 +1003,41 @@ class FolderDetailViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 666TVF (09/11, 4) : les titres dont la vérif VF a fini après l'affichage de la liste y sont ajoutés
+     * (au lieu de faire attendre la liste jusqu'à 12 s).
+     */
+    private fun lateVf666(tabIndex: Int, source: TmdbCollectionSource, original: List<MetaPreview>) {
+        viewModelScope.launch {
+            val all = betterPosters666(com.nuvio.tv.core.tools.VfCheck666.keepVf(original, 45_000))
+            _uiState.update { s ->
+                val tab = s.tabs.getOrNull(tabIndex) ?: return@update s
+                val row = tab.catalogRow ?: return@update s
+                if (tab.source != source) return@update s
+                val have = row.items.map { it.id }.toHashSet()
+                val extra = all.filter { it.id !in have }
+                if (extra.isEmpty()) return@update s
+                val tabs = s.tabs.toMutableList()
+                tabs[tabIndex] = tab.copy(catalogRow = row.copy(items = row.items + extra))
+                s.copy(tabs = tabs)
+            }
+            rebuildAllTab()
+            rebuildFollowLayoutState()
+        }
+    }
+
     /** 666TVF (09/11, 3) : les affiches BetterPosters des anciennes listes de Frank (ou ton modèle d'affiche). */
     private suspend fun betterPosters666(items: List<MetaPreview>): List<MetaPreview> {
         val pattern = runCatching { layoutPreferenceDataStore.customPosterUrlPattern.first() }.getOrDefault("")
-        return items.map { com.nuvio.tv.core.tools.Posters666.better(it, pattern) }
+        val out = items.map { com.nuvio.tv.core.tools.Posters666.better(it, pattern) }
+        // les affiches BetterPosters sont lentes à fabriquer : on les demande toutes d'avance (cache disque)
+        runCatching {
+            val loader = coil3.SingletonImageLoader.get(appContext)
+            out.take(40).mapNotNull { it.poster }.forEach { url ->
+                loader.enqueue(coil3.request.ImageRequest.Builder(appContext).data(url).build())
+            }
+        }
+        return out
     }
 
     /** 666TVF (09/11) : une liste TMDB « sorties en France » (région seule) = une liste VF. */
@@ -1028,7 +1063,9 @@ class FolderDetailViewModel @Inject constructor(
                         // 666TVF (09/11) : listes « sorties en France » → seulement les titres confirmés en VF
                         // (règles de Frank, vérifiées sur la Shield)
                         val vfList666 = isVfList666(source)
-                        val data666 = if (vfList666) result.data.copy(items = betterPosters666(com.nuvio.tv.core.tools.VfCheck666.keepVf(result.data.items))) else result.data
+                        // (3 s max d'attente : la suite des vérifs arrive toute seule dans la liste, 09/11)
+                        val data666 = if (vfList666) result.data.copy(items = betterPosters666(com.nuvio.tv.core.tools.VfCheck666.keepVf(result.data.items, 3_000))) else result.data
+                        if (vfList666 && data666.items.size < result.data.items.size) lateVf666(tabIndex, source, result.data.items)
                         _uiState.update { s ->
                             val tabs = s.tabs.toMutableList()
                             val currentRow = tabs.getOrNull(tabIndex)?.catalogRow

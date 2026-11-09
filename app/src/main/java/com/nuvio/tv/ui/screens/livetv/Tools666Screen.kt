@@ -93,6 +93,34 @@ class Tools666ViewModel @Inject constructor(
         }
     }
 
+    // 666TVF (09/11) : étape 2 — fiches sans aiometa (Cinemeta + TMDB en français, rien d'hébergé)
+    private val _aiometaOn = MutableStateFlow<Boolean?>(null)
+    val aiometaOn: StateFlow<Boolean?> = _aiometaOn
+
+    private fun isAiometa(a: com.nuvio.tv.domain.model.Addon) =
+        a.baseUrl.contains("aiometa", true) || a.id.contains("aiometadata", true) || a.displayName.contains("aiometa", true)
+
+    fun refreshAiometa() {
+        viewModelScope.launch {
+            _aiometaOn.value = runCatching { addonRepository.getInstalledAddons().first().firstOrNull(::isAiometa)?.enabled }.getOrNull()
+        }
+    }
+
+    fun toggleAiometa() {
+        viewModelScope.launch {
+            runCatching {
+                val all = addonRepository.getInstalledAddons().first()
+                val aio = all.firstOrNull(::isAiometa) ?: return@runCatching
+                val turnOff = aio.enabled
+                if (turnOff && all.none { it.baseUrl.contains("cinemeta", true) }) {
+                    addonRepository.addAddon("https://v3-cinemeta.strem.io/manifest.json")
+                }
+                addonRepository.setAddonEnabled(aio.baseUrl, !turnOff)
+            }
+            refreshAiometa()
+        }
+    }
+
     fun undoReorganize() {
         viewModelScope.launch {
             val ok = runCatching { homeReorg666.undo() }.getOrDefault(false)
@@ -311,6 +339,17 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
             }
             reorgReport.forEach { line ->
                 item { Text(line, modifier = Modifier.padding(horizontal = 18.dp), color = Color(0xFFC8C3BE)) }
+            }
+            // 666TVF (09/11) : étape 2, aiometa coupé ou non (réversible)
+            item {
+                val on by viewModel.aiometaOn.collectAsState()
+                LaunchedEffect(Unit) { viewModel.refreshAiometa() }
+                if (on != null) ActionRow(
+                    "aiometa : " + if (on == true) "actif (Hugging Face)" else "coupé — fiches intégrées",
+                    if (on == true) "Couper aiometa : les fiches viennent de Cinemeta + TMDB en français, rien d'hébergé. Réversible."
+                    else "Réactiver aiometa si quelque chose te manque.",
+                    onClick = { viewModel.toggleAiometa() }
+                )
             }
             // 666TVF (09/11) : ce qui a remplacé les listes de Frank dans les tuiles
             item {
