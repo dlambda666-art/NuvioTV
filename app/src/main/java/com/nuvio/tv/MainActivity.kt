@@ -1566,6 +1566,9 @@ open class MainActivity : ComponentActivity() {
                         label = "startupSplashAlpha"
                     )
                     val splashAlpha = if (showSplash) 1f else animatedSplashAlpha
+                    // 666TVF (10/11) : l'ouverture « cinéma » finit elle-même (porte qui s'ouvre sur la boucherie)
+                    var splashDoorDone666 by remember { mutableStateOf(false) }
+                    LaunchedEffect(showSplash) { if (showSplash) splashDoorDone666 = false }
                     LaunchedEffect(splashAlpha, startupDestination) {
                         if (splashAlpha == 0f && startupDestination != StartupDestination.ProfileSelection) {
                             focusedSplashColor = null
@@ -1574,14 +1577,15 @@ open class MainActivity : ComponentActivity() {
                             focusedSplashTheme = null
                         }
                     }
-                    if (splashAlpha > 0f) {
+                    if (showSplash || !splashDoorDone666) {
                         com.nuvio.tv.ui.components.StartupSplashScreen(
                             profileColorHex = splashBackground.profileColorHex,
                             profileBackgroundUrl = splashBackground.backgroundUrl,
                             backgroundCacheKey = splashBackground.backgroundCacheKey,
                             skipGradient = splashBackground.skipGradient,
                             brandWordmarkRes = splashBackground.brandWordmarkRes,
-                            modifier = Modifier.graphicsLayer { alpha = splashAlpha }
+                            closing = !showSplash,
+                            onClosed = { splashDoorDone666 = true }
                         )
                     }
                     }
