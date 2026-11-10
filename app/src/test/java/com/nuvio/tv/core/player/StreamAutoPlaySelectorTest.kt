@@ -328,6 +328,25 @@ class StreamAutoPlaySelectorTest {
         org.junit.Assert.assertNull(selected)
     }
 
+    // 666TVF (10/11) : 4e dimension S03E08 — le pack S03 prouvé sans VF n'est plus lancé en auto
+    @Test
+    fun `fichier deja prouve sans VF jamais lance en auto`() {
+        val liar = "a".repeat(40)
+        com.nuvio.tv.core.tools.NoFrench666.setCacheForTest(setOf(liar))
+        try {
+            val pack = stream("Comet666", url = "https://x/1", infoHash = liar)
+            val sf = stream("StreamFusion666", url = "https://x/2", infoHash = "b".repeat(40))
+            val picked = StreamAutoPlaySelector.selectAutoPlayStream(
+                streams = listOf(pack, sf), mode = StreamAutoPlayMode.FIRST_STREAM, regexPattern = "",
+                source = StreamAutoPlaySource.ALL_SOURCES, installedAddonNames = emptySet(),
+                selectedAddons = emptySet(), selectedPlugins = emptySet()
+            )
+            assertEquals(sf, picked)
+        } finally {
+            com.nuvio.tv.core.tools.NoFrench666.setCacheForTest(null)
+        }
+    }
+
     private fun stream(
         addonName: String,
         url: String? = null,

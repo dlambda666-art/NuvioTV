@@ -167,6 +167,7 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
     val requestKey = currentSourceRequestKey() ?: return
     if (requestKey != sourceFailoverRequestKey) {
         sourceFailoverRequestKey = requestKey
+        sourceFailoverWokeAll666 = false
         sourceFailoverTriedKeys.clear()
         sourceFailoverCount = 0
         sourceFailoverExhausted = false
@@ -219,6 +220,28 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
             ) break
             delay(SourceFailoverRules.LIST_POLL_MS)
             waited += SourceFailoverRules.LIST_POLL_MS
+        }
+
+        // 666TVF (10/11) : rien d'autre dans la liste (le 1er cavalier suffisait, les autres dormaient) →
+        // on réveille tous les cavaliers et on cherche une fois de plus (4e dimension S03E07).
+        if (next == null && !sourceFailoverWokeAll666) {
+            sourceFailoverWokeAll666 = true
+            com.nuvio.tv.core.tools.Hibernate666.wakeAllUntil = System.currentTimeMillis() + 120_000L
+            _uiState.update { it.copy(streamSourceIndicatorText = "Pas de VF ici : les autres cavaliers cherchent…") }
+            loadSourceStreams(forceRefresh = true)
+            waited = 0L
+            while (waited <= SourceFailoverRules.LIST_WAIT_MS * 3) {
+                delay(SourceFailoverRules.LIST_POLL_MS)
+                waited += SourceFailoverRules.LIST_POLL_MS
+                next = SourceFailoverRules.selectNext(
+                    _uiState.value.sourceAllStreams.filterNot { s ->
+                        s.getEffectiveInfoHash()?.lowercase()?.let { com.nuvio.tv.core.tools.NoFrench666.isLiar(context, it) } == true
+                    }, sourceFailoverTriedKeys,
+                    _uiState.value.currentSeason, _uiState.value.currentEpisode
+                )
+                if (next != null) break
+                if (sourceStreamsFetchCompleted && !_uiState.value.isLoadingSourceStreams) break
+            }
         }
 
         if (next == null) {

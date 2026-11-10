@@ -14,7 +14,10 @@ import com.nuvio.tv.domain.model.StreamDebridCacheState
 object Hibernate666 {
     private const val PREFS = "666tv_hibernate"
 
-    fun enabled(context: Context): Boolean = runCatching {
+    /** 666TVF (10/11) : tous les cavaliers réveillés jusqu'à cette heure (lien suivant après un « pas de VF »). */
+    @Volatile var wakeAllUntil: Long = 0L
+
+    fun enabled(context: Context): Boolean = System.currentTimeMillis() >= wakeAllUntil && runCatching {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("on", true)
     }.getOrDefault(true)
 

@@ -32,6 +32,9 @@ object NoFrench666 {
     fun hashes(context: Context): Set<String> =
         cache ?: pruned(load(context), today()).map { it.substringBefore('|') }.toSet().also { cache = it }
 
+    /** Empreintes déjà chargées (sans contexte, pour le choix de la lecture auto). */
+    fun cachedHashes(): Set<String> = cache ?: emptySet()
+
     fun isLiar(context: Context, hash: String?): Boolean = norm(hash)?.let { it in hashes(context) } == true
 
     fun remember(context: Context, hash: String?) {
@@ -40,4 +43,7 @@ object NoFrench666 {
         runCatching { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("list", list.joinToString(",")).apply() }
         cache = list.map { it.substringBefore('|') }.toSet()
     }
+
+    /** Pour les tests. */
+    internal fun setCacheForTest(hashes: Set<String>?) { cache = hashes }
 }

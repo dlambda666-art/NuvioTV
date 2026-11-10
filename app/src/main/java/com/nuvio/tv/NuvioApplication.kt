@@ -84,6 +84,7 @@ class NuvioApplication : Application(), SingletonImageLoader.Factory {
         com.nuvio.tv.core.tools.Groups666.init(this)
         com.nuvio.tv.core.tools.LocalCatalogs666.init(this)
         com.nuvio.tv.core.tools.VfCheck666.init(this)
+        runCatching { com.nuvio.tv.core.tools.NoFrench666.hashes(this) }   // fichiers sans VF connus dès le départ
         androidTvChannelSyncService.start()
         // Load locale synchronously so it's available before Activity.attachBaseContext.
         // SharedPreferences reads are fast (cached in memory after first access).

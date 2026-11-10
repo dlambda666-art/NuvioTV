@@ -178,7 +178,11 @@ object StreamAutoPlaySelector {
         if (streams.isEmpty()) return null
         // 666TV : jamais de lecture auto d'un flux qui annonce un autre épisode.
         // 666TVF : ni un autre épisode (vieux WWE Raw), ni du Dolby Vision sans HDR (image violette).
-        val epStreams = streams.filter { !autoPlayBlocked(it, season, episode) }
+        // 666TVF (10/11) : jamais de lecture auto d'un fichier déjà prouvé sans VF (4e dimension S03E08 :
+        // la liste préchargée avait encore le pack S03 retenu comme « menteur » pendant le S03E07).
+        val liars = com.nuvio.tv.core.tools.NoFrench666.cachedHashes()
+        val epStreams = streams.filter { !autoPlayBlocked(it, season, episode) &&
+            (liars.isEmpty() || it.getEffectiveInfoHash()?.trim()?.lowercase() !in liars) }
         @Suppress("NAME_SHADOWING")
         val streams = if (epStreams.isNotEmpty()) epStreams else streams
 

@@ -564,6 +564,8 @@ class PlayerRuntimeController(
     internal val sourceFailoverTriedKeys: MutableSet<String> = HashSet()
     internal var sourceFailoverCount: Int = 0
     internal var sourceFailoverExhausted: Boolean = false
+    // 666TVF (10/11) : tous les cavaliers déjà réveillés pour ce lien suivant
+    internal var sourceFailoverWokeAll666: Boolean = false
     internal var consecutiveAutoPlayCount: Int = 0
     internal var errorRetryJob: Job? = null
     internal var stableProgressResetJob: Job? = null
