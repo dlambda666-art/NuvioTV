@@ -1,14 +1,14 @@
-// Sonde ponctuelle (09/11) : nouvelle adresse French-Stream (fs23.lol) — même recherche que l'ancienne ?
+// Sonde ponctuelle (10/11) : voix pour l'aperçu de l'accueil (synthèse vocale Google, en base64)
 const fs = require('fs');
 (async () => {
-  const r = { at: new Date().toISOString() };
-  for (const base of ['https://fs23.lol', 'https://maj.french-stream.pink']) {
+  const r = { at: new Date().toISOString(), clips: {} };
+  for (const [k, q] of [['six', 'Six cent soixante-six'], ['tvf', 'T. V. F.'], ['bienvenue', 'Bienvenue'], ['seance', 'La séance va commencer']]) {
     try {
-      const res = await fetch(base + '/engine/ajax/search.php', { method: 'POST', redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0', Referer: base + '/', Origin: base, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'query=Evil%20Dead%20Burn&page=1' });
-      const t = await res.text();
-      r[base] = { status: res.status, location: res.headers.get('location'), len: t.length, head: t.slice(0, 900) };
-    } catch (e) { r[base] = { err: String(e) }; }
-    try { const h = await fetch(base + '/', { redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0' } }); r[base + ' home'] = { status: h.status, location: h.headers.get('location') }; } catch (e) { r[base + ' home'] = { err: String(e) }; }
+      const u = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=fr&client=tw-ob&ttsspeed=0.6&q=' + encodeURIComponent(q);
+      const res = await fetch(u, { headers: { 'User-Agent': 'Mozilla/5.0', Referer: 'https://translate.google.com/' } });
+      const b = Buffer.from(await res.arrayBuffer());
+      r.clips[k] = { status: res.status, type: res.headers.get('content-type'), b64: b.toString('base64') };
+    } catch (e) { r.clips[k] = { err: String(e) }; }
   }
-  fs.writeFileSync('test-report.json', JSON.stringify(r, null, 2)); console.log('ok');
+  fs.writeFileSync('test-report.json', JSON.stringify(r)); console.log('ok');
 })();
