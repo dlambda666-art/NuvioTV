@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -61,8 +62,8 @@ private const val DOOR_Y1 = 0.929f
  * 666TVF (10/11) : l'ouverture « cinéma ». Une salle abandonnée aux sièges mauves ; sur l'écran, le
  * diable projeté (yeux jaunes qui pulsent) et le logo 666TVF qui goutte du sang mauve ; la lumière du
  * projecteur vacille, la bobine cliquette ; le pentagramme tourne pendant le chargement.
- * Quand l'appli est prête ([closing]) : fondu vers la porte, qui s'ouvre lentement en grinçant sur
- * la boucherie, puis [onClosed].
+ * Quand l'appli est prête ([closing]) : fondu vers la porte, qui s'ouvre lentement sur la boucherie
+ * pendant que la bobine baisse doucement, puis [onClosed].
  */
 @Composable
 fun StartupSplashScreen(
@@ -135,17 +136,19 @@ fun StartupSplashScreen(
     val open = remember { Animatable(0f) }
     LaunchedEffect(closing) {
         if (!closing) return@LaunchedEffect
-        toDoor.animateTo(1f, tween(700))
-        projector[0]?.let { mp -> runCatching { mp.setVolume(0.25f, 0.25f) } }
-        kotlinx.coroutines.delay(400)
-        runCatching {
-            android.media.MediaPlayer.create(context, R.raw.porte_666)?.apply {
-                setVolume(0.9f, 0.9f)
-                setOnCompletionListener { runCatching { it.release() } }
-                start()
+        // la bobine baisse doucement jusqu'à l'ouverture des portes et au fondu (pas de grincement)
+        val fade = launch {
+            val steps = 43
+            repeat(steps) { i ->
+                val v = 0.7f * (1f - (i + 1).toFloat() / steps)
+                projector[0]?.let { mp -> runCatching { mp.setVolume(v, v) } }
+                kotlinx.coroutines.delay(100)
             }
         }
+        toDoor.animateTo(1f, tween(700))
+        kotlinx.coroutines.delay(400)
         open.animateTo(1f, tween(3_200, easing = FastOutSlowInEasing))
+        fade.join()
         onClosedNow()
     }
 
