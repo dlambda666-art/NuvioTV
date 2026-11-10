@@ -43,6 +43,13 @@ import androidx.compose.ui.res.stringResource
 import com.nuvio.tv.R
 
 private val Splash666Bg = Color(0xFF0C0F0E)
+
+/** 666TVF (10/11) : l'ouverture est à l'écran (la morgue ne s'ouvre pas, le néon se tait dessous). */
+object Splash666 {
+    @Volatile var showing: Boolean = false
+    /** À l'arrivée sur l'accueil : le curseur va sur le bouton mauve (une fois par ouverture). */
+    @Volatile var focusHeroOnce: Boolean = true
+}
 private val Blood666 = Color(0xFF4E1077)
 
 // Positions sur l'image de la salle (16:9), en fraction de la largeur / hauteur.
@@ -79,6 +86,11 @@ fun StartupSplashScreen(
     val density = LocalDensity.current
     val context = LocalContext.current
     val onClosedNow by rememberUpdatedState(onClosed)
+    DisposableEffect(Unit) {
+        Splash666.showing = true
+        Splash666.focusHeroOnce = true
+        onDispose { Splash666.showing = false }
+    }
 
     // --- Son : la bobine du projecteur tourne tant que la salle est à l'écran ---
     val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
@@ -87,7 +99,7 @@ fun StartupSplashScreen(
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         projector[0] = runCatching {
             android.media.MediaPlayer.create(context, R.raw.projecteur_666)?.apply {
-                isLooping = true
+                isLooping = false   // 75 s d'une traite : pas de reprise audible
                 setVolume(0.7f, 0.7f)
                 start()
             }
@@ -107,7 +119,7 @@ fun StartupSplashScreen(
             handler.post(fade)
         }
         val cap = Runnable { fadeOut() }
-        handler.postDelayed(cap, 20_000L)
+        handler.postDelayed(cap, 75_000L)
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) fadeOut()
         }
@@ -297,7 +309,7 @@ fun StartupSplashScreen(
                             .offset(x = w * DOOR_X0, y = h * DOOR_Y0)
                             .graphicsLayer {
                                 transformOrigin = TransformOrigin(0f, 0.5f)
-                                rotationY = -angle
+                                rotationY = angle   // poussée : le battant part vers l'intérieur
                                 cameraDistance = 6f * density.density
                                 alpha = if (angle > 89f) 0f else 1f
                             }
@@ -312,7 +324,7 @@ fun StartupSplashScreen(
                             .offset(x = w * DOOR_XM, y = h * DOOR_Y0)
                             .graphicsLayer {
                                 transformOrigin = TransformOrigin(1f, 0.5f)
-                                rotationY = angle
+                                rotationY = -angle
                                 cameraDistance = 6f * density.density
                                 alpha = if (angle > 89f) 0f else 1f
                             }

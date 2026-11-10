@@ -147,6 +147,8 @@ fun MorgueTile666(
         }
         latestOnFocused()
         if (Morgue666.calmUntilBlur) return@LaunchedEffect
+        // 666TVF (10/11) : la morgue ne s'ouvre pas sous l'écran d'ouverture
+        if (com.nuvio.tv.ui.components.Splash666.showing) return@LaunchedEffect
         delay(Door666.LIFT_MS)
         leaves = true
         Morgue666.opening = true                 // le fond passe à la morgue pendant que les battants s'ouvrent

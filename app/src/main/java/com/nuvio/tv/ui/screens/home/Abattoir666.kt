@@ -204,7 +204,9 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
     var doorAt by remember { mutableStateOf(-1L) }
     LaunchedEffect(opening) {
         doorAt = if (opening) System.currentTimeMillis() else -1L
-        if (opening && Abattoir666.buzzEnabled(context)) Neon666Sound.play(context, R.raw.neon_meurt_666)
+        // 666TVF (10/11) : jamais sous l'ouverture (pas de néon dans le couloir du cinéma)
+        if (opening && !com.nuvio.tv.ui.components.Splash666.showing && Abattoir666.buzzEnabled(context))
+            Neon666Sound.play(context, R.raw.neon_meurt_666)
     }
     LaunchedEffect(Unit) {
         val start = withFrameMillis { it }

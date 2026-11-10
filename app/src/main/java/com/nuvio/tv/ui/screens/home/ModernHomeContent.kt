@@ -1138,6 +1138,16 @@ fun ModernHomeContent(
                 !(heroSceneStateLambda().fullScreenBackdrop && shouldPlayTrailerLambda() && heroTrailerRenderedLambda())
             val heroPlayFocusRequester = remember { FocusRequester() }
             val heroPlayVisibleState = rememberUpdatedState(heroPlayVisible)
+            // 666TVF (10/11) : en arrivant dans la boucherie, le curseur est sur le bouton mauve (pas sur la morgue)
+            LaunchedEffect(heroPlayVisible) {
+                if (!heroPlayVisible || !com.nuvio.tv.ui.components.Splash666.focusHeroOnce) return@LaunchedEffect
+                kotlinx.coroutines.delay(150)
+                runCatching { heroPlayFocusRequester.requestFocus() }
+                while (com.nuvio.tv.ui.components.Splash666.showing) kotlinx.coroutines.delay(100)
+                kotlinx.coroutines.delay(150)
+                runCatching { heroPlayFocusRequester.requestFocus() }
+                com.nuvio.tv.ui.components.Splash666.focusHeroOnce = false
+            }
             Hero666PlayButton(
                 visible = heroPlayVisible,
                 focusRequester = heroPlayFocusRequester,
