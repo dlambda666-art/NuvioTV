@@ -120,6 +120,29 @@ object Groups666 {
         runCatching { c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY, json.toString()).apply() }
     }
 
+    /** 11/11 : tout ce qui est appris, pour l'autre Shield / la clé (JSON, sans clé ni adresse). */
+    fun exportJson(): JSONObject = synchronized(groups) {
+        JSONObject().apply { groups.forEach { (g, e) -> put(g, JSONObject().put("fr", e.fr).put("other", e.other).put("sf", e.shieldFr).put("sn", e.shieldNo)) } }
+    }
+
+    /** Règle pure (testée) : fusion sans double compte (chaque compteur garde le plus grand des deux). */
+    fun merged(a: Entry?, b: Entry): Entry = if (a == null) b.copy() else
+        Entry(maxOf(a.fr, b.fr), maxOf(a.other, b.other), maxOf(a.shieldFr, b.shieldFr), maxOf(a.shieldNo, b.shieldNo))
+
+    /** Fusionne ce que l'autre Shield a appris. Renvoie le nombre de groupes nouveaux ou changés. */
+    fun importJson(json: JSONObject): Int {
+        var n = 0
+        synchronized(groups) {
+            json.keys().forEach { g ->
+                val o = json.optJSONObject(g) ?: return@forEach
+                val e = merged(groups[g], Entry(o.optInt("fr"), o.optInt("other"), o.optInt("sf"), o.optInt("sn")))
+                if (groups[g] != e) { groups[g] = e; n++ }
+            }
+        }
+        if (n > 0) { dirty = true; saveSoon(force = true) }
+        return n
+    }
+
     /** Pour les tests. */
     internal fun resetForTest() = synchronized(groups) { groups.clear() }
 }

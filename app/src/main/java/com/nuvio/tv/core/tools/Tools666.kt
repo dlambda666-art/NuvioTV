@@ -136,7 +136,8 @@ internal object Http666 {
  */
 object Backup666 {
     const val FILE_NAME = "666tv-sauvegarde.zip"
-    private const val WEEK_MS = 7L * 24 * 3600 * 1000
+    // 11/11 : chaque jour (l'appli ne redémarre presque jamais : appelée aussi par la boucle de la cloche)
+    private const val WEEK_MS = 24L * 3600 * 1000
 
     fun lastBackupAt(context: Context): Long =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong("last_backup", 0L)

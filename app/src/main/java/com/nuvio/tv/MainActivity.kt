@@ -394,6 +394,8 @@ open class MainActivity : ComponentActivity() {
                 }
             ) com.nuvio.tv.core.tools.Record666Service.start(this)
         }
+        // 666TVF (11/11) : Mémoire 666 (lien entre les deux Shield, réseau de la maison seulement)
+        runCatching { com.nuvio.tv.core.tools.Lien666.start(this) }
         com.nuvio.tv.core.tools.Announce666.externalPlayback = { externalPlaybackTracker.awaitingExternal666 }
         run {
             val appCtx = applicationContext
@@ -1429,6 +1431,24 @@ open class MainActivity : ComponentActivity() {
                                             .filter { it.start.isAfter(java.time.Instant.now()) }
                                             .map { it.start.toEpochMilli() to it.name.substringBefore(":").trim() }
                                         com.nuvio.tv.core.dream.Dream666Data.saveProgramme(this@MainActivity, eps + ufc)
+                                    }
+                                    // 666TVF (11/11) : Mémoire 666 — échange avec l'autre Shield toutes les 6 h,
+                                    // copie sur la clé et sauvegarde complète chaque jour. Jamais pendant un film.
+                                    if (!inPlayerNow666) {
+                                        val appCtx666 = applicationContext
+                                        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                            val mp = appCtx666.getSharedPreferences("666tv_lien", android.content.Context.MODE_PRIVATE)
+                                            val now = System.currentTimeMillis()
+                                            if (now - mp.getLong("try_at", 0L) > 6 * 3600_000L) {
+                                                mp.edit().putLong("try_at", now).apply()
+                                                runCatching { com.nuvio.tv.core.tools.Lien666.syncNow(appCtx666) }
+                                            }
+                                            if (now - mp.getLong("usb_at", 0L) > 24 * 3600_000L) {
+                                                mp.edit().putLong("usb_at", now).apply()
+                                                runCatching { com.nuvio.tv.core.tools.Memoire666.saveToUsb(appCtx666) }
+                                                runCatching { com.nuvio.tv.core.tools.Backup666.autoBackupIfDue(appCtx666) }
+                                            }
+                                        }
                                     }
                                     // 666TV : vérifié toutes les 20 minutes (avant : 6 h), même
                                     // quand tu es dans Orange TV ou YouTube.

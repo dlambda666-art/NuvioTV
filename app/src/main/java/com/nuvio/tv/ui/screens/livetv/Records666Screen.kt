@@ -58,7 +58,7 @@ private val RDim = Color(0xFF8F8A85)
 
 /** 666TVF : les films et épisodes enregistrés (Shield du bas), lisibles même sans internet. */
 @Composable
-fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit) {
+fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit, onPlayRemote: (Record666.Rec, String) -> Unit = { _, _ -> }) {
     val context = LocalContext.current
     LaunchedEffect(Unit) { Record666.init(context) }
     val items by Record666.items.collectAsState()
@@ -72,6 +72,14 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit) {
         .sortedBy { it.addedAt }
     val ready = items.filter { it.status == Record666.Status.DONE }.sortedByDescending { it.addedAt }
     val first = remember { FocusRequester() }
+    // 666TVF (11/11) : Shield du haut → les enregistrements d'en bas, lus par le réseau de la maison
+    var remote by remember { mutableStateOf<List<Record666.Rec>?>(null) }
+    LaunchedEffect(Unit) {
+        if (!Record666.enabledHere()) {
+            remote = com.nuvio.tv.core.tools.Lien666.remoteRecs().sortedByDescending { it.addedAt }
+            runCatching { first.requestFocus() }
+        }
+    }
     LaunchedEffect(ongoing.isEmpty() && ready.isEmpty()) { runCatching { first.requestFocus() } }
 
     Box(Modifier.fillMaxSize()) {
@@ -97,12 +105,36 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit) {
                     Bar(1f - p.free.toFloat() / p.totalSpace, Modifier.width(520.dp).padding(top = 10.dp))
                 }
                 if (!Record666.enabledHere()) {
-                    Text("Les enregistrements se font sur la Shield du bas.", color = RDim, fontSize = 16.sp, modifier = Modifier.padding(top = 30.dp))
+                    Text(
+                        when {
+                            remote == null -> "Je demande à la Shield du bas…"
+                            remote!!.isEmpty() -> "Rien de prêt sur la Shield du bas (ou elle est éteinte / 666TVF fermé)."
+                            else -> "Sur la Shield du bas · lus par le réseau de la maison, même si TorBox tombe"
+                        },
+                        color = RDim, fontSize = 16.sp, modifier = Modifier.padding(top = 30.dp)
+                    )
                 } else if (ongoing.isEmpty() && ready.isEmpty()) {
                     Text(
                         "Rien d'enregistré pour l'instant.\nDans la liste des liens d'un film ou d'un épisode : appui long sur OK → « Enregistrer ».",
                         color = RGrey, fontSize = 18.sp, modifier = Modifier.padding(top = 30.dp)
                     )
+                }
+            }
+            val far = remote.orEmpty()
+            if (!Record666.enabledHere() && far.isNotEmpty()) {
+                val rowsFar = far.chunked(6)
+                items(rowsFar.size, key = { "far_$it" }) { i ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(22.dp), modifier = Modifier.padding(bottom = 16.dp, top = if (i == 0) 20.dp else 0.dp)) {
+                        rowsFar[i].forEach { r ->
+                            ReadyCard(
+                                r,
+                                modifier = if (i == 0 && r == rowsFar[0].first()) Modifier.focusRequester(first) else Modifier,
+                                onClick = { com.nuvio.tv.core.tools.Lien666.recUrl(r.id)?.let { onPlayRemote(r, it) } },
+                                onLongClick = {},
+                                remote = true
+                            )
+                        }
+                    }
                 }
             }
             if (ongoing.isNotEmpty()) {
@@ -214,9 +246,9 @@ private fun OngoingCard(r: Record666.Rec, l: Record666.Live?, modifier: Modifier
 }
 
 @Composable
-private fun ReadyCard(r: Record666.Rec, modifier: Modifier, onClick: () -> Unit, onLongClick: () -> Unit) {
+private fun ReadyCard(r: Record666.Rec, modifier: Modifier, onClick: () -> Unit, onLongClick: () -> Unit, remote: Boolean = false) {
     val shape = RoundedCornerShape(10.dp)
-    val missing = !r.file.exists()
+    val missing = !remote && !r.file.exists()
     Column(Modifier.width(150.dp)) {
         Surface(
             onClick = onClick,
@@ -261,6 +293,14 @@ private fun ReadyCard(r: Record666.Rec, modifier: Modifier, onClick: () -> Unit,
 @Composable
 private fun RecordMenu(r: Record666.Rec, onPlayFromStart: () -> Unit, onRetry: () -> Unit, onDelete: () -> Unit, onToggleKeep: () -> Unit, onDismiss: () -> Unit) {
     val first = remember { FocusRequester() }
+    // 666TVF (11/11) : Shield du haut → les enregistrements d'en bas, lus par le réseau de la maison
+    var remote by remember { mutableStateOf<List<Record666.Rec>?>(null) }
+    LaunchedEffect(Unit) {
+        if (!Record666.enabledHere()) {
+            remote = com.nuvio.tv.core.tools.Lien666.remoteRecs().sortedByDescending { it.addedAt }
+            runCatching { first.requestFocus() }
+        }
+    }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Column(

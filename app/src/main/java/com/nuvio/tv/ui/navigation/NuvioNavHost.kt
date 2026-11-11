@@ -1209,7 +1209,8 @@ private fun PlaybackNavHost(
         composable(Screen.Records666.route) {
             // 666TVF : enregistrements (Shield du bas) — lus directement depuis la clé / la Shield.
             com.nuvio.tv.ui.screens.livetv.Records666Screen(
-                onPlay = { r, fromStart -> playRecord666(navController, r, fromStart) }
+                onPlay = { r, fromStart -> playRecord666(navController, r, fromStart) },
+                onPlayRemote = { r, url -> playRecord666(navController, r, false, remoteUrl = url) }
             )
         }
         composable(Screen.Roulette666.route) {
@@ -1524,15 +1525,15 @@ private fun PlaybackNavHost(
 }
 
 /** 666TVF : lit un enregistrement depuis la clé / le disque (menu Enregistrements, ou « Reprendre » en bas). */
-internal fun playRecord666(navController: androidx.navigation.NavController, r: com.nuvio.tv.core.tools.Record666.Rec, fromStart: Boolean) {
+internal fun playRecord666(navController: androidx.navigation.NavController, r: com.nuvio.tv.core.tools.Record666.Rec, fromStart: Boolean, remoteUrl: String? = null) {
     val img = { f: java.io.File, url: String? ->
         if (f.exists()) android.net.Uri.fromFile(f).toString() else url
     }
     navController.navigate(
         Screen.Player.createRoute(
-            streamUrl = android.net.Uri.fromFile(r.file).toString(),
+            streamUrl = remoteUrl ?: android.net.Uri.fromFile(r.file).toString(),
             title = r.title,
-            streamName = "Enregistrement 666",
+            streamName = if (remoteUrl != null) "Enregistrement 666 (Shield du bas)" else "Enregistrement 666",
             year = r.year,
             contentId = r.contentId,
             contentType = r.contentType,

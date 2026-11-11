@@ -44,6 +44,21 @@ object NoFrench666 {
         cache = list.map { it.substringBefore('|') }.toSet()
     }
 
+    /** 11/11 : liste « empreinte|jour » pour l'autre Shield / la clé. */
+    fun exportList(context: Context): List<String> = pruned(load(context), today())
+
+    /** Fusionne les fichiers menteurs repérés par l'autre Shield. Renvoie le nombre de nouveaux. */
+    fun importList(context: Context, entries: List<String>): Int {
+        val mine = load(context)
+        val known = mine.map { it.substringBefore('|') }.toSet()
+        val fresh = entries.filter { e -> norm(e.substringBefore('|')) != null && e.substringBefore('|') !in known }
+        if (fresh.isEmpty()) return 0
+        val list = pruned(mine + fresh, today())
+        runCatching { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("list", list.joinToString(",")).apply() }
+        cache = list.map { it.substringBefore('|') }.toSet()
+        return fresh.size
+    }
+
     /** Pour les tests. */
     internal fun setCacheForTest(hashes: Set<String>?) { cache = hashes }
 }

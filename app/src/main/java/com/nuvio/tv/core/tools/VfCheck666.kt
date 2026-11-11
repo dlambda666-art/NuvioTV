@@ -287,6 +287,36 @@ object VfCheck666 {
         return null
     }
 
+    // ---------- Mémoire partagée (11/11) ----------
+
+    /** Les titres confirmés en VF (et les correspondances TMDB → IMDb), pour l'autre Shield / la clé. */
+    fun exportVf(): JSONObject {
+        val out = JSONObject()
+        prefs()?.all.orEmpty().forEach { (k, v) ->
+            val sv = v as? String ?: return@forEach
+            if ((k.startsWith("tt") || k.startsWith("tmdb:")) && sv.startsWith("DUB")) out.put(k, sv)
+            else if (k.startsWith("imdb:tmdb:")) out.put(k, sv)
+        }
+        return out
+    }
+
+    /** Fusionne : une VF confirmée ailleurs l'est ici aussi. Renvoie le nombre de nouveaux titres VF. */
+    fun importVf(json: JSONObject): Int {
+        val p = prefs() ?: return 0
+        var n = 0
+        val e = p.edit()
+        json.keys().forEach { k ->
+            val v = json.optString(k)
+            if (k.startsWith("imdb:tmdb:")) { if (!p.contains(k)) e.putString(k, v) }
+            else if (v.startsWith("DUB") && p.getString(k, null)?.startsWith("DUB") != true) { e.putString(k, v); n++ }
+        }
+        e.apply()
+        return n
+    }
+
+    /** Ligne « Moteur VF » : jours depuis la dernière nouveauté lue (règle pure testée : orange à 2 jours). */
+    fun newsStale(lastNewsAt: Long, now: Long): Boolean = lastNewsAt > 0 && now - lastNewsAt > 2 * 24 * 3600_000L
+
     // ---------- Nouveautés French-Stream (11/11) ----------
 
     data class FsNews(val title: String, val series: Boolean, val vf: Boolean)
@@ -308,7 +338,7 @@ object VfCheck666 {
     suspend fun fsNews(): List<FsNews> =
         listOf("films", "s-tv").flatMap { cat ->
             fsRequest("/engine/rss.php?do=cat&category=$cat", null)?.let { parseRss(it) }.orEmpty()
-        }.filter { it.vf }.distinct()
+        }.filter { it.vf }.distinct().also { if (it.isNotEmpty()) prefs()?.edit()?.putLong("fs_news_at", System.currentTimeMillis())?.apply() }
 
     /**
      * Règle pure (testée) : le bon titre TMDB pour un nom vu sur French-Stream (titre exact, français ou
@@ -344,6 +374,8 @@ object VfCheck666 {
         return when {
             System.currentTimeMillis() < fsBlockedUntil -> "French-Stream ($host) bloque pour l'instant (15 min) · $known" to null
             news.isNotEmpty() -> "French-Stream ($host) · ${news.size} nouveautés VF · $known" to true
+            newsStale(prefs()?.getLong("fs_news_at", 0L) ?: 0L, System.currentTimeMillis()) ->
+                "French-Stream répond mais n'annonce plus aucune nouveauté depuis 2 jours (page changée ?) · $known" to null
             else -> "French-Stream ne répond pas (${FS_HOSTS.joinToString { it.removePrefix("https://") }}) · $known" to false
         }
     }

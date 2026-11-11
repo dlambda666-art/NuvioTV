@@ -420,11 +420,57 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 )
             }
 
+            // ---------- Mémoire 666 (11/11) ----------
+            item {
+                Section("Mémoire 666", "Ce que les Shield apprennent (groupes VF, fichiers menteurs, titres VF vérifiés) : partagé entre les deux toutes les 6 h, copié chaque nuit sur la clé d'en bas. Jamais de clé ni de config")
+            }
+            item {
+                var syncText by remember {
+                    mutableStateOf(com.nuvio.tv.core.tools.Lien666.lastSync(context).let { (at, t) ->
+                        if (at == 0L) "jamais" else SimpleDateFormat("d MMM 'à' HH:mm", Locale.FRANCE).format(Date(at)) + (t?.let { " · $it reçus" } ?: "")
+                    })
+                }
+                val peer = com.nuvio.tv.core.tools.Lien666.peer
+                ActionRow(
+                    "Échanger avec l'autre Shield maintenant",
+                    (if (peer == null) "Autre Shield pas encore trouvée sur le réseau" else "Trouvée : ${peer.name}") + " · dernier échange : $syncText",
+                    onClick = {
+                        if (busy) return@ActionRow
+                        busy = true
+                        scope.launch {
+                            val m = com.nuvio.tv.core.tools.Lien666.syncNow(context)
+                            busy = false
+                            if (m == null) toast(context, "L'autre Shield ne répond pas (allumée ? 666TVF ouvert ?)")
+                            else { syncText = "à l'instant · ${m.text} reçus"; toast(context, "Reçu : ${m.text}") }
+                        }
+                    }
+                )
+            }
+            if (com.nuvio.tv.core.tools.Record666.enabledHere()) {
+                item {
+                    val copy = remember { com.nuvio.tv.core.tools.Memoire666.usbCopy(context) }
+                    ActionRow(
+                        "Reprendre la mémoire depuis la clé",
+                        if (copy == null) "Pas encore de copie sur la clé (faite chaque nuit)" else
+                            "Copie du " + SimpleDateFormat("d MMM 'à' HH:mm", Locale.FRANCE).format(Date(copy.lastModified())) + " · après une réinitialisation de la Shield",
+                        onClick = {
+                            if (busy) return@ActionRow
+                            busy = true
+                            scope.launch {
+                                val m = withContext(Dispatchers.IO) { com.nuvio.tv.core.tools.Memoire666.restoreFromUsb(context) }
+                                busy = false
+                                toast(context, m?.let { "Repris : ${it.text}" } ?: "Pas de copie lisible sur la clé")
+                            }
+                        }
+                    )
+                }
+            }
+
             // ---------- Sauvegarde ----------
             item {
                 val date = if (lastBackup == 0L) "jamais" else
                     SimpleDateFormat("d MMM yyyy 'à' HH:mm", Locale.FRANCE).format(Date(lastBackup))
-                Section("Sauvegarde", "Réglages, plugins et leurs configs, Mes applis… · dernière : $date · automatique chaque semaine")
+                Section("Sauvegarde", "Réglages, plugins et leurs configs, Mes applis… · dernière : $date · automatique chaque jour")
             }
             item {
                 ActionRow("Sauvegarder maintenant", "Dans Téléchargements/${Backup666.FILE_NAME}", onClick = {
