@@ -155,6 +155,13 @@ const cases = [
     }
     // Comet666 : règle saison/épisode
     const comet = require(path.join(__dirname, '..', 'comet666.js'));
+    // 11/11 : Malfaisante (VFQ) — les fichiers déjà en cache TorBox passent devant (les 2 formes de réponse)
+    {
+        const pc = comet._parseTorboxCached;
+        const a = pc({ data: [{ hash: 'AAA' }, 'bbb'] }), b = pc({ data: { ccc: { name: 'x' }, ddd: false } });
+        if (!(a.aaa && a.bbb && b.ccc && !b.ddd)) { fails++; console.log('✗ Comet666 cache TorBox mal lu'); }
+        else console.log('✓ Comet666 cache TorBox (liste et objet)');
+    }
     const m = comet._matchesEpisode;
     const ce = [
         ['Monster.The.Lizzie.Borden.Story.S01E05', 4, 5, true],

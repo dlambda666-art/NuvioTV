@@ -564,6 +564,30 @@ async function fromTorboxSearch(imdbId, isTv, season, episode) {
 }
 
 // TorrentsDB : addon public au format Stremio
+// 666TVF (11/11) : ce que TorBox a DÉJÀ en cache démarre tout de suite ; le reste doit d'abord être
+// téléchargé chez TorBox (Malfaisante en VFQ : liens qui ne démarraient pas, ou après de longues minutes).
+// On demande en une fois quels fichiers sont prêts, et ceux-là passent devant.
+function parseTorboxCached(data) {
+    var d = data && data.data;
+    var out = {};
+    if (Array.isArray(d)) d.forEach(function (x) { var h = String((x && (x.hash || x)) || '').toLowerCase(); if (h) out[h] = true; });
+    else if (d && typeof d === 'object') Object.keys(d).forEach(function (h) { if (d[h]) out[String(h).toLowerCase()] = true; });
+    return out;
+}
+async function torboxCached(hashes) {
+    var key = setting('torbox_auto');
+    if (!key || !hashes.length) return {};
+    var out = {};
+    for (var i = 0; i < hashes.length; i += 80) {
+        try {
+            var res = await fetch('https://api.torbox.app/v1/api/torrents/checkcached?format=list&list_files=false&hash=' + hashes.slice(i, i + 80).join(','),
+                { headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + key } });
+            if (res && res.ok) { var got = parseTorboxCached(await res.json()); Object.keys(got).forEach(function (h) { out[h] = true; }); }
+        } catch (e) { console.log('Comet666 cache TorBox : ' + (e && e.message)); }
+    }
+    return out;
+}
+
 async function fromTorrentsDb(imdbId, isTv, season, episode) {
     var sid = isTv ? imdbId + ':' + season + ':' + episode : imdbId;
     var data = await getJson(TORRENTSDB_URL + '/stream/' + (isTv ? 'series' : 'movie') + '/' + sid + '.json');
@@ -752,19 +776,25 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     beforeMulti.filter(function (t) { return found.indexOf(t) < 0; }).forEach(function (t) { note(t, 'MULTi étranger'); });
     found.forEach(function (t) { why[srcOf(t)].kept++; });
     LAST_WHY = why;
+    // 666TVF (11/11) : déjà prêt chez TorBox ?
+    var ready = late() ? {} : await torboxCached(found.map(function (t) { return t.hash; }).filter(Boolean));
+    found.forEach(function (t) { if (ready[t.hash] || /⚡/.test(String(t.source || ''))) t.cached = true; });
     found.sort(function (a, b) {
         // VF sûre d'abord, « MULTi (VF ?) » ensuite
         var c = (a.lang.indexOf('?') >= 0) - (b.lang.indexOf('?') >= 0);
         if (c) return c;
+        // puis ce qui démarre tout de suite (en cache) avant ce qu'il faut d'abord télécharger
+        var r = (b.cached ? 1 : 0) - (a.cached ? 1 : 0);
+        if (r) return r;
         var q = (QUALITY_RANK[b.quality] || 0) - (QUALITY_RANK[a.quality] || 0);
         if (q) return q;
         return (b.bytes || 0) - (a.bytes || 0);
     });
     var shown = found.slice(0, MAX_RESULTS).map(function (t) {
         var line2 = ['🇫🇷 ' + t.lang].concat(extras(t.text)).join(' · ');
-        var line3 = [formatSize(t.bytes), t.seeders != null ? '👤 ' + t.seeders : '', t.source].filter(Boolean).join(' · ');
+        var line3 = [t.cached ? '⚡ prêt' : '', formatSize(t.bytes), t.seeders != null ? '👤 ' + t.seeders : '', String(t.source || '').replace(/ ⚡$/, '')].filter(Boolean).join(' · ');
         return {
-            name: ('Comet666 ' + (t.quality || '')).trim(),
+            name: ('Comet666 ' + (t.quality || '') + (t.cached ? ' ⚡' : '')).trim(),
             title: t.release + '\n' + line2 + (line3 ? '\n' + line3 : ''),
             url: 'magnet:?xt=urn:btih:' + t.hash + '&dn=' + encodeURIComponent(t.release),
             infoHash: t.hash,
@@ -798,4 +828,4 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; } };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; }, _parseTorboxCached: parseTorboxCached };
