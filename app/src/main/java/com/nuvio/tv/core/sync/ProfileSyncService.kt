@@ -14,6 +14,7 @@ import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.addJsonObject
@@ -67,7 +68,9 @@ class ProfileSyncService @Inject constructor(
 
     suspend fun pushToRemote(): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val profiles = profileManager.profiles.value
+            // 666TVF (11/11) : la liste ENREGISTRÉE, pas l'état en mémoire — juste après le démarrage il vaut
+            // encore « Lambda seul » et un envoi à ce moment effaçait les autres profils du compte (Freddy).
+            val profiles = runCatching { profileDataStore.profilesList.first() }.getOrDefault(profileManager.profiles.value)
 
             val params = buildJsonObject {
                 put("p_client_max_profiles", ProfileManager.MAX_PROFILES)
@@ -133,7 +136,8 @@ class ProfileSyncService @Inject constructor(
                 // liste sans lui) n'est plus effacé en silence : on le garde et on le renvoie au compte.
                 // (Le profil « Freddy » de la Shield du bas a disparu ainsi.) Seule la suppression faite
                 // à la main sur cette Shield l'efface.
-                val local666 = profileManager.profiles.value
+                // la liste ENREGISTRÉE (au démarrage, profileManager.profiles vaut encore « Lambda seul »)
+                val local666 = runCatching { profileDataStore.profilesList.first() }.getOrDefault(profileManager.profiles.value)
                 val (keptProfiles, rescued666) = com.nuvio.tv.core.tools.Profiles666.merge(local666, profiles)
                 if (rescued666.isNotEmpty()) {
                     profileDataStore.replaceAllProfiles(keptProfiles)
