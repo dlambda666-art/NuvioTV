@@ -73,6 +73,7 @@ data class Health666(val name: String, val detail: String, val ok: Boolean?)
 
 @HiltViewModel
 class Tools666ViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val appCtx666: android.content.Context,
     private val addonRepository: AddonRepository,
     private val pluginDataStore: PluginDataStore,
     private val pluginHealth: com.nuvio.tv.core.tools.PluginHealth666,
@@ -117,7 +118,7 @@ class Tools666ViewModel @Inject constructor(
                 list += { webRow("Passer le générique (IntroDB)", "https://api.introdb.app/") }
                 // 666TVF (11/11) : Mémoire 666 — les deux Shield se parlent-elles ? (vrai échange, pas seulement un ping)
                 list += {
-                    val m = runCatching { com.nuvio.tv.core.tools.Lien666.syncNow(context) }.getOrNull()
+                    val m = runCatching { com.nuvio.tv.core.tools.Lien666.syncNow(appCtx666) }.getOrNull()
                     val peer = com.nuvio.tv.core.tools.Lien666.peer
                     when {
                         m != null -> Health666("Lien entre les Shield", "${peer?.name ?: "autre Shield"} · échange fait : ${m.text} reçus", true)
