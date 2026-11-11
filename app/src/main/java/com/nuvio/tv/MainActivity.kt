@@ -1213,8 +1213,8 @@ open class MainActivity : ComponentActivity() {
                                     icon = Icons.Default.WbSunny
                                 )
                             )
-                            // 666TVF : enregistrements — Shield du bas seulement
-                            if (com.nuvio.tv.core.tools.Record666.enabledHere()) {
+                            // 666TVF : enregistrements — en bas (la clé) et en haut (ceux d'en bas, par le réseau, 11/11)
+                            run {
                                 add(
                                     DrawerItem(
                                         route = Screen.Records666.route,
