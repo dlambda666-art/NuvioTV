@@ -235,6 +235,30 @@ class TmdbService @Inject constructor(
         list
     }
 
+    /**
+     * 666TVF (11/11) : les épisodes d'une série, depuis TMDB seul (Cinemeta en panne → la fiche garde
+     * ses saisons). Les identifiants restent « tt…:saison:épisode » pour que les cavaliers trouvent les flux.
+     */
+    suspend fun episodes666(tmdbId: Int, baseId: String): List<com.nuvio.tv.domain.model.Video> = withContext(Dispatchers.IO) {
+        val seasons = tvBasics666(tmdbId)?.second ?: return@withContext emptyList()
+        (1..seasons).flatMap { season ->
+            runCatching { tmdbApi.getTvSeasonDetails(tmdbId, season, TMDB_API_KEY, "fr-FR").body()?.episodes }.getOrNull().orEmpty()
+                .mapNotNull { e ->
+                    val n = e.episodeNumber ?: return@mapNotNull null
+                    com.nuvio.tv.domain.model.Video(
+                        id = "$baseId:$season:$n",
+                        title = e.name?.takeIf { it.isNotBlank() } ?: "Épisode $n",
+                        released = e.airDate?.takeIf { it.isNotBlank() }?.let { it + "T00:00:00.000Z" },
+                        thumbnail = e.stillPath?.let { "https://image.tmdb.org/t/p/w500$it" },
+                        season = season,
+                        episode = n,
+                        overview = e.overview?.takeIf { it.isNotBlank() },
+                        runtime = e.runtime
+                    )
+                }
+        }
+    }
+
     suspend fun ensureTmdbId(videoId: String, mediaType: String, fallbackImdbId: String? = null): String? {
         // Check if it's already a TMDB ID (numeric or prefixed)
         val cleanId = videoId

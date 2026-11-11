@@ -793,11 +793,17 @@ class MetaDetailsViewModel @Inject constructor(
     }
 
     private suspend fun tryApplyTmdbFallbackMeta(): Boolean {
+        // 666TVF (11/11) : aussi pour les fiches IMDb (tt…) quand Cinemeta ne répond pas
         val tmdbId = itemId
             .takeIf { it.startsWith("tmdb:", ignoreCase = true) }
             ?.substringAfter(':')
             ?.substringBefore(':')
             ?.toIntOrNull()
+            ?: itemId.substringBefore(':').takeIf { it.startsWith("tt") }?.let { tt ->
+                kotlinx.coroutines.withTimeoutOrNull(6_000L) {
+                    runCatching { tmdbService.imdbToTmdb(tt, if (itemType == "series" || itemType == "tv") "tv" else "movie") }.getOrNull()
+                }
+            }
             ?: return false
         val type = ContentType.fromString(itemType)
         val settings = tmdbSettingsDataStore.settings.first()
@@ -826,7 +832,10 @@ class MetaDetailsViewModel @Inject constructor(
             writer = enrichment.writer,
             cast = enrichment.castMembers.map { it.name },
             castMembers = enrichment.castMembers,
-            videos = emptyList(),
+            // 666TVF (11/11) : une série garde ses épisodes (TMDB), avec les identifiants IMDb pour les flux
+            videos = if (type == ContentType.SERIES && itemId.startsWith("tt"))
+                runCatching { tmdbService.episodes666(tmdbId, itemId.substringBefore(':')) }.getOrDefault(emptyList())
+            else emptyList(),
             productionCompanies = enrichment.productionCompanies,
             networks = enrichment.networks,
             ageRating = enrichment.ageRating,
