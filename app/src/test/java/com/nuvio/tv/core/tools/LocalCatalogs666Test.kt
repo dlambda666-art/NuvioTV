@@ -7,7 +7,7 @@ import org.junit.Test
 class LocalCatalogs666Test {
     private val day = 24L * 3600 * 1000
 
-    @Test fun `un titre garde sa date de decouverte et part apres 30 jours (11/11)`() {
+    @Test fun `un titre garde sa date de decouverte et part apres 30 jours`() {
         val now = 100 * day
         var list = LocalCatalogs666.mergeWeek(emptyList(), LocalCatalogs666.Entry("tt1", "movie", "Crown Jewel", null, now - 6 * day), now - 6 * day)
         list = LocalCatalogs666.mergeWeek(list, LocalCatalogs666.Entry("tt1", "movie", "Crown Jewel", "p", now), now)
