@@ -13,6 +13,7 @@ import com.nuvio.tv.domain.model.AuthState
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.addJsonObject
@@ -128,7 +129,17 @@ class ProfileSyncService @Inject constructor(
                     )
                 }
 
-                if (profiles.isNotEmpty()) {
+                // 666TVF (11/11) : un profil présent ici mais absent du compte (l'autre Shield a renvoyé une
+                // liste sans lui) n'est plus effacé en silence : on le garde et on le renvoie au compte.
+                // (Le profil « Freddy » de la Shield du bas a disparu ainsi.) Seule la suppression faite
+                // à la main sur cette Shield l'efface.
+                val local666 = profileManager.profiles.value
+                val (keptProfiles, rescued666) = com.nuvio.tv.core.tools.Profiles666.merge(local666, profiles)
+                if (rescued666.isNotEmpty()) {
+                    profileDataStore.replaceAllProfiles(keptProfiles)
+                    Log.w(TAG, "pullFromRemote: profils gardés (absents du compte) : ${rescued666.joinToString { it.name }}")
+                    kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { runCatching { pushToRemote() } }
+                } else if (profiles.isNotEmpty()) {
                     profileDataStore.replaceAllProfiles(profiles)
                     Log.d(TAG, "Merged ${profiles.size} remote profiles into local store")
                 }

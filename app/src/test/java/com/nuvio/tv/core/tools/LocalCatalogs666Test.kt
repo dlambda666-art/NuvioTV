@@ -34,4 +34,16 @@ class LocalCatalogs666Test {
         assertEquals(listOf("tt33764258"), LocalCatalogs666.recordedEntries(recs, "movie", now).map { it.id })
         assertEquals(listOf("tt0000001"), LocalCatalogs666.recordedEntries(recs, "series", now).map { it.id })
     }
+
+    // 11/11 piège : Malfaisante vue dans la tuile puis disparue (sortie du flux French-Stream au passage suivant)
+    @Test fun `un titre trouve reste 30 jours meme s'il n'est plus dans les sources`() {
+        val now = 100 * day
+        val old = listOf(LocalCatalogs666.Entry("tt15140973", "movie", "Malfaisante", null, now - 3 * day))
+        val fresh = listOf(LocalCatalogs666.Entry("tt1", "movie", "Autre", null, now))
+        val m = LocalCatalogs666.mergeSeed(old, fresh, now)
+        assertEquals(listOf("tt1", "tt15140973"), m.map { it.id })
+        val again = LocalCatalogs666.mergeSeed(m, listOf(LocalCatalogs666.Entry("tt15140973", "movie", "Malfaisante", null, now)), now)
+        assertEquals(now - 3 * day, again.first { it.id == "tt15140973" }.at)
+        assertEquals(emptyList<String>(), LocalCatalogs666.mergeSeed(old, emptyList(), now + 40 * day).map { it.id })
+    }
 }

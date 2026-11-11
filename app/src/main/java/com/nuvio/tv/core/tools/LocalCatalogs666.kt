@@ -65,6 +65,13 @@ object LocalCatalogs666 {
         }
     }
 
+    /** Règle pure (testée) : l'ancienne liste + la nouvelle, sans doublon, la date de 1re découverte gardée, 30 jours max. */
+    fun mergeSeed(old: List<Entry>, fresh: List<Entry>, now: Long): List<Entry> {
+        val byId = LinkedHashMap<String, Entry>()
+        (old + fresh).forEach { e -> byId[e.id] = byId[e.id]?.let { o -> e.copy(at = minOf(o.at, e.at)) } ?: e }
+        return byId.values.filter { now - it.at < WEEK_MS }.sortedByDescending { it.at }.take(200)
+    }
+
     data class RecLite(val contentId: String?, val contentType: String?, val name: String, val poster: String?, val at: Long, val season: Int?)
 
     /** Règle pure (testée) : les enregistrements des 30 derniers jours, un par titre, le plus récent d'abord. */
@@ -147,7 +154,10 @@ object LocalCatalogs666 {
                 val imdb = VfCheck666.imdbFor("tmdb:$id") ?: continue
                 kept += Entry(imdb, type, np.first, np.second, now)
             }
-            prefs()?.edit()?.putString("vfweek_seed_$type", writeEntries(kept))?.apply()
+            // 11/11 : on garde aussi ce qui avait été trouvé avant (30 jours) — Malfaisante sortait du
+            // flux de French-Stream et disparaissait de la tuile au passage suivant
+            val merged = mergeSeed(readEntries(prefs()?.getString("vfweek_seed_$type", null)), kept, now)
+            prefs()?.edit()?.putString("vfweek_seed_$type", writeEntries(merged))?.apply()
             Log.i(TAG, "vf semaine $type : ${kept.size} / ${cands.size}")
         }
     }
