@@ -1409,6 +1409,17 @@ open class MainActivity : ComponentActivity() {
                                             addonBaseUrl = null
                                         )
                                     }
+                                    // 666TVF (11/11) : les deux Shield ne se parlent plus depuis 3 jours → la cloche, une fois
+                                    if (!inPlayerNow666 && runCatching { com.nuvio.tv.core.tools.Lien666.takeSilentAlert(applicationContext) }.getOrDefault(false)) {
+                                        found = found + com.nuvio.tv.core.calendar.CalendarEpisode(
+                                            seriesId = "alerte:lien666",
+                                            seriesName = "Mémoire 666",
+                                            poster = null, season = 0, episode = 0,
+                                            title = "Les deux Shield ne se parlent plus depuis 3 jours : Outils 666 › État 666",
+                                            airInstant = java.time.Instant.now(),
+                                            addonBaseUrl = null
+                                        )
+                                    }
                                     if (found.isNotEmpty()) {
                                         pending666 = (pending666 + found).distinctBy { "${it.seriesId}|${it.season}|${it.episode}" }
                                     }
@@ -2916,6 +2927,7 @@ internal fun filmAnnouncement666(f: com.nuvio.tv.core.tools.VfWatcher666.Found) 
 // 666TVF : textes des annonces (bannière dans 666TVF, bannière par-dessus Orange, journal).
 internal fun announceTitle666(episodes: List<com.nuvio.tv.core.calendar.CalendarEpisode>): String = when {
     episodes.all { it.seriesId == "alerte:frenchstream" } -> "⚠️ French-Stream ne répond plus"
+    episodes.all { it.seriesId == "alerte:lien666" } -> "⚠️ Les deux Shield ne se parlent plus"
     episodes.all { it.seriesId.startsWith("alerte:") } -> "⚠️ Plugin en panne"
     episodes.all { it.seriesId.startsWith("sport:") } -> "🥊 C'est l'heure du combat"
     episodes.all { it.seriesId.startsWith("retard:") } -> "⏳ Pas encore en VF"
@@ -2938,6 +2950,7 @@ internal fun announceLogText666(ep: com.nuvio.tv.core.calendar.CalendarEpisode):
     ep.seriesId.startsWith("film:") -> "🔔 ${ep.seriesName} (film) en VF"
     ep.seriesId.startsWith("ple:") -> "🤼 ${ep.seriesName} (PLE) en VF"
     ep.seriesId == "alerte:frenchstream" -> "⚠️ French-Stream ne répond plus"
+    ep.seriesId == "alerte:lien666" -> "⚠️ Les deux Shield ne se parlent plus depuis 3 jours"
     ep.seriesId.startsWith("alerte:") -> "⚠️ ${ep.seriesName} ne renvoie plus rien"
     ep.seriesId.startsWith("sport:") -> "🥊 ${ep.seriesName} · c'est l'heure du combat"
     ep.seriesId.startsWith("test:") -> "🔔 Annonce d'essai"

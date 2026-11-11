@@ -31,4 +31,12 @@ class Lien666Test {
         assertFalse(VfCheck666.newsStale(10 * h, 40 * h))
         assertTrue(VfCheck666.newsStale(10 * h, 60 * h))
     }
+
+    @Test fun `Shield muettes - cloche apres 3 jours sans echange, une fois`() {
+        val d = 24 * 3600_000L
+        assertFalse(Lien666.silentTooLong(0L, false, 10 * d))        // jamais échangé : pas d'alerte
+        assertFalse(Lien666.silentTooLong(5 * d, false, 7 * d))
+        assertTrue(Lien666.silentTooLong(5 * d, false, 9 * d))
+        assertFalse(Lien666.silentTooLong(5 * d, true, 9 * d))
+    }
 }

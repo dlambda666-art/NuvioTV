@@ -172,12 +172,24 @@ object Lien666 {
         val raw = fetch("/memoire") ?: return@withContext null
         val m = runCatching { Memoire666.import(context, JSONObject(raw)) }.getOrNull() ?: return@withContext null
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putLong("sync_at", System.currentTimeMillis()).putString("sync_text", m.text).apply()
+            .putLong("sync_at", System.currentTimeMillis()).putString("sync_text", m.text).putBoolean("silent_alerted", false).apply()
         m
     }
 
     fun lastSync(context: Context): Pair<Long, String?> = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         .let { it.getLong("sync_at", 0L) to it.getString("sync_text", null) }
+
+    /** Règle pure (testée) : plus d'échange depuis 3 jours alors qu'il y en a déjà eu → la cloche, une fois. */
+    fun silentTooLong(lastSyncAt: Long, alerted: Boolean, now: Long): Boolean =
+        lastSyncAt > 0 && !alerted && now - lastSyncAt > 3 * 24 * 3600_000L
+
+    /** Vrai une seule fois par silence ; réarmé au prochain échange réussi. */
+    fun takeSilentAlert(context: Context, now: Long = System.currentTimeMillis()): Boolean {
+        val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (!silentTooLong(p.getLong("sync_at", 0L), p.getBoolean("silent_alerted", false), now)) return false
+        p.edit().putBoolean("silent_alerted", true).apply()
+        return true
+    }
 
     /** Les enregistrements prêts de l'autre Shield. */
     suspend fun remoteRecs(): List<Record666.Rec> = withContext(Dispatchers.IO) {

@@ -115,6 +115,16 @@ class Tools666ViewModel @Inject constructor(
                 list += { webRow("Internet", "https://clients3.google.com/generate_204") }
                 list += { webRow("TorBox", "https://api.torbox.app/") }
                 list += { webRow("Passer le générique (IntroDB)", "https://api.introdb.app/") }
+                // 666TVF (11/11) : Mémoire 666 — les deux Shield se parlent-elles ? (vrai échange, pas seulement un ping)
+                list += {
+                    val m = runCatching { com.nuvio.tv.core.tools.Lien666.syncNow(context) }.getOrNull()
+                    val peer = com.nuvio.tv.core.tools.Lien666.peer
+                    when {
+                        m != null -> Health666("Lien entre les Shield", "${peer?.name ?: "autre Shield"} · échange fait : ${m.text} reçus", true)
+                        peer == null -> Health666("Lien entre les Shield", "Autre Shield introuvable sur le wifi (allumée ? 666TVF ouvert ?)", null)
+                        else -> Health666("Lien entre les Shield", "${peer.name} ne répond pas (éteinte, 666TVF fermé, ou modem en train de redémarrer)", null)
+                    }
+                }
                 // 666TVF (11/11) : le moteur VF (French-Stream + ce que la Shield a appris)
                 list += {
                     val (detail, ok) = runCatching { com.nuvio.tv.core.tools.VfCheck666.engineStatus() }.getOrDefault("Erreur" to false)
