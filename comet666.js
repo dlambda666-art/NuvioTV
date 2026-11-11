@@ -580,8 +580,13 @@ async function torboxCached(hashes) {
     var out = {};
     for (var i = 0; i < hashes.length; i += 80) {
         try {
-            var res = await fetch('https://api.torbox.app/v1/api/torrents/checkcached?format=list&list_files=false&hash=' + hashes.slice(i, i + 80).join(','),
-                { headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + key } });
+            // jamais plus de 4 s : si TorBox traîne, on garde l'ordre habituel plutôt que de tout ralentir
+            var res = await Promise.race([
+                fetch('https://api.torbox.app/v1/api/torrents/checkcached?format=list&list_files=false&hash=' + hashes.slice(i, i + 80).join(','),
+                    { headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + key } }),
+                new Promise(function (ok) { setTimeout(function () { ok(null); }, 4000); })
+            ]);
+            if (!res) { console.log('Comet666 cache TorBox : trop lent, ignoré'); break; }
             if (res && res.ok) { var got = parseTorboxCached(await res.json()); Object.keys(got).forEach(function (h) { out[h] = true; }); }
         } catch (e) { console.log('Comet666 cache TorBox : ' + (e && e.message)); }
     }
