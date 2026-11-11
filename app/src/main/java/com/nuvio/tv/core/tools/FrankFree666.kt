@@ -314,20 +314,33 @@ object FrankFree666 {
         return out.takeIf { it != cols }
     }
 
+    /**
+     * 11/11 (2) : David ne garde que la 1re rangée. Les portes de sous-genres (Classiques, Slasher,
+     * Créatures, Loups-garous, Cannibales…) partent ; une rangée vidée disparaît. La tuile Horreur
+     * (en tête de la 1re rangée) garde ses onglets.
+     */
+    fun withoutDoors(cols: List<Collection>): List<Collection>? {
+        val names = (HomeReorg666.SUBGENRES.map { it.first } + "Classiques").map { HomeReorg666.norm(it) }.toSet()
+        fun isDoor(f: CollectionFolder) = !HomeReorg666.isHorror(f) &&
+            (f.coverImageUrl == HomeReorg666.PORTE_COVER || HomeReorg666.norm(f.title) in names)
+        val out = cols.map { c -> c.copy(folders = c.folders.filterNot(::isDoor)) }.filter { it.folders.isNotEmpty() }
+        return out.takeIf { it != cols }
+    }
+
     /** Une seule fois ; sauvegarde pour « Annuler la réorganisation ». */
     suspend fun applyAccueil1111(context: Context, store: CollectionsDataStore) {
         val prefs = context.getSharedPreferences("666tv_frankfree", Context.MODE_PRIVATE)
-        if (prefs.getBoolean("accueil1111b", false)) return
+        if (prefs.getBoolean("accueil1111c", false)) return
         val current = runCatching { store.getCurrentCollections() }.getOrNull() ?: return
-        val next = accueil1111(current)
+        val next = (accueil1111(current) ?: current).let { withoutDoors(it) ?: it }.takeIf { it != current }
         if (next != null) {
             val reorg = context.getSharedPreferences("666tv_reorg", Context.MODE_PRIVATE)
             if (reorg.getString("before", null) == null) store.exportCurrentProfileJson()?.let { reorg.edit().putString("before", it).apply() }
             store.setCollections(next)
             runCatching { pushCollections(context) }
-            runCatching { Announce666.log(context, "🏠 Accueil : Horreur en tête avec Slasher et Classiques, puis En VF, Pour toi, Shudder, Top 10, Prochainement", "accueil") }
+            runCatching { Announce666.log(context, "🏠 Accueil : une seule rangée — Horreur (Slasher, Classiques), En VF, Pour toi, Shudder, Top 10, Prochainement ; portes de sous-genres retirées", "accueil") }
         }
-        prefs.edit().putBoolean("accueil1111b", true).apply()
+        prefs.edit().putBoolean("accueil1111c", true).apply()
     }
 
     data class Plan(val collections: List<Collection>, val report: List<String>)

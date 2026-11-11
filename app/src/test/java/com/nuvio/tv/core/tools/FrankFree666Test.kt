@@ -181,4 +181,20 @@ class FrankFree666Test {
         assertEquals(6, FrankFree666.mixPage(1, 5))
         assertTrue((1..400).all { d -> FrankFree666.mixPage(3, d) in 1..15 })
     }
+
+    // 11/11 (2) : une seule rangée, les portes de sous-genres partent
+    @Test fun `portes de sous-genres retirees, la tuile Horreur reste`() {
+        val src = AddonCatalogCollectionSource(LocalCatalogs666.VFWEEK, "movie", "vf-week")
+        val row1 = Collection(id = "r1", title = "1", folders = listOf(
+            CollectionFolder(id = "h", title = "Horreur", coverImageUrl = HomeReorg666.PORTE_COVER, sources = listOf(src)),
+            CollectionFolder(id = "vf", title = "⚫", sources = listOf(src))))
+        val doors = Collection(id = "r2", title = "Horreur ·", folders = listOf(
+            CollectionFolder(id = "c", title = "Cannibales", coverImageUrl = HomeReorg666.PORTE_COVER, sources = listOf(src)),
+            CollectionFolder(id = "l", title = "Loups-garous", coverImageUrl = HomeReorg666.PORTE_COVER, sources = listOf(src)),
+            CollectionFolder(id = "k", title = "Classiques", sources = listOf(src))))
+        val out = FrankFree666.withoutDoors(listOf(row1, doors))!!
+        assertEquals(listOf("r1"), out.map { it.id })
+        assertEquals(listOf("h", "vf"), out[0].folders.map { it.id })
+        assertNull(FrankFree666.withoutDoors(out))
+    }
 }
