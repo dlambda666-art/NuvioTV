@@ -150,6 +150,7 @@ fun StartupSplashScreen(
     // --- Fermeture : fondu vers la porte, ouverture lente, fondu sur la boucherie ---
     val toDoor = remember { Animatable(0f) }
     val open = remember { Animatable(0f) }
+    val finalFade = remember { Animatable(0f) }
     LaunchedEffect(closing) {
         if (!closing) return@LaunchedEffect
         // la bobine baisse doucement jusqu'à l'ouverture des portes et au fondu (pas de grincement)
@@ -165,6 +166,8 @@ fun StartupSplashScreen(
         toDoor.animateTo(1f, tween(700))
         kotlinx.coroutines.delay(400)
         open.animateTo(1f, tween(3_200, easing = FastOutSlowInEasing))
+        // 11/11 : un seul fondu, une fois les portes grandes ouvertes (avant : il commençait à 72 %)
+        finalFade.animateTo(1f, tween(900))
         fade.join()
         onClosedNow()
     }
@@ -187,8 +190,10 @@ fun StartupSplashScreen(
     )
 
     // Tout s'efface à la fin de l'ouverture des portes : l'accueil (la boucherie) est dessous.
-    val fadeOut = ((open.value - 0.72f) / 0.28f).coerceIn(0f, 1f)
-    Box(modifier = modifier.fillMaxSize().graphicsLayer { alpha = 1f - fadeOut }.background(Splash666Bg)) {
+    val fadeOut = finalFade.value
+    // 11/11 : une fois la porte affichée, plus de fond plein : l'embrasure laisse voir le VRAI accueil
+    Box(modifier = modifier.fillMaxSize().graphicsLayer { alpha = 1f - fadeOut }
+        .background(if (toDoor.value < 1f) Splash666Bg else Color.Transparent)) {
         // ---------------- La salle ----------------
         if (toDoor.value < 1f) Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - toDoor.value }) {
             Image(
@@ -276,7 +281,10 @@ fun StartupSplashScreen(
         // ---------------- La porte ----------------
         if (toDoor.value > 0f) {
             val zoom = 1f + ((open.value - 0.45f) / 0.55f).coerceIn(0f, 1f) * 0.35f
-            Box(Modifier.fillMaxSize().graphicsLayer { alpha = toDoor.value; scaleX = zoom; scaleY = zoom }) {
+            Box(Modifier.fillMaxSize().graphicsLayer {
+                alpha = toDoor.value; scaleX = zoom; scaleY = zoom
+                compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen   // pour percer l'embrasure
+            }) {
                 Image(
                     painter = painterResource(R.drawable.porte_666),
                     contentDescription = null,
@@ -289,15 +297,12 @@ fun StartupSplashScreen(
                     val leafW = w * (DOOR_XM - DOOR_X0)
                     val leafWR = w * (DOOR_X1 - DOOR_XM)
                     val leafH = h * (DOOR_Y1 - DOOR_Y0)
-                    // Derrière les portes : la boucherie
-                    if (open.value > 0f) Image(
-                        painter = painterResource(R.drawable.fond_collections_666),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
+                    // Derrière les portes : l'embrasure est percée, on voit l'accueil lui-même (une seule image, pas de saut)
+                    if (open.value > 0f) Canvas(
+                        Modifier
                             .size(width = w * (DOOR_X1 - DOOR_X0), height = leafH)
                             .offset(x = w * DOOR_X0, y = h * DOOR_Y0)
-                    )
+                    ) { drawRect(Color.Black, blendMode = androidx.compose.ui.graphics.BlendMode.Clear) }
                     val angle = 100f * open.value
                     // les battants s'assombrissent en tournant
                     val shade = 1f - 0.45f * open.value
