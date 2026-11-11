@@ -43,6 +43,14 @@ class CatalogRepositoryImpl @Inject constructor(
     ): Flow<NetworkResult<CatalogRow>> = flow {
         emit(NetworkResult.Loading)
 
+        // 666TVF (11/11) : la recherche en français, sur la Shield (pas d'addon)
+        if (com.nuvio.tv.core.tools.SearchFr666.isMine(addonBaseUrl)) {
+            val q = extraArgs["search"].orEmpty()
+            val row = if (q.isBlank() || skip > 0) null else com.nuvio.tv.core.tools.SearchFr666.search(type, q)
+            if (row != null) emit(NetworkResult.Success(row)) else emit(NetworkResult.Error("TMDB ne répond pas"))
+            return@flow
+        }
+
         val url = buildCatalogUrl(addonBaseUrl, type, catalogId, skip, extraArgs)
         Log.d(
             TAG,

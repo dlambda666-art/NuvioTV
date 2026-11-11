@@ -1160,7 +1160,8 @@ class SearchViewModel @Inject constructor(
     }
 
     private fun buildSearchTargets(addons: List<Addon>): List<Pair<Addon, CatalogDescriptor>> {
-        val allSearchTargets = addons.flatMap { addon ->
+        // 666TVF (11/11) : la recherche en français (TMDB) en tête
+        val allSearchTargets = (listOf(com.nuvio.tv.core.tools.SearchFr666.addon) + addons).flatMap { addon ->
             addon.catalogs
                 .filter { catalog -> catalog.isSearchable() }
                 .map { catalog -> addon to catalog }
