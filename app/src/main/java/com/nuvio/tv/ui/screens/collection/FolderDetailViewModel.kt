@@ -1057,14 +1057,18 @@ class FolderDetailViewModel @Inject constructor(
             rebuildFollowLayoutState()
         }
         viewModelScope.launch {
-            tmdbCollectionSourceResolver.resolve(source, page).collect { result ->
+            // 666TVF (11/11) : « Classiques mélangés » → une autre page des classiques chaque jour
+            val day666 = java.time.LocalDate.now().dayOfYear
+            val mix666 = com.nuvio.tv.core.tools.FrankFree666.isClassicsMix(source.title)
+            tmdbCollectionSourceResolver.resolve(source, if (mix666) com.nuvio.tv.core.tools.FrankFree666.mixPage(page, day666) else page).collect { result ->
                 when (result) {
                     is NetworkResult.Success -> {
                         // 666TVF (09/11) : listes « sorties en France » → seulement les titres confirmés en VF
                         // (règles de Frank, vérifiées sur la Shield)
                         val vfList666 = isVfList666(source)
                         // (3 s max d'attente : la suite des vérifs arrive toute seule dans la liste, 09/11)
-                        val data666 = if (vfList666) result.data.copy(items = betterPosters666(com.nuvio.tv.core.tools.VfCheck666.keepVf(result.data.items, 3_000))) else result.data
+                        val data666 = (if (vfList666) result.data.copy(items = betterPosters666(com.nuvio.tv.core.tools.VfCheck666.keepVf(result.data.items, 3_000))) else result.data)
+                            .let { d -> if (mix666) d.copy(items = d.items.shuffled(java.util.Random(day666 * 31L + page))) else d }
                         if (vfList666 && data666.items.size < result.data.items.size) lateVf666(tabIndex, source, result.data.items)
                         _uiState.update { s ->
                             val tabs = s.tabs.toMutableList()

@@ -28,6 +28,8 @@ internal fun HomeViewModel.observeTopTenVfRow() {
             // puis aiometa est retiré (fiches : Cinemeta + TMDB en français)
             runCatching { com.nuvio.tv.core.tools.FrankFree666.retireAiometa(collectionsDataStore, addonRepository) }
             runCatching { com.nuvio.tv.core.tools.FrankFree666.ensureCinemeta(addonRepository) }
+            // 666TVF (11/11) : la 1re rangée voulue par David (une fois)
+            runCatching { com.nuvio.tv.core.tools.FrankFree666.applyAccueil1111(appContext, collectionsDataStore) }
         }
         delay(6_000L)
         while (true) {

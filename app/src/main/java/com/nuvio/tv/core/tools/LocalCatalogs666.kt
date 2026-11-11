@@ -32,7 +32,8 @@ object LocalCatalogs666 {
     const val UPCOMING = "666tv.upcoming"
     private const val TAG = "LocalCatalogs666"
     private const val PREFS = "666tv_local_catalogs"
-    private const val WEEK_MS = 7L * 24 * 3600 * 1000
+    // 11/11 : 30 jours (David : remplace aussi « Derniers films / séries »)
+    private const val WEEK_MS = 30L * 24 * 3600 * 1000
     private const val POURTOI_EVERY_MS = 3L * 3600 * 1000
 
     @Volatile private var ctx: Context? = null
@@ -64,7 +65,19 @@ object LocalCatalogs666 {
         }
     }
 
-    /** Règle pure (testée) : ajoute / rafraîchit un titre, oublie ce qui a plus de 7 jours. */
+    data class RecLite(val contentId: String?, val contentType: String?, val name: String, val poster: String?, val at: Long, val season: Int?)
+
+    /** Règle pure (testée) : les enregistrements des 30 derniers jours, un par titre, le plus récent d'abord. */
+    fun recordedEntries(recs: List<RecLite>, type: String, now: Long): List<Entry> =
+        recs.filter { r ->
+            val id = r.contentId?.substringBefore(':').orEmpty()
+            val t = if (r.contentType == "series" || r.contentType == "tv" || (r.season ?: 0) > 0) "series" else "movie"
+            id.startsWith("tt") && t == type && now - r.at < WEEK_MS
+        }.sortedByDescending { it.at }
+            .map { Entry(it.contentId!!.substringBefore(':'), type, it.name, it.poster, it.at) }
+            .distinctBy { it.id }
+
+    /** Règle pure (testée) : ajoute / rafraîchit un titre, oublie ce qui a plus de 30 jours. */
     fun mergeWeek(current: List<Entry>, add: Entry, now: Long): List<Entry> {
         val prev = current.firstOrNull { it.id == add.id && it.type == add.type }
         // un titre déjà là garde sa date de découverte (il ne remonte pas à chaque passage)
@@ -72,14 +85,17 @@ object LocalCatalogs666 {
         return (listOf(merged) + current.filterNot { it.id == add.id && it.type == add.type })
             .filter { now - it.at < WEEK_MS }
             .sortedByDescending { it.at }
-            .take(80)
+            .take(200)
     }
 
     fun week(type: String, now: Long = System.currentTimeMillis()): List<Entry> {
         val found = readWeek().filter { it.type == type && now - it.at < WEEK_MS }.sortedByDescending { it.at }
         // + les sorties de la semaine confirmées en VF (règles de Frank), comme le faisait Frank
         val seed = readEntries(prefs()?.getString("vfweek_seed_$type", null))
-        return (found + seed).distinctBy { it.id }
+        // 11/11 : + ce qui a été enregistré ces 30 jours (L'Odyssée enregistrée mais absente de la tuile)
+        val recs = runCatching { Record666.ready() }.getOrDefault(emptyList())
+        val recorded = recordedEntries(recs.map { RecLite(it.contentId, it.contentType, it.contentName, it.posterUrl, it.addedAt, it.season) }, type, now)
+        return (found + recorded + seed).distinctBy { it.id }
     }
 
     /**
@@ -93,11 +109,11 @@ object LocalCatalogs666 {
         val today = LocalDate.now()
         val sources = mapOf(
             "movie" to (1..2).map { page ->
-                "/discover/movie?language=fr-FR&region=FR&with_release_type=4%7C5&release_date.gte=${today.minusDays(14)}" +
+                "/discover/movie?language=fr-FR&region=FR&with_release_type=4%7C5&release_date.gte=${today.minusDays(30)}" +
                     "&release_date.lte=$today&without_genres=99%2C10770&sort_by=popularity.desc&include_adult=false&page=$page"
             },
             "series" to (1..2).map { page ->
-                "/discover/tv?language=fr-FR&watch_region=FR&with_watch_monetization_types=flatrate%7Cfree%7Cads&air_date.gte=${today.minusDays(7)}" +
+                "/discover/tv?language=fr-FR&watch_region=FR&with_watch_monetization_types=flatrate%7Cfree%7Cads&air_date.gte=${today.minusDays(14)}" +
                     "&air_date.lte=$today&without_genres=99%2C10763%2C10764%2C10767%2C10762&vote_count.gte=10&sort_by=popularity.desc&page=$page"
             }
         )

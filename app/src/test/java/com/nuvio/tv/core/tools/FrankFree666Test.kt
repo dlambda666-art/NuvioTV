@@ -150,4 +150,34 @@ class FrankFree666Test {
         val cols = listOf(Collection(id = "c", title = "A", folders = listOf(CollectionFolder(id = "f", title = "WWE", sources = listOf(src)))))
         assertEquals(listOf(src), FrankFree666.planAiometa(cols) { "WWE Raw" }.collections[0].folders[0].sources)
     }
+
+    // 11/11 : l'accueil voulu par David — Horreur · En VF · Pour toi · Top 10 · Prochainement
+    @Test fun `accueil du 11-11 - ordre, derniers retires, slasher et classiques dans Horreur`() {
+        val derniers = FrankFree666.replacement(AddonCatalogCollectionSource("frank", "movie", "fs-derniers-films"), null, null)
+        val vfw = AddonCatalogCollectionSource(LocalCatalogs666.VFWEEK, "movie", "vf-week")
+        val first = Collection(id = "r1", title = "1", folders = listOf(
+            CollectionFolder(id = "vf", title = "⚫", sources = listOf(derniers, vfw)),
+            CollectionFolder(id = "pt", title = "Pour toi", sources = listOf(AddonCatalogCollectionSource(LocalCatalogs666.POURTOI, "movie", "pour-toi"))),
+            CollectionFolder(id = "sh", title = "🔵", sources = listOf(vfw.copy(catalogId = "x"))),
+            Top10Folder666.folder(null),
+            CollectionFolder(id = "cs", title = "🎬", sources = listOf(AddonCatalogCollectionSource(LocalCatalogs666.UPCOMING, "movie", "upcoming")))
+        ))
+        val doors = Collection(id = "r2", title = "2", folders = listOf(
+            CollectionFolder(id = "h", title = "Horreur", sources = listOf(vfw.copy(catalogId = "h"))),
+            CollectionFolder(id = "cl", title = "Classiques", sources = listOf(vfw.copy(catalogId = "c")))
+        ))
+        val out = FrankFree666.accueil1111(listOf(first, doors))!!
+        assertEquals(listOf("h", "vf", "pt", Top10Folder666.ID, "cs", "sh"), out[0].folders.map { it.id })
+        assertEquals(listOf("cl"), out[1].folders.map { it.id })
+        assertEquals(listOf(vfw), out[0].folders[1].sources)
+        val titles = out[0].folders[0].sources.filterIsInstance<TmdbCollectionSource>().map { it.title }
+        assertTrue("Slasher" in titles && FrankFree666.CLASSICS_MIX in titles)
+        assertNull(FrankFree666.accueil1111(out))   // une 2e fois : rien ne bouge
+    }
+
+    @Test fun `classiques melanges - une autre page chaque jour, toujours entre 1 et 15`() {
+        assertEquals(1, FrankFree666.mixPage(1, 0))
+        assertEquals(6, FrankFree666.mixPage(1, 5))
+        assertTrue((1..400).all { d -> FrankFree666.mixPage(3, d) in 1..15 })
+    }
 }

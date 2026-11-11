@@ -293,7 +293,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 var bzzt by remember { mutableStateOf(com.nuvio.tv.ui.screens.home.Abattoir666.buzzEnabled(context)) }
                 ActionRow(
                     "Bzzt du néon de l'abattoir : " + if (bzzt) "activé" else "coupé",
-                    "Le petit grésillement quand le néon coupe (toutes les 9 s, à la cloche et quand une porte s'ouvre)",
+                    "Le petit grésillement quand le néon coupe (toutes les 9 s et à la cloche)",
                     onClick = {
                         bzzt = !bzzt
                         com.nuvio.tv.ui.screens.home.Abattoir666.setBuzzEnabled(context, bzzt)
