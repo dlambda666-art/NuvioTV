@@ -277,8 +277,8 @@ object FrankFree666 {
     }
 
     // ---------- Accueil du 11/11 (demande de David) ----------
-    // 1re rangée : Horreur · En VF cette semaine (30 jours) · Pour toi · Top 10 · Prochainement, puis le reste.
-    // « Derniers films / séries » partent (l'enregistrement auto et la tuile VF sur 30 jours font le boulot).
+    // 1re rangée : Horreur · En VF cette semaine (30 jours) · Pour toi · Shudder · Top 10 · Prochainement, puis le reste.
+    // « Derniers films / séries » restent (ils complètent, dit David).
     // La tuile Horreur gagne deux onglets : Slasher (nouveautés d'abord) et Classiques mélangés chaque jour.
 
     const val CLASSICS_MIX = "Classiques (mélangés chaque jour)"
@@ -291,27 +291,24 @@ object FrankFree666 {
     fun classicsTab() = fr(CLASSICS_MIX, TmdbCollectionMediaType.MOVIE, TmdbCollectionSort.VOTE_COUNT_DESC,
         genres = HORROR, voteCount = 25, from = "1930-01-01", to = "1990-12-31")
 
-    private fun isDerniers(s: com.nuvio.tv.domain.model.CollectionSource) =
-        s is TmdbCollectionSource && Regex("^(derniers? films?|dernieres? series?)$").matches(HomeReorg666.norm(s.title))
-
     private fun hasLocal(f: CollectionFolder, id: String) = f.sources.any { it is AddonCatalogCollectionSource && it.addonId == id }
     private fun isVfWeekTile(f: CollectionFolder) = HomeReorg666.isVfWeek(f) || hasLocal(f, LocalCatalogs666.VFWEEK)
     private fun isPourToiTile(f: CollectionFolder) = HomeReorg666.isPourToi(f) || hasLocal(f, LocalCatalogs666.POURTOI)
     private fun isComingTile(f: CollectionFolder) = HomeReorg666.isComingSoon(f) || hasLocal(f, LocalCatalogs666.UPCOMING)
+    private fun isShudderTile(f: CollectionFolder) = HomeReorg666.isShudder(f) ||
+        f.sources.any { it is TmdbCollectionSource && (it.filters.withWatchProviders == "99" || HomeReorg666.norm(it.title).contains("shudder")) }
 
     /** Plan pur (testé). Null si rien à faire ou pas de 1re rangée reconnue. */
     fun accueil1111(cols: List<Collection>): List<Collection>? {
         val horror = cols.flatMap { it.folders }.firstOrNull { HomeReorg666.isHorror(it) } ?: return null
         fun rank(f: CollectionFolder) = when {
-            isVfWeekTile(f) -> 1; isPourToiTile(f) -> 2; Top10Folder666.isTop10(f) -> 3; isComingTile(f) -> 4; else -> 5
+            isVfWeekTile(f) -> 1; isPourToiTile(f) -> 2; Top10Folder666.isTop10(f) -> 4; isComingTile(f) -> 5; isShudderTile(f) -> 3; else -> 6
         }
-        val rowIdx = cols.indexOfFirst { c -> c.folders.any { rank(it) < 5 } }
+        val rowIdx = cols.indexOfFirst { c -> c.folders.any { rank(it) < 6 } }
         if (rowIdx < 0) return null
         val newHorror = horror.copy(sources = horror.sources + listOf(slasherTab(), classicsTab()).filter { it !in horror.sources })
         val out = cols.mapIndexed { i, c ->
-            val rest = c.folders.filter { it.id != horror.id }.map { f ->
-                f.copy(sources = f.sources.filterNot(::isDerniers).ifEmpty { f.sources })
-            }
+            val rest = c.folders.filter { it.id != horror.id }
             if (i == rowIdx) c.copy(folders = listOf(newHorror) + rest.sortedBy(::rank)) else c.copy(folders = rest)
         }.filter { it.folders.isNotEmpty() }
         return out.takeIf { it != cols }
@@ -320,7 +317,7 @@ object FrankFree666 {
     /** Une seule fois ; sauvegarde pour « Annuler la réorganisation ». */
     suspend fun applyAccueil1111(context: Context, store: CollectionsDataStore) {
         val prefs = context.getSharedPreferences("666tv_frankfree", Context.MODE_PRIVATE)
-        if (prefs.getBoolean("accueil1111", false)) return
+        if (prefs.getBoolean("accueil1111b", false)) return
         val current = runCatching { store.getCurrentCollections() }.getOrNull() ?: return
         val next = accueil1111(current)
         if (next != null) {
@@ -328,9 +325,9 @@ object FrankFree666 {
             if (reorg.getString("before", null) == null) store.exportCurrentProfileJson()?.let { reorg.edit().putString("before", it).apply() }
             store.setCollections(next)
             runCatching { pushCollections(context) }
-            runCatching { Announce666.log(context, "🏠 Accueil : Horreur en tête, Derniers films/séries retirés, Slasher et Classiques ajoutés", "accueil") }
+            runCatching { Announce666.log(context, "🏠 Accueil : Horreur en tête avec Slasher et Classiques, puis En VF, Pour toi, Shudder, Top 10, Prochainement", "accueil") }
         }
-        prefs.edit().putBoolean("accueil1111", true).apply()
+        prefs.edit().putBoolean("accueil1111b", true).apply()
     }
 
     data class Plan(val collections: List<Collection>, val report: List<String>)

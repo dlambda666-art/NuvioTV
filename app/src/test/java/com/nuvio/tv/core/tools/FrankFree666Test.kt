@@ -152,13 +152,14 @@ class FrankFree666Test {
     }
 
     // 11/11 : l'accueil voulu par David — Horreur · En VF · Pour toi · Top 10 · Prochainement
-    @Test fun `accueil du 11-11 - ordre, derniers retires, slasher et classiques dans Horreur`() {
+    @Test fun `accueil du 11-11 - ordre voulu, derniers gardes, slasher et classiques dans Horreur`() {
         val derniers = FrankFree666.replacement(AddonCatalogCollectionSource("frank", "movie", "fs-derniers-films"), null, null)
         val vfw = AddonCatalogCollectionSource(LocalCatalogs666.VFWEEK, "movie", "vf-week")
         val first = Collection(id = "r1", title = "1", folders = listOf(
             CollectionFolder(id = "vf", title = "⚫", sources = listOf(derniers, vfw)),
             CollectionFolder(id = "pt", title = "Pour toi", sources = listOf(AddonCatalogCollectionSource(LocalCatalogs666.POURTOI, "movie", "pour-toi"))),
-            CollectionFolder(id = "sh", title = "🔵", sources = listOf(vfw.copy(catalogId = "x"))),
+            CollectionFolder(id = "sh", title = "🔵", sources = listOf((derniers as TmdbCollectionSource).let { it.copy(title = "Shudder", filters = it.filters.copy(withWatchProviders = "99")) })),
+            CollectionFolder(id = "wwe", title = "WWE", sources = listOf(vfw.copy(catalogId = "w"))),
             Top10Folder666.folder(null),
             CollectionFolder(id = "cs", title = "🎬", sources = listOf(AddonCatalogCollectionSource(LocalCatalogs666.UPCOMING, "movie", "upcoming")))
         ))
@@ -167,9 +168,9 @@ class FrankFree666Test {
             CollectionFolder(id = "cl", title = "Classiques", sources = listOf(vfw.copy(catalogId = "c")))
         ))
         val out = FrankFree666.accueil1111(listOf(first, doors))!!
-        assertEquals(listOf("h", "vf", "pt", Top10Folder666.ID, "cs", "sh"), out[0].folders.map { it.id })
+        assertEquals(listOf("h", "vf", "pt", "sh", Top10Folder666.ID, "cs", "wwe"), out[0].folders.map { it.id })
         assertEquals(listOf("cl"), out[1].folders.map { it.id })
-        assertEquals(listOf(vfw), out[0].folders[1].sources)
+        assertEquals(listOf(derniers, vfw), out[0].folders[1].sources)
         val titles = out[0].folders[0].sources.filterIsInstance<TmdbCollectionSource>().map { it.title }
         assertTrue("Slasher" in titles && FrankFree666.CLASSICS_MIX in titles)
         assertNull(FrankFree666.accueil1111(out))   // une 2e fois : rien ne bouge
