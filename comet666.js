@@ -778,9 +778,10 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     beforeMulti.filter(function (t) { return found.indexOf(t) < 0; }).forEach(function (t) { note(t, 'MULTi étranger'); });
     found.forEach(function (t) { why[srcOf(t)].kept++; });
     LAST_WHY = why;
-    // 666TVF (11/11) : déjà prêt chez TorBox ?
-    var ready = late() ? {} : await torboxCached(found.map(function (t) { return t.hash; }).filter(Boolean));
-    found.forEach(function (t) { if (ready[t.hash] || /⚡/.test(String(t.source || ''))) t.cached = true; });
+    // 666TVF (11/11) : déjà prêt chez TorBox ? Seulement ce que le moteur TorBox a dit lui-même (⚡).
+    // La demande en plus à TorBox (checkcached) ralentissait toute la recherche le soir : retirée —
+    // 666TVF vérifie déjà le cache de son côté avant de lancer un torrent.
+    found.forEach(function (t) { if (/⚡/.test(String(t.source || ''))) t.cached = true; });
     found.sort(function (a, b) {
         // VF sûre d'abord, « MULTi (VF ?) » ensuite
         var c = (a.lang.indexOf('?') >= 0) - (b.lang.indexOf('?') >= 0);
