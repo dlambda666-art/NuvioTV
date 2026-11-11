@@ -158,6 +158,21 @@ object StreamAutoPlaySelector {
     fun autoPlayBlocked(stream: Stream, season: Int?, episode: Int?): Boolean =
         episodeRank(stream, season, episode) >= 2 || isDvOnly(stream)
 
+    // 666TVF (11/11) : déjà prêt chez le debrid (⚡, [TB+], [RD+]…) → démarre tout de suite.
+    // Malfaisante en VFQ : les liens pas encore en cache ne démarraient pas, ou après des minutes.
+    private val CACHED_666 = Regex("""⚡|\[(?:TB|RD|AD|PM|DL|ED|OC)\s*\+\]|\[(?:TB|RD|AD|PM|DL|ED|OC)⚡\]|\bcached\b|\ben cache\b|⚡ ?prêt""", RegexOption.IGNORE_CASE)
+    private val NOT_CACHED_666 = Regex("""⬇️|⏳|\bnot[ ._-]?cached\b|\buncached\b|\bdownload""", RegexOption.IGNORE_CASE)
+
+    /** Règle pure (testée) : 0 = prêt chez le debrid, 1 = inconnu, 2 = à télécharger d'abord. */
+    fun cacheRank(stream: Stream): Int {
+        val text = listOfNotNull(stream.name, stream.title, stream.description).joinToString(" ")
+        return when {
+            NOT_CACHED_666.containsMatchIn(text) -> 2
+            CACHED_666.containsMatchIn(text) -> 0
+            else -> 1
+        }
+    }
+
     private fun isUncertainFrench(stream: Stream): Boolean =
         listOf(stream.name, stream.title, stream.description).any { it?.contains("VF ?") == true }
 
@@ -236,6 +251,8 @@ object StreamAutoPlaySelector {
                         .thenBy { episodeRank(it, season, episode) }
                         // 666TVF : équipe de release qui a déjà marché sur cette série
                         .thenBy { com.nuvio.tv.core.tools.Proven666.activeRank(it) }
+                        // 666TVF (11/11) : un 1080p prêt passe avant un 4K à télécharger
+                        .thenBy { cacheRank(it) }
                         .thenByDescending { it.qualityValue }
                 )
                 .firstOrNull()

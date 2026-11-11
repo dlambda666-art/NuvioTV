@@ -347,6 +347,15 @@ class StreamAutoPlaySelectorTest {
         }
     }
 
+    // 11/11 piège : Malfaisante en VFQ — un lien prêt chez le debrid passe avant un lien à télécharger
+    @Test
+    fun `lien deja en cache reconnu, a telecharger reconnu`() {
+        assertEquals(0, StreamAutoPlaySelector.cacheRank(stream(addonName = "Comet666", name = "Comet666 1080p ⚡")))
+        assertEquals(0, StreamAutoPlaySelector.cacheRank(stream(addonName = "StreamFusion666", name = "[TB+] 1080p")))
+        assertEquals(2, StreamAutoPlaySelector.cacheRank(stream(addonName = "Lumio666", name = "[TB download] 2160p")))
+        assertEquals(1, StreamAutoPlaySelector.cacheRank(stream(addonName = "Wastream666", name = "1080p")))
+    }
+
     private fun stream(
         addonName: String,
         url: String? = null,
