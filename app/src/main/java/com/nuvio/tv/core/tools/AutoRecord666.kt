@@ -58,8 +58,10 @@ class AutoRecord666 @Inject constructor(
         val seen = prefs.getStringSet("seen", emptySet())!!.toMutableSet()
         val list = pending().toMutableList()
         real.forEach { ep ->
-            if (ep.key in seen) return@forEach
+            // 11/11 : même épisode numéroté autrement (TMDB au lieu de Cinemeta) → pas deux enregistrements
+            if (ep.key in seen || ep.dayKeys666.any { it in seen }) return@forEach
             seen += ep.key
+            seen += ep.dayKey666
             list += Pending(ep.seriesId, ep.seriesName, ep.poster, ep.season, ep.episode, ep.title, 0, 0)
         }
         prefs.edit().putStringSet("seen", seen.toList().takeLast(500).toSet()).apply()

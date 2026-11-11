@@ -49,6 +49,16 @@ data class CalendarEpisode(
     val videoId: String? = null
 ) {
     val key: String get() = "$seriesId:$season:$episode"
+    /**
+     * 666TVF (11/11) : le même épisode, quelle que soit la numérotation (Cinemeta et TMDB ne numérotent
+     * pas NXT pareil : quand Cinemeta a calé, TMDB a pris le relais et l'épisode de la semaine passée
+     * a crié une 2e fois). Jour de diffusion à ±1 jour près.
+     */
+    val dayKeys666: List<String> get() {
+        val d = airInstant.atZone(java.time.ZoneOffset.UTC).toLocalDate()
+        return listOf(d.minusDays(1), d, d.plusDays(1)).map { "$seriesId@$it" }
+    }
+    val dayKey666: String get() = "$seriesId@" + airInstant.atZone(java.time.ZoneOffset.UTC).toLocalDate()
     val code: String get() = "S%02dE%02d".format(season, episode)
     fun airDate(zone: ZoneId = ZoneId.systemDefault()): LocalDate = airInstant.atZone(zone).toLocalDate()
     fun hasAired(now: Instant = Instant.now()): Boolean = !airInstant.isAfter(now)
@@ -458,14 +468,14 @@ class CalendarRepository @Inject constructor(
         if (bellSet.isEmpty()) return@withContext emptyList()
         val notified = store().data.first()[notifiedKey].orEmpty()
         val candidates = episodes(daysBack = 10, daysAhead = 0)
-            .filter { it.seriesId in bellSet && it.hasAired() && it.key !in notified }
+            .filter { it.seriesId in bellSet && it.hasAired() && it.key !in notified && it.dayKeys666.none { d -> d in notified } }
         val announce = candidates.filter { checkVf(it) == VfState.AVAILABLE }
         if (announce.isNotEmpty()) {
             val now = Instant.now()
             val fast = announce.filter { isFastVf666(it.airInstant.toEpochMilli(), now.toEpochMilli()) }.map { it.seriesId }
             store().edit { prefs ->
                 if (fast.isNotEmpty()) prefs[fastVfKey] = (prefs[fastVfKey].orEmpty() + fast).takeLast(MAX_SERIES)
-                prefs[notifiedKey] = (prefs[notifiedKey].orEmpty() + announce.map { it.key }).takeLast(MAX_REMEMBERED)
+                prefs[notifiedKey] = (prefs[notifiedKey].orEmpty() + announce.flatMap { listOf(it.key, it.dayKey666) }).takeLast(MAX_REMEMBERED)
                 prefs[lastRefreshKey] = System.currentTimeMillis().toString()
             }
         }
@@ -487,7 +497,7 @@ class CalendarRepository @Inject constructor(
         val alerted = prefs[lateAlertedKey].orEmpty()
         val now = Instant.now().toEpochMilli()
         val late = episodes(daysBack = 3, daysAhead = 0)
-            .filter { it.seriesId in bellSet && it.seriesId in fast && it.key !in notified && it.key !in alerted }
+            .filter { it.seriesId in bellSet && it.seriesId in fast && it.key !in notified && it.dayKeys666.none { d -> d in notified } && it.key !in alerted }
             .filter { isLateVf666(it.airInstant.toEpochMilli(), now) }
             .filter { checkVf(it) == VfState.NOT_YET }
         if (late.isNotEmpty()) {
