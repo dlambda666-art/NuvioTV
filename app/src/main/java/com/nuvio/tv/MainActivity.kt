@@ -1441,7 +1441,9 @@ open class MainActivity : ComponentActivity() {
                                             val now = System.currentTimeMillis()
                                             if (now - mp.getLong("try_at", 0L) > 6 * 3600_000L) {
                                                 mp.edit().putLong("try_at", now).apply()
-                                                runCatching { com.nuvio.tv.core.tools.Lien666.syncNow(appCtx666) }
+                                                // pas de réponse (modem relancé, Shield éteinte) : on réessaie dans 1 h
+                                                if (runCatching { com.nuvio.tv.core.tools.Lien666.syncNow(appCtx666) }.getOrNull() == null)
+                                                    mp.edit().putLong("try_at", now - 5 * 3600_000L).apply()
                                             }
                                             if (now - mp.getLong("usb_at", 0L) > 24 * 3600_000L) {
                                                 mp.edit().putLong("usb_at", now).apply()

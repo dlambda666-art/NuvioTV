@@ -77,11 +77,16 @@ object Lien666 {
         private set
     @Volatile private var started = false
     private var server: Server? = null
+    private var appCtx: Context? = null
+    private var nsdManager: NsdManager? = null
+    private var regListener: NsdManager.RegistrationListener? = null
+    private var discListener: NsdManager.DiscoveryListener? = null
 
     fun start(context: Context) {
         if (started) return
         started = true
         val app = context.applicationContext
+        appCtx = app
         // dernière adresse connue (si la découverte tarde)
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("peer", null)?.split('|')?.takeIf { it.size == 3 }?.let {
             peer = Peer(it[0], it[1], it[2].toIntOrNull() ?: PORT)
@@ -91,21 +96,39 @@ object Lien666 {
         runCatching { nsd(app) }.onFailure { Log.w(TAG, "nsd : ${it.message}") }
     }
 
+    /**
+     * Modem relancé, wifi coupé : les adresses changent et l'annonce sur le réseau se perd.
+     * On réannonce et on recherche l'autre Shield, puis on attend un peu qu'elle réponde.
+     */
+    private suspend fun rediscover() {
+        val app = appCtx ?: return
+        val nsd = nsdManager
+        if (nsd != null) {
+            regListener?.let { runCatching { nsd.unregisterService(it) } }
+            discListener?.let { runCatching { nsd.stopServiceDiscovery(it) } }
+        }
+        runCatching { nsd(app) }
+        kotlinx.coroutines.delay(8_000)
+    }
+
     @Suppress("DEPRECATION")
     private fun nsd(app: Context) {
         val nsd = app.getSystemService(Context.NSD_SERVICE) as NsdManager
+        nsdManager = nsd
         var own: String? = null
-        nsd.registerService(NsdServiceInfo().apply {
-            serviceName = "666TV-" + Build.DEVICE
-            serviceType = SERVICE_TYPE
-            port = PORT
-        }, NsdManager.PROTOCOL_DNS_SD, object : NsdManager.RegistrationListener {
+        val reg = object : NsdManager.RegistrationListener {
             override fun onServiceRegistered(info: NsdServiceInfo) { own = info.serviceName }
             override fun onRegistrationFailed(info: NsdServiceInfo, errorCode: Int) = Unit
             override fun onServiceUnregistered(info: NsdServiceInfo) = Unit
             override fun onUnregistrationFailed(info: NsdServiceInfo, errorCode: Int) = Unit
-        })
-        nsd.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, object : NsdManager.DiscoveryListener {
+        }
+        regListener = reg
+        nsd.registerService(NsdServiceInfo().apply {
+            serviceName = "666TV-" + Build.DEVICE
+            serviceType = SERVICE_TYPE
+            port = PORT
+        }, NsdManager.PROTOCOL_DNS_SD, reg)
+        val disc = object : NsdManager.DiscoveryListener {
             override fun onDiscoveryStarted(serviceType: String) = Unit
             override fun onDiscoveryStopped(serviceType: String) = Unit
             override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) = Unit
@@ -125,7 +148,9 @@ object Lien666 {
                     })
                 }
             }
-        })
+        }
+        discListener = disc
+        nsd.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, disc)
     }
 
     private fun get(url: String, timeoutMs: Int = 8_000): String? = runCatching {
@@ -135,10 +160,16 @@ object Lien666 {
         }
     }.getOrNull()
 
+    /** Demande à l'autre Shield ; si elle ne répond plus (modem relancé…), on la recherche et on réessaie. */
+    private suspend fun fetch(path: String): String? {
+        peer?.let { p -> get(p.base + path)?.let { return it } }
+        rediscover()
+        return peer?.let { p -> get(p.base + path) }
+    }
+
     /** Échange avec l'autre Shield. Null si elle ne répond pas. */
     suspend fun syncNow(context: Context): Memoire666.Merge? = withContext(Dispatchers.IO) {
-        val p = peer ?: return@withContext null
-        val raw = get(p.base + "/memoire") ?: return@withContext null
+        val raw = fetch("/memoire") ?: return@withContext null
         val m = runCatching { Memoire666.import(context, JSONObject(raw)) }.getOrNull() ?: return@withContext null
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putLong("sync_at", System.currentTimeMillis()).putString("sync_text", m.text).apply()
@@ -150,8 +181,7 @@ object Lien666 {
 
     /** Les enregistrements prêts de l'autre Shield. */
     suspend fun remoteRecs(): List<Record666.Rec> = withContext(Dispatchers.IO) {
-        val p = peer ?: return@withContext emptyList()
-        val raw = get(p.base + "/recs") ?: return@withContext emptyList()
+        val raw = fetch("/recs") ?: return@withContext emptyList()
         runCatching { Record666.fromJson(JSONArray(raw)) }.getOrDefault(emptyList())
     }
 
