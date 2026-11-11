@@ -1394,6 +1394,19 @@ open class MainActivity : ComponentActivity() {
                                             )
                                         }
                                     }
+                                    // 666TVF (11/11) : plus aucune adresse French-Stream ne répond depuis 3 h → la cloche, une fois
+                                    if (!inPlayerNow666 && runCatching { com.nuvio.tv.core.tools.VfCheck666.takeFsDownAlert() }.getOrDefault(false)) {
+                                        found = found + com.nuvio.tv.core.calendar.CalendarEpisode(
+                                            seriesId = "alerte:frenchstream",
+                                            seriesName = "French-Stream",
+                                            poster = null,
+                                            season = 0,
+                                            episode = 0,
+                                            title = "Aucune adresse ne répond (${com.nuvio.tv.core.tools.VfCheck666.FS_HOSTS.joinToString { it.removePrefix("https://") }}) : trouve la nouvelle",
+                                            airInstant = java.time.Instant.now(),
+                                            addonBaseUrl = null
+                                        )
+                                    }
                                     if (found.isNotEmpty()) {
                                         pending666 = (pending666 + found).distinctBy { "${it.seriesId}|${it.season}|${it.episode}" }
                                     }
@@ -2880,6 +2893,7 @@ internal fun filmAnnouncement666(f: com.nuvio.tv.core.tools.VfWatcher666.Found) 
 
 // 666TVF : textes des annonces (bannière dans 666TVF, bannière par-dessus Orange, journal).
 internal fun announceTitle666(episodes: List<com.nuvio.tv.core.calendar.CalendarEpisode>): String = when {
+    episodes.all { it.seriesId == "alerte:frenchstream" } -> "⚠️ French-Stream ne répond plus"
     episodes.all { it.seriesId.startsWith("alerte:") } -> "⚠️ Plugin en panne"
     episodes.all { it.seriesId.startsWith("sport:") } -> "🥊 C'est l'heure du combat"
     episodes.all { it.seriesId.startsWith("retard:") } -> "⏳ Pas encore en VF"
@@ -2901,6 +2915,7 @@ internal fun announceLogText666(ep: com.nuvio.tv.core.calendar.CalendarEpisode):
     ep.seriesId.startsWith("serie:") -> "📺 ${ep.seriesName} saison ${ep.season} en VF (série pas encore suivie)"
     ep.seriesId.startsWith("film:") -> "🔔 ${ep.seriesName} (film) en VF"
     ep.seriesId.startsWith("ple:") -> "🤼 ${ep.seriesName} (PLE) en VF"
+    ep.seriesId == "alerte:frenchstream" -> "⚠️ French-Stream ne répond plus"
     ep.seriesId.startsWith("alerte:") -> "⚠️ ${ep.seriesName} ne renvoie plus rien"
     ep.seriesId.startsWith("sport:") -> "🥊 ${ep.seriesName} · c'est l'heure du combat"
     ep.seriesId.startsWith("test:") -> "🔔 Annonce d'essai"

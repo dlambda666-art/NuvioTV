@@ -114,7 +114,7 @@ class FrankFree666Test {
     }
 
     // 09/11 (4) : étape 2 — les catalogues d'aiometa de David (captures) deviennent intégrés
-    @Test fun `catalogues aiometa - Shudder, Blumhouse, genres, prochainement, recherche retiree, inconnu garde`() {
+    @Test fun `catalogues aiometa - Shudder, Blumhouse, genres, prochainement, recherche et inconnu retires`() {
         val aio = { id: String, t: String -> AddonCatalogCollectionSource("aiometadata.elfhosted", t, id) }
         val names = mapOf("a1" to "Shudder", "a2" to "Blumhouse", "a3" to "S.Action", "a4" to "Recherche French Stream - Films",
             "a5" to "Coming Soon Movies", "a6" to "Voyage temporel", "a7" to "WWE Raw", "a8" to "Documentaires")
@@ -123,13 +123,31 @@ class FrankFree666Test {
                 aio("a4", "movie"), aio("a5", "movie"), aio("a6", "movie"), aio("a7", "series"), aio("a8", "movie")))
         )))
         val out = FrankFree666.planAiometa(cols) { names[it.catalogId] }.collections[0].folders[0].sources
-        assertEquals(7, out.size)   // recherche French-Stream retirée
+        assertEquals(6, out.size)   // recherche French-Stream et WWE (aiometa mort, pas d'équivalent) retirés
         assertEquals("99", tmdb(out[0]).filters.withWatchProviders)
         assertEquals("3172", tmdb(out[1]).filters.withCompanies)
         assertEquals("10759", tmdb(out[2]).filters.withGenres)
         assertEquals(LocalCatalogs666.UPCOMING, (out[3] as AddonCatalogCollectionSource).addonId)
         assertEquals("4379", tmdb(out[4]).filters.withKeywords)
-        assertEquals("a7", (out[5] as AddonCatalogCollectionSource).catalogId)   // WWE : gardé
-        assertNull(tmdb(out[6]).filters.withoutGenres)                           // documentaires pas exclus
+        assertNull(tmdb(out[5]).filters.withoutGenres)                           // documentaires pas exclus
+    }
+
+    // 11/11 piège : l'aiometa de David a un id interne sans « aiometa » → reconnu à son adresse
+    @Test fun `aiometa reconnu a son adresse meme si son id ne le dit pas`() {
+        assertTrue(FrankFree666.isAiometaAddon("com.xyz.meta", "https://lambda-aiometadata.hf.space/abc/manifest.json"))
+        assertFalse(FrankFree666.isAiometaAddon("comet666", "https://comet.local"))
+        val src = AddonCatalogCollectionSource("com.xyz.meta", "movie", "a1")
+        FrankFree666.aiometaIds = setOf("com.xyz.meta")
+        try {
+            val cols = listOf(Collection(id = "c", title = "A", folders = listOf(CollectionFolder(id = "f", title = "⚫", sources = listOf(src)))))
+            val out = FrankFree666.planAiometa(cols) { "Shudder" }.collections[0].folders[0].sources
+            assertEquals("99", tmdb(out[0]).filters.withWatchProviders)
+        } finally { FrankFree666.aiometaIds = emptySet() }
+    }
+
+    @Test fun `tuile qui ne vit que d'aiometa inconnu - garde sa liste plutot que vide`() {
+        val src = AddonCatalogCollectionSource("aiometadata.x", "series", "a7")
+        val cols = listOf(Collection(id = "c", title = "A", folders = listOf(CollectionFolder(id = "f", title = "WWE", sources = listOf(src)))))
+        assertEquals(listOf(src), FrankFree666.planAiometa(cols) { "WWE Raw" }.collections[0].folders[0].sources)
     }
 }

@@ -44,4 +44,47 @@ class VfCheck666Test {
         assertTrue(VfCheck666.CAM_RELEASE.containsMatchIn("MD"))
         assertFalse(VfCheck666.CAM_RELEASE.containsMatchIn("HDLight 1080p"))
     }
+
+    // 11/11 piège : la liste Shudder (fournisseur 99, région US) mettait *Cycle* (CAM, sans VF) → triée elle aussi
+    @Test fun `liste Shudder triee VF, seules les listes a venir y echappent`() {
+        val shudder = com.nuvio.tv.domain.model.TmdbCollectionFilters(watchRegion = "US", withWatchProviders = "99")
+        assertTrue(VfCheck666.filtersList(shudder, "2026-11-11"))
+        assertTrue(VfCheck666.filtersList(com.nuvio.tv.domain.model.TmdbCollectionFilters(withGenres = "27"), "2026-11-11"))
+        assertTrue(VfCheck666.filtersList(com.nuvio.tv.domain.model.TmdbCollectionFilters(releaseDateGte = "1930-01-01"), "2026-11-11"))
+        assertFalse(VfCheck666.filtersList(com.nuvio.tv.domain.model.TmdbCollectionFilters(releaseDateGte = "2026-11-12"), "2026-11-11"))
+    }
+
+    // 11/11 piège : French-Stream change d'adresse sans prévenir → la cloche après 3 h de silence, une fois
+    @Test fun `French-Stream muet - cloche apres 3 h, une seule fois`() {
+        val h = 3600_000L
+        assertFalse(VfCheck666.fsDownShouldAlert(0L, false, 10 * h))        // tout va bien
+        assertFalse(VfCheck666.fsDownShouldAlert(1 * h, false, 3 * h))      // 2 h : on attend
+        assertTrue(VfCheck666.fsDownShouldAlert(1 * h, false, 4 * h))       // 3 h : on sonne
+        assertFalse(VfCheck666.fsDownShouldAlert(1 * h, true, 9 * h))       // déjà sonné pour cette panne
+    }
+
+    // 11/11 : le flux des nouveautés French-Stream (extrait réel du 11/11) nourrit « En VF cette semaine »
+    @Test fun `nouveautes French-Stream - films et saisons en VF, VOSTFR seul ecarte`() {
+        val xml = """<rss><channel><item turbo="true">
+<title>Bury the Devil</title><link>https://fs05.lol/index.php?newsid=1</link>
+<category><![CDATA[film-streaming   // Film en VF   // Film VOSTFR   // horreurs    //  thrillers]]></category></item><item turbo="true">
+<title>Where&#039;s Wanda? - Saison 2</title><link>x</link>
+<category><![CDATA[Serie en Streaming // Serie Episode VF // Défault player VF // serie-drame]]></category></item><item turbo="true">
+<title>Kagami</title><link>x</link>
+<category><![CDATA[film-streaming // Film VOSTFR // horreurs]]></category></item></channel></rss>"""
+        val n = VfCheck666.parseRss(xml)
+        assertEquals(listOf(VfCheck666.FsNews("Bury the Devil", false, true), VfCheck666.FsNews("Where's Wanda?", true, true),
+            VfCheck666.FsNews("Kagami", false, false)), n)
+    }
+
+    @Test fun `nouveaute French-Stream - le bon titre TMDB, pas un vieux film du meme nom`() {
+        val res = org.json.JSONArray("""[
+            {"id":1,"title":"Resident Evil","original_title":"Resident Evil","release_date":"2002-03-15"},
+            {"id":2,"title":"Resident Evil","original_title":"Resident Evil","release_date":"2026-09-18"},
+            {"id":3,"title":"Resident Evil 2","release_date":"2027-01-01"}]""")
+        assertEquals(2, VfCheck666.pickTmdb(res, "Resident Evil", false, 2025, "2026-11-11"))
+        assertEquals(null, VfCheck666.pickTmdb(res, "Inconnu", false, 2025, "2026-11-11"))
+        val tv = org.json.JSONArray("""[{"id":9,"name":"Where's Wanda?","original_name":"Wo ist Wanda?","first_air_date":"2024-10-02"}]""")
+        assertEquals(9, VfCheck666.pickTmdb(tv, "Where's Wanda?", true, 2025, "2026-11-11"))
+    }
 }

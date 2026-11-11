@@ -95,6 +95,8 @@ fun StartupSplashScreen(
     // --- Son : la bobine du projecteur tourne tant que la salle est à l'écran ---
     val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
     val projector = remember { arrayOfNulls<android.media.MediaPlayer>(1) }
+    // volume réel de la bobine : le fondu final part de là (11/11 : il repartait de 0.7 → bref bruit à l'arrivée)
+    val projectorVol = remember { floatArrayOf(0.7f) }
     DisposableEffect(lifecycleOwner) {
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         projector[0] = runCatching {
@@ -107,11 +109,13 @@ fun StartupSplashScreen(
         fun fadeOut() {
             val mp = projector[0] ?: return
             projector[0] = null
+            val from = projectorVol[0]
+            if (from <= 0.01f) { runCatching { mp.stop(); mp.release() }; return }
             var step = 0
             val fade = object : Runnable {
                 override fun run() {
                     step++
-                    val v = (0.7f * (1f - step / 10f)).coerceAtLeast(0f)
+                    val v = (from * (1f - step / 10f)).coerceAtLeast(0f)
                     runCatching { mp.setVolume(v, v) }
                     if (step < 10) handler.postDelayed(this, 60) else runCatching { mp.stop(); mp.release() }
                 }
@@ -153,6 +157,7 @@ fun StartupSplashScreen(
             val steps = 43
             repeat(steps) { i ->
                 val v = 0.7f * (1f - (i + 1).toFloat() / steps)
+                projectorVol[0] = v
                 projector[0]?.let { mp -> runCatching { mp.setVolume(v, v) } }
                 kotlinx.coroutines.delay(100)
             }

@@ -1041,9 +1041,9 @@ class FolderDetailViewModel @Inject constructor(
     }
 
     /** 666TVF (09/11) : une liste TMDB « sorties en France » (région seule) = une liste VF. */
+    // 11/11 : toutes les listes TMDB (Shudder compris), sauf les « à venir »
     private fun isVfList666(source: TmdbCollectionSource): Boolean =
-        source.filters.watchRegion.equals("FR", ignoreCase = true) &&
-            source.filters.withWatchProviders.isNullOrBlank() && source.filters.withoutWatchProviders.isNullOrBlank()
+        com.nuvio.tv.core.tools.VfCheck666.filtersList(source.filters, java.time.LocalDate.now().toString())
 
     private fun loadTmdbSourceForTab(tabIndex: Int, source: TmdbCollectionSource, page: Int, append: Boolean) {
         if (append) {

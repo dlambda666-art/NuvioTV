@@ -35,6 +35,16 @@ import java.time.LocalDate
  * Les listes « VF » n'affichent que ce qui est confirmé. Verdicts gardés sur la Shield.
  */
 object VfCheck666 {
+    /**
+     * 11/11 : TOUTES les listes TMDB des tuiles passent au tri VF (Shudder mettait *Cycle*, en CAM et
+     * sans VF). Seules les listes « à venir » (sorties après aujourd'hui) y échappent : rien n'y est
+     * encore sorti, elles seraient vides.
+     */
+    fun filtersList(f: com.nuvio.tv.domain.model.TmdbCollectionFilters, today: String): Boolean {
+        val gte = f.releaseDateGte?.takeIf { it.length >= 10 }?.take(10) ?: return true
+        return gte <= today
+    }
+
     private const val TAG = "VfCheck666"
     private const val PREFS = "666tv_vfcheck"
     /**
@@ -268,11 +278,99 @@ object VfCheck666 {
                     fsBlockedUntil = System.currentTimeMillis() + 15 * 60_000L
                     return null
                 }
+                fsUp()
                 return text
             }
             fsIndex++   // cette adresse ne répond pas : la suivante
         }
+        fsAllDown()
         return null
+    }
+
+    // ---------- Nouveautés French-Stream (11/11) ----------
+
+    data class FsNews(val title: String, val series: Boolean, val vf: Boolean)
+
+    /** Flux RSS des nouveautés French-Stream, règle pure testée : « Film en VF » / « Serie Episode VF ». */
+    fun parseRss(xml: String): List<FsNews> =
+        xml.split("<item").drop(1).mapNotNull { item ->
+            val raw = Regex("""<title>(?:<!\[CDATA\[)?(.*?)(?:]]>)?</title>""", RegexOption.DOT_MATCHES_ALL).find(item)?.groupValues?.get(1)
+                ?.replace("&amp;", "&")?.replace("&#039;", "'")?.replace("&quot;", "\"")?.trim().orEmpty()
+            if (raw.isBlank()) return@mapNotNull null
+            val cats = Regex("""<category>(?:<!\[CDATA\[)?(.*?)(?:]]>)?</category>""", RegexOption.DOT_MATCHES_ALL).find(item)?.groupValues?.get(1).orEmpty()
+            val series = Regex("""(?i)saison\s*\d+|s[ée]rie""").containsMatchIn("$raw $cats")
+            val title = raw.replace(Regex("""(?i)\s*[-–]\s*saison\s*\d+.*$"""), "").trim()
+            val vf = Regex("""(?i)\bFilm en VF\b|\bEpisode VF\b""").containsMatchIn(cats)
+            FsNews(title, series, vf)
+        }
+
+    /** Les derniers ajouts EN VF de French-Stream (films puis séries). Vide si le site se tait. */
+    suspend fun fsNews(): List<FsNews> =
+        listOf("films", "s-tv").flatMap { cat ->
+            fsRequest("/engine/rss.php?do=cat&category=$cat", null)?.let { parseRss(it) }.orEmpty()
+        }.filter { it.vf }.distinct()
+
+    /**
+     * Règle pure (testée) : le bon titre TMDB pour un nom vu sur French-Stream (titre exact, français ou
+     * original). Films : sortis depuis [minYear] (des nouveautés, pas un vieux film du même nom).
+     */
+    fun pickTmdb(results: org.json.JSONArray?, title: String, series: Boolean, minYear: Int, today: String): Int? {
+        if (results == null) return null
+        val want = canon(title)
+        var best: Pair<Int, String>? = null
+        for (i in 0 until results.length()) {
+            val o = results.optJSONObject(i) ?: continue
+            val names = listOf("title", "name", "original_title", "original_name").map { canon(o.optString(it)) }
+            if (want !in names) continue
+            val date = o.optString(if (series) "first_air_date" else "release_date")
+            if (date.isBlank() || date > today) continue
+            if (!series && (date.take(4).toIntOrNull() ?: 0) < minYear) continue
+            if (best == null || date > best.second) best = o.optInt("id") to date
+        }
+        return best?.first?.takeIf { it > 0 }
+    }
+
+    /**
+     * 11/11 : la ligne « Moteur VF » d'Outils 666. Interroge French-Stream (son flux de nouveautés) et
+     * résume ce que la Shield sait. (texte, état : vrai = ok, null = à surveiller, faux = en panne)
+     */
+    suspend fun engineStatus(): Pair<String, Boolean?> {
+        val news = runCatching { fsNews() }.getOrDefault(emptyList())
+        val all = prefs()?.all.orEmpty()
+        val vf = all.count { (k, v) -> (k.startsWith("tt") || k.startsWith("tmdb:")) && (v as? String)?.startsWith("DUB") == true }
+        val queue = prefs()?.getStringSet("stream_queue", emptySet()).orEmpty().size
+        val host = FS.removePrefix("https://")
+        val known = "$vf titres VF connus · $queue en attente des cavaliers"
+        return when {
+            System.currentTimeMillis() < fsBlockedUntil -> "French-Stream ($host) bloque pour l'instant (15 min) · $known" to null
+            news.isNotEmpty() -> "French-Stream ($host) · ${news.size} nouveautés VF · $known" to true
+            else -> "French-Stream ne répond pas (${FS_HOSTS.joinToString { it.removePrefix("https://") }}) · $known" to false
+        }
+    }
+
+    // ---------- French-Stream muet : la cloche (11/11) ----------
+
+    private fun fsAllDown(now: Long = System.currentTimeMillis()) {
+        val p = prefs() ?: return
+        if (p.getLong("fs_down_since", 0L) == 0L) p.edit().putLong("fs_down_since", now).apply()
+    }
+
+    private fun fsUp() {
+        val p = prefs() ?: return
+        if (p.getLong("fs_down_since", 0L) != 0L || p.getBoolean("fs_down_alerted", false))
+            p.edit().remove("fs_down_since").remove("fs_down_alerted").apply()
+    }
+
+    /** Règle pure (testée) : aucune adresse ne répond depuis 3 h → on sonne, une fois par panne. */
+    fun fsDownShouldAlert(since: Long, alerted: Boolean, now: Long): Boolean =
+        since > 0 && !alerted && now - since >= 3 * 3600_000L
+
+    /** Vrai une seule fois par panne : toutes les adresses French-Stream se taisent. */
+    fun takeFsDownAlert(now: Long = System.currentTimeMillis()): Boolean {
+        val p = prefs() ?: return false
+        if (!fsDownShouldAlert(p.getLong("fs_down_since", 0L), p.getBoolean("fs_down_alerted", false), now)) return false
+        p.edit().putBoolean("fs_down_alerted", true).apply()
+        return true
     }
 
     private suspend fun frenchStream(titles: List<String>, series: Boolean, year: Int?, recent: Boolean): Tag? {

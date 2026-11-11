@@ -101,8 +101,18 @@ object LocalCatalogs666 {
                     "&air_date.lte=$today&without_genres=99%2C10763%2C10764%2C10767%2C10762&vote_count.gte=10&sort_by=popularity.desc&page=$page"
             }
         )
+        // 666TVF (11/11) : d'abord les derniers ajouts EN VF de French-Stream (son flux de nouveautés)
+        val news = runCatching { VfCheck666.fsNews() }.getOrDefault(emptyList())
         for ((type, paths) in sources) {
             val cands = LinkedHashMap<Int, Pair<String, String?>>()
+            for (n in news.filter { it.series == (type == "series") }.take(25)) {
+                val kind = if (type == "series") "tv" else "movie"
+                val res = tmdb("/search/$kind?language=fr-FR&query=${java.net.URLEncoder.encode(n.title, "UTF-8")}", key)?.optJSONArray("results")
+                val id = VfCheck666.pickTmdb(res, n.title, type == "series", today.year - 1, today.toString()) ?: continue
+                val o = (0 until (res?.length() ?: 0)).mapNotNull { res?.optJSONObject(it) }.firstOrNull { it.optInt("id") == id }
+                val poster = o?.optString("poster_path")?.takeIf { it.startsWith("/") }?.let { "https://image.tmdb.org/t/p/w342$it" }
+                cands.putIfAbsent(id, n.title to poster)
+            }
             for (path in paths) {
                 val arr = tmdb(path, key)?.optJSONArray("results") ?: continue
                 for (i in 0 until arr.length()) {
@@ -115,7 +125,7 @@ object LocalCatalogs666 {
             }
             val now = System.currentTimeMillis()
             val kept = ArrayList<Entry>()
-            for ((id, np) in cands.entries.take(40)) {
+            for ((id, np) in cands.entries.take(55)) {
                 val tag = withTimeoutOrNull(60_000) { VfCheck666.check("tmdb:$id", type) } ?: continue
                 if (!VfCheck666.isVf(tag)) continue
                 val imdb = VfCheck666.imdbFor("tmdb:$id") ?: continue

@@ -225,12 +225,22 @@ object FrankFree666 {
         }
     }
 
+    /**
+     * Ids des addons aiometa installés, reconnus à leur ADRESSE (11/11 : l'id interne de l'addon de
+     * David ne contient pas « aiometa », la migration ne le voyait pas). Mis à jour par [ensure].
+     */
+    @Volatile var aiometaIds: Set<String> = emptySet()
+
+    fun isAiometaAddon(id: String, baseUrl: String) =
+        baseUrl.contains("aiometa", true) || id.contains("aiometadata", true) || id.contains("aiometa", true)
+
     fun isAiometa(s: AddonCatalogCollectionSource) =
-        s.addonId.contains("aiometadata", true) || s.addonId.contains("aiometa", true)
+        s.addonId in aiometaIds || s.addonId.contains("aiometadata", true) || s.addonId.contains("aiometa", true)
 
     /**
      * 666TVF (09/11, 4) : étape 2 — les catalogues d'aiometa remplacés par leurs équivalents intégrés
-     * (TMDB, ou tenus sur la Shield), reconnus à leur nom. Ceux qu'on ne sait pas remplacer restent.
+     * (TMDB, ou tenus sur la Shield), reconnus à leur nom. Ceux qu'on ne sait pas remplacer sont retirés
+     * (le Space aiometa n'existe plus : ils resteraient vides) ; une tuile garde toujours au moins sa liste.
      */
     fun planAiometa(collections: List<Collection>, catalogName: (AddonCatalogCollectionSource) -> String?): Plan {
         val report = mutableListOf<String>()
@@ -242,7 +252,7 @@ object FrankFree666 {
                     val name = catalogName(s)
                     val r = fallbackFor(s, name, f.title)
                     when {
-                        r == null -> { report += "${f.title} : « ${name ?: s.catalogId} » gardé (pas d'équivalent)"; s }
+                        r == null -> { report += "${f.title} : « ${name ?: s.catalogId} » retiré (aiometa n'existe plus, pas d'équivalent)"; null }
                         r == REMOVE -> { report += "${f.title} : « $name » retiré"; null }
                         else -> { report += "${f.title} : « ${name ?: s.catalogId} » → intégré"; r }
                     }
@@ -300,8 +310,9 @@ object FrankFree666 {
             store.setCollections(current)
             runCatching { pushCollections(context) }
         }
-        if (current.none { c -> c.folders.any { f -> f.sources.any { it is AddonCatalogCollectionSource && (isFrank(it) || isAiometa(it)) } } }) return emptyList()
         val installed = withTimeoutOrNull(5_000) { addons.getInstalledAddons().first() }.orEmpty()
+        aiometaIds = installed.filter { isAiometaAddon(it.id, it.baseUrl) }.map { it.id }.toSet()
+        if (current.none { c -> c.folders.any { f -> f.sources.any { it is AddonCatalogCollectionSource && (isFrank(it) || isAiometa(it)) } } }) return emptyList()
         val names = HashMap<String, String>()
         installed.forEach { a -> a.catalogs.forEach { cat -> names["${a.id}|${cat.apiType}|${cat.id}"] = cat.name; names.putIfAbsent("*|${cat.apiType}|${cat.id}", cat.name) } }
         val nameOf: (AddonCatalogCollectionSource) -> String? = { s -> names["${s.addonId}|${s.type}|${s.catalogId}"] ?: names["*|${s.type}|${s.catalogId}"] }
@@ -328,8 +339,9 @@ object FrankFree666 {
         val aio = all.filter { it.baseUrl.contains("aiometa", true) || it.id.contains("aiometadata", true) }
         if (aio.isEmpty()) return
         val cols = runCatching { store.getCurrentCollections() }.getOrNull() ?: return
-        val stillUsed = cols.any { c -> c.folders.any { f -> f.sources.any { s -> s is AddonCatalogCollectionSource && aio.any { it.id == s.addonId } } } }
-        if (stillUsed) return
+        // une tuile qui ne vit QUE d'aiometa (pas d'équivalent) : on ne la vide pas, on garde l'addon
+        val orphan = cols.any { c -> c.folders.any { f -> f.sources.isNotEmpty() && f.sources.all { s -> s is AddonCatalogCollectionSource && aio.any { it.id == s.addonId } } } }
+        if (orphan) return
         if (all.none { it.baseUrl.contains("cinemeta", true) }) addons.addAddon("https://v3-cinemeta.strem.io/manifest.json")
         aio.forEach { addons.removeAddon(it.baseUrl) }
     }

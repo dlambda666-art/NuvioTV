@@ -174,7 +174,14 @@ class CalendarRepository @Inject constructor(
                 .firstOrNull { it is NetworkResult.Success || it is NetworkResult.Error }
                 ?.let { (it as? NetworkResult.Success)?.data }
                 ?.takeIf { it.videos.isNotEmpty() }
-        } ?: cinemeta666(seed.id) ?: return cached?.episodes.orEmpty()
+        } ?: cinemeta666(seed.id) ?: run {
+            // 666TVF (11/11) : Cinemeta en panne → les dates de TMDB (les deux dernières saisons)
+            val viaTmdb = tmdbEpisodes666(seed)
+            if (viaTmdb.isNullOrEmpty()) return cached?.episodes.orEmpty()
+            recheckOnce666(viaTmdb)
+            episodeCache[seed.id] = CachedEpisodes(System.currentTimeMillis(), viaTmdb)
+            return viaTmdb
+        }
         val episodes = meta.videos.mapNotNull { video ->
             val season = video.season ?: return@mapNotNull null
             val episode = video.episode ?: return@mapNotNull null
@@ -211,6 +218,31 @@ class CalendarRepository @Inject constructor(
             metaRepository.getMeta("https://v3-cinemeta.strem.io", "series", imdb)
                 .firstOrNull { it is NetworkResult.Success || it is NetworkResult.Error }
                 ?.let { (it as? NetworkResult.Success)?.data }
+        }
+    }.getOrNull()
+
+    /**
+     * 666TVF (11/11) : repli si Cinemeta ne répond pas. TMDB ne donne que le jour : l'heure est mise à
+     * 20 h (heure de New York), comme la plupart des diffusions américaines suivies.
+     */
+    private suspend fun tmdbEpisodes666(seed: SeriesSeed): List<CalendarEpisode>? = runCatching {
+        val tmdbNum = tmdbService.ensureTmdbId(seed.id, "series")?.removePrefix("tmdb:")?.toIntOrNull() ?: return null
+        val (name, seasons) = tmdbService.tvBasics666(tmdbNum) ?: return null
+        val ny = java.time.ZoneId.of("America/New_York")
+        (maxOf(1, seasons - 1)..seasons).flatMap { season ->
+            tmdbService.seasonAirDates666(tmdbNum, season).orEmpty().mapNotNull { (ep, date) ->
+                date ?: return@mapNotNull null
+                CalendarEpisode(
+                    seriesId = seed.id,
+                    seriesName = seed.name.ifBlank { name.orEmpty() },
+                    poster = seed.poster,
+                    season = season,
+                    episode = ep,
+                    title = null,
+                    airInstant = date.atTime(20, 0).atZone(ny).toInstant(),
+                    addonBaseUrl = seed.addonBaseUrl
+                )
+            }
         }
     }.getOrNull()
 

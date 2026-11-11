@@ -217,6 +217,12 @@ class TmdbService @Inject constructor(
         seasonAirDates666(tmdbId, season)?.let { pickEpisodeByDate666(it, date) }
 
     /** Les épisodes TMDB d'une saison avec leur date de diffusion (gardés 6 h). */
+    /** 666TVF (11/11) : nom et nombre de saisons d'une série (repli du calendrier si Cinemeta se tait). */
+    suspend fun tvBasics666(tmdbId: Int): Pair<String?, Int>? = withContext(Dispatchers.IO) {
+        runCatching { tmdbApi.getTvDetails(tmdbId, TMDB_API_KEY, "fr-FR").body() }.getOrNull()
+            ?.let { d -> d.numberOfSeasons?.takeIf { it > 0 }?.let { (d.name) to it } }
+    }
+
     suspend fun seasonAirDates666(tmdbId: Int, season: Int): List<Pair<Int, java.time.LocalDate?>>? = withContext(Dispatchers.IO) {
         val key = "$tmdbId:$season"
         val cached = seasonDates666[key]?.takeIf { System.currentTimeMillis() - it.first < 6L * 3600 * 1000 }?.second

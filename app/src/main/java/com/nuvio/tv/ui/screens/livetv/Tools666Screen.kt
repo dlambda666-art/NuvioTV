@@ -115,6 +115,11 @@ class Tools666ViewModel @Inject constructor(
                 list += { webRow("Internet", "https://clients3.google.com/generate_204") }
                 list += { webRow("TorBox", "https://api.torbox.app/") }
                 list += { webRow("Passer le générique (IntroDB)", "https://api.introdb.app/") }
+                // 666TVF (11/11) : le moteur VF (French-Stream + ce que la Shield a appris)
+                list += {
+                    val (detail, ok) = runCatching { com.nuvio.tv.core.tools.VfCheck666.engineStatus() }.getOrDefault("Erreur" to false)
+                    Health666("Moteur VF", detail, ok)
+                }
                 // 666TVF : commencé en bas, repris en haut — passe par le compte Nuvio des deux Shield.
                 list += {
                     if (startupSync666.hasAccount666) Health666("Reprise entre les Shield", "Compte Nuvio connecté", true)
