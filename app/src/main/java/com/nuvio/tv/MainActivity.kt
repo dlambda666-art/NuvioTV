@@ -1430,7 +1430,23 @@ open class MainActivity : ComponentActivity() {
                                             autoRecordRunning666 = true
                                             lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                                                 runCatching { autoRecord666.sweep(watchProgressRepository666) }
-                                                if (!inPlayerNow666) runCatching { autoRecord666.runOnce { com.nuvio.tv.core.tools.Announce666.watcherBusy() } }
+                                                if (!inPlayerNow666) runCatching {
+                                                    // 666TVF (12/11) : toutes les nouveautés VF s'enregistrent — les films entrés
+                                                    // dans « En VF cette semaine » ces 7 derniers jours, en plus de ceux du guetteur
+                                                    val weekAgo = System.currentTimeMillis() - 7L * 24 * 3600_000L
+                                                    val fresh = runCatching { com.nuvio.tv.core.tools.LocalCatalogs666.week("movie") }.getOrDefault(emptyList())
+                                                        .filter { it.at >= weekAgo && it.id.startsWith("tt") }
+                                                        .map { com.nuvio.tv.core.tools.VfWatcher666.Found(it.id, it.name, it.poster) }
+                                                    if (fresh.isNotEmpty()) autoRecord666.offerFilms(fresh)
+                                                    var cal666: List<com.nuvio.tv.core.calendar.CalendarEpisode>? = null
+                                                    autoRecord666.runOnce(
+                                                        busy = { com.nuvio.tv.core.tools.Announce666.watcherBusy() },
+                                                        recent = { sid ->
+                                                            val all = cal666 ?: runCatching { calendarRepository.episodes(daysBack = 14, daysAhead = 0) }.getOrDefault(emptyList()).also { cal666 = it }
+                                                            all.filter { it.seriesId == sid }
+                                                        }
+                                                    )
+                                                }
                                                 autoRecordRunning666 = false
                                             }
                                         }

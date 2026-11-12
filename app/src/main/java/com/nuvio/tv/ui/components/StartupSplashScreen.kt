@@ -151,6 +151,7 @@ fun StartupSplashScreen(
     val toDoor = remember { Animatable(0f) }
     val open = remember { Animatable(0f) }
     val finalFade = remember { Animatable(0f) }
+    val push = remember { Animatable(0f) }
     LaunchedEffect(closing) {
         if (!closing) return@LaunchedEffect
         // la bobine baisse doucement jusqu'à l'ouverture des portes et au fondu (pas de grincement)
@@ -165,9 +166,14 @@ fun StartupSplashScreen(
         }
         toDoor.animateTo(1f, tween(700))
         kotlinx.coroutines.delay(400)
-        open.animateTo(1f, tween(3_200, easing = FastOutSlowInEasing))
-        // 11/11 : un seul fondu, une fois les portes grandes ouvertes (avant : il commençait à 72 %)
-        finalFade.animateTo(1f, tween(900))
+        // 12/11 : les portes s'ouvrent et on avance sans s'arrêter, jusqu'à ce que les montants sortent
+        // de l'écran : on est dans l'abattoir. Plus de fondu (rien ne reste à effacer).
+        kotlinx.coroutines.coroutineScope {
+            launch { open.animateTo(1f, tween(3_200, easing = FastOutSlowInEasing)) }
+            kotlinx.coroutines.delay(1_100)
+            push.animateTo(1f, tween(2_500, easing = androidx.compose.animation.core.CubicBezierEasing(0.5f, 0f, 0.9f, 0.6f)))
+        }
+        finalFade.snapTo(1f)
         fade.join()
         onClosedNow()
     }
@@ -280,9 +286,11 @@ fun StartupSplashScreen(
 
         // ---------------- La porte ----------------
         if (toDoor.value > 0f) {
-            val zoom = 1f + ((open.value - 0.45f) / 0.55f).coerceIn(0f, 1f) * 0.35f
+            // ×2,05 autour du centre de l'embrasure : les montants sont alors hors de l'écran
+            val zoom = 1f + push.value * 1.05f
             Box(Modifier.fillMaxSize().graphicsLayer {
                 alpha = toDoor.value; scaleX = zoom; scaleY = zoom
+                transformOrigin = TransformOrigin((DOOR_X0 + DOOR_X1) / 2f, (DOOR_Y0 + DOOR_Y1) / 2f)
                 compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen   // pour percer l'embrasure
             }) {
                 Image(

@@ -137,6 +137,17 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit, onPlayRemote: (Re
                     }
                 }
             }
+            // 666TVF (12/11) : ce qui attend un lien pour s'enregistrer tout seul (essais toutes les 3 h)
+            val waiting666 = if (Record666.enabledHere()) com.nuvio.tv.core.tools.AutoRecord666.waiting(context) else emptyList()
+            if (waiting666.isNotEmpty()) {
+                item { Section("En attente (enregistrement auto)") }
+                val rowsW = waiting666.chunked(6)
+                items(rowsW.size, key = { "w_$it" }) { i ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(22.dp), modifier = Modifier.padding(bottom = 16.dp)) {
+                        rowsW[i].forEach { w -> WaitingCard666(w) }
+                    }
+                }
+            }
             if (ongoing.isNotEmpty()) {
                 item { Section("En cours") }
                 items(ongoing, key = { "o_" + it.id }) { r ->
@@ -179,6 +190,24 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit, onPlayRemote: (Re
                 onDismiss = { menuFor = null }
             )
         }
+    }
+}
+
+@Composable
+private fun WaitingCard666(w: com.nuvio.tv.core.tools.AutoRecord666.Waiting) {
+    val now = System.currentTimeMillis()
+    Column(Modifier.width(150.dp)) {
+        Box(Modifier.fillMaxWidth().height(225.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF2A2230))) {
+            if (w.poster != null) AsyncImage(model = w.poster, contentDescription = w.label, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        }
+        Text(w.label, color = RGrey, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
+        val (line, color) = when {
+            w.nextAt <= now -> "Recherche au prochain passage" to RGreen
+            else -> ("Essai ${w.tries}/${com.nuvio.tv.core.tools.AutoRecord666.MAX_TRIES} · prochain à " +
+                java.text.SimpleDateFormat("HH:mm", java.util.Locale.FRANCE).format(java.util.Date(w.nextAt))) to Color(0xFFE8B04A)
+        }
+        Text(line, color = color, fontSize = 12.sp)
+        if (w.why != null && w.nextAt > now) Text(w.why, color = RDim, fontSize = 12.sp, maxLines = 2)
     }
 }
 

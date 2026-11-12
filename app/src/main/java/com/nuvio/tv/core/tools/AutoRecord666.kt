@@ -41,7 +41,10 @@ class AutoRecord666 @Inject constructor(
         val episode: Int,
         val title: String?,
         val tries: Int,
-        val nextAt: Long
+        val nextAt: Long,
+        /** 11/11 : jour de diffusion (retrouver le bon numéro si la source a numéroté autrement). */
+        val air: Long = 0L,
+        val why: String? = null
     ) {
         val key get() = "$seriesId:$season:$episode"
     }
@@ -62,7 +65,7 @@ class AutoRecord666 @Inject constructor(
             if (ep.key in seen || ep.dayKeys666.any { it in seen }) return@forEach
             seen += ep.key
             seen += ep.dayKey666
-            list += Pending(ep.seriesId, ep.seriesName, ep.poster, ep.season, ep.episode, ep.title, 0, 0)
+            list += Pending(ep.seriesId, ep.seriesName, ep.poster, ep.season, ep.episode, ep.title, 0, 0, ep.airInstant.toEpochMilli())
         }
         prefs.edit().putStringSet("seen", seen.toList().takeLast(500).toSet()).apply()
         save(list)
@@ -75,7 +78,7 @@ class AutoRecord666 @Inject constructor(
             Pending(
                 o.getString("id"), o.optString("name"), o.optString("poster").ifBlank { null },
                 o.getInt("s"), o.getInt("e"), o.optString("title").ifBlank { null },
-                o.optInt("tries"), o.optLong("next")
+                o.optInt("tries"), o.optLong("next"), o.optLong("air"), o.optString("why").ifBlank { null }
             )
         }
     }.getOrDefault(emptyList())
@@ -85,14 +88,14 @@ class AutoRecord666 @Inject constructor(
         list.forEach { p ->
             arr.put(JSONObject().put("id", p.seriesId).put("name", p.seriesName).put("poster", p.poster ?: "")
                 .put("s", p.season).put("e", p.episode).put("title", p.title ?: "")
-                .put("tries", p.tries).put("next", p.nextAt))
+                .put("tries", p.tries).put("next", p.nextAt).put("air", p.air).put("why", p.why ?: ""))
         }
         prefs.edit().putString("pending", arr.toString()).apply()
     }
 
     // ---------- Films trouvés en VF par le guetteur (04/11) ----------
 
-    data class FilmPending(val imdbId: String, val name: String, val poster: String?, val tries: Int, val nextAt: Long)
+    data class FilmPending(val imdbId: String, val name: String, val poster: String?, val tries: Int, val nextAt: Long, val why: String? = null)
 
     /** Le guetteur vient de crier pour ces films : on les enregistre aussi (Shield du bas). */
     fun offerFilms(films: List<VfWatcher666.Found>) {
@@ -114,14 +117,14 @@ class AutoRecord666 @Inject constructor(
         val arr = JSONArray(prefs.getString("films", "[]"))
         (0 until arr.length()).map { i ->
             val o = arr.getJSONObject(i)
-            FilmPending(o.getString("id"), o.optString("name"), o.optString("poster").ifBlank { null }, o.optInt("tries"), o.optLong("next"))
+            FilmPending(o.getString("id"), o.optString("name"), o.optString("poster").ifBlank { null }, o.optInt("tries"), o.optLong("next"), o.optString("why").ifBlank { null })
         }
     }.getOrDefault(emptyList())
 
     private fun saveFilms(list: List<FilmPending>) {
         val arr = JSONArray()
         list.forEach { f ->
-            arr.put(JSONObject().put("id", f.imdbId).put("name", f.name).put("poster", f.poster ?: "").put("tries", f.tries).put("next", f.nextAt))
+            arr.put(JSONObject().put("id", f.imdbId).put("name", f.name).put("poster", f.poster ?: "").put("tries", f.tries).put("next", f.nextAt).put("why", f.why ?: ""))
         }
         prefs.edit().putString("films", arr.toString()).apply()
     }
@@ -141,7 +144,7 @@ class AutoRecord666 @Inject constructor(
                 dropFilm(f)
                 Announce666.log(context, "Enregistrement auto : pas de lien 1080p VF qui tient sur le disque pour ${f.name}", "enregistrement")
             } else {
-                saveFilms(filmsPending().map { if (it.imdbId == f.imdbId) it.copy(tries = it.tries + 1, nextAt = now + RETRY_MS) else it })
+                saveFilms(filmsPending().map { if (it.imdbId == f.imdbId) it.copy(tries = it.tries + 1, nextAt = now + RETRY_MS, why = NO_LINK) else it })
             }
         }
     }
@@ -181,14 +184,16 @@ class AutoRecord666 @Inject constructor(
     }
 
     /** Un tour : cherche un lien pour chaque épisode en attente (quand tu ne regardes ni ne cherches rien). */
-    suspend fun runOnce(busy: () -> Boolean) {
+    suspend fun runOnce(busy: () -> Boolean, recent: suspend (String) -> List<CalendarEpisode> = { emptyList() }) {
         if (!Record666.enabledHere()) return
         Record666.init(context)
         runCatching { runFilms(busy) }
         val now = System.currentTimeMillis()
-        for (p in pending()) {
+        for (p0 in pending()) {
             if (busy()) return
-            if (p.nextAt > now) continue
+            if (p0.nextAt > now) continue
+            // 11/11 : numéroté par TMDB (Cinemeta en panne) → le vrai numéro, retrouvé par le jour de diffusion
+            val p = runCatching { renumbered(p0, recent(p0.seriesId)) }.getOrNull()?.also { replace(p0, it) } ?: p0
             val id = Record666.idFor(p.seriesId, null, p.season, p.episode)
             if (Record666.items.value.any { it.id == id && it.status != Record666.Status.FAILED }) { drop(p); continue }
             val msg = runCatching { tryRecord(p) }.getOrElse { Log.w(TAG, "auto ${p.key}", it); null }
@@ -199,7 +204,7 @@ class AutoRecord666 @Inject constructor(
                 drop(p)
                 Announce666.log(context, "Enregistrement auto : pas de lien 1080p VF qui tient sur la clé pour ${p.seriesName} S${p.season}E${p.episode}", "enregistrement")
             } else {
-                replace(p, p.copy(tries = p.tries + 1, nextAt = now + RETRY_MS))
+                replace(p, p.copy(tries = p.tries + 1, nextAt = now + RETRY_MS, why = NO_LINK))
             }
         }
     }
@@ -277,6 +282,45 @@ class AutoRecord666 @Inject constructor(
             }.getOrNull()
             p.edit().putStringSet("seen", seen).apply { if (pend != null) putString("pending", pend) }.apply()
         }
+        const val NO_LINK = "Pas encore de lien 1080p VF prêt"
+
+        /**
+         * Règle pure (testée) : le même épisode dans le calendrier du moment, s'il porte un autre numéro.
+         * Par le jour de diffusion ; sans jour (anciennes attentes) : si ce numéro n'existe pas dans le
+         * calendrier, le dernier épisode sorti de la série. Null si rien à changer.
+         */
+        fun renumbered(p: Pending, cal: List<CalendarEpisode>, now: Long = System.currentTimeMillis()): Pending? {
+            val mine = cal.filter { it.seriesId == p.seriesId && it.season > 0 && it.episode > 0 && it.airInstant.toEpochMilli() <= now }
+            if (mine.isEmpty() || mine.any { it.season == p.season && it.episode == p.episode }) return null
+            val match = if (p.air > 0) {
+                val day = java.time.Instant.ofEpochMilli(p.air).atZone(java.time.ZoneOffset.UTC).toLocalDate()
+                mine.firstOrNull { e -> e.dayKeys666.contains("${p.seriesId}@$day") }
+            } else mine.maxByOrNull { it.airInstant }
+            match ?: return null
+            return p.copy(season = match.season, episode = match.episode, title = match.title ?: p.title, air = match.airInstant.toEpochMilli())
+        }
+
+        /** Pour l'écran Enregistrements : ce qui attend un lien (films et épisodes). */
+        data class Waiting(val label: String, val poster: String?, val tries: Int, val nextAt: Long, val why: String?)
+
+        fun waiting(context: Context): List<Waiting> {
+            val prefs = context.getSharedPreferences("666tv_auto_rec", Context.MODE_PRIVATE)
+            val films = runCatching {
+                val arr = JSONArray(prefs.getString("films", "[]"))
+                (0 until arr.length()).map { i -> arr.getJSONObject(i) }.map { o ->
+                    Waiting(o.optString("name"), o.optString("poster").ifBlank { null }, o.optInt("tries"), o.optLong("next"), o.optString("why").ifBlank { null })
+                }
+            }.getOrDefault(emptyList())
+            val eps = runCatching {
+                val arr = JSONArray(prefs.getString("pending", "[]"))
+                (0 until arr.length()).map { i -> arr.getJSONObject(i) }.map { o ->
+                    Waiting("${o.optString("name")} · S${o.optInt("s")}E${o.optInt("e")}", o.optString("poster").ifBlank { null },
+                        o.optInt("tries"), o.optLong("next"), o.optString("why").ifBlank { null })
+                }
+            }.getOrDefault(emptyList())
+            return films + eps
+        }
+
         const val MAX_TRIES = 8
         const val RETRY_MS = 3L * 3600 * 1000
 
