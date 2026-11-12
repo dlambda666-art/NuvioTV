@@ -49,6 +49,9 @@ class AutoRecord666 @Inject constructor(
         val key get() = "$seriesId:$season:$episode"
     }
 
+    /** Pour l'écran Enregistrements : ce qui attend un lien (films et épisodes). */
+    data class Waiting(val label: String, val poster: String?, val tries: Int, val nextAt: Long, val why: String?)
+
     var enabled: Boolean
         get() = prefs.getBoolean("on", true)
         set(v) { prefs.edit().putBoolean("on", v).apply() }
@@ -299,9 +302,6 @@ class AutoRecord666 @Inject constructor(
             match ?: return null
             return p.copy(season = match.season, episode = match.episode, title = match.title ?: p.title, air = match.airInstant.toEpochMilli())
         }
-
-        /** Pour l'écran Enregistrements : ce qui attend un lien (films et épisodes). */
-        data class Waiting(val label: String, val poster: String?, val tries: Int, val nextAt: Long, val why: String?)
 
         fun waiting(context: Context): List<Waiting> {
             val prefs = context.getSharedPreferences("666tv_auto_rec", Context.MODE_PRIVATE)
