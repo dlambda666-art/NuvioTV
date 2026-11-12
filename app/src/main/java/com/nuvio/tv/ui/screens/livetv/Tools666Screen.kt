@@ -126,6 +126,17 @@ class Tools666ViewModel @Inject constructor(
                         else -> Health666("Lien entre les Shield", "${peer.name} ne répond pas (éteinte, 666TVF fermé, ou modem en train de redémarrer)", null)
                     }
                 }
+                // 666TVF (12/11) : la mise à jour automatique de l'autre Shield
+                list += {
+                    val theirs = runCatching { com.nuvio.tv.core.tools.Lien666.peerVersion() }.getOrNull()
+                    val mine = com.nuvio.tv.core.tools.Maj666.myCode(appCtx666)
+                    when {
+                        theirs == null -> Health666("Mise à jour de l'autre Shield", "Autre Shield injoignable pour l'instant", null)
+                        theirs.code >= mine -> Health666("Mise à jour de l'autre Shield", "À jour (${theirs.name})", true)
+                        else -> Health666("Mise à jour de l'autre Shield", "En retard (${theirs.name}) · " +
+                            (com.nuvio.tv.core.tools.Maj666.lastStatus(appCtx666) ?: "envoi au prochain passage"), null)
+                    }
+                }
                 // 666TVF (11/11) : le moteur VF (French-Stream + ce que la Shield a appris)
                 list += {
                     val (detail, ok) = runCatching { com.nuvio.tv.core.tools.VfCheck666.engineStatus() }.getOrDefault("Erreur" to false)

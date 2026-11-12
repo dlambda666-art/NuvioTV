@@ -530,6 +530,8 @@ dependencies {
     add("fullImplementation", libs.crypto.js)
     // QR code + local server for addon management
     implementation(libs.nanohttpd)
+    // 666TVF (12/11) : la Shield du bas installe elle-même la mise à jour sur celle du haut (débogage réseau)
+    implementation(libs.dadb)
     implementation(libs.zxing.core)
 
 

@@ -1343,6 +1343,8 @@ open class MainActivity : ComponentActivity() {
                                 mutableStateOf<List<com.nuvio.tv.core.calendar.CalendarEpisode>>(emptyList())
                             }
                             val inPlayerNow666 by androidx.compose.runtime.rememberUpdatedState(currentRoute?.startsWith("player/") == true)
+                            // 666TVF (12/11) : l'autre Shield ne nous installe pas de mise à jour pendant un film
+                            androidx.compose.runtime.SideEffect { com.nuvio.tv.core.tools.Lien666.playing = inPlayerNow666 }
                             LaunchedEffect(activeProfile?.id) {
                                 delay(20_000L)
                                 var loops666 = 0
@@ -1484,6 +1486,10 @@ open class MainActivity : ComponentActivity() {
                                                 // pas de réponse (modem relancé, Shield éteinte) : on réessaie dans 1 h
                                                 if (runCatching { com.nuvio.tv.core.tools.Lien666.syncNow(appCtx666) }.getOrNull() == null)
                                                     mp.edit().putLong("try_at", now - 5 * 3600_000L).apply()
+                                            }
+                                            // 666TVF (12/11) : plus récente ici → installée sur l'autre Shield (débogage réseau)
+                                            runCatching { com.nuvio.tv.core.tools.Maj666.pushIfNewer(appCtx666) }.getOrNull()?.let { line ->
+                                                runCatching { com.nuvio.tv.core.tools.Announce666.log(appCtx666, line, "mise à jour") }
                                             }
                                             if (now - mp.getLong("usb_at", 0L) > 24 * 3600_000L) {
                                                 mp.edit().putLong("usb_at", now).apply()

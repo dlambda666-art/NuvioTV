@@ -73,6 +73,9 @@ object Lien666 {
         val base: String get() = "http://${if (host.contains(':')) "[$host]" else host}:$port"
     }
 
+    /** Un film est en cours sur cette Shield (on n'y installe rien à ce moment-là). */
+    @Volatile var playing: Boolean = false
+
     @Volatile var peer: Peer? = null
         private set
     @Volatile private var started = false
@@ -191,6 +194,13 @@ object Lien666 {
         return true
     }
 
+    data class PeerVersion(val code: Long, val name: String, val playing: Boolean)
+
+    suspend fun peerVersion(): PeerVersion? = withContext(Dispatchers.IO) {
+        val raw = fetch("/version") ?: return@withContext null
+        runCatching { JSONObject(raw).let { PeerVersion(it.getLong("code"), it.optString("name"), it.optBoolean("playing")) } }.getOrNull()
+    }
+
     /** Les enregistrements prêts de l'autre Shield. */
     suspend fun remoteRecs(): List<Record666.Rec> = withContext(Dispatchers.IO) {
         val raw = fetch("/recs") ?: return@withContext emptyList()
@@ -216,6 +226,9 @@ object Lien666 {
             if (session.method != Method.GET) return@runCatching notFound()
             val uri = session.uri
             when {
+                // 12/11 : quelle version tourne ici (et un film est-il en cours ?) — pour Maj666
+                uri == "/version" -> newFixedLengthResponse(Response.Status.OK, "application/json",
+                    JSONObject().put("code", Maj666.myCode(app)).put("name", Maj666.myName(app)).put("playing", playing).toString())
                 uri == "/memoire" -> newFixedLengthResponse(Response.Status.OK, "application/json", Memoire666.export(app).toString())
                 uri == "/recs" -> {
                     // l'adresse d'origine (lien debrid) et ses en-têtes ne quittent jamais la Shield
