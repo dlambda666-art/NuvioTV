@@ -46,4 +46,14 @@ class LocalCatalogs666Test {
         assertEquals(now - 3 * day, again.first { it.id == "tt15140973" }.at)
         assertEquals(emptyList<String>(), LocalCatalogs666.mergeSeed(old, emptyList(), now + 40 * day).map { it.id })
     }
+
+    // 12/11 piège : Scream 7 et Marty Supreme (VF trouvée cette semaine, sortis il y a des mois) ne s'enregistrent pas
+    @Test fun `nouveaute - sortie depuis moins de 3 mois seulement`() {
+        val today = java.time.LocalDate.parse("2026-11-12")
+        assertTrue(LocalCatalogs666.isRecentRelease(java.time.LocalDate.parse("2026-10-07"), today))    // Malfaisante
+        assertFalse(LocalCatalogs666.isRecentRelease(java.time.LocalDate.parse("2026-02-27"), today))   // Scream 7
+        assertFalse(LocalCatalogs666.isRecentRelease(java.time.LocalDate.parse("2025-12-25"), today))   // Marty Supreme
+        assertFalse(LocalCatalogs666.isRecentRelease(null, today))
+        assertFalse(LocalCatalogs666.isRecentRelease(java.time.LocalDate.parse("2026-12-01"), today))   // pas encore sorti
+    }
 }

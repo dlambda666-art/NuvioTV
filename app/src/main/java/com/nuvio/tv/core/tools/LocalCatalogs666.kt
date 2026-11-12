@@ -253,6 +253,25 @@ object LocalCatalogs666 {
             ?: optJSONArray("genres")?.let { a -> (0 until a.length()).mapNotNull { a.optJSONObject(it)?.optInt("id") } }
             ?: emptyList()
 
+    /**
+     * 12/11 : date de sortie (la première, en général le cinéma) d'un film IMDb, via TMDB. Gardée en
+     * mémoire. Sert à n'enregistrer que les vraies nouveautés (Scream 7, Marty Supreme : VF trouvée
+     * cette semaine, mais sortis il y a des mois).
+     */
+    fun releaseDate(imdbId: String): java.time.LocalDate? {
+        val p = prefs()
+        p?.getString("rel_$imdbId", null)?.let { return runCatching { java.time.LocalDate.parse(it) }.getOrNull() }
+        val key = BuildConfig.TMDB_API_KEY.takeIf { it.isNotBlank() } ?: return null
+        val d = tmdb("/find/$imdbId?external_source=imdb_id", key)?.optJSONArray("movie_results")?.optJSONObject(0)
+            ?.optString("release_date")?.takeIf { it.length >= 10 } ?: return null
+        p?.edit()?.putString("rel_$imdbId", d)?.apply()
+        return runCatching { java.time.LocalDate.parse(d) }.getOrNull()
+    }
+
+    /** Règle pure (testée) : une nouveauté = sortie depuis moins de 3 mois (date inconnue → non). */
+    fun isRecentRelease(date: java.time.LocalDate?, today: java.time.LocalDate): Boolean =
+        date != null && !date.isAfter(today) && !date.isBefore(today.minusMonths(3))
+
     private fun tmdb(path: String, key: String): JSONObject? {
         val sep = if ('?' in path) '&' else '?'
         val raw = Http666.get("https://api.themoviedb.org/3$path${sep}api_key=$key", 15_000) ?: return null

@@ -50,7 +50,7 @@ class AutoRecord666 @Inject constructor(
     }
 
     /** Pour l'écran Enregistrements : ce qui attend un lien (films et épisodes). */
-    data class Waiting(val label: String, val poster: String?, val tries: Int, val nextAt: Long, val why: String?)
+    data class Waiting(val label: String, val poster: String?, val tries: Int, val nextAt: Long, val why: String?, val filmId: String? = null, val epKey: String? = null)
 
     var enabled: Boolean
         get() = prefs.getBoolean("on", true)
@@ -287,6 +287,30 @@ class AutoRecord666 @Inject constructor(
         }
         const val NO_LINK = "Pas encore de lien 1080p VF prêt"
 
+        /** 12/11 : retirer un film de la file (appui long dans l'écran, ou trop vieux). */
+        fun removeFilm(context: Context, imdbId: String) {
+            val prefs = context.getSharedPreferences("666tv_auto_rec", Context.MODE_PRIVATE)
+            runCatching {
+                val arr = JSONArray(prefs.getString("films", "[]"))
+                val out = JSONArray()
+                for (i in 0 until arr.length()) arr.getJSONObject(i).let { if (it.optString("id") != imdbId) out.put(it) }
+                prefs.edit().putString("films", out.toString()).apply()
+            }
+        }
+
+        /** Retirer un épisode de la file (appui long dans l'écran). */
+        fun removeEpisode(context: Context, key: String) {
+            val prefs = context.getSharedPreferences("666tv_auto_rec", Context.MODE_PRIVATE)
+            runCatching {
+                val arr = JSONArray(prefs.getString("pending", "[]"))
+                val out = JSONArray()
+                for (i in 0 until arr.length()) arr.getJSONObject(i).let {
+                    if ("${it.optString("id")}:${it.optInt("s")}:${it.optInt("e")}" != key) out.put(it)
+                }
+                prefs.edit().putString("pending", out.toString()).apply()
+            }
+        }
+
         /**
          * Règle pure (testée) : le même épisode dans le calendrier du moment, s'il porte un autre numéro.
          * Par le jour de diffusion ; sans jour (anciennes attentes) : si ce numéro n'existe pas dans le
@@ -308,14 +332,15 @@ class AutoRecord666 @Inject constructor(
             val films = runCatching {
                 val arr = JSONArray(prefs.getString("films", "[]"))
                 (0 until arr.length()).map { i -> arr.getJSONObject(i) }.map { o ->
-                    Waiting(o.optString("name"), o.optString("poster").ifBlank { null }, o.optInt("tries"), o.optLong("next"), o.optString("why").ifBlank { null })
+                    Waiting(o.optString("name"), o.optString("poster").ifBlank { null }, o.optInt("tries"), o.optLong("next"), o.optString("why").ifBlank { null }, filmId = o.optString("id"))
                 }
             }.getOrDefault(emptyList())
             val eps = runCatching {
                 val arr = JSONArray(prefs.getString("pending", "[]"))
                 (0 until arr.length()).map { i -> arr.getJSONObject(i) }.map { o ->
                     Waiting("${o.optString("name")} · S${o.optInt("s")}E${o.optInt("e")}", o.optString("poster").ifBlank { null },
-                        o.optInt("tries"), o.optLong("next"), o.optString("why").ifBlank { null })
+                        o.optInt("tries"), o.optLong("next"), o.optString("why").ifBlank { null },
+                        epKey = "${o.optString("id")}:${o.optInt("s")}:${o.optInt("e")}")
                 }
             }.getOrDefault(emptyList())
             return films + eps

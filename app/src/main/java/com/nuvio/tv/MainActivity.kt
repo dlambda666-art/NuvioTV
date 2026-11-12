@@ -1434,10 +1434,23 @@ open class MainActivity : ComponentActivity() {
                                                     // 666TVF (12/11) : toutes les nouveautés VF s'enregistrent — les films entrés
                                                     // dans « En VF cette semaine » ces 7 derniers jours, en plus de ceux du guetteur
                                                     val weekAgo = System.currentTimeMillis() - 7L * 24 * 3600_000L
-                                                    val fresh = runCatching { com.nuvio.tv.core.tools.LocalCatalogs666.week("movie") }.getOrDefault(emptyList())
-                                                        .filter { it.at >= weekAgo && it.id.startsWith("tt") }
-                                                        .map { com.nuvio.tv.core.tools.VfWatcher666.Found(it.id, it.name, it.poster) }
+                                                    // (12/11) seulement les vraies nouveautés : sorties depuis moins de 3 mois
+                                                    val today666 = java.time.LocalDate.now()
+                                                    val fresh = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                        runCatching { com.nuvio.tv.core.tools.LocalCatalogs666.week("movie") }.getOrDefault(emptyList())
+                                                            .filter { it.at >= weekAgo && it.id.startsWith("tt") }
+                                                            .filter { com.nuvio.tv.core.tools.LocalCatalogs666.isRecentRelease(com.nuvio.tv.core.tools.LocalCatalogs666.releaseDate(it.id), today666) }
+                                                            .map { com.nuvio.tv.core.tools.VfWatcher666.Found(it.id, it.name, it.poster) }
+                                                    }
                                                     if (fresh.isNotEmpty()) autoRecord666.offerFilms(fresh)
+                                                    // et ce qui attend déjà mais n'est pas une nouveauté (Scream 7, Marty Supreme) sort de la file
+                                                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                        autoRecord666.filmsPending().forEach { f ->
+                                                            val d = com.nuvio.tv.core.tools.LocalCatalogs666.releaseDate(f.imdbId)
+                                                            if (d != null && !com.nuvio.tv.core.tools.LocalCatalogs666.isRecentRelease(d, today666))
+                                                                com.nuvio.tv.core.tools.AutoRecord666.removeFilm(applicationContext, f.imdbId)
+                                                        }
+                                                    }
                                                     var cal666: List<com.nuvio.tv.core.calendar.CalendarEpisode>? = null
                                                     autoRecord666.runOnce(
                                                         busy = { com.nuvio.tv.core.tools.Announce666.watcherBusy() },

@@ -65,6 +65,7 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit, onPlayRemote: (Re
     val live by Record666.live.collectAsState()
     var place by remember { mutableStateOf(Record666.place(context)) }
     var menuFor by remember { mutableStateOf<Record666.Rec?>(null) }
+    var removed666 by remember { mutableStateOf(setOf<String>()) }
     LaunchedEffect(Unit) {
         while (true) { delay(5_000); place = Record666.place(context) }
     }
@@ -137,17 +138,6 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit, onPlayRemote: (Re
                     }
                 }
             }
-            // 666TVF (12/11) : ce qui attend un lien pour s'enregistrer tout seul (essais toutes les 3 h)
-            val waiting666 = if (Record666.enabledHere()) com.nuvio.tv.core.tools.AutoRecord666.waiting(context) else emptyList()
-            if (waiting666.isNotEmpty()) {
-                item { Section("En attente (enregistrement auto)") }
-                val rowsW = waiting666.chunked(6)
-                items(rowsW.size, key = { "w_$it" }) { i ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(22.dp), modifier = Modifier.padding(bottom = 16.dp)) {
-                        rowsW[i].forEach { w -> WaitingCard666(w) }
-                    }
-                }
-            }
             if (ongoing.isNotEmpty()) {
                 item { Section("En cours") }
                 items(ongoing, key = { "o_" + it.id }) { r ->
@@ -179,6 +169,28 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit, onPlayRemote: (Re
                     Text("OK : regarder · appui long sur OK : reprendre du début / garder / supprimer · vu → effacé 3 jours après", color = RDim, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
                 }
             }
+            // 666TVF (12/11) : en bas (en haut, le curseur ne pouvait plus descendre) — ce qui attend un lien pour s'enregistrer tout seul (essais toutes les 3 h)
+            val waiting666 = if (Record666.enabledHere()) com.nuvio.tv.core.tools.AutoRecord666.waiting(context).filterNot { it.label in removed666 } else emptyList()
+            if (waiting666.isNotEmpty()) {
+                item { Section("En attente (enregistrement auto)") }
+                val rowsW = waiting666.chunked(6)
+                items(rowsW.size, key = { "w_$it" }) { i ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(22.dp), modifier = Modifier.padding(bottom = 16.dp)) {
+                        rowsW[i].forEach { w ->
+                            WaitingCard666(
+                                w,
+                                modifier = if (ongoing.isEmpty() && ready.isEmpty() && i == 0 && w == rowsW[0].first()) Modifier.focusRequester(first) else Modifier,
+                                onRemove = {
+                                    w.filmId?.let { com.nuvio.tv.core.tools.AutoRecord666.removeFilm(context, it) }
+                                    w.epKey?.let { com.nuvio.tv.core.tools.AutoRecord666.removeEpisode(context, it) }
+                                    removed666 = removed666 + w.label
+                                    android.widget.Toast.makeText(context, "${w.label} : retiré de la file", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
         }
         menuFor?.let { r ->
             RecordMenu(
@@ -194,10 +206,20 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit, onPlayRemote: (Re
 }
 
 @Composable
-private fun WaitingCard666(w: com.nuvio.tv.core.tools.AutoRecord666.Waiting) {
+private fun WaitingCard666(w: com.nuvio.tv.core.tools.AutoRecord666.Waiting, modifier: Modifier = Modifier, onRemove: () -> Unit = {}) {
     val now = System.currentTimeMillis()
+    val context = LocalContext.current
     Column(Modifier.width(150.dp)) {
-        Box(Modifier.fillMaxWidth().height(225.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF2A2230))) {
+        // sélectionnable (rien ne se passe au clic) : sinon la liste ne peut pas défiler jusqu'ici
+        Surface(
+            // 12/11 : appui long = retirer de la file
+            onClick = { android.widget.Toast.makeText(context, "Appui long sur OK : retirer de la file", android.widget.Toast.LENGTH_SHORT).show() },
+            onLongClick = onRemove,
+            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
+            border = ClickableSurfaceDefaults.border(focusedBorder = androidx.tv.material3.Border(BorderStroke(3.dp, RMauveLight))),
+            colors = ClickableSurfaceDefaults.colors(containerColor = Color(0xFF2A2230), focusedContainerColor = Color(0xFF2A2230)),
+            modifier = modifier.fillMaxWidth().height(225.dp)
+        ) {
             if (w.poster != null) AsyncImage(model = w.poster, contentDescription = w.label, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
         Text(w.label, color = RGrey, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
