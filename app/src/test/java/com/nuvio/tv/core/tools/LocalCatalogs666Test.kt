@@ -1,6 +1,8 @@
 package com.nuvio.tv.core.tools
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** « En VF cette semaine » tenu sur la Shield (09/11). */
