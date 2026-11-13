@@ -1,20 +1,10 @@
-// Sonde (13/11) : adresse d'installation de l'addon TMDB public en français, testée (aucune clé)
-const fs = require('fs'); const { execSync } = require('child_process');
+// Sonde (13/11) : options de l'addon TMDB public liées aux identifiants IMDb (aucune clé)
+const fs = require('fs');
 (async () => {
   const r = { at: new Date().toISOString() };
-  execSync('npm i --no-save --silent lz-string@1.5.0', { stdio: 'ignore' });
-  const lz = require(process.cwd() + '/node_modules/lz-string');
-  const cats = [];
-  for (const [id, name] of [['tmdb.latest', 'Latest Releases'], ['tmdb.trending', 'Trending'], ['tmdb.top', 'Popular']])
-    for (const t of ['movie', 'series']) cats.push({ id, type: t, name, showInHome: true, enabled: true });
-  const cfg = { language: 'fr-FR', catalogs: cats, searchEnabled: 'true' };
-  const base = 'https://tmdb.elfhosted.com/' + lz.compressToEncodedURIComponent(JSON.stringify(cfg));
-  r.url = base + '/manifest.json';
-  const m = await (await fetch(r.url)).json();
-  r.desc = m.description; r.cats = (m.catalogs || []).map(c => c.type + ':' + c.id + ':' + c.name);
-  for (const c of (m.catalogs || []).slice(0, 2)) {
-    const x = await (await fetch(`${base}/catalog/${c.type}/${c.id}.json`)).json();
-    r['items_' + c.type + '_' + c.id] = (x.metas || []).slice(0, 5).map(v => v.name + (v.poster ? ' [affiche]' : ''));
-  }
+  const t = await (await fetch('https://tmdb.elfhosted.com/configure/assets/index-b2Yfghja.js')).text();
+  const i = t.indexOf('showAgeRatingWithImdbRating:typeof');
+  r.cfgObj = t.slice(Math.max(0, i - 2500), i + 200);
+  r.imdbKeys = [...new Set((t.match(/[a-zA-Z]*[Ii]mdb[a-zA-Z]*/g) || []))].slice(0, 40);
   fs.writeFileSync('test-report.json', JSON.stringify(r)); console.log('ok');
 })();
