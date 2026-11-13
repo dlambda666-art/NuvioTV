@@ -71,4 +71,21 @@ class VfWatcherCri666Test {
         assertFalse(VfWatcher666.isCryRelease("The.Odyssey.2026.FRENCH.1080p.TC.x264"))
         assertFalse(VfWatcher666.isCryRelease("L'Odyssée 2026 FRENCH HDCAM"))
     }
+
+    @Test fun `piege Clayface - film etranger encore au cinema, pas de cri`() {
+        val today = LocalDate.of(2026, 11, 13)
+        fun d(r: String, ty: Int, s: String) = VfWatcher666.RelDate(r, ty, LocalDate.parse(s))
+        // Clayface : salles FR/BE 21/10, USA 23/10 ; VOD USA 08/12, VOD FR 24/02/2027 (French-Stream : VF en CAM)
+        val clayface = listOf(d("FR", 3, "2026-10-21"), d("BE", 3, "2026-10-21"), d("CA", 3, "2026-10-23"),
+            d("US", 1, "2026-10-13"), d("US", 3, "2026-10-23"), d("US", 4, "2026-12-08"), d("FR", 5, "2027-02-24"))
+        assertTrue(VfWatcher666.isCinemaOnly("en", clayface, today))
+        // le 8 décembre, la VOD américaine est sortie : une vraie VFQ / VFF peut crier
+        assertFalse(VfWatcher666.isCinemaOnly("en", clayface, LocalDate.of(2026, 12, 8)))
+        // L'Odyssée : VOD USA déjà sortie, le HDLight VF crie avant la VOD française
+        assertFalse(VfWatcher666.isCinemaOnly("en", listOf(d("FR", 3, "2026-07-16"), d("US", 4, "2026-10-20"), d("FR", 4, "2026-11-17")), today))
+        // film français : ses propres règles (pas touché ici)
+        assertFalse(VfWatcher666.isCinemaOnly("fr", listOf(d("FR", 3, "2026-10-21")), today))
+        // aucune date connue : on ne bloque pas
+        assertFalse(VfWatcher666.isCinemaOnly("en", emptyList(), today))
+    }
 }

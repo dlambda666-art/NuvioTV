@@ -34,7 +34,7 @@ class VfWatcher666 @Inject constructor(
     /** Film trouvé en VF pendant ce passage (pour la bannière et le cri). */
     data class Found(val imdbId: String, val name: String, val poster: String?, val ple: Boolean = false, val season: Int = 0)
 
-    private data class Cand(val name: String, val poster: String?, val released: LocalDate? = null)
+    private data class Cand(val name: String, val poster: String?, val released: LocalDate? = null, val tmdbId: Int = 0)
 
     /** Null si pas encore l'heure, ou passage mis en pause (il reprendra). */
     suspend fun dailyRun(busy: () -> Boolean): Run? {
@@ -83,6 +83,9 @@ class VfWatcher666 @Inject constructor(
                 if (texts.any { FrankVf666.isSureVfRelease(it) }) sure = true
                 texts.any { isCryRelease(it) }
             }
+            // 666TVF (13/11) : Clayface a crié en plein cinéma (French-Stream : VF en CAM). Un film étranger
+            // encore en salle, sans aucune sortie VOD / Blu-ray : une « VF » en HD n'est qu'un son de salle ou un faux.
+            if (cry && cinemaOnly(names[id]?.tmdbId ?: 0)) { done += id; continue }
             if (sure || cry) found += names[id]?.name ?: id
             if (cry) {
                 val c = names[id]
@@ -360,13 +363,38 @@ class VfWatcher666 @Inject constructor(
                 "https://api.themoviedb.org/3/movie/${r.tmdbId}/external_ids?api_key=$key", 15_000
             )?.let { runCatching { JSONObject(it).optString("imdb_id") }.getOrNull() }
                 ?.takeIf { it.startsWith("tt") }?.also { idCache.edit().putString(r.tmdbId.toString(), it).apply() }
-            imdb?.let { it to Cand(r.title + (r.year?.let { y -> " ($y)" } ?: ""), r.poster, r.released) }
+            imdb?.let { it to Cand(r.title + (r.year?.let { y -> " ($y)" } ?: ""), r.poster, r.released, r.tmdbId) }
         }
+    }
+
+    /** Vrai si le film (TMDB) est encore seulement au cinéma (pas de sortie numérique) : pas de cri. */
+    private suspend fun cinemaOnly(tmdbId: Int): Boolean = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val key = BuildConfig.TMDB_API_KEY
+        if (tmdbId <= 0 || key.isBlank()) return@withContext false
+        val raw = Http666.get("https://api.themoviedb.org/3/movie/$tmdbId?api_key=$key&append_to_response=release_dates", 15_000)
+            ?: return@withContext false
+        runCatching {
+            val o = JSONObject(raw)
+            val dates = mutableListOf<RelDate>()
+            val arr = o.optJSONObject("release_dates")?.optJSONArray("results") ?: JSONArray()
+            for (i in 0 until arr.length()) {
+                val c = arr.optJSONObject(i) ?: continue
+                val list = c.optJSONArray("release_dates") ?: continue
+                for (j in 0 until list.length()) {
+                    val d = list.optJSONObject(j) ?: continue
+                    val day = runCatching { LocalDate.parse(d.optString("release_date").take(10)) }.getOrNull() ?: continue
+                    dates += RelDate(c.optString("iso_3166_1"), d.optInt("type"), day)
+                }
+            }
+            isCinemaOnly(o.optString("original_language"), dates, LocalDate.now())
+        }.getOrDefault(false)
     }
 
     private fun save(done: Set<String>, found: List<String>) {
         prefs.edit().putStringSet("done", done).putString("found_names", found.joinToString("\n")).apply()
     }
+
+    data class RelDate(val region: String, val type: Int, val date: LocalDate)
 
     data class TmdbRelease(val tmdbId: Int, val title: String, val year: String?, val poster: String?, val released: LocalDate? = null)
 
@@ -406,6 +434,20 @@ class VfWatcher666 @Inject constructor(
          */
         fun shouldCry(firstPass: Boolean, alreadyKnown: Boolean, released: LocalDate?, today: LocalDate): Boolean =
             !alreadyKnown && (!firstPass || (released != null && !released.isAfter(today) && !released.isBefore(today.minusDays(7))))
+
+        private val CINEMA_REGIONS = setOf("FR", "BE", "CH", "CA", "US")
+
+        /**
+         * Règle pure (testée) : film étranger sorti en salle (France, Belgique, Suisse, Québec, USA) sans
+         * aucune sortie VOD / Blu-ray (types 4 et 5) dans ces pays → encore au cinéma, une VF en HD est
+         * impossible (son de salle ou faux) : pas de cri. Les films français gardent leurs propres règles.
+         */
+        fun isCinemaOnly(originalLanguage: String?, dates: List<RelDate>, today: LocalDate): Boolean {
+            if (originalLanguage.equals("fr", ignoreCase = true)) return false
+            val here = dates.filter { it.region.uppercase() in CINEMA_REGIONS && !it.date.isAfter(today) }
+            if (here.any { it.type == 4 || it.type == 5 }) return false
+            return here.any { it.type == 2 || it.type == 3 }
+        }
 
         const val SERIES_WINDOW_DAYS = 45L
         const val MAX_SERIES_CANDIDATES = 30

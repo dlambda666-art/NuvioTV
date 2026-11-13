@@ -152,6 +152,9 @@ fun StartupSplashScreen(
     val open = remember { Animatable(0f) }
     val finalFade = remember { Animatable(0f) }
     val push = remember { Animatable(0f) }
+    // 13/11 : les flaques sous les gouttes grandissent doucement pendant l'ouverture (comme dans l'abattoir)
+    val pool = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { pool.animateTo(1f, tween(12_000, easing = LinearEasing)) }
     LaunchedEffect(closing) {
         if (!closing) return@LaunchedEffect
         // la bobine baisse doucement jusqu'à l'ouverture des portes et au fondu (pas de grincement)
@@ -261,6 +264,16 @@ fun StartupSplashScreen(
                     val x = w * fx
                     val bottom = h * 0.60f
                     val r = w * 0.0024f
+                    // La flaque : elle grandit avec le temps et gonfle un peu à chaque goutte qui tombe
+                    val hit = if (ph >= 0.95f) 1f + 0.12f * kotlin.math.sin(((ph - 0.95f) / 0.05f) * Math.PI.toFloat()) else 1f
+                    val pr = r * (1.0f + 3.0f * pool.value) * hit
+                    // forme irrégulière : trois taches qui se chevauchent, sang sombre, petit reflet
+                    val k = (fx * 97f) % 1f
+                    val pool666 = Color(0xFF34094F)
+                    drawOval(pool666.copy(alpha = 0.6f), Offset(x - pr * (1.15f + 0.3f * k), bottom - pr * 0.24f), Size(pr * 1.3f, pr * 0.48f))
+                    drawOval(pool666.copy(alpha = 0.6f), Offset(x - pr * 0.1f, bottom - pr * 0.26f), Size(pr * (1.1f + 0.4f * k), pr * 0.42f))
+                    drawOval(pool666.copy(alpha = 0.9f), Offset(x - pr * 0.8f, bottom - pr * 0.25f), Size(pr * 1.6f, pr * 0.46f))
+                    drawOval(Color(0xFF9B5CC4).copy(alpha = 0.25f), Offset(x - pr * 0.45f, bottom - pr * 0.18f), Size(pr * 0.4f, pr * 0.1f))
                     when {
                         ph < 0.45f -> {
                             val g = ph / 0.45f
