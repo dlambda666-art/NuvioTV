@@ -16,6 +16,7 @@ const fs = require('fs');
   }
   const fsr = await j('https://fs23.lol/engine/ajax/search.php', { method: 'POST', headers: { 'User-Agent': 'Mozilla/5.0', 'Content-Type': 'application/x-www-form-urlencoded', Referer: 'https://fs23.lol/' }, body: 'query=Clayface&page=1' });
   r.fs = typeof fsr === 'string' ? fsr.replace(/\s+/g, ' ').slice(0, 1200) : fsr;
+  const pg = await j('https://fs23.lol/15141104-clayface.html'); r.page = typeof pg==='string' ? (pg.match(/(qualit|version|langue|VF|VOSTFR|CAM|HDTS|TS )[\s\S]{0,120}/gi)||[]).slice(0,25).map(x=>x.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').slice(0,120)) : pg;
   const rss = await j('https://fs23.lol/engine/rss.php?do=cat&category=films');
   r.rss = typeof rss === 'string' ? (rss.match(/<item[\s\S]*?Claw[\s\S]*?<\/item>/i) || ['absent'])[0].slice(0, 800) : 'err';
   fs.writeFileSync('test-report.json', JSON.stringify(r)); console.log('ok');
