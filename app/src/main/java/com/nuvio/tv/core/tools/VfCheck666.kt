@@ -191,6 +191,12 @@ object VfCheck666 {
     }
 
     /** Preuve directe (piste française entendue, guetteur, cloche) : VF pour de bon. */
+    /** 666TVF (13/11) : oublie le verdict (faux cri retiré) : le titre sera revérifié normalement. */
+    fun forget(id: String?) {
+        val i = id?.substringBefore(':')?.takeIf { it.startsWith("tt") } ?: return
+        prefs()?.edit()?.remove(key(i))?.apply()
+    }
+
     fun confirm(id: String?) {
         val i = id?.substringBefore(':')?.takeIf { it.startsWith("tt") } ?: return
         store(listOf(i), Tag.DUB, false)

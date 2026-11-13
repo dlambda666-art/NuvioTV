@@ -46,6 +46,11 @@ class VfWatcher666 @Inject constructor(
         if (!prefs.getBoolean("tmdb_v1", false)) {
             prefs.edit().remove("at").remove("done").remove("found_names").putBoolean("pass_open", false).putBoolean("tmdb_v1", true).apply()
         }
+        // 666TVF (13/11) : les films déjà criés sont revérifiés (Clayface criait avant la règle du cinéma)
+        if (System.currentTimeMillis() - prefs.getLong("cinema_clean_at", 0L) > 12 * 3_600_000L) {
+            runCatching { cleanCinemaOnly() }
+            prefs.edit().putLong("cinema_clean_at", System.currentTimeMillis()).apply()
+        }
         if (System.currentTimeMillis() - prefs.getLong("at", 0L) < INTERVAL_MS) return null
         val names = LinkedHashMap<String, Cand>()
         // 666TVF (09/11) : plus de liste de Frank (mis en pause par Hugging Face) : TMDB seulement.
@@ -364,6 +369,28 @@ class VfWatcher666 @Inject constructor(
             )?.let { runCatching { JSONObject(it).optString("imdb_id") }.getOrNull() }
                 ?.takeIf { it.startsWith("tt") }?.also { idCache.edit().putString(r.tmdbId.toString(), it).apply() }
             imdb?.let { it to Cand(r.title + (r.year?.let { y -> " ($y)" } ?: ""), r.poster, r.released, r.tmdbId) }
+        }
+    }
+
+    /**
+     * Retire de « En VF cette semaine », de l'attente d'enregistrement et des verdicts VF les films
+     * étrangers encore seulement au cinéma (faux cris d'avant la règle). Ils reviendront d'eux-mêmes
+     * quand une vraie VF sortira (ils ne sont plus « connus » du guetteur).
+     */
+    private suspend fun cleanCinemaOnly() {
+        val key = BuildConfig.TMDB_API_KEY.takeIf { it.isNotBlank() } ?: return
+        LocalCatalogs666.foundMovieIds().forEach { imdb ->
+            val raw = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                Http666.get("https://api.themoviedb.org/3/find/$imdb?external_source=imdb_id&api_key=$key", 15_000)
+            } ?: return@forEach
+            val tmdbId = runCatching { JSONObject(raw).optJSONArray("movie_results")?.optJSONObject(0)?.optInt("id") ?: 0 }.getOrDefault(0)
+            if (tmdbId > 0 && cinemaOnly(tmdbId)) {
+                LocalCatalogs666.removeVf(imdb)
+                AutoRecord666.removeFilm(context, imdb)
+                VfCheck666.forget(imdb)
+                val k = prefs.getStringSet("vf_known", emptySet()).orEmpty()
+                prefs.edit().putStringSet("vf_known", k - imdb).apply()
+            }
         }
     }
 

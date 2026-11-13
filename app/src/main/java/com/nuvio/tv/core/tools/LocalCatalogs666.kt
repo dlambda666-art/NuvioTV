@@ -162,6 +162,15 @@ object LocalCatalogs666 {
         }
     }
 
+    /** 666TVF (13/11) : les films trouvés par le guetteur (pour les revérifier). */
+    fun foundMovieIds(): List<String> = readWeek().filter { it.type == "movie" }.map { it.id }
+
+    /** 666TVF (13/11) : retire un faux cri de « En VF cette semaine ». */
+    fun removeVf(id: String) {
+        val p = prefs() ?: return
+        synchronized(this) { p.edit().putString("vfweek", writeEntries(readWeek().filterNot { it.id == id })).apply() }
+    }
+
     private fun readWeek(): List<Entry> = readEntries(prefs()?.getString("vfweek", null))
 
     // ---------------- Pour toi ----------------
