@@ -48,7 +48,7 @@ class AutoRecord666 @Inject constructor(
             flow.collect { res -> if (res is NetworkResult.Success) last = res.data.flatMap { it.streams } }
         }
         val room = minOf(place.maxFile, place.usable - Record666.queuedBytes() + r.total.coerceAtLeast(0L))
-        val candidates = if (series) pickAll(last, r.season, r.episode, room) else pickFilm(last, room)
+        val candidates = if (series) pickAll(last, r.season, r.episode, room) else pickFilm(last, room, r.year?.take(4)?.toIntOrNull())
         for (s in candidates.take(5)) {
             val url = if (directDebridResolver.shouldResolveToPlayableStream(s)) {
                 (directDebridResolver.resolve(s, r.season, r.episode) as? DirectDebridResolveResult.Success)?.url
@@ -192,7 +192,7 @@ class AutoRecord666 @Inject constructor(
         val room = minOf(place.maxFile, place.usable - Record666.queuedBytes())
         val title = f.name.replace(Regex("""\s*\((\d{4})\)\s*$"""), "")
         val year = Regex("""\((\d{4})\)\s*$""").find(f.name)?.groupValues?.get(1)
-        for (s in pickFilm(last, room).take(5)) {
+        for (s in pickFilm(last, room, year?.toIntOrNull()).take(5)) {
             val url = if (directDebridResolver.shouldResolveToPlayableStream(s)) {
                 (directDebridResolver.resolve(s, null, null) as? DirectDebridResolveResult.Success)?.url
             } else s.getStreamUrl()
@@ -404,7 +404,19 @@ class AutoRecord666 @Inject constructor(
             ).map { it.value }
 
         /** Règle pure (testée) : un film trouvé par le guetteur — comme un épisode, et en VF sûre seulement. */
-        fun pickFilm(streams: List<Stream>, roomBytes: Long): List<Stream> =
-            pickAll(streams, null, null, roomBytes).filter { FrankVf666.isSureVfRelease(textOf(it)) }
+        fun pickFilm(streams: List<Stream>, roomBytes: Long, year: Int? = null): List<Stream> =
+            pickAll(streams, null, null, roomBytes).filter { FrankVf666.isSureVfRelease(textOf(it)) && yearOk(textOf(it), year) }
+
+        private val YEAR = Regex("""(?<![0-9])(19[2-9][0-9]|20[0-9][0-9])(?![0-9])""")
+
+        /**
+         * Règle pure (testée) — 14/11 : « Street Fighter » (2026) enregistré… c'était le dessin animé.
+         * Un film enregistré tout seul doit porter son année dans le nom du fichier (± 1 an).
+         */
+        fun yearOk(text: String, year: Int?): Boolean {
+            if (year == null) return true
+            val found = YEAR.findAll(text).map { it.value.toInt() }.toList()
+            return found.any { kotlin.math.abs(it - year) <= 1 }
+        }
     }
 }

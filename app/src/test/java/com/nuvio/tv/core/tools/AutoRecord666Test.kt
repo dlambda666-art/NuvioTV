@@ -96,4 +96,16 @@ class AutoRecord666Test {
         assertEquals(listOf("Resident.Evil.2026.FRENCH.1080p.HDLight"), AutoRecord666.pickFilm(list, 3000 * GB).map { it.name })
         assertTrue(AutoRecord666.pickFilm(list, 2 * GB).isEmpty())
     }
+
+    @Test fun `piege Street Fighter - le dessin anime ne passe pas pour le film de 2026`() {
+        org.junit.Assert.assertFalse(AutoRecord666.yearOk("Street Fighter II The Animated Movie 1994 FRENCH 1080p BluRay x264", 2026))
+        org.junit.Assert.assertFalse(AutoRecord666.yearOk("Street.Fighter.FRENCH.1080p.WEB.x264", 2026))
+        org.junit.Assert.assertTrue(AutoRecord666.yearOk("Street.Fighter.2026.FRENCH.1080p.WEB.H264", 2026))
+        // sortie fin décembre, fichier daté de l'année suivante
+        org.junit.Assert.assertTrue(AutoRecord666.yearOk("Film.2027.TRUEFRENCH.1080p.WEB", 2026))
+        // 1080 et 2160 ne sont pas des années
+        org.junit.Assert.assertFalse(AutoRecord666.yearOk("Film FRENCH 1080p 2160p", 2026))
+        // année inconnue : pas de filtre
+        org.junit.Assert.assertTrue(AutoRecord666.yearOk("Film FRENCH 1080p", null))
+    }
 }
