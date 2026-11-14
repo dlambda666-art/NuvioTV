@@ -68,9 +68,18 @@ object Maj666 {
             p.edit().putString("last", "$name installée sur ${peer.name}").apply()
             "⬆ Mise à jour $name installée sur l'autre Shield (${peer.name})"
         } else {
-            val why = "Mise à jour de l'autre Shield impossible : active « Débogage réseau » dans ses options développeur, " +
-                "puis accepte la demande qui s'affiche sur sa TV (une seule fois)"
-            p.edit().putString("last", why).apply()
+            // 14/11 : la vraie raison (connexion refusée = débogage réseau éteint ; délai = demande pas acceptée…)
+            val e = result.exceptionOrNull()
+            val detail = (e?.javaClass?.simpleName.orEmpty() + " " + e?.message.orEmpty()).replace(Regex("\\s+"), " ").trim().take(120)
+            val hint = when {
+                detail.contains("refused", true) || detail.contains("ECONNREFUSED") -> "le débogage réseau est éteint sur l'autre Shield (il se coupe parfois au redémarrage) : rallume-le"
+                detail.contains("timeout", true) || detail.contains("timed out", true) -> "pas de réponse : accepte la demande sur la TV de l'autre Shield (coche « Toujours autoriser »)"
+                detail.contains("INSTALL_FAILED", true) -> "l'autre Shield a refusé l'installation"
+                else -> "active « Débogage réseau » sur l'autre Shield et accepte la demande sur sa TV"
+            }
+            val why = "Mise à jour de l'autre Shield impossible : $hint [$detail]"
+            // échec : on réessaie dans 15 min (pas 3 h) — le temps de rallumer le débogage ou d'accepter
+            p.edit().putString("last", why).putLong("at", now - 3 * 3600_000L + 15 * 60_000L).apply()
             "⚠ $why"
         }
     }
