@@ -58,4 +58,14 @@ class LocalCatalogs666Test {
         assertFalse(LocalCatalogs666.isRecentRelease(null, today))
         assertFalse(LocalCatalogs666.isRecentRelease(java.time.LocalDate.parse("2026-12-01"), today))   // pas encore sorti
     }
+
+    @Test fun `piege Forbidden Fruits - a voir en VF garde 30 jours ce qui n'est ni enregistre ni vu`() {
+        val day = 24L * 3600 * 1000
+        val now = 100L * day
+        fun e(id: String, daysAgo: Long, t: String = "movie") = LocalCatalogs666.Entry(id, t, id, null, now - daysAgo * day)
+        val found = listOf(e("tt_clay", 2), e("tt_sf", 3))
+        val seed = listOf(e("tt_forbidden", 20), e("tt_vieux", 31), e("tt_vu", 5), e("tt_serie", 1, "series"), e("tt_clay", 9))
+        val out = LocalCatalogs666.aVoirEntries(found, seed, "movie", recorded = setOf("tt_sf"), watched = setOf("tt_vu"), now = now)
+        org.junit.Assert.assertEquals(listOf("tt_clay", "tt_forbidden"), out.map { it.id })
+    }
 }

@@ -30,6 +30,7 @@ internal fun HomeViewModel.observeTopTenVfRow() {
             runCatching { com.nuvio.tv.core.tools.FrankFree666.ensureCinemeta(addonRepository) }
             // 666TVF (11/11) : la 1re rangée voulue par David (une fois)
             runCatching { com.nuvio.tv.core.tools.FrankFree666.applyAccueil1111(appContext, collectionsDataStore) }
+            runCatching { com.nuvio.tv.core.tools.FrankFree666.applyAVoir1411(appContext, collectionsDataStore) }
         }
         delay(6_000L)
         while (true) {

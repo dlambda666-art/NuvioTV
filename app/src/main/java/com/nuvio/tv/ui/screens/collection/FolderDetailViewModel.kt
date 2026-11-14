@@ -664,6 +664,7 @@ class FolderDetailViewModel @Inject constructor(
                         error = if (source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.VFWEEK)
                             "Rien de nouveau en VF ces 7 derniers jours (le guetteur passe deux fois par jour)"
                         else if (source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.UPCOMING) "TMDB ne répond pas, réessaie dans un instant"
+                        else if (source.addonId == com.nuvio.tv.core.tools.LocalCatalogs666.AVOIR) "Rien à rattraper : les nouveautés VF du mois sont enregistrées ou déjà vues"
                         else "Recommandations en préparation (vérif VF en cours), reviens dans quelques minutes"
                     )
                 }

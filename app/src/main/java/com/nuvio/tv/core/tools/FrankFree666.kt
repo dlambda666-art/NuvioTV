@@ -327,6 +327,48 @@ object FrankFree666 {
         return out.takeIf { it != cols }
     }
 
+    /**
+     * Règle pure (testée) — 14/11 : dans la tuile « En VF », l'onglet « Derniers films » (qui mélangeait
+     * David) devient « À voir en VF ». S'il n'y est pas, l'onglet est ajouté juste après « En VF cette semaine ».
+     */
+    fun aVoirTab(cols: List<Collection>): List<Collection>? {
+        val avoir = AddonCatalogCollectionSource(LocalCatalogs666.AVOIR, "movie", "a-voir")
+        fun isLastFilms(s: CollectionSource) = when (s) {
+            is TmdbCollectionSource -> Regex("^(derniers? films?|nouveaux? films?)$").containsMatchIn(HomeReorg666.norm(s.title))
+            is AddonCatalogCollectionSource -> "derniers-films" in s.catalogId
+            else -> false
+        }
+        var changed = false
+        val out = cols.map { c ->
+            c.copy(folders = c.folders.map { f ->
+                if (!isVfWeekTile(f) || f.sources.contains(avoir)) f
+                else {
+                    changed = true
+                    val i = f.sources.indexOfFirst(::isLastFilms)
+                    val src = if (i >= 0) f.sources.toMutableList().also { it[i] = avoir }
+                    else {
+                        val at = f.sources.indexOfFirst { it is AddonCatalogCollectionSource && it.addonId == LocalCatalogs666.VFWEEK && it.type == "movie" }
+                        f.sources.toMutableList().also { it.add(if (at >= 0) at + 1 else f.sources.size, avoir) }
+                    }
+                    f.copy(sources = src)
+                }
+            })
+        }
+        return out.takeIf { changed }
+    }
+
+    suspend fun applyAVoir1411(context: Context, store: CollectionsDataStore) {
+        val prefs = context.getSharedPreferences("666tv_frankfree", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("avoir1411", false)) return
+        val current = runCatching { store.getCurrentCollections() }.getOrNull() ?: return
+        aVoirTab(current)?.let { next ->
+            store.setCollections(next)
+            runCatching { pushCollections(context) }
+            runCatching { Announce666.log(context, "🏠 Tuile En VF : « Derniers films » remplacé par « À voir en VF » (30 jours)", "accueil") }
+        }
+        prefs.edit().putBoolean("avoir1411", true).apply()
+    }
+
     /** Une seule fois ; sauvegarde pour « Annuler la réorganisation ». */
     suspend fun applyAccueil1111(context: Context, store: CollectionsDataStore) {
         val prefs = context.getSharedPreferences("666tv_frankfree", Context.MODE_PRIVATE)

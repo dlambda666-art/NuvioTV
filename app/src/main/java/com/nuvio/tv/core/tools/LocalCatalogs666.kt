@@ -30,6 +30,8 @@ object LocalCatalogs666 {
     const val VFWEEK = "666tv.vfweek"
     const val POURTOI = "666tv.pourtoi"
     const val UPCOMING = "666tv.upcoming"
+    /** 14/11 : « À voir en VF » — les nouveautés VF des 30 jours pas enregistrées ni vues. */
+    const val AVOIR = "666tv.avoir"
     private const val TAG = "LocalCatalogs666"
     private const val PREFS = "666tv_local_catalogs"
     // 11/11 : 30 jours (David : remplace aussi « Derniers films / séries »)
@@ -40,12 +42,13 @@ object LocalCatalogs666 {
     fun init(context: Context) { if (ctx == null) ctx = context.applicationContext }
     private fun prefs() = ctx?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun isLocal(addonId: String) = addonId == VFWEEK || addonId == POURTOI || addonId == UPCOMING
+    fun isLocal(addonId: String) = addonId == VFWEEK || addonId == POURTOI || addonId == UPCOMING || addonId == AVOIR
 
     fun nameFor(addonId: String, type: String): String? = when (addonId) {
         VFWEEK -> if (type == "series") "Séries en VF cette semaine" else "En VF cette semaine"
         POURTOI -> "Pour toi, Lambda"
         UPCOMING -> if (type == "series") "Séries à venir" else "Prochainement"
+        AVOIR -> if (type == "series") "Séries à voir en VF" else "À voir en VF"
         else -> null
     }
 
@@ -162,6 +165,26 @@ object LocalCatalogs666 {
         }
     }
 
+    // ---------------- À voir en VF (14/11) ----------------
+
+    /**
+     * Règle pure (testée) — 14/11 : Forbidden Fruits vu dans les nouveautés VF, disparu, pas enregistré
+     * (trop ancien pour la règle des 3 mois) : il a fallu taper son nom. Tout ce qui est passé en VF ces
+     * 30 jours (guetteur, French-Stream, « En VF cette semaine »), sans ce qui est enregistré ni ce qui est vu.
+     */
+    fun aVoirEntries(found: List<Entry>, seed: List<Entry>, type: String, recorded: Set<String>, watched: Set<String>, now: Long): List<Entry> =
+        (found + seed).filter { it.type == type && now - it.at < WEEK_MS && it.id !in recorded && it.id !in watched }
+            .sortedByDescending { it.at }
+            .distinctBy { it.id }
+
+    fun aVoir(type: String, now: Long = System.currentTimeMillis()): List<Entry> {
+        val seed = readEntries(prefs()?.getString("vfweek_seed_$type", null))
+        val recorded = runCatching { Record666.items.value.filter { it.status != Record666.Status.FAILED } }.getOrDefault(emptyList())
+            .mapNotNull { it.contentId?.substringBefore(':') }.toSet()
+        val watched = prefs()?.getStringSet("watched_ids", emptySet()).orEmpty()
+        return aVoirEntries(readWeek(), seed, type, recorded, watched, now)
+    }
+
     /** 666TVF (13/11) : les films trouvés par le guetteur (pour les revérifier). */
     fun foundMovieIds(): List<String> = readWeek().filter { it.type == "movie" }.map { it.id }
 
@@ -207,6 +230,12 @@ object LocalCatalogs666 {
             if (percent >= 20f || p.season != null) add(p.contentId.substringBefore(':'), p.contentType, p.lastWatched)
         }
         watchedItems.forEach { w -> add(w.contentId.substringBefore(':'), w.contentType, w.watchedAt) }
+        // 14/11 : ce qui est vu sort de « À voir en VF »
+        runCatching {
+            val ids = (progress.map { it.contentId.substringBefore(':') } + watchedItems.map { it.contentId.substringBefore(':') })
+                .filter { it.startsWith("tt") }.distinct().takeLast(3000).toSet()
+            prefs()?.edit()?.putStringSet("watched_ids", ids)?.apply()
+        }
         if (seeds.isEmpty()) return@withContext
         val watched = (progress.map { it.contentId.substringBefore(':') } + watchedItems.map { it.contentId.substringBefore(':') })
             .filter { it.startsWith("tt") }.toHashSet()
@@ -329,6 +358,7 @@ object LocalCatalogs666 {
         val entries = when (addonId) {
             VFWEEK -> week(t)
             POURTOI -> pourToi(t)
+            AVOIR -> aVoir(t)
             else -> return null
         }
         val ct = if (t == "series") ContentType.SERIES else ContentType.MOVIE
@@ -336,7 +366,7 @@ object LocalCatalogs666 {
             addonId = addonId,
             addonName = "666TVF",
             addonBaseUrl = "",
-            catalogId = if (addonId == VFWEEK) "vf-week" else "pour-toi",
+            catalogId = when (addonId) { VFWEEK -> "vf-week"; AVOIR -> "a-voir"; else -> "pour-toi" },
             catalogName = nameFor(addonId, t).orEmpty(),
             type = ct,
             rawType = t,

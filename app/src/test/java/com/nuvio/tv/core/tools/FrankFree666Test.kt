@@ -197,4 +197,18 @@ class FrankFree666Test {
         assertEquals(listOf("h", "vf"), out[0].folders.map { it.id })
         assertNull(FrankFree666.withoutDoors(out))
     }
+
+    @Test fun `a voir en VF remplace Derniers films dans la tuile En VF`() {
+        val week = com.nuvio.tv.domain.model.AddonCatalogCollectionSource(LocalCatalogs666.VFWEEK, "movie", "vf-week")
+        val last = com.nuvio.tv.domain.model.TmdbCollectionSource(com.nuvio.tv.domain.model.TmdbCollectionSourceType.DISCOVER, "Derniers films")
+        val series = com.nuvio.tv.domain.model.TmdbCollectionSource(com.nuvio.tv.domain.model.TmdbCollectionSourceType.DISCOVER, "Dernières séries", mediaType = com.nuvio.tv.domain.model.TmdbCollectionMediaType.TV)
+        val avoir = com.nuvio.tv.domain.model.AddonCatalogCollectionSource(LocalCatalogs666.AVOIR, "movie", "a-voir")
+        val vf = com.nuvio.tv.domain.model.CollectionFolder(id = "vf", title = "En VF", sources = listOf(week, last, series))
+        val other = com.nuvio.tv.domain.model.CollectionFolder(id = "h", title = "Horreur", sources = listOf(last))
+        val cols = listOf(com.nuvio.tv.domain.model.Collection(id = "c", title = "Accueil", folders = listOf(vf, other)))
+        val out = FrankFree666.aVoirTab(cols)!!
+        org.junit.Assert.assertEquals(listOf(week, avoir, series), out[0].folders[0].sources)
+        org.junit.Assert.assertEquals(listOf(last), out[0].folders[1].sources)   // les autres tuiles : pas touchées
+        org.junit.Assert.assertNull(FrankFree666.aVoirTab(out))                   // une seule fois
+    }
 }
