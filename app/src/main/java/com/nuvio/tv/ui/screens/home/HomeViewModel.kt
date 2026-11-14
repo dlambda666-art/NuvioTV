@@ -113,7 +113,40 @@ class HomeViewModel @Inject constructor(
     }
 
     internal val _uiState = MutableStateFlow(HomeUiState())
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    // 666TVF (14/11) : Yellowjackets saison 4 dans « Continuer » alors qu'elle n'est pas en VF. Un épisode
+    // suivant sorti récemment n'apparaît qu'une fois la VF trouvée (même vérification que la cloche).
+    private val noVfYet666 = MutableStateFlow<Set<String>>(emptySet())
+    val uiState: StateFlow<HomeUiState> = combine(_uiState, noVfYet666) { s, hidden ->
+        if (hidden.isEmpty()) s else s.copy(continueWatchingItems = s.continueWatchingItems.filterNot {
+            it is ContinueWatchingItem.NextUp && nextUpKey666(it.info) in hidden
+        })
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, HomeUiState())
+
+    private fun nextUpKey666(i: NextUpInfo) = "${i.contentId}:${i.season}:${i.episode}"
+
+    private fun startNoVfYet666() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            delay(45_000L)
+            while (true) {
+                val now = System.currentTimeMillis()
+                val hidden = mutableSetOf<String>()
+                _uiState.value.continueWatchingItems.filterIsInstance<ContinueWatchingItem.NextUp>().forEach { n ->
+                    val i = n.info
+                    if (!nextUpNeedsVfCheck666(i.hasAired, i.releaseTimestamp, now)) return@forEach
+                    val ep = com.nuvio.tv.core.calendar.CalendarEpisode(
+                        seriesId = i.contentId, seriesName = i.name, poster = i.poster, season = i.season, episode = i.episode,
+                        title = i.episodeTitle, airInstant = java.time.Instant.ofEpochMilli(i.releaseTimestamp ?: now),
+                        addonBaseUrl = null, videoId = i.videoId
+                    )
+                    val st = runCatching { calendarRepository.checkVf(ep) }.getOrNull()
+                    if (st == com.nuvio.tv.core.calendar.VfState.NOT_YET) hidden += nextUpKey666(i)
+                }
+                noVfYet666.value = hidden
+                delay(5 * 60_000L)
+            }
+        }
+    }
 
     internal val _modernHomePresentation = MutableStateFlow(ModernHomePresentationState())
     val modernHomePresentation: StateFlow<ModernHomePresentationState> = _modernHomePresentation.asStateFlow()
@@ -330,6 +363,7 @@ class HomeViewModel @Inject constructor(
         get() = trailerPreviewAudioUrlsState
 
     init {
+        startNoVfYet666()
         // Accumulates individual watched status changes and flushes them as a single
         // update after 150ms of inactivity, preventing N separate recompositions.
         viewModelScope.launch {

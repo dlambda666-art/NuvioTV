@@ -1,5 +1,6 @@
 package com.nuvio.tv.ui.screens.home
 
+import com.nuvio.tv.ui.components.dust666Source
 import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -339,7 +340,8 @@ fun Morgue666Overlay(
                 DrawerDoor666(
                     drawer = item.drawer666(),
                     requester = requesters[slot],
-                    modifier = Modifier.offset(sw * x0, sh * y0).size(sw * (x1 - x0), sh * (y1 - y0)),
+                    // 14/11 : le tiroir retiré part en poussière, comme les cartes avant la morgue
+                    modifier = Modifier.offset(sw * x0, sh * y0).size(sw * (x1 - x0), sh * (y1 - y0)).dust666Source(item.contentId()),
                     onFocused = { focusSlot = slot },
                     onClick = { onClick(item) },
                     onLongPress = { onOptions(item) },

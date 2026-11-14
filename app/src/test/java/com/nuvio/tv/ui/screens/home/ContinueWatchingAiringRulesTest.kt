@@ -207,4 +207,13 @@ class ContinueWatchingAiringRulesTest {
         episode = ep,
         overview = null,
     )
+
+    @org.junit.Test fun `piege Yellowjackets S4 - episode recent verifie en VF avant Continuer`() {
+        val day = 24L * 3600 * 1000
+        val now = 1_000L * day
+        org.junit.Assert.assertTrue(nextUpNeedsVfCheck666(true, now - 3 * day, now))     // sorti il y a 3 jours
+        org.junit.Assert.assertFalse(nextUpNeedsVfCheck666(true, now - 400 * day, now))  // vieille saison : déjà doublée
+        org.junit.Assert.assertFalse(nextUpNeedsVfCheck666(false, now + 3 * day, now))   // pas encore sorti
+        org.junit.Assert.assertFalse(nextUpNeedsVfCheck666(true, null, now))             // date inconnue : on montre
+    }
 }

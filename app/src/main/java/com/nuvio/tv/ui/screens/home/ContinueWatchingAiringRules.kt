@@ -78,3 +78,14 @@ fun isFullyWatchedAgainstAiredList(
     if (airedEpisodes.isEmpty()) return false
     return airedEpisodes.all { it in watchedEpisodes }
 }
+
+/**
+ * 666TVF (14/11) — piège Yellowjackets S4 : un épisode suivant sorti ces 60 derniers jours doit
+ * avoir sa VF trouvée (comme pour la cloche) avant d'apparaître dans « Continuer à regarder ».
+ * Les épisodes plus anciens (saisons déjà doublées) et ceux pas encore sortis ne sont pas vérifiés.
+ */
+fun nextUpNeedsVfCheck666(hasAired: Boolean, releaseTimestamp: Long?, now: Long): Boolean {
+    if (!hasAired || releaseTimestamp == null) return false
+    val age = now - releaseTimestamp
+    return age in 0 until 60L * 24 * 3600 * 1000
+}

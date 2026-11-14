@@ -1293,7 +1293,6 @@ fun ModernHomeContent(
                         false
                     }
             )
-        com.nuvio.tv.ui.components.Dust666Overlay(Modifier.fillMaxSize())
         // 666TV : heure + météo, et « Reprendre » au réveil (accueil seulement).
         if (forcedBackdrop666 == null) {
             val dreamContext = androidx.compose.ui.platform.LocalContext.current
@@ -1340,6 +1339,8 @@ fun ModernHomeContent(
                 modifier = Modifier.fillMaxSize()
             )
         }
+        // 14/11 : la poussière par-dessus la morgue (avant, elle passait dessous et ne se voyait plus)
+        com.nuvio.tv.ui.components.Dust666Overlay(Modifier.fillMaxSize())
     }
 
     val dustScope = rememberCoroutineScope()
