@@ -125,9 +125,10 @@ fun AboutSettingsContent(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 androidx.compose.foundation.Image(
-                                    painter = androidx.compose.ui.res.painterResource(R.drawable.splash_shield_666),
+                                    // 14/11 : FrankenStream — Frank ado à la place du bouclier du diable
+                                    painter = androidx.compose.ui.res.painterResource(R.drawable.frank_ado_666),
                                     contentDescription = null,
-                                    modifier = Modifier.width(150.dp).height(150.dp)
+                                    modifier = Modifier.width(193.dp).height(150.dp)
                                 )
                                 androidx.compose.foundation.Image(
                                     painter = androidx.compose.ui.res.painterResource(R.drawable.splash_logo_666),

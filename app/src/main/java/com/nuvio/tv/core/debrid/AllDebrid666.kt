@@ -21,7 +21,7 @@ import javax.inject.Singleton
 
 private const val TAG = "AllDebrid666"
 private const val API = "https://api.alldebrid.com"
-private const val AGENT = "666TVF"
+private const val AGENT = "FrankenStream"
 
 /**
  * 666TVF : AllDebrid en roue de secours.

@@ -346,7 +346,7 @@ object LocalCatalogs666 {
             }
         }.distinctBy { it.id }.sortedBy { it.released }
         CatalogRow(
-            addonId = UPCOMING, addonName = "666TVF", addonBaseUrl = "", catalogId = "upcoming",
+            addonId = UPCOMING, addonName = "FrankenStream", addonBaseUrl = "", catalogId = "upcoming",
             catalogName = nameFor(UPCOMING, t).orEmpty(), type = ct, rawType = t, items = items, isLoading = false, hasMore = false
         )
     }
@@ -364,7 +364,7 @@ object LocalCatalogs666 {
         val ct = if (t == "series") ContentType.SERIES else ContentType.MOVIE
         return CatalogRow(
             addonId = addonId,
-            addonName = "666TVF",
+            addonName = "FrankenStream",
             addonBaseUrl = "",
             catalogId = when (addonId) { VFWEEK -> "vf-week"; AVOIR -> "a-voir"; else -> "pour-toi" },
             catalogName = nameFor(addonId, t).orEmpty(),

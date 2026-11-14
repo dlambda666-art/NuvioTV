@@ -114,7 +114,7 @@ fun Records666Screen(
                     Text(
                         when {
                             remote == null -> "Je demande à la Shield du bas…"
-                            remote!!.isEmpty() -> "Rien de prêt sur la Shield du bas (ou elle est éteinte / 666TVF fermé)."
+                            remote!!.isEmpty() -> "Rien de prêt sur la Shield du bas (ou elle est éteinte / FrankenStream fermé)."
                             else -> "Sur la Shield du bas · lus par le réseau de la maison, même si TorBox tombe"
                         },
                         color = RDim, fontSize = 16.sp, modifier = Modifier.padding(top = 30.dp)

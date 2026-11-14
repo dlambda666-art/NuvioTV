@@ -1553,7 +1553,7 @@ open class MainActivity : ComponentActivity() {
                                     posters = shown.map { it.poster }
                                 )
                                 val where = when {
-                                    inApp -> "vue dans 666TVF"
+                                    inApp -> "vue dans FrankenStream"
                                     overlay -> "vue par-dessus une autre appli"
                                     else -> "en attente (autre appli, pas d'autorisation)"
                                 }
@@ -1585,9 +1585,9 @@ open class MainActivity : ComponentActivity() {
                                     runCatching {
                                         android.widget.Toast.makeText(
                                             bellContext.applicationContext,
-                                            if (alerte) "⚠️ 666TVF : $names ne renvoie plus rien — vérifie sa config (Outils 666)"
-                                            else if (retard) "⏳ 666TVF : $names toujours pas en VF"
-                                            else if (sport) "🥊 666TVF : c'est l'heure du combat — $names" else "🔔 666TVF : $names dispo en VF !",
+                                            if (alerte) "⚠️ FrankenStream : $names ne renvoie plus rien — vérifie sa config (Outils 666)"
+                                            else if (retard) "⏳ FrankenStream : $names toujours pas en VF"
+                                            else if (sport) "🥊 FrankenStream : c'est l'heure du combat — $names" else "🔔 FrankenStream : $names dispo en VF !",
                                             android.widget.Toast.LENGTH_LONG
                                         ).show()
                                     }
@@ -1723,7 +1723,7 @@ open class MainActivity : ComponentActivity() {
         prefs.edit().putBoolean("overlay_asked", true).apply()
         Toast.makeText(
             this,
-            "Pour que 666TVF s'ouvre quand la TV s'allume : autorise « Afficher par-dessus d'autres applis »",
+            "Pour que FrankenStream s'ouvre quand la TV s'allume : autorise « Afficher par-dessus d'autres applis »",
             Toast.LENGTH_LONG
         ).show()
         runCatching {

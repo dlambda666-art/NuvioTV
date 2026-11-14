@@ -566,11 +566,11 @@ class Record666Service : Service() {
         super.onCreate()
         val nm = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            nm?.createNotificationChannel(NotificationChannel(CHANNEL, "666TVF enregistrements", NotificationManager.IMPORTANCE_LOW))
+            nm?.createNotificationChannel(NotificationChannel(CHANNEL, "FrankenStream enregistrements", NotificationManager.IMPORTANCE_LOW))
         }
         val n = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(this, CHANNEL)
             else @Suppress("DEPRECATION") Notification.Builder(this))
-            .setContentTitle("666TVF")
+            .setContentTitle("FrankenStream")
             .setContentText("Enregistrement en cours")
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .build()

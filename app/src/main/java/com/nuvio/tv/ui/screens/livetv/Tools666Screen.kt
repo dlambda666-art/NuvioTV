@@ -122,8 +122,8 @@ class Tools666ViewModel @Inject constructor(
                     val peer = com.nuvio.tv.core.tools.Lien666.peer
                     when {
                         m != null -> Health666("Lien entre les Shield", "${peer?.name ?: "autre Shield"} · échange fait : ${m.text} reçus", true)
-                        peer == null -> Health666("Lien entre les Shield", "Autre Shield introuvable sur le wifi (allumée ? 666TVF ouvert ?)", null)
-                        else -> Health666("Lien entre les Shield", "${peer.name} ne répond pas (éteinte, 666TVF fermé, ou modem en train de redémarrer)", null)
+                        peer == null -> Health666("Lien entre les Shield", "Autre Shield introuvable sur le wifi (allumée ? FrankenStream ouvert ?)", null)
+                        else -> Health666("Lien entre les Shield", "${peer.name} ne répond pas (éteinte, FrankenStream fermé, ou modem en train de redémarrer)", null)
                     }
                 }
                 // 666TVF (12/11) : la mise à jour automatique de l'autre Shield
@@ -236,7 +236,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 runCatching { context.contentResolver.openInputStream(uri)?.use { Backup666.restore(context, it) } }
                     .getOrNull() == true
             }
-            if (!ok) toast(context, "Ce fichier n'est pas une sauvegarde 666TVF")
+            if (!ok) toast(context, "Ce fichier n'est pas une sauvegarde FrankenStream")
         }
     }
 
@@ -257,7 +257,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
             }
 
             // ---------- État 666 ----------
-            item { Section("État 666", "Tout ce dont 666TVF a besoin pour trouver tes flux") }
+            item { Section("État 666", "Tout ce dont FrankenStream a besoin pour trouver tes flux") }
             item {
                 ActionRow(
                     title = if (running) "Vérification en cours…" else "Revérifier",
@@ -427,7 +427,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                                     .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                             )
                         }.isSuccess
-                        if (!opened) toast(context, "Réglages Android → Applis → Accès spécial → Afficher par-dessus d'autres applis → 666TVF")
+                        if (!opened) toast(context, "Réglages Android → Applis → Accès spécial → Afficher par-dessus d'autres applis → FrankenStream")
                     }
                 )
             }
@@ -462,7 +462,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                         scope.launch {
                             val m = com.nuvio.tv.core.tools.Lien666.syncNow(context)
                             busy = false
-                            if (m == null) toast(context, "L'autre Shield ne répond pas (allumée ? 666TVF ouvert ?)")
+                            if (m == null) toast(context, "L'autre Shield ne répond pas (allumée ? FrankenStream ouvert ?)")
                             else { syncText = "à l'instant · ${m.text} reçus"; toast(context, "Reçu : ${m.text}") }
                         }
                     }
@@ -507,7 +507,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 })
             }
             item {
-                ActionRow("Restaurer la dernière sauvegarde", "666TVF redémarre tout seul ensuite", onClick = {
+                ActionRow("Restaurer la dernière sauvegarde", "FrankenStream redémarre tout seul ensuite", onClick = {
                     if (busy) return@ActionRow
                     busy = true
                     scope.launch {
@@ -651,7 +651,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
             item {
                 ActionRow(
                     "Morgue : " + if (morgue) "activée ⚰️" else "coupée",
-                    if (morgue) "« Continuer à regarder » derrière la porte de la morgue (on voit la boucherie). Relance 666TVF après un changement"
+                    if (morgue) "« Continuer à regarder » derrière la porte de la morgue (on voit la boucherie). Relance FrankenStream après un changement"
                     else "« Continuer à regarder » en rangée de petites affiches",
                     onClick = {
                         morgue = !morgue

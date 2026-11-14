@@ -53,11 +53,22 @@ object Splash666 {
 private val Blood666 = Color(0xFF4E1077)
 
 // Positions sur l'image de la salle (16:9), en fraction de la largeur / hauteur.
-private val EYES = listOf(0.4042f to 0.4542f, 0.4507f to 0.4542f)
-private const val LOGO_X = 0.5047f
-private const val LOGO_Y = 0.3483f
-private const val LOGO_W = 0.2174f
-private const val LOGO_RATIO = 543f / 996f
+// 14/11 : FrankenStream — Frank ado à la place du diable, le nom (vert « Franken », mauve « Stream ») à droite
+private const val LOGO_X = 0.5250f
+private const val LOGO_Y = 0.3444f
+private const val LOGO_W = 0.1979f
+private const val LOGO_RATIO = 1011f / 2000f
+private const val FRANK_X = 0.3344f
+private const val FRANK_Y = 0.3083f
+private const val FRANK_W = 0.1823f
+private const val FRANK_RATIO = 855f / 1100f
+private val BloodGreen666 = Color(0xFF288C14)
+// Gouttes : (x, haut) en fraction de l'écran, vert sous FRANKEN, mauve sous STREAM, décalage dans la boucle
+private data class Drip666(val fx: Float, val fy: Float, val green: Boolean, val offset: Float)
+private val DRIPS = listOf(
+    Drip666(0.5724f, 0.4289f, true, 0f), Drip666(0.5476f, 0.4263f, true, 0.55f),
+    Drip666(0.6543f, 0.4928f, false, 0.4f), Drip666(0.7012f, 0.4911f, false, 0.75f), Drip666(0.6226f, 0.4898f, false, 0.2f)
+)
 // Portes (image de la porte, 16:9) : bord gauche, milieu, bord droit, haut, bas.
 private const val DOOR_X0 = 0.2485f
 private const val DOOR_XM = 0.505f
@@ -214,7 +225,15 @@ fun StartupSplashScreen(
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val w = maxWidth
                 val h = maxHeight
-                // Logo 666TVF projeté sur l'écran (sans bouclier)
+                // Frank ado projeté sur l'écran (à la place du diable)
+                Image(
+                    painter = painterResource(R.drawable.frank_ado_666),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(width = w * FRANK_W, height = w * FRANK_W * FRANK_RATIO)
+                        .offset(x = w * FRANK_X, y = h * FRANK_Y)
+                )
+                // Le nom FrankenStream projeté sur l'écran
                 Image(
                     painter = painterResource(R.drawable.splash_logo_666),
                     contentDescription = stringResource(R.string.cd_nuvio_logo),
@@ -235,31 +254,10 @@ fun StartupSplashScreen(
             Canvas(Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
-                // Yeux jaunes du diable qui pulsent
-                EYES.forEach { (fx, fy) ->
-                    val c = Offset(w * fx, h * fy)
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            listOf(Color(0xFFFFC93C).copy(alpha = 0.55f * eyes), Color(0xFFFF9F1A).copy(alpha = 0.2f * eyes), Color.Transparent),
-                            center = c, radius = w * 0.012f
-                        ),
-                        radius = w * 0.012f, center = c, blendMode = BlendMode.Plus
-                    )
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            listOf(Color.White.copy(alpha = 0.8f * eyes), Color(0xFFFFE58A).copy(alpha = 0.7f * eyes), Color.Transparent),
-                            center = c, radius = w * 0.0042f
-                        ),
-                        radius = w * 0.0042f, center = c, blendMode = BlendMode.Plus
-                    )
-                }
-                // Sang mauve qui goutte du 666 et du menton du diable
-                val logoBottom = h * LOGO_Y + w * LOGO_W * LOGO_RATIO * 0.9f
-                val sources = listOf(
-                    Triple(LOGO_X + LOGO_W * 0.13f, logoBottom, 0f), Triple(LOGO_X + LOGO_W * 0.29f, logoBottom, 0.4f),
-                    Triple(LOGO_X + LOGO_W * 0.45f, logoBottom, 0.75f), Triple(0.4292f, h * 0.566f, 0.2f)
-                )
-                sources.forEach { (fx, top, offset) ->
+                // Sang vert qui goutte de FRANKEN, mauve de STREAM ; chaque goutte a sa flaque de la même couleur
+                DRIPS.forEach { d ->
+                    val fx = d.fx; val top = h * d.fy; val offset = d.offset
+                    val blood = if (d.green) BloodGreen666 else Blood666
                     val ph = (drip + offset) % 1f
                     val x = w * fx
                     val bottom = h * 0.60f
@@ -269,25 +267,25 @@ fun StartupSplashScreen(
                     val pr = r * (1.0f + 3.0f * pool.value) * hit
                     // forme irrégulière : trois taches qui se chevauchent, sang sombre, petit reflet
                     val k = (fx * 97f) % 1f
-                    val pool666 = Color(0xFF34094F)
+                    val pool666 = if (d.green) Color(0xFF12460A) else Color(0xFF34094F)
                     drawOval(pool666.copy(alpha = 0.6f), Offset(x - pr * (1.15f + 0.3f * k), bottom - pr * 0.24f), Size(pr * 1.3f, pr * 0.48f))
                     drawOval(pool666.copy(alpha = 0.6f), Offset(x - pr * 0.1f, bottom - pr * 0.26f), Size(pr * (1.1f + 0.4f * k), pr * 0.42f))
                     drawOval(pool666.copy(alpha = 0.9f), Offset(x - pr * 0.8f, bottom - pr * 0.25f), Size(pr * 1.6f, pr * 0.46f))
-                    drawOval(Color(0xFF9B5CC4).copy(alpha = 0.25f), Offset(x - pr * 0.45f, bottom - pr * 0.18f), Size(pr * 0.4f, pr * 0.1f))
+                    drawOval((if (d.green) Color(0xFF78FF5A) else Color(0xFF9B5CC4)).copy(alpha = 0.25f), Offset(x - pr * 0.45f, bottom - pr * 0.18f), Size(pr * 0.4f, pr * 0.1f))
                     when {
                         ph < 0.45f -> {
                             val g = ph / 0.45f
-                            drawCircle(Blood666, r * (0.4f + 0.6f * g), Offset(x, top + r * g))
+                            drawCircle(blood, r * (0.4f + 0.6f * g), Offset(x, top + r * g))
                         }
                         ph < 0.95f -> {
                             val f = (ph - 0.45f) / 0.5f
                             val y = top + (bottom - top) * f * f
-                            drawLine(Blood666.copy(alpha = 0.8f * (1f - f * 0.6f)), Offset(x, top), Offset(x, y - r), strokeWidth = r * 0.6f + 1f, cap = StrokeCap.Round)
-                            drawOval(Blood666, Offset(x - r, y - r), Size(r * 2f, r * 2.4f))
+                            drawLine(blood.copy(alpha = 0.8f * (1f - f * 0.6f)), Offset(x, top), Offset(x, y - r), strokeWidth = r * 0.6f + 1f, cap = StrokeCap.Round)
+                            drawOval(blood, Offset(x - r, y - r), Size(r * 2f, r * 2.4f))
                         }
                         else -> {
                             val f = (ph - 0.95f) / 0.05f
-                            drawOval(Blood666.copy(alpha = 1f - f), Offset(x - r * (1f + f * 3f), bottom - r * 0.4f),
+                            drawOval(blood.copy(alpha = 1f - f), Offset(x - r * (1f + f * 3f), bottom - r * 0.4f),
                                 Size(r * 2f * (1f + f * 3f), r * 0.8f), style = Stroke(width = r * 0.4f))
                         }
                     }

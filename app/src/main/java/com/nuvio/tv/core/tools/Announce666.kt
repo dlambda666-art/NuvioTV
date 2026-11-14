@@ -176,7 +176,7 @@ object Announce666 {
                 box.addView(row)
                 loadPoster(url) { bmp -> img.post { img.setImageBitmap(bmp) } }
             }
-            box.addView(text("Appuie sur OK pour fermer · Détails dans le Calendrier 666TVF", 13f, Color.rgb(0x8F, 0x8A, 0x85)))
+            box.addView(text("Appuie sur OK pour fermer · Détails dans le Calendrier FrankenStream", 13f, Color.rgb(0x8F, 0x8A, 0x85)))
             val params = WindowManager.LayoutParams(
                 dp(420),
                 WindowManager.LayoutParams.WRAP_CONTENT,
