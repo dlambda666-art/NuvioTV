@@ -338,6 +338,12 @@ object FrankFree666 {
             is AddonCatalogCollectionSource -> "derniers-films" in s.catalogId
             else -> false
         }
+        // 14/11 (2) : « Dernières séries » part aussi — la tuile garde « En VF » et « À voir en VF »
+        fun isLastSeries(s: CollectionSource) = when (s) {
+            is TmdbCollectionSource -> Regex("^(dernieres? series?|nouvelles? series?)$").containsMatchIn(HomeReorg666.norm(s.title))
+            is AddonCatalogCollectionSource -> "dernieres-series" in s.catalogId
+            else -> false
+        }
         var changed = false
         val out = cols.map { c ->
             c.copy(folders = c.folders.map { f ->
@@ -350,7 +356,7 @@ object FrankFree666 {
                         val at = f.sources.indexOfFirst { it is AddonCatalogCollectionSource && it.addonId == LocalCatalogs666.VFWEEK && it.type == "movie" }
                         f.sources.toMutableList().also { it.add(if (at >= 0) at + 1 else f.sources.size, avoir) }
                     }
-                    f.copy(sources = src)
+                    f.copy(sources = src.filterNot(::isLastSeries))
                 }
             })
         }
@@ -364,7 +370,7 @@ object FrankFree666 {
         aVoirTab(current)?.let { next ->
             store.setCollections(next)
             runCatching { pushCollections(context) }
-            runCatching { Announce666.log(context, "🏠 Tuile En VF : « Derniers films » remplacé par « À voir en VF » (30 jours)", "accueil") }
+            runCatching { Announce666.log(context, "🏠 Tuile En VF : « Derniers films » et « Dernières séries » remplacés par « À voir en VF » (30 jours)", "accueil") }
         }
         prefs.edit().putBoolean("avoir1411", true).apply()
     }

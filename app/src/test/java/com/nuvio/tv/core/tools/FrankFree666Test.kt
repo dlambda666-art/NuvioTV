@@ -207,7 +207,7 @@ class FrankFree666Test {
         val other = com.nuvio.tv.domain.model.CollectionFolder(id = "h", title = "Horreur", sources = listOf(last))
         val cols = listOf(com.nuvio.tv.domain.model.Collection(id = "c", title = "Accueil", folders = listOf(vf, other)))
         val out = FrankFree666.aVoirTab(cols)!!
-        org.junit.Assert.assertEquals(listOf(week, avoir, series), out[0].folders[0].sources)
+        org.junit.Assert.assertEquals(listOf(week, avoir), out[0].folders[0].sources)
         org.junit.Assert.assertEquals(listOf(last), out[0].folders[1].sources)   // les autres tuiles : pas touchées
         org.junit.Assert.assertNull(FrankFree666.aVoirTab(out))                   // une seule fois
     }
