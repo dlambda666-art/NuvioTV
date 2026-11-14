@@ -90,4 +90,17 @@ class Record666Test {
         assertEquals("4K · VF", Record666.qualityOf("2160p MULTi"))
         assertEquals("1080p · VFQ", Record666.qualityOf("1080p VFQ"))
     }
+
+    @Test fun `piege The Get Out - lien mort a 0 Go, on cherche un lien neuf`() {
+        // rien reçu après quelques essais (lien pas en cache) : lien neuf sans attendre 40 essais
+        org.junit.Assert.assertTrue(Record666.shouldRelink(0L, 7, expired = false, relinks = 0))
+        org.junit.Assert.assertFalse(Record666.shouldRelink(0L, 3, expired = false, relinks = 0))
+        // lien expiré (403) : lien neuf tout de suite
+        org.junit.Assert.assertTrue(Record666.shouldRelink(5_000_000L, 0, expired = true, relinks = 1))
+        // déjà en route : on garde le lien tant qu'il ne meurt pas vraiment
+        org.junit.Assert.assertFalse(Record666.shouldRelink(5_000_000L, 10, expired = false, relinks = 0))
+        org.junit.Assert.assertTrue(Record666.shouldRelink(5_000_000L, 41, expired = false, relinks = 0))
+        // 3 liens neufs essayés : on s'arrête
+        org.junit.Assert.assertFalse(Record666.shouldRelink(0L, 41, expired = true, relinks = 3))
+    }
 }

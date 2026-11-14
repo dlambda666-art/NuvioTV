@@ -341,7 +341,21 @@ object Record666 {
         }
     }
 
-    private suspend fun download(context: Context, rec: Rec): Pair<Status, String?> {
+    /**
+     * 666TVF (14/11) : un lien mort (expiré, pas en cache, ne répond plus) → on va chercher tout seul un
+     * lien neuf (1080p VF sûre, en cache ⚡), au lieu de demander de relancer à la main. Branché par
+     * l'enregistrement auto au démarrage. Renvoie l'url et les en-têtes, ou null.
+     */
+    @Volatile var relinker: (suspend (Rec) -> Pair<String, Map<String, String>>?)? = null
+    private const val MAX_RELINKS = 3
+
+    /** Règle pure (testée) : faut-il chercher un lien neuf ? (rien reçu après quelques essais, ou trop d'essais) */
+    fun shouldRelink(bytesSoFar: Long, attempts: Int, expired: Boolean, relinks: Int): Boolean =
+        relinks < MAX_RELINKS && (expired || attempts > 40 || (bytesSoFar == 0L && attempts > 6))
+
+    private suspend fun download(context: Context, rec0: Rec): Pair<Status, String?> {
+        var rec = rec0
+        var relinks = 0
         rec.file.parentFile?.mkdirs()
         fetchImages(rec)
         var attempts = 0
@@ -365,10 +379,11 @@ object Record666 {
                 if (rec.headers.keys.none { it.equals("User-Agent", true) }) header("User-Agent", "Mozilla/5.0 666TVF")
                 if (from > 0) header("Range", "bytes=$from-")
             }.build()
+            var expired = false
             val outcome: Pair<Status, String?>? = try {
                 client.newCall(req).execute().use { resp ->
                     when (verdict(resp.code, from)) {
-                        HttpVerdict.EXPIRED -> Status.FAILED to "Lien expiré : relance depuis la liste des liens"
+                        HttpVerdict.EXPIRED -> { expired = true; Status.FAILED to "Lien expiré : relance depuis la liste des liens" }
                         HttpVerdict.COMPLETE -> finish(rec)
                         HttpVerdict.RETRY -> { attempts++; null }
                         HttpVerdict.RESTART, HttpVerdict.RESUME -> {
@@ -401,8 +416,22 @@ object Record666 {
                     else -> { attempts++; null }
                 }
             }
+            if ((outcome == null || expired) && shouldRelink(rec.partFile.length(), attempts, expired, relinks)) {
+                relinks++
+                note(rec.id, rec.partFile.length(), total, "Lien mort : recherche d'un lien neuf…")
+                val fresh = runCatching { relinker?.invoke(rec) }.getOrNull()
+                if (fresh != null && fresh.first != rec.url) {
+                    val newRec = rec.copy(url = fresh.first, headers = fresh.second)
+                    rec = newRec
+                    update(context) { l -> l.map { if (it.id == newRec.id) it.copy(url = newRec.url, headers = newRec.headers, total = 0L) else it } }
+                    rec.partFile.delete()   // autre fichier : on repart de zéro
+                    total = 0L
+                    attempts = 0
+                    continue
+                }
+            }
             if (outcome != null) return outcome
-            if (attempts > 40) return Status.FAILED to "Le lien ne répond plus : relance depuis la liste des liens"
+            if (attempts > 40) return Status.FAILED to "Aucun lien qui répond (3 liens neufs essayés) : réessaie plus tard"
             if (attempts > 0) delay((attempts * 5_000L).coerceAtMost(60_000))
         }
     }

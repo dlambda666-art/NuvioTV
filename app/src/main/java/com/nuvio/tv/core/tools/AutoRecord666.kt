@@ -33,6 +33,33 @@ class AutoRecord666 @Inject constructor(
 ) {
     private val prefs by lazy { context.getSharedPreferences("666tv_auto_rec", Context.MODE_PRIVATE) }
 
+    // 666TVF (14/11) : un enregistrement dont le lien est mort va chercher tout seul un lien neuf
+    init { Record666.relinker = { r -> freshLink(r) } }
+
+    /** Un lien neuf pour un enregistrement (film ou épisode) : 1080p VF sûre, en cache, qui tient sur le disque. */
+    private suspend fun freshLink(r: Record666.Rec): Pair<String, Map<String, String>>? {
+        val id = r.contentId?.substringBefore(':')?.takeIf { it.startsWith("tt") } ?: return null
+        val series = r.season != null && r.episode != null
+        val place = Record666.place(context) ?: return null
+        var last: List<Stream> = emptyList()
+        withTimeoutOrNull(180_000) {
+            val flow = if (series) streamRepository.getStreamsFromAllAddons("series", "$id:${r.season}:${r.episode}", r.season, r.episode)
+                else streamRepository.getStreamsFromAllAddons("movie", id, null, null)
+            flow.collect { res -> if (res is NetworkResult.Success) last = res.data.flatMap { it.streams } }
+        }
+        val room = minOf(place.maxFile, place.usable - Record666.queuedBytes() + r.total.coerceAtLeast(0L))
+        val candidates = if (series) pickAll(last, r.season, r.episode, room) else pickFilm(last, room)
+        for (s in candidates.take(5)) {
+            val url = if (directDebridResolver.shouldResolveToPlayableStream(s)) {
+                (directDebridResolver.resolve(s, r.season, r.episode) as? DirectDebridResolveResult.Success)?.url
+            } else s.getStreamUrl()
+            if (url.isNullOrBlank() || !url.startsWith("http") || url == r.url) continue
+            Announce666.log(context, "↻ Lien neuf trouvé pour ${r.label}", "enregistrement")
+            return url to (s.behaviorHints?.proxyHeaders?.request ?: emptyMap())
+        }
+        return null
+    }
+
     data class Pending(
         val seriesId: String,
         val seriesName: String,

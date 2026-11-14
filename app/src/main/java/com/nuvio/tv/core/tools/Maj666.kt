@@ -43,7 +43,15 @@ object Maj666 {
      * Si l'autre Shield a une version plus ancienne : on lui installe la nôtre.
      * Renvoie une ligne pour « Dernières annonces » (null = rien à faire).
      */
-    suspend fun pushIfNewer(context: Context): String? = withContext(Dispatchers.IO) {
+    private val busy666 = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    // 666TVF (14/11) : vérifié chaque minute (avant : toutes les 20 min) ; une seule installation à la fois
+    suspend fun pushIfNewer(context: Context): String? {
+        if (!busy666.compareAndSet(false, true)) return null
+        return try { pushIfNewerLocked(context) } finally { busy666.set(false) }
+    }
+
+    private suspend fun pushIfNewerLocked(context: Context): String? = withContext(Dispatchers.IO) {
         val peer = Lien666.peer ?: return@withContext null
         val theirs = Lien666.peerVersion() ?: return@withContext null
         val mine = myCode(context)

@@ -58,7 +58,12 @@ private val RDim = Color(0xFF8F8A85)
 
 /** 666TVF : les films et épisodes enregistrés (Shield du bas), lisibles même sans internet. */
 @Composable
-fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit, onPlayRemote: (Record666.Rec, String) -> Unit = { _, _ -> }) {
+fun Records666Screen(
+    onPlay: (Record666.Rec, Boolean) -> Unit,
+    onPlayRemote: (Record666.Rec, String) -> Unit = { _, _ -> },
+    // 666TVF (14/11) : voir la fiche du film / de la série (de quoi ça parle), en haut comme en bas
+    onOpenDetail: (Record666.Rec) -> Unit = {}
+) {
     val context = LocalContext.current
     LaunchedEffect(Unit) { Record666.init(context) }
     val items by Record666.items.collectAsState()
@@ -131,7 +136,7 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit, onPlayRemote: (Re
                                 r,
                                 modifier = if (i == 0 && r == rowsFar[0].first()) Modifier.focusRequester(first) else Modifier,
                                 onClick = { com.nuvio.tv.core.tools.Lien666.recUrl(r.id)?.let { onPlayRemote(r, it) } },
-                                onLongClick = {},
+                                onLongClick = { if (hasDetail666(r)) onOpenDetail(r) },
                                 remote = true
                             )
                         }
@@ -166,7 +171,7 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit, onPlayRemote: (Re
                     }
                 }
                 item {
-                    Text("OK : regarder · appui long sur OK : reprendre du début / garder / supprimer · vu → effacé 3 jours après", color = RDim, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
+                    Text("OK : regarder · appui long sur OK : la fiche / reprendre du début / garder / supprimer · vu → effacé 3 jours après", color = RDim, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
                 }
             }
             // 666TVF (12/11) : en bas (en haut, le curseur ne pouvait plus descendre) — ce qui attend un lien pour s'enregistrer tout seul (essais toutes les 3 h)
@@ -196,6 +201,7 @@ fun Records666Screen(onPlay: (Record666.Rec, Boolean) -> Unit, onPlayRemote: (Re
             RecordMenu(
                 r,
                 onPlayFromStart = { menuFor = null; onPlay(r, true) },
+                onOpenDetail = { menuFor = null; onOpenDetail(r) },
                 onRetry = { menuFor = null; Record666.retry(context, r.id) },
                 onDelete = { menuFor = null; Record666.delete(context, r.id) },
                 onToggleKeep = { menuFor = null; Record666.setKeep(context, r.id, !r.keep) },
@@ -341,8 +347,10 @@ private fun ReadyCard(r: Record666.Rec, modifier: Modifier, onClick: () -> Unit,
     }
 }
 
+private fun hasDetail666(r: Record666.Rec): Boolean = r.contentId?.substringBefore(':')?.let { it.startsWith("tt") || it.startsWith("tmdb") } == true
+
 @Composable
-private fun RecordMenu(r: Record666.Rec, onPlayFromStart: () -> Unit, onRetry: () -> Unit, onDelete: () -> Unit, onToggleKeep: () -> Unit, onDismiss: () -> Unit) {
+private fun RecordMenu(r: Record666.Rec, onPlayFromStart: () -> Unit, onOpenDetail: () -> Unit, onRetry: () -> Unit, onDelete: () -> Unit, onToggleKeep: () -> Unit, onDismiss: () -> Unit) {
     val first = remember { FocusRequester() }
     // 666TVF (11/11) : Shield du haut → les enregistrements d'en bas, lus par le réseau de la maison
     var remote by remember { mutableStateOf<List<Record666.Rec>?>(null) }
@@ -369,6 +377,12 @@ private fun RecordMenu(r: Record666.Rec, onPlayFromStart: () -> Unit, onRetry: (
             if (r.status == Record666.Status.DONE && r.file.exists()) {
                 Button(onClick = onPlayFromStart, colors = colors, modifier = Modifier.fillMaxWidth().firstOnce()) {
                     Text("▶  Reprendre du début", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                }
+                Spacer(Modifier.height(10.dp))
+            }
+            if (hasDetail666(r)) {
+                Button(onClick = onOpenDetail, colors = colors, modifier = Modifier.fillMaxWidth().firstOnce()) {
+                    Text("📖  Voir la fiche", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                 }
                 Spacer(Modifier.height(10.dp))
             }

@@ -1210,7 +1210,14 @@ private fun PlaybackNavHost(
             // 666TVF : enregistrements (Shield du bas) — lus directement depuis la clé / la Shield.
             com.nuvio.tv.ui.screens.livetv.Records666Screen(
                 onPlay = { r, fromStart -> playRecord666(navController, r, fromStart) },
-                onPlayRemote = { r, url -> playRecord666(navController, r, false, remoteUrl = url) }
+                onPlayRemote = { r, url -> playRecord666(navController, r, false, remoteUrl = url) },
+                onOpenDetail = { r ->
+                    val series = r.season != null || r.contentType == "series" || r.contentType == "tv"
+                    navController.navigate(Screen.Detail.createRoute(
+                        itemId = r.contentId!!.let { c -> if (c.startsWith("tmdb:")) "tmdb:" + c.split(':')[1] else c.substringBefore(':') }, itemType = if (series) "series" else "movie", addonBaseUrl = null,
+                        returnFocusSeason = r.season, returnFocusEpisode = r.episode
+                    ))
+                }
             )
         }
         composable(Screen.Roulette666.route) {

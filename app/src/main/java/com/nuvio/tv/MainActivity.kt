@@ -396,6 +396,19 @@ open class MainActivity : ComponentActivity() {
         }
         // 666TVF (11/11) : Mémoire 666 (lien entre les deux Shield, réseau de la maison seulement)
         runCatching { com.nuvio.tv.core.tools.Lien666.start(this) }
+        // 666TVF (14/11) : mise à jour de l'autre Shield vérifiée chaque minute (avant : toutes les 20 min)
+        run {
+            val appCtx = applicationContext
+            lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                kotlinx.coroutines.delay(30_000L)
+                while (true) {
+                    runCatching { com.nuvio.tv.core.tools.Maj666.pushIfNewer(appCtx) }.getOrNull()?.let { line ->
+                        runCatching { com.nuvio.tv.core.tools.Announce666.log(appCtx, line, "mise à jour") }
+                    }
+                    kotlinx.coroutines.delay(60_000L)
+                }
+            }
+        }
         com.nuvio.tv.core.tools.Announce666.externalPlayback = { externalPlaybackTracker.awaitingExternal666 }
         run {
             val appCtx = applicationContext
@@ -1487,10 +1500,7 @@ open class MainActivity : ComponentActivity() {
                                                 if (runCatching { com.nuvio.tv.core.tools.Lien666.syncNow(appCtx666) }.getOrNull() == null)
                                                     mp.edit().putLong("try_at", now - 5 * 3600_000L).apply()
                                             }
-                                            // 666TVF (12/11) : plus récente ici → installée sur l'autre Shield (débogage réseau)
-                                            runCatching { com.nuvio.tv.core.tools.Maj666.pushIfNewer(appCtx666) }.getOrNull()?.let { line ->
-                                                runCatching { com.nuvio.tv.core.tools.Announce666.log(appCtx666, line, "mise à jour") }
-                                            }
+                                            // (14/11 : la mise à jour de l'autre Shield a sa propre boucle, chaque minute)
                                             if (now - mp.getLong("usb_at", 0L) > 24 * 3600_000L) {
                                                 mp.edit().putLong("usb_at", now).apply()
                                                 runCatching { com.nuvio.tv.core.tools.Memoire666.saveToUsb(appCtx666) }
