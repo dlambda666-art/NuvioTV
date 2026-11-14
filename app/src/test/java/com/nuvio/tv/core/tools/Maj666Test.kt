@@ -22,4 +22,11 @@ class Maj666Test {
         assertFalse(Maj666.shouldPush(140, 139, false, 140, 9 * h, 10 * h))
         assertTrue(Maj666.shouldPush(140, 139, false, 140, 6 * h, 10 * h))
     }
+
+    @org.junit.Test fun `piege tube 32 bits - on envoie l'APK qui lui va`() {
+        // Shield du haut (tube) : refusait l'APK 64 bits (INSTALL_FAILED_NO_MATCHING_ABIS)
+        org.junit.Assert.assertEquals("armeabi-v7a", Maj666.pickAbi(listOf("armeabi-v7a", "armeabi")))
+        org.junit.Assert.assertEquals("arm64-v8a", Maj666.pickAbi(listOf("arm64-v8a", "armeabi-v7a", "armeabi")))
+        org.junit.Assert.assertNull(Maj666.pickAbi(emptyList()))
+    }
 }

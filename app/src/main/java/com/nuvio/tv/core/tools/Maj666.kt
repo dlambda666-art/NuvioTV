@@ -32,6 +32,37 @@ object Maj666 {
     fun shouldPush(mine: Long, theirs: Long, theirPlaying: Boolean, lastTriedCode: Long, lastTriedAt: Long, now: Long): Boolean =
         mine > theirs && !theirPlaying && !(lastTriedCode == mine && now - lastTriedAt < 3 * 3600_000L)
 
+    /** Règle pure (testée) : l'APK qui convient à l'autre Shield (64 bits si elle sait, sinon 32 bits). */
+    fun pickAbi(theirAbis: List<String>): String? = when {
+        "arm64-v8a" in theirAbis -> "arm64-v8a"
+        "armeabi-v7a" in theirAbis -> "armeabi-v7a"
+        else -> null
+    }
+
+    /** L'APK qui tourne ici : 64 ou 32 bits (d'après ses bibliothèques). */
+    fun myAbi(context: Context): String =
+        if (context.applicationInfo.nativeLibraryDir.orEmpty().trimEnd('/').endsWith("arm64")) "arm64-v8a" else "armeabi-v7a"
+
+    /** Même version, autre ABI : téléchargée depuis la publication GitHub de 666TV (gardée en cache). */
+    private fun download(context: Context, version: String, abi: String): File {
+        val name = "666TV-$version-$abi-release.apk"
+        val out = File(context.cacheDir, "maj666/$name")
+        if (out.exists() && out.length() > 1_000_000L) return out
+        out.parentFile?.mkdirs()
+        context.cacheDir.resolve("maj666").listFiles()?.filter { it.name != name }?.forEach { it.delete() }
+        val url = java.net.URL("https://github.com/dlambda666-art/NuvioTV/releases/download/v$version/$name")
+        val c = (url.openConnection() as java.net.HttpURLConnection).apply {
+            instanceFollowRedirects = true; connectTimeout = 15_000; readTimeout = 60_000
+        }
+        try {
+            if (c.responseCode !in 200..299) throw java.io.IOException("APK $abi introuvable (HTTP ${c.responseCode})")
+            val tmp = File(out.path + ".part")
+            c.inputStream.use { i -> tmp.outputStream().use { o -> i.copyTo(o) } }
+            if (!tmp.renameTo(out)) throw java.io.IOException("APK $abi : enregistrement impossible")
+        } finally { c.disconnect() }
+        return out
+    }
+
     private fun keyPair(context: Context): AdbKeyPair {
         val dir = File(context.filesDir, "adb666").apply { mkdirs() }
         val priv = File(dir, "adbkey"); val pub = File(dir, "adbkey.pub")
@@ -59,9 +90,17 @@ object Maj666 {
         val now = System.currentTimeMillis()
         if (!shouldPush(mine, theirs.code, theirs.playing, p.getLong("code", 0L), p.getLong("at", 0L), now)) return@withContext null
         p.edit().putLong("code", mine).putLong("at", now).apply()
-        val apk = File(context.applicationInfo.sourceDir)
         val result = runCatching {
-            Dadb.create(peer.host, ADB_PORT, keyPair(context)).use { it.install(apk) }
+            Dadb.create(peer.host, ADB_PORT, keyPair(context)).use { d ->
+                // 14/11 : la Shield du haut (tube) ne prend que l'APK 32 bits (armeabi-v7a) — l'APK d'ici
+                // (64 bits) était refusé (INSTALL_FAILED_NO_MATCHING_ABIS). On envoie celui qui lui va.
+                val theirAbis = runCatching { d.shell("getprop ro.product.cpu.abilist").output.trim() }.getOrDefault("")
+                    .split(',').map { it.trim() }.filter { it.isNotEmpty() }
+                val want = pickAbi(theirAbis) ?: myAbi(context)
+                val apk = if (want == myAbi(context)) File(context.applicationInfo.sourceDir)
+                    else download(context, myName(context), want)
+                d.install(apk)
+            }
         }
         val name = myName(context)
         if (result.isSuccess) {
