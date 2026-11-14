@@ -107,7 +107,7 @@
         <service
             android:name=".core.dream.Dream666Service"
             android:exported="true"
-            android:label="666TVF · Cimetière"
+            android:label="FrankenStream · Cimetière"
             android:permission="android.permission.BIND_DREAM_SERVICE">
             <intent-filter>
                 <action android:name="android.service.dreams.DreamService" />
@@ -121,7 +121,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Ouvre 666TVF quand la TV s'allume" />
+                android:value="Ouvre FrankenStream quand la TV s'allume" />
         </service>
 
         <!-- 666TVF : enregistrements (regarder sans internet), Shield du bas -->
