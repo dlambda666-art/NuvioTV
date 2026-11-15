@@ -51,9 +51,70 @@ object VfCheck666 {
      * Adresses de French-Stream (le site en change souvent). La 1re qui répond est retenue ;
      * si elle tombe, on essaie les autres. Nouvelle adresse = l'ajouter ici (09/11 : fs23.lol).
      */
-    val FS_HOSTS = listOf("https://fs23.lol", "https://maj.french-stream.pink")
+    val FS_HOSTS = listOf("https://fs23.lol", "https://maj.french-stream.pink", "https://french-stream.pink")
     @Volatile private var fsIndex = 0
-    private val FS: String get() = FS_HOSTS[fsIndex % FS_HOSTS.size]
+    private val FS: String get() = fsHosts().let { it[fsIndex % it.size] }
+
+    // ---------- French-Stream qui déménage (15/11) ----------
+    /** Pages où French-Stream annonce son adresse du moment (et ses miroirs). */
+    private val FS_PORTALS = listOf("https://french-stream.net", "https://french-stream.club", "https://maj.french-stream.pink")
+
+    /** Les adresses à essayer : celles retrouvées toutes seules d'abord (la dernière qui marche), puis celles écrites ici. */
+    fun fsHosts(): List<String> =
+        (prefs()?.getString("fs_learned", null).orEmpty().split(' ').filter { it.startsWith("https://") } + FS_HOSTS).distinct()
+
+    /**
+     * Règle pure (testée) : les adresses de French-Stream citées dans une page (liens, redirections).
+     * Garde « french-stream.* », « *.french-stream.* » et « fsNN.* » ; écarte les sites frères
+     * (french-manga…) et ce qu'on connaît déjà.
+     */
+    fun fsCandidates(html: String, known: Collection<String>): List<String> =
+        Regex("""https?://((?:[a-z0-9-]+\.)*(?:french-stream|fs\d{1,3})\.[a-z]{2,10})""", RegexOption.IGNORE_CASE)
+            .findAll(html).map { "https://" + it.groupValues[1].lowercase() }
+            .filter { it !in known }
+            .distinct().toList()
+
+    /** Vrai si la page d'accueil est bien French-Stream (et pas une page de pub ou un parking). */
+    fun looksLikeFs(html: String?): Boolean =
+        html != null && Regex("<title>[^<]*french[ -]?stream", RegexOption.IGNORE_CASE).containsMatchIn(html) &&
+            html.contains("engine/", ignoreCase = true).or(html.contains("Films avec VF", ignoreCase = true))
+
+    private fun fetchPage(url: String): Pair<String, String?>? = runCatching {
+        val c = URL(url).openConnection() as HttpURLConnection
+        c.connectTimeout = 10_000; c.readTimeout = 15_000; c.instanceFollowRedirects = true
+        c.setRequestProperty("User-Agent", "Mozilla/5.0")
+        try {
+            val body = if (c.responseCode in 200..299) c.inputStream.bufferedReader().readText() else null
+            (c.url.protocol + "://" + c.url.host) to body   // c.url = adresse finale après redirection
+        } finally { c.disconnect() }
+    }.getOrNull()
+
+    /**
+     * Toutes les adresses connues sont mortes : on va lire les pages d'annonce de French-Stream, on
+     * suit les redirections, on vérifie chaque nouvelle adresse et on retient celle qui marche
+     * (au plus une recherche toutes les 6 h). Vrai si une nouvelle adresse a été trouvée.
+     */
+    private fun rediscoverFs(): Boolean {
+        val p = prefs() ?: return false
+        val now = System.currentTimeMillis()
+        if (now - p.getLong("fs_rediscover_at", 0L) < 6 * 3_600_000L) return false
+        p.edit().putLong("fs_rediscover_at", now).apply()
+        val known = fsHosts()
+        val candidates = LinkedHashSet<String>()
+        (FS_PORTALS + known).distinct().forEach { u ->
+            val page = fetchPage(u) ?: return@forEach
+            if (page.first !in known && page.first.startsWith("https://")) candidates += page.first
+            page.second?.let { candidates += fsCandidates(it, known) }
+        }
+        val found = candidates.firstOrNull { looksLikeFs(fetchPage(it)?.second) } ?: return false
+        val learned = (listOf(found) + p.getString("fs_learned", null).orEmpty().split(' ').filter { it.startsWith("https://") })
+            .distinct().take(3)
+        p.edit().putString("fs_learned", learned.joinToString(" ")).apply()
+        fsIndex = 0
+        Log.i(TAG, "French-Stream a déménagé : nouvelle adresse retenue")
+        ctx?.let { runCatching { Announce666.log(it, "🏠 French-Stream a déménagé : Frank a retrouvé sa nouvelle adresse (${found.removePrefix("https://")})", "moteur VF") } }
+        return true
+    }
 
     enum class Tag { DUB, DUB_SUB, SUB, NONE }
     fun isVf(t: Tag?) = t == Tag.DUB || t == Tag.DUB_SUB
@@ -256,7 +317,9 @@ object VfCheck666 {
     /** [path] commence par « / ». Essaie l'adresse retenue, puis les autres. */
     private suspend fun fsRequest(path: String, body: String?): String? {
         if (System.currentTimeMillis() < fsBlockedUntil) return null
-        repeat(FS_HOSTS.size) {
+        var rediscovered = false
+        var tries = fsHosts().size
+        while (tries-- > 0) {
             val base = FS
             fsPace.withLock {
                 val wait = fsNextAt - System.currentTimeMillis()
@@ -288,6 +351,11 @@ object VfCheck666 {
                 return text
             }
             fsIndex++   // cette adresse ne répond pas : la suivante
+            // 15/11 : plus aucune adresse connue ne répond → Frank cherche la nouvelle, puis réessaie une fois
+            if (tries == 0 && !rediscovered) {
+                rediscovered = true
+                if (rediscoverFs()) tries = 1
+            }
         }
         fsAllDown()
         return null
@@ -382,7 +450,7 @@ object VfCheck666 {
             news.isNotEmpty() -> "French-Stream ($host) · ${news.size} nouveautés VF · $known" to true
             newsStale(prefs()?.getLong("fs_news_at", 0L) ?: 0L, System.currentTimeMillis()) ->
                 "French-Stream répond mais n'annonce plus aucune nouveauté depuis 2 jours (page changée ?) · $known" to null
-            else -> "French-Stream ne répond pas (${FS_HOSTS.joinToString { it.removePrefix("https://") }}) · $known" to false
+            else -> "French-Stream ne répond pas (${fsHosts().joinToString { it.removePrefix("https://") }}) · Frank cherche sa nouvelle adresse toutes les 6 h · $known" to false
         }
     }
 

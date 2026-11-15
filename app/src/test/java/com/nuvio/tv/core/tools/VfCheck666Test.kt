@@ -87,4 +87,16 @@ class VfCheck666Test {
         val tv = org.json.JSONArray("""[{"id":9,"name":"Where's Wanda?","original_name":"Wo ist Wanda?","first_air_date":"2024-10-02"}]""")
         assertEquals(9, VfCheck666.pickTmdb(tv, "Where's Wanda?", true, 2025, "2026-11-11"))
     }
+
+    @Test fun `piege demenagement French-Stream - nouvelle adresse reperee dans la page d'annonce`() {
+        val page = """<a href="https://fs24.lol">Nouvelle adresse</a> <a href="https://french-manga.net">manga</a>
+            <a href="https://fs23.lol/">ancienne</a> <a href="https://www.French-Stream.lat/films">miroir</a>
+            <img src="https://image.tmdb.org/t/p/w300/x.jpg">"""
+        val known = listOf("https://fs23.lol", "https://maj.french-stream.pink")
+        org.junit.Assert.assertEquals(listOf("https://fs24.lol", "https://www.french-stream.lat"), VfCheck666.fsCandidates(page, known))
+        // une vraie page French-Stream / une page de parking
+        org.junit.Assert.assertTrue(VfCheck666.looksLikeFs("<title>French Stream - Films et Series en Streaming Complet</title> Films avec VF"))
+        org.junit.Assert.assertFalse(VfCheck666.looksLikeFs("<title>Domain for sale</title> french stream"))
+        org.junit.Assert.assertFalse(VfCheck666.looksLikeFs(null))
+    }
 }

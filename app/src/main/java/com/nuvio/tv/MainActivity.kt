@@ -1419,7 +1419,7 @@ open class MainActivity : ComponentActivity() {
                                             poster = null,
                                             season = 0,
                                             episode = 0,
-                                            title = "Aucune adresse ne répond (${com.nuvio.tv.core.tools.VfCheck666.FS_HOSTS.joinToString { it.removePrefix("https://") }}) : trouve la nouvelle",
+                                            title = "Aucune adresse ne répond (${com.nuvio.tv.core.tools.VfCheck666.fsHosts().joinToString { it.removePrefix("https://") }}) et Frank n'a pas trouvé la nouvelle : dis-le à Claude",
                                             airInstant = java.time.Instant.now(),
                                             addonBaseUrl = null
                                         )
