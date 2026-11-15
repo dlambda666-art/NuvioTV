@@ -21,7 +21,10 @@ internal object ChapterSkipIntervals {
     private const val MIN_DURATION_SEC = 5.0
 
     private val OPENING_PATTERN = Regex("\\b(op|opening)\\b", RegexOption.IGNORE_CASE)
-    private val ENDING_PATTERN = Regex("\\b(ed|ending|credits)\\b", RegexOption.IGNORE_CASE)
+    // 15/11 : aussi les chapitres en français (« Générique de fin », « Générique fin »), « Outro », « End credits »
+    private val ENDING_PATTERN = Regex("\\b(ed|ending|credits|outro)\\b|g[ée]n[ée]rique\\s*(de\\s*)?fin|\\bfin\\s*du\\s*film\\b", RegexOption.IGNORE_CASE)
+    // « Générique » tout seul : de fin s'il commence dans le dernier quart, sinon d'ouverture
+    private val GENERIQUE_PATTERN = Regex("g[ée]n[ée]rique", RegexOption.IGNORE_CASE)
     private val RECAP_PATTERN = Regex("\\b(recap|previously)\\b", RegexOption.IGNORE_CASE)
     private val INTRO_PATTERN = Regex("\\bintro\\b", RegexOption.IGNORE_CASE)
 
@@ -41,6 +44,9 @@ internal object ChapterSkipIntervals {
                 chapter = chapter,
                 endMs = endMs,
                 type = classifyTitle(chapter.title)
+                    ?: if (chapter.title?.let { GENERIQUE_PATTERN.containsMatchIn(it) } == true) {
+                        if (chapter.startMs >= durationMs * 3 / 4) ChapterType.ENDING else ChapterType.OPENING
+                    } else null
             )
         }
 

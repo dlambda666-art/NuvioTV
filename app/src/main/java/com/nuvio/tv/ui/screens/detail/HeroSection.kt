@@ -344,7 +344,10 @@ fun HeroContentSection(
                         meta = meta,
                         hideImdbRating = hideMetaInfoImdb,
                         showFullReleaseDate = showFullReleaseDate,
-                        tmdbRating = tmdbRating
+                        tmdbRating = tmdbRating,
+                        // 15/11 : film commencé → l'heure de fin se calcule sur le temps restant
+                        resumeRemainingMs = nextToWatch?.takeIf { it.isResume }?.watchProgress
+                            ?.let { (it.duration - it.position).takeIf { r -> r > 60_000L } }
                     )
                 }
             }
@@ -609,9 +612,21 @@ private fun MetaInfoRow(
     meta: Meta,
     hideImdbRating: Boolean,
     showFullReleaseDate: Boolean = true,
-    tmdbRating: Float? = null
+    tmdbRating: Float? = null,
+    resumeRemainingMs: Long? = null
 ) {
     val context = LocalContext.current
+    // 15/11 : « Se termine à 22:47 » (heure sur 24 h, mise à jour chaque minute)
+    val now666 by androidx.compose.runtime.produceState(System.currentTimeMillis()) {
+        while (true) { kotlinx.coroutines.delay(30_000L); value = System.currentTimeMillis() }
+    }
+    val endText666 = remember(meta.runtime, resumeRemainingMs, now666 / 60_000L) {
+        endsAt666(meta.runtime, resumeRemainingMs, now666)
+    }
+    // 15/11 : scène pendant / après le générique (films, mots-clés TMDB)
+    val stinger666 by androidx.compose.runtime.produceState<com.nuvio.tv.core.tools.Stinger666.Kind?>(null, meta.id, meta.type) {
+        value = if (meta.type == ContentType.MOVIE) runCatching { com.nuvio.tv.core.tools.Stinger666.forMovie(context, meta.id) }.getOrNull() else null
+    }
     val genresText = remember(meta.genres) {
         meta.genres
             .take(MAX_VISIBLE_HERO_GENRES)
@@ -782,6 +797,14 @@ private fun MetaInfoRow(
                         MetaInfoDivider()
                     }
                 }
+                endText666?.let { t ->
+                    if (secondaryItems.isNotEmpty()) MetaInfoDivider()
+                    Text(text = t, style = MaterialTheme.typography.labelMedium, color = Color(0xFF8BFF6A))
+                }
+                stinger666?.let { k ->
+                    MetaInfoDivider()
+                    Text(text = "🎬 " + com.nuvio.tv.core.tools.Stinger666.label(k), style = MaterialTheme.typography.labelMedium, color = Color(0xFFC08BFF))
+                }
             }
         }
     }
@@ -886,6 +909,31 @@ private fun formatYearRange(releaseInfo: String?): String? {
  * every branch below could reach the end with a total of zero and render a literal "0m" in the
  * metadata row. The caller already drops a null.
  */
+/**
+ * 15/11 — règle pure (testée) : durée en minutes (« 1h 47m », « 107 », « 1:47 », « 107 min »).
+ */
+internal fun runtimeMinutes666(runtime: String?): Int? {
+    val t = runtime?.trim()?.lowercase().orEmpty()
+    if (t.isEmpty()) return null
+    if (t.contains(':')) {
+        val p = t.split(':'); val h = p.getOrNull(0)?.toIntOrNull() ?: 0; val m = p.getOrNull(1)?.filter { it.isDigit() }?.toIntOrNull() ?: 0
+        return (h * 60 + m).takeIf { it > 0 }
+    }
+    if (Regex("\\d+\\s*h").containsMatchIn(t)) {
+        val h = Regex("(\\d+)\\s*h").find(t)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val m = Regex("(\\d+)\\s*m").find(t)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        return (h * 60 + m).takeIf { it > 0 }
+    }
+    return Regex("\\d+").find(t)?.value?.toIntOrNull()?.takeIf { it in 1..600 }
+}
+
+/** 15/11 — règle pure (testée) : « Se termine à 22:47 » (temps restant si commencé), sur 24 h. */
+internal fun endsAt666(runtime: String?, remainingMs: Long?, nowMs: Long, zone: java.util.TimeZone = java.util.TimeZone.getDefault()): String? {
+    val ms = remainingMs ?: runtimeMinutes666(runtime)?.let { it * 60_000L } ?: return null
+    val f = java.text.SimpleDateFormat("HH:mm", java.util.Locale.FRANCE).apply { timeZone = zone }
+    return "Se termine à " + f.format(java.util.Date(nowMs + ms))
+}
+
 private fun formatRuntime(runtime: String): String? {
     val trimmed = runtime.trim()
     // Already in "Xh Ym" or "Xh" format

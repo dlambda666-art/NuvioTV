@@ -407,6 +407,8 @@ class PlayerRuntimeController(
 
     internal var playbackStartedForParentalGuide = false
     internal var hasRenderedFirstFrame = false
+    // 15/11 : liens déjà rafraîchis après expiration (une seule fois par lien)
+    internal val expiredRefreshed666 = mutableSetOf<String>()
     // 666TV : réveil de la barre de son (voir onRenderedFirstFrame).
     internal var soundbarWakeupEnabled = false
     internal var soundbarWakeupJob: kotlinx.coroutines.Job? = null

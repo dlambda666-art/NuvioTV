@@ -127,4 +127,16 @@ class SourceFailoverRulesTest {
         val tried = setOf("https://a.test/c", SourceFailoverRules.sourceKey(comet))
         assertEquals(lumio, SourceFailoverRules.selectNext(listOf(comet, lumio), tried))
     }
+
+    @org.junit.Test
+    fun `piege longue pause - lien expire rafraichi une fois a la meme seconde`() {
+        val r = SourceFailoverRules
+        org.junit.Assert.assertTrue(r.shouldRefreshExpired("HTTP 403", true, 45 * 60_000L, "https://x/a", emptySet()))
+        org.junit.Assert.assertFalse(r.shouldRefreshExpired("HTTP 403", true, 45 * 60_000L, "https://x/a", setOf("https://x/a")))
+        // refusé dès le départ : un mauvais lien, on passe au suivant comme avant
+        org.junit.Assert.assertFalse(r.shouldRefreshExpired("HTTP 403", false, 0L, "https://x/a", emptySet()))
+        org.junit.Assert.assertFalse(r.shouldRefreshExpired("HTTP 403", true, 5_000L, "https://x/a", emptySet()))
+        // pas un refus du serveur (pas de VF…) : rien à rafraîchir
+        org.junit.Assert.assertFalse(r.shouldRefreshExpired("Pas de piste française", true, 45 * 60_000L, "https://x/a", emptySet()))
+    }
 }

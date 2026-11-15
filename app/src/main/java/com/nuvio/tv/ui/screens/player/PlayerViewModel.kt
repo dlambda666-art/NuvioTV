@@ -271,8 +271,27 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    // ---------- 15/11 : scène pendant / après le générique (films) ----------
+    val stinger666 = kotlinx.coroutines.flow.MutableStateFlow<com.nuvio.tv.core.tools.Stinger666.Kind?>(null)
+    private var stinger666Loaded = false
+
+    fun loadStinger666() {
+        if (stinger666Loaded) return
+        stinger666Loaded = true
+        if (controller.contentType?.lowercase() != "movie") return
+        val id = controller.contentId ?: return
+        viewModelScope.launch {
+            stinger666.value = runCatching { com.nuvio.tv.core.tools.Stinger666.forMovie(context, id) }.getOrNull()
+        }
+    }
+
+    /** Début du générique de fin, si on le connaît (chapitres ou IntroDB). */
+    fun creditsStartMs666(): Long? = controller.skipIntervals
+        .filter { it.type in PlayerNextEpisodeRules.OUTRO_SEGMENT_TYPES }
+        .minOfOrNull { it.startTime }?.let { (it * 1000).toLong() }
+
     /** 666TV : image d'aperçu pendant l'avance / le retour rapide. */
-    private val seekThumbnailProvider = com.nuvio.tv.core.player.SeekThumbnailProvider()
+    private val seekThumbnailProvider = com.nuvio.tv.core.player.SeekThumbnailProvider(context)
 
     suspend fun seekThumbnail(positionMs: Long): android.graphics.Bitmap? =
         seekThumbnailProvider.frameAt(controller.currentStreamUrl, controller.currentHeaders, positionMs)

@@ -88,6 +88,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- FrankenStream (15/11) : images d'aperçu par FFmpeg, dans un processus à part (un plantage n'arrête jamais le film) -->
+        <service
+            android:name=".core.player.ThumbService666"
+            android:exported="false"
+            android:process=":thumbs666" />
         <service
             android:name=".core.sync.androidtv.TvChannelRefreshJobService"
             android:exported="false"

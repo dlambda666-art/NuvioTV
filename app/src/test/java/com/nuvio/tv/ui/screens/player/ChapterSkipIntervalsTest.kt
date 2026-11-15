@@ -175,4 +175,14 @@ class ChapterSkipIntervalsTest {
         // 2 seconds < 5 second minimum
         assertTrue(intervals.none { it.type == "intro" })
     }
+
+    @org.junit.Test
+    fun `chapitres francais - generique de fin et generique seul selon sa place`() {
+        val d = 3_000_000L
+        val a = ChapterSkipIntervals.fromChapters(chapters(0L to "Début", 60_000L to "Générique", 200_000L to "Chapitre 2", 2_800_000L to "Générique de fin"), d)
+        org.junit.Assert.assertEquals(2_800.0, a.first { it.type == "outro" }.startTime, 0.01)
+        org.junit.Assert.assertEquals(60.0, a.first { it.type == "intro" }.startTime, 0.01)
+        val b = ChapterSkipIntervals.fromChapters(chapters(0L to "Film", 2_700_000L to "Générique"), d)
+        org.junit.Assert.assertEquals("outro", b.single().type)
+    }
 }

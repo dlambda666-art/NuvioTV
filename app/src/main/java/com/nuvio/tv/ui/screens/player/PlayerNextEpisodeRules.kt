@@ -80,9 +80,12 @@ object PlayerNextEpisodeRules {
                 }
             } else {
                 // 666TV : générique en fin de fichier — on enchaîne au milieu du générique.
+                // 15/11 : générique connu par un CHAPITRE du fichier (précis) → dès son début.
                 val outroStart = outroSegments.minOf { it.startTime }
                 val outroEnd = outroSegments.maxOf { it.endTime }
-                positionMs / 1_000.0 >= outroStart + (outroEnd - outroStart) * MID_CREDITS_FRACTION
+                val fromChapters = outroSegments.all { it.provider == "chapters" }
+                val fraction = if (fromChapters) 0.0 else MID_CREDITS_FRACTION
+                positionMs / 1_000.0 >= outroStart + (outroEnd - outroStart) * fraction
             }
         }
 

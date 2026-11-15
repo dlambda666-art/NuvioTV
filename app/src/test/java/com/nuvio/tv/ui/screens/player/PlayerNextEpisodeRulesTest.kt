@@ -234,4 +234,15 @@ class PlayerNextEpisodeRulesTest {
         assertFalse(at(1_169L))
         assertTrue(at(1_170L))
     }
+
+    @Test
+    fun `piege episode qui n'enchaine pas - generique en chapitre, l'episode suivant des son debut`() {
+        val outro = listOf(SkipInterval(startTime = 1_140.0, endTime = 1_200.0, type = "outro", provider = "chapters"))
+        fun at(sec: Long) = PlayerNextEpisodeRules.shouldShowNextEpisodeCard(
+            positionMs = sec * 1_000L, durationMs = 1_200_000L, skipIntervals = outro,
+            thresholdMode = NextEpisodeThresholdMode.MINUTES_BEFORE_END, thresholdPercent = 99f, thresholdMinutesBeforeEnd = 0.5f
+        )
+        assertFalse(at(1_139L))
+        assertTrue(at(1_140L))
+    }
 }

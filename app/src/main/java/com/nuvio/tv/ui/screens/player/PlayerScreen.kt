@@ -1466,6 +1466,9 @@ fun PlayerScreen(
             SeekOverlayHost(viewModel = viewModel, chapters = uiState.chapters)
         }
 
+        // 15/11 : prévenir qu'une scène attend pendant / après le générique (Marvel…)
+        Stinger666Banner(viewModel = viewModel, modifier = Modifier.align(Alignment.TopCenter))
+
         // 666TV : image d'aperçu pendant qu'on avance / recule.
         if (uiState.error == null && !uiState.showSourcesPanel && !uiState.showEpisodesPanel) {
             SeekThumbnailOverlay(

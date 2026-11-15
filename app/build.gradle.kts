@@ -397,6 +397,9 @@ sentry {
 }
 
 dependencies {
+    // FrankenStream (15/11) : images d'aperçu quand on avance (MKV, 4K, HDR) — FFmpeg, processus à part
+    implementation("com.github.wseemann:FFmpegMediaMetadataRetriever-core:1.0.19")
+    implementation("com.github.wseemann:FFmpegMediaMetadataRetriever-native:1.0.19")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     val composeBom = platform("androidx.compose:compose-bom:2026.05.01")
 

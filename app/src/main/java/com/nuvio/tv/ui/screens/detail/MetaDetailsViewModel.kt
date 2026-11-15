@@ -98,6 +98,8 @@ class MetaDetailsViewModel @Inject constructor(
     private val profileManager: ProfileManager,
     private val metaDetailsSessionState: MetaDetailsSessionState,
     private val watchedSeriesStateHolder: com.nuvio.tv.data.local.WatchedSeriesStateHolder,
+    // 15/11 : « chercher avant Lecture » (idée de Nuvio Arc)
+    private val streamRepository666: com.nuvio.tv.domain.repository.StreamRepository,
     val posterOptions: com.nuvio.tv.ui.components.posteroptions.PosterOptionsController,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -148,7 +150,44 @@ class MetaDetailsViewModel @Inject constructor(
     private val _optimisticMarks = mutableSetOf<Pair<Int, Int>>()
     private val _optimisticUnmarks = mutableSetOf<Pair<Int, Int>>()
 
+    // ---------- 15/11 : chercher avant Lecture ----------
+    private var prefetch666Job: Job? = null
+    private var prefetch666Key: String? = null
+
+    /**
+     * Pendant qu'on lit la fiche, les cavaliers cherchent déjà les liens du film (ou de l'épisode à
+     * regarder). La recherche vit dans le cache des recherches (15 min) : en appuyant sur Lecture,
+     * les liens sont là tout de suite. On attend 2,5 s sur la fiche (pas en la survolant).
+     */
+    private fun prefetchStreams666(meta: com.nuvio.tv.domain.model.Meta, next: NextToWatch?) {
+        val series = meta.apiType == "series" || meta.apiType == "tv"
+        val target: Triple<String, Int?, Int?> = if (!series) Triple(meta.id, null, null) else {
+            val id = next?.nextVideoId ?: return
+            Triple(id, next.nextSeason, next.nextEpisode)
+        }
+        val key = meta.apiType + "|" + target.first
+        if (key == prefetch666Key) return
+        prefetch666Key = key
+        prefetch666Job?.cancel()
+        prefetch666Job = viewModelScope.launch {
+            delay(2_500L)
+            if (com.nuvio.tv.core.tools.Lien666.playing) return@launch
+            // On lance la recherche puis on lâche : elle continue toute seule dans le cache.
+            kotlinx.coroutines.withTimeoutOrNull(1_000L) {
+                streamRepository666.getStreamsFromAllAddons(
+                    type = meta.apiType, videoId = target.first, season = target.second, episode = target.third, forceRefresh = false
+                ).collect { }
+            }
+        }
+    }
+
     init {
+        // 15/11 : chercher avant Lecture, dès que la fiche (et l'épisode à regarder) est connue
+        viewModelScope.launch {
+            uiState.map { it.meta to it.nextToWatch }.distinctUntilChanged().collect { (m, n) ->
+                if (m != null) prefetchStreams666(m, n)
+            }
+        }
         posterOptions.bind(viewModelScope)
         observeMetaViewSettings()
         observeTrailerAutoplaySettings()

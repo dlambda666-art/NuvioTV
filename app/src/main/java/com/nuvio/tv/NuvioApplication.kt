@@ -78,6 +78,9 @@ class NuvioApplication : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        // 15/11 : le petit processus des images d'aperçu (FFmpeg) ne lance rien d'autre
+        val proc666 = if (android.os.Build.VERSION.SDK_INT >= 28) android.app.Application.getProcessName() else null
+        if (proc666?.endsWith(":thumbs666") == true) return
         SentryInitializer.start(this, sentrySettingsDataStore)
         PluginRuntimeHooks.onApplicationCreate(this)
         // 666TVF (09/11) : ce que Frank tenait, maintenant gardé sur la Shield

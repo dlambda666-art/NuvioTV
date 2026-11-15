@@ -20,7 +20,12 @@ import kotlinx.coroutines.withContext
  * barre de progression. Les images déjà vues restent en mémoire (cases de 10 s).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class SeekThumbnailProvider {
+class SeekThumbnailProvider(context: android.content.Context? = null) {
+    // 15/11 : quand le lecteur d'images d'Android échoue (MKV 4K, HDR, Dolby Vision, liens debrid…),
+    // FFmpeg prend le relais, dans un processus à part (ThumbService666).
+    private val ffmpeg666 = context?.let { ThumbService666.Client(it) }
+    private var useFfmpegFor666: String? = null
+    private var ffmpegFailures666 = 0
     private val dispatcher = Dispatchers.IO.limitedParallelism(1)
     private val mutex = Mutex()
     private var retriever: MediaMetadataRetriever? = null
@@ -37,9 +42,9 @@ class SeekThumbnailProvider {
         return withContext(dispatcher) {
             mutex.withLock {
                 if (url != openedUrl) reset(url)
-                if (url == failedUrl) return@withLock null
                 cache.get(bucket)?.let { return@withLock it }
-                val mmr = retriever ?: open(url, headers) ?: return@withLock null
+                if (url == failedUrl || url == useFfmpegFor666) return@withLock ffmpegFrame666(url, headers, bucket)
+                val mmr = retriever ?: open(url, headers) ?: return@withLock ffmpegFrame666(url, headers, bucket)
                 val timeUs = (bucket * BUCKET_MS + BUCKET_MS / 2) * 1000L
                 var frame = grab(mmr, timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
                 // 666TV : image toute noire (souvent en 4K HDR / Dolby Vision, que la Shield ne sait
@@ -54,7 +59,7 @@ class SeekThumbnailProvider {
                             failedUrl = url
                             cache.evictAll()
                         }
-                        return@withLock null
+                        return@withLock ffmpegFrame666(url, headers, bucket)
                     }
                 }
                 if (frame != null) blackCount = 0
@@ -64,14 +69,27 @@ class SeekThumbnailProvider {
                     Log.d(TAG, "same frame at different positions: thumbnails disabled for this stream")
                     failedUrl = url
                     cache.evictAll()
-                    return@withLock null
+                    return@withLock ffmpegFrame666(url, headers, bucket)
                 }
-                frame?.also { cache.put(bucket, it) }
+                frame?.also { cache.put(bucket, it) } ?: ffmpegFrame666(url, headers, bucket)
             }
         }
     }
 
     private var blackCount = 0
+
+    /** 15/11 : l'image par FFmpeg (processus à part). Trois échecs de suite → on arrête pour ce fichier. */
+    private suspend fun ffmpegFrame666(url: String, headers: Map<String, String>, bucket: Long): Bitmap? {
+        val client = ffmpeg666 ?: return null
+        if (ffmpegFailures666 >= 3) return null
+        useFfmpegFor666 = url
+        val timeUs = (bucket * BUCKET_MS + BUCKET_MS / 2) * 1000L
+        val frame = client.frame(url, headers, timeUs)?.takeUnless { isBlack(it) }
+        if (frame == null) { ffmpegFailures666++; return null }
+        ffmpegFailures666 = 0
+        cache.put(bucket, frame)
+        return frame
+    }
 
     private fun grab(mmr: MediaMetadataRetriever, timeUs: Long, option: Int): Bitmap? = runCatching {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
@@ -138,6 +156,8 @@ class SeekThumbnailProvider {
         retriever?.let { runCatching { it.release() } }
         retriever = null
         openedUrl = url
+        useFfmpegFor666 = null
+        ffmpegFailures666 = 0
         cache.evictAll()
         firstSignature = null
         firstSignatureBucket = -1
@@ -147,6 +167,7 @@ class SeekThumbnailProvider {
 
     suspend fun release() = withContext(dispatcher) {
         mutex.withLock { reset(null) }
+        ffmpeg666?.release()
     }
 
     private companion object {

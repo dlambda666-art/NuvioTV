@@ -68,6 +68,14 @@ internal object SourceFailoverRules {
     fun sourceKey(name: String?): String? = name?.takeIf { it.isNotBlank() }?.let { "source:" + it.lowercase() }
 
     /** Erreur venant du serveur du lien (refus, introuvable, panne) plutôt que du fichier. */
+    /**
+     * 15/11 — règle pure (testée) : lien refusé (401/403/410…) APRÈS avoir joué au moins 30 s,
+     * jamais encore rafraîchi → on le relance à la même seconde au lieu de changer de lien.
+     */
+    fun shouldRefreshExpired(error: String, hasPlayed: Boolean, positionMs: Long, url: String?, refreshed: Set<String>): Boolean =
+        !url.isNullOrBlank() && url !in refreshed && hasPlayed && positionMs >= 30_000L &&
+            (isServerRefusal(error) || Regex("HTTP\\s*410|expired|expir", RegexOption.IGNORE_CASE).containsMatchIn(error))
+
     fun isServerRefusal(error: String): Boolean =
         Regex("HTTP\\s*(40[134]|5\\d\\d)|BAD_HTTP_STATUS", RegexOption.IGNORE_CASE).containsMatchIn(error)
 
@@ -173,6 +181,29 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
         sourceFailoverExhausted = false
     }
     if (sourceFailoverExhausted || sourceFailoverCount >= SourceFailoverRules.MAX_FAILOVERS) return
+
+    // 15/11 (idée du Nuvio TV Launcher) : un lien qui JOUAIT et qui est refusé d'un coup (longue pause,
+    // lien debrid périmé) n'est pas un mauvais lien : on le relance une fois, à la même seconde (le
+    // serveur redonne un lien frais). S'il est encore refusé, on passe au suivant comme avant.
+    val url666 = _uiState.value.currentStreamUrl
+    val pos666 = _playbackTimeline.value.currentPosition
+    if (SourceFailoverRules.shouldRefreshExpired(error, hasRenderedFirstFrame, pos666, url666, expiredRefreshed666)) {
+        expiredRefreshed666 += url666!!
+        Log.i(PlayerRuntimeController.TAG, "Link refused after playing ($error) → refreshing the same link at ${pos666}ms")
+        _uiState.update {
+            it.copy(
+                error = null, isBuffering = true, showLoadingOverlay = it.loadingOverlayEnabled,
+                showStreamSourceIndicator = true, streamSourceIndicatorText = "Lien expiré : on le rafraîchit…"
+            )
+        }
+        scheduleDeferredPlayerReinitialize(fromPositionMs = pos666)
+        hideStreamSourceIndicatorJob?.cancel()
+        hideStreamSourceIndicatorJob = scope.launch {
+            delay(4_000)
+            _uiState.update { it.copy(showStreamSourceIndicator = false) }
+        }
+        return
+    }
 
     // Le lien qui vient d'échouer ne sera plus proposé.
     val state = _uiState.value
