@@ -2917,7 +2917,8 @@ private fun PlayerClockOverlay(
 ) {
     var nowMs by remember { mutableStateOf(System.currentTimeMillis()) }
     val context = LocalContext.current
-    val timeFormatter = remember(context) { DateFormat.getTimeFormat(context) }
+    // 15/11 : toujours sur 24 h (17h46, pas 5h46), quel que soit le réglage de la Shield
+    val timeFormatter = remember(context) { java.text.SimpleDateFormat("HH:mm", java.util.Locale.FRANCE) }
 
     LaunchedEffect(Unit) {
         while (true) {
