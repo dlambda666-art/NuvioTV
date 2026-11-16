@@ -39,4 +39,17 @@ class Lien666Test {
         assertTrue(Lien666.silentTooLong(5 * d, false, 9 * d))
         assertFalse(Lien666.silentTooLong(5 * d, true, 9 * d))
     }
+
+    @org.junit.Test
+    fun `piege tube passe en WiFi - on cherche l'autre Shield adresse par adresse`() {
+        // 16/11 : la Shield du haut passe en WiFi, la recherche automatique ne la trouve plus
+        val c = Lien666.subnetCandidates("192.168.0.30", preferred = "192.168.0.25")
+        org.junit.Assert.assertEquals("192.168.0.25", c.first())           // dernière adresse connue d'abord
+        org.junit.Assert.assertFalse(c.contains("192.168.0.30"))            // jamais nous-mêmes
+        org.junit.Assert.assertEquals(253, c.size)
+        org.junit.Assert.assertEquals(1, c.count { it == "192.168.0.25" })  // pas de doublon
+        // ancienne adresse hors du réseau actuel : ignorée
+        org.junit.Assert.assertEquals("192.168.0.1", Lien666.subnetCandidates("192.168.0.30", "10.0.0.5").first())
+        org.junit.Assert.assertTrue(Lien666.subnetCandidates("pas une ip", null).isEmpty())
+    }
 }

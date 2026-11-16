@@ -139,6 +139,7 @@ jobs:
             --tests 'com.nuvio.tv.domain.model.ThemeAccessTest' \
             --tests 'com.nuvio.tv.core.tools.Net666Test' \
             --tests 'com.nuvio.tv.core.tools.Record666Test' \
+            --tests 'com.nuvio.tv.core.tools.Lien666Test' \
             --tests 'com.nuvio.tv.core.wake.*' \
             :app:assembleFullRelease \
             --stacktrace 2>&1 | tee build.log

@@ -7,6 +7,8 @@ import android.os.Build
 import android.util.Log
 import fi.iki.elonen.NanoHTTPD
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -167,7 +169,61 @@ object Lien666 {
     private suspend fun fetch(path: String): String? {
         peer?.let { p -> get(p.base + path)?.let { return it } }
         rediscover()
+        peer?.let { p -> get(p.base + path)?.let { return it } }
+        // 16/11 : Shield du haut passée en WiFi → la recherche automatique (mDNS) ne passe plus entre le
+        // WiFi et le câble. On la cherche alors adresse par adresse sur le réseau de la maison.
+        scanSubnet() ?: return null
         return peer?.let { p -> get(p.base + path) }
+    }
+
+    @Volatile private var lastScanAt = 0L
+
+    /**
+     * Règle pure (testée) : les adresses à essayer sur le réseau de la maison (même /24 que cette Shield),
+     * la dernière adresse connue de l'autre Shield en premier, sans la nôtre.
+     */
+    fun subnetCandidates(ownIp: String, preferred: String?): List<String> {
+        val parts = ownIp.split('.')
+        if (parts.size != 4 || parts.any { it.toIntOrNull() == null }) return emptyList()
+        val prefix = parts.take(3).joinToString(".")
+        val all = (1..254).map { "$prefix.$it" }.filter { it != ownIp }
+        val first = preferred?.takeIf { it in all }
+        return if (first != null) listOf(first) + (all - first) else all
+    }
+
+    private fun ownIpv4(app: Context): String? = runCatching {
+        val cm = app.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        cm.getLinkProperties(cm.activeNetwork)?.linkAddresses
+            ?.map { it.address }?.firstOrNull { it is java.net.Inet4Address && !it.isLoopbackAddress }?.hostAddress
+    }.getOrNull()
+
+    /** Cherche l'autre Shield FrankenStream sur le réseau (une fois toutes les 2 min au plus). */
+    private suspend fun scanSubnet(): Peer? = withContext(Dispatchers.IO) {
+        val app = appCtx ?: return@withContext null
+        val now = System.currentTimeMillis()
+        if (now - lastScanAt < 120_000L) return@withContext null
+        lastScanAt = now
+        val own = ownIpv4(app) ?: return@withContext null
+        val candidates = subnetCandidates(own, peer?.host)
+        for (chunk in candidates.chunked(32)) {
+            val found = kotlinx.coroutines.coroutineScope {
+                chunk.map { ip ->
+                    async {
+                        val raw = get("http://$ip:$PORT/version", timeoutMs = 800) ?: return@async null
+                        runCatching { JSONObject(raw) }.getOrNull()?.takeIf { it.has("code") }?.let { j ->
+                            Peer("666TV-" + j.optString("device").ifBlank { "autre" }, ip, PORT)
+                        }
+                    }
+                }.awaitAll().firstOrNull { it != null }
+            }
+            if (found != null) {
+                peer = found
+                app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("peer", "${found.name}|${found.host}|${found.port}").apply()
+                Log.i(TAG, "autre Shield retrouvée par balayage : ${found.host}")
+                return@withContext found
+            }
+        }
+        null
     }
 
     /** Échange avec l'autre Shield. Null si elle ne répond pas. */
@@ -234,7 +290,7 @@ object Lien666 {
             when {
                 // 12/11 : quelle version tourne ici (et un film est-il en cours ?) — pour Maj666
                 uri == "/version" -> newFixedLengthResponse(Response.Status.OK, "application/json",
-                    JSONObject().put("code", Maj666.myCode(app)).put("name", Maj666.myName(app)).put("playing", playing).toString())
+                    JSONObject().put("code", Maj666.myCode(app)).put("name", Maj666.myName(app)).put("playing", playing).put("device", Build.DEVICE).toString())
                 // 16/11 : journal des coupures réseau (heures et durées seulement)
                 uri == "/netlog" -> newFixedLengthResponse(Response.Status.OK, "application/json", Net666.export(app))
                 uri == "/memoire" -> newFixedLengthResponse(Response.Status.OK, "application/json", Memoire666.export(app).toString())
