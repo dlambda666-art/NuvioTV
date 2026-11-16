@@ -137,6 +137,9 @@ jobs:
             --tests 'com.nuvio.tv.core.debrid.DebridStreamFormatterTest' \
             --tests 'com.nuvio.tv.ui.screens.player.SourceFailoverRulesTest' \
             --tests 'com.nuvio.tv.domain.model.ThemeAccessTest' \
+            --tests 'com.nuvio.tv.core.tools.Net666Test' \
+            --tests 'com.nuvio.tv.core.tools.Record666Test' \
+            --tests 'com.nuvio.tv.core.wake.*' \
             :app:assembleFullRelease \
             --stacktrace 2>&1 | tee build.log
           status=${PIPESTATUS[0]}

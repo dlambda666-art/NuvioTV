@@ -409,6 +409,8 @@ class PlayerRuntimeController(
     internal var hasRenderedFirstFrame = false
     // 15/11 : liens déjà rafraîchis après expiration (une seule fois par lien)
     internal val expiredRefreshed666 = mutableSetOf<String>()
+    /** 16/11 : attente du retour du réseau (coupure pendant la lecture), une à la fois. */
+    internal var networkWaitJob666: kotlinx.coroutines.Job? = null
     // 666TV : réveil de la barre de son (voir onRenderedFirstFrame).
     internal var soundbarWakeupEnabled = false
     internal var soundbarWakeupJob: kotlinx.coroutines.Job? = null

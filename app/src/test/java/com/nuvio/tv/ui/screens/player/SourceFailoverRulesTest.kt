@@ -139,4 +139,21 @@ class SourceFailoverRulesTest {
         // pas un refus du serveur (pas de VF…) : rien à rafraîchir
         org.junit.Assert.assertFalse(r.shouldRefreshExpired("Pas de piste française", true, 45 * 60_000L, "https://x/a", emptySet()))
     }
+
+    @org.junit.Test
+    fun `piege Ethernet non connecte en plein episode - on attend le reseau, pas de lien suivant`() {
+        val r = SourceFailoverRules
+        val err = "Source error [ERROR_CODE_IO_NETWORK_CONNECTION_FAILED]"
+        // câble débranché en ce moment (Shield du haut, 16/11)
+        org.junit.Assert.assertTrue(r.shouldWaitForNetwork(err, hasPlayed = true, linkedNow = false, dropAgoMs = 0L))
+        // le réseau vient de revenir (coupure il y a 40 s) : on reprend à la même seconde
+        org.junit.Assert.assertTrue(r.shouldWaitForNetwork("Unable to resolve host", true, true, 40_000L))
+        // réseau là depuis longtemps : c'est le lien, on passe au suivant comme avant
+        org.junit.Assert.assertFalse(r.shouldWaitForNetwork(err, true, true, -1L))
+        org.junit.Assert.assertFalse(r.shouldWaitForNetwork(err, true, true, 10 * 60_000L))
+        // le film n'avait pas encore démarré : mauvais lien
+        org.junit.Assert.assertFalse(r.shouldWaitForNetwork(err, false, false, 0L))
+        // un refus du serveur n'est pas une coupure réseau
+        org.junit.Assert.assertFalse(r.shouldWaitForNetwork("HTTP 403", true, false, 0L))
+    }
 }

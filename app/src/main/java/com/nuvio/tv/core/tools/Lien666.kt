@@ -207,6 +207,12 @@ object Lien666 {
         runCatching { Record666.fromJson(JSONArray(raw)) }.getOrDefault(emptyList())
     }
 
+    /** 16/11 : le journal des coupures de l'autre Shield (heures seulement). Null si elle ne répond pas. */
+    suspend fun remoteNetLog(): List<Net666.Entry>? = withContext(Dispatchers.IO) {
+        val raw = fetch("/netlog") ?: return@withContext null
+        Net666.fromJson(raw)
+    }
+
     fun recUrl(id: String): String? = peer?.let { it.base + "/rec/" + java.net.URLEncoder.encode(id, "UTF-8") }
 
     /** Règle pure (testée) : en-tête Range « bytes=a-b » → (début, fin incluse), ou null. */
@@ -229,6 +235,8 @@ object Lien666 {
                 // 12/11 : quelle version tourne ici (et un film est-il en cours ?) — pour Maj666
                 uri == "/version" -> newFixedLengthResponse(Response.Status.OK, "application/json",
                     JSONObject().put("code", Maj666.myCode(app)).put("name", Maj666.myName(app)).put("playing", playing).toString())
+                // 16/11 : journal des coupures réseau (heures et durées seulement)
+                uri == "/netlog" -> newFixedLengthResponse(Response.Status.OK, "application/json", Net666.export(app))
                 uri == "/memoire" -> newFixedLengthResponse(Response.Status.OK, "application/json", Memoire666.export(app).toString())
                 uri == "/recs" -> {
                     // l'adresse d'origine (lien debrid) et ses en-têtes ne quittent jamais la Shield

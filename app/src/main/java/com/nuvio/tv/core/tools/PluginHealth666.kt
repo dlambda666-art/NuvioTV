@@ -110,6 +110,8 @@ class PluginHealth666 @Inject constructor(
      */
     suspend fun dailyCheckNewlyBroken(): List<Result> {
         if (System.currentTimeMillis() - lastRunAt() < 24L * 3600 * 1000) return emptyList()
+        // 16/11 : Shield sans internet → tous les plugins répondraient « HTTP 0 » : on réessaie plus tard
+        if (!kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { Net666.internetUp() }) return emptyList()
         val results = checkAll()
         if (results.isEmpty()) return emptyList()
         val alerted = prefs.getStringSet("alerted", emptySet()).orEmpty().toMutableSet()

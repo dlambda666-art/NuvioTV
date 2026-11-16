@@ -349,6 +349,12 @@ object Record666 {
     @Volatile var relinker: (suspend (Rec) -> Pair<String, Map<String, String>>?)? = null
     private const val MAX_RELINKS = 3
 
+    /**
+     * 16/11 — règle pure (testée) : un enregistrement qui avance (plus de 1 Mo reçu) efface les essais ratés
+     * d'avant. Avant : deux redémarrages de la box dans la journée s'additionnaient jusqu'à l'échec.
+     */
+    fun attemptsAfterProgress(attempts: Int, receivedBytes: Long): Int = if (receivedBytes > 1_000_000L) 0 else attempts
+
     /** Règle pure (testée) : faut-il chercher un lien neuf ? (rien reçu après quelques essais, ou trop d'essais) */
     fun shouldRelink(bytesSoFar: Long, attempts: Int, expired: Boolean, relinks: Int): Boolean =
         relinks < MAX_RELINKS && (expired || attempts > 40 || (bytesSoFar == 0L && attempts > 6))
@@ -380,6 +386,7 @@ object Record666 {
                 if (from > 0) header("Range", "bytes=$from-")
             }.build()
             var expired = false
+            var netDown = false
             val outcome: Pair<Status, String?>? = try {
                 client.newCall(req).execute().use { resp ->
                     when (verdict(resp.code, from)) {
@@ -412,9 +419,18 @@ object Record666 {
                     msg.contains("EFBIG") || msg.contains("too large", true) -> Status.FAILED to "Trop gros pour la clé (4 Go max par fichier)"
                     msg.contains("ENOSPC") || msg.contains("No space", true) -> Status.FAILED to "Plus de place sur le stockage"
                     rec.file.parentFile?.exists() != true -> Status.FAILED to "Clé USB débranchée"
-                    !online(context) -> null
+                    // 16/11 : box qui redémarre (câble branché mais plus d'internet) → on attend, sans
+                    // compter d'essai (avant : deux redémarrages de la box pouvaient faire échouer l'enregistrement)
+                    !online(context) || !reachable(context) -> { netDown = true; null }
                     else -> { attempts++; null }
                 }
+            }
+            // 16/11 : ça a avancé (plus de 1 Mo reçu) → les essais ratés d'avant ne comptent plus
+            attempts = attemptsAfterProgress(attempts, rec.partFile.length() - from)
+            if (netDown) {
+                note(rec.id, rec.partFile.length(), total, "En attente d'internet…")
+                delay(15_000)
+                continue
             }
             if ((outcome == null || expired) && shouldRelink(rec.partFile.length(), attempts, expired, relinks)) {
                 relinks++

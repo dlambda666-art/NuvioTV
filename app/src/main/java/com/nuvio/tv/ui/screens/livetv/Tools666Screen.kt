@@ -216,12 +216,20 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
     val first = remember { FocusRequester() }
     var annonces by remember { mutableStateOf(com.nuvio.tv.core.tools.Announce666.entries(context)) }
     var overlayOk by remember { mutableStateOf(com.nuvio.tv.core.tools.Announce666.canOverlay(context)) }
+    // 16/11 : toujours revenir à FrankenStream, ouverture sur l'Abattoir, journal des coupures
+    var returnOk by remember { mutableStateOf(com.nuvio.tv.core.wake.Return666.enabled(context)) }
+    var abattoirOpen by remember { mutableStateOf(com.nuvio.tv.core.wake.WakeLaunch666.abattoirOnOpen(context)) }
+    var netLocal by remember { mutableStateOf(com.nuvio.tv.core.tools.Net666.entries(context)) }
+    var netRemote by remember { mutableStateOf<List<com.nuvio.tv.core.tools.Net666.Entry>?>(null) }
+    LaunchedEffect(Unit) { netRemote = runCatching { com.nuvio.tv.core.tools.Lien666.remoteNetLog() }.getOrNull() }
     LaunchedEffect(Unit) {
         // l'autorisation se donne dans les réglages Android, puis on revient ici
         while (true) {
             kotlinx.coroutines.delay(2_000L)
             overlayOk = com.nuvio.tv.core.tools.Announce666.canOverlay(context)
             annonces = com.nuvio.tv.core.tools.Announce666.entries(context)
+            returnOk = com.nuvio.tv.core.wake.Return666.enabled(context)
+            netLocal = com.nuvio.tv.core.tools.Net666.entries(context)
         }
     }
     LaunchedEffect(Unit) {
@@ -289,6 +297,83 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF8F8A85)
                 )
+            }
+
+            // ---------- 16/11 : Démarrage et réseau ----------
+            item { Section("Démarrage et réseau", "Toujours revenir sur FrankenStream, et le journal des coupures des deux Shield") }
+            item {
+                ActionRow(
+                    "Toujours revenir à FrankenStream : " + if (returnOk) "activé" else "à activer",
+                    if (returnOk) "L'accueil Nvidia ne reste plus : FrankenStream revient tout seul (Accueil, fin d'Orange TV, démarrage). Deux appuis sur Accueil pour y rester (réglages de la Shield)."
+                    else "OK : activation automatique (accepte la demande « Autoriser le débogage » sur la TV). Sinon : Paramètres → Préférences de l'appareil → Accessibilité → FrankenStream · Toujours revenir → Activer",
+                    onClick = {
+                        if (returnOk) com.nuvio.tv.core.wake.Return666.openSettings(context)
+                        else scope.launch {
+                            toast(context, "Activation… accepte la demande sur la TV si elle apparaît")
+                            val msg = withContext(Dispatchers.IO) { com.nuvio.tv.core.wake.Return666.enableByAdb(context) }
+                            returnOk = com.nuvio.tv.core.wake.Return666.enabled(context)
+                            if (returnOk) toast(context, "Toujours revenir à FrankenStream : activé ✓")
+                            else { toast(context, msg); com.nuvio.tv.core.wake.Return666.openSettings(context) }
+                        }
+                    }
+                )
+            }
+            item {
+                ActionRow(
+                    "Ouvrir sur l'Abattoir : " + if (abattoirOpen) "activé" else "coupé",
+                    "Au réveil de la Shield et en revenant de l'accueil Nvidia, tu arrives sur l'Abattoir (jamais pendant un film). Coupé : tu retrouves l'écran où tu étais.",
+                    onClick = {
+                        abattoirOpen = !abattoirOpen
+                        com.nuvio.tv.core.wake.WakeLaunch666.setAbattoirOnOpen(context, abattoirOpen)
+                    }
+                )
+            }
+            item {
+                Text(
+                    "JOURNAL DES COUPURES",
+                    modifier = Modifier.padding(start = 18.dp, top = 8.dp),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = com.nuvio.tv.ui.components.Font666.Green
+                )
+                Text(
+                    "30 derniers jours, les deux Shield. Même minute en haut et en bas → la box. Seulement en haut → câble, port ou Shield." +
+                        if (netRemote == null) " (l'autre Shield ne répond pas : seulement celle-ci)" else "",
+                    modifier = Modifier.padding(horizontal = 18.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFC8C3BE)
+                )
+            }
+            run {
+                val here = com.nuvio.tv.core.tools.Net666.whereAmI()
+                val there = if (here == "Haut") "Bas" else "Haut"
+                val rows = netLocal.map { here to it } + netRemote.orEmpty().map { there to it }
+                val now = System.currentTimeMillis()
+                val shown = rows.sortedByDescending { it.second.start }.take(14)
+                if (shown.isEmpty()) item {
+                    Text(
+                        "Aucune coupure notée pour l'instant",
+                        modifier = Modifier.padding(horizontal = 18.dp),
+                        color = Color(0xFFC8C3BE)
+                    )
+                }
+                shown.forEach { (where, e) ->
+                    item {
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 1.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "●",
+                                color = when (e.kind) {
+                                    com.nuvio.tv.core.tools.Net666.Kind.LINK, com.nuvio.tv.core.tools.Net666.Kind.INTERNET -> Red666
+                                    com.nuvio.tv.core.tools.Net666.Kind.POWER -> Orange666
+                                    com.nuvio.tv.core.tools.Net666.Kind.BOOT -> Green666
+                                },
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(where, modifier = Modifier.padding(start = 12.dp).width(56.dp), color = Color(0xFFC08BFF), fontWeight = FontWeight.Bold)
+                            Text(com.nuvio.tv.core.tools.Net666.line(e, now), color = Color.White)
+                        }
+                    }
+                }
             }
 
             // ---------- Accueil 666 ----------

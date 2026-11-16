@@ -351,6 +351,12 @@ object VfCheck666 {
                 return text
             }
             fsIndex++   // cette adresse ne répond pas : la suivante
+            // 16/11 : c'est peut-être la Shield qui n'a plus internet (câble, box qui redémarre) :
+            // alors ni « French-Stream ne répond pas », ni recherche d'une nouvelle adresse.
+            if (tries == 0 && !Net666.shouldBlameService(serviceAnswered = false, shieldOnline = Net666.internetUp())) {
+                fsBlockedUntil = System.currentTimeMillis() + 5 * 60_000L
+                return null
+            }
             // 15/11 : plus aucune adresse connue ne répond → Frank cherche la nouvelle, puis réessaie une fois
             if (tries == 0 && !rediscovered) {
                 rediscovered = true
@@ -475,6 +481,8 @@ object VfCheck666 {
     fun takeFsDownAlert(now: Long = System.currentTimeMillis()): Boolean {
         val p = prefs() ?: return false
         if (!fsDownShouldAlert(p.getLong("fs_down_since", 0L), p.getBoolean("fs_down_alerted", false), now)) return false
+        // 16/11 : pas d'alerte si c'est la Shield qui est coupée d'internet en ce moment
+        if (!Net666.internetUp()) return false
         p.edit().putBoolean("fs_down_alerted", true).apply()
         return true
     }

@@ -36,6 +36,35 @@ object WakeLaunch666 {
     val homeNonce: StateFlow<Int> = _homeNonce
     fun notifyHome() { _homeNonce.value = _homeNonce.value + 1 }
 
+    /** FrankenStream est à l'écran (MainActivity entre onResume et onPause). */
+    @Volatile var resumed: Boolean = false
+    @Volatile var resumedOnce: Boolean = false
+
+    fun onResumed(r: Boolean) { resumed = r; if (r) resumedOnce = true }
+
+    /** 16/11 : après un démarrage, on réessaie d'ouvrir FrankenStream (Android laisse parfois l'accueil Nvidia devant). */
+    val BOOT_RETRIES_MS = listOf(5_000L, 15_000L, 30_000L, 60_000L)
+    const val EXTRA_BOOT = "666tv.boot"
+
+    /** Règle pure (testée) : relancer à ce essai du démarrage ? Pas si FrankenStream s'est déjà affiché. */
+    fun shouldRetryBoot(resumedOnce: Boolean, resumedNow: Boolean): Boolean = !resumedOnce && !resumedNow
+
+    // ---------- 16/11 : ouvrir sur l'Abattoir ----------
+    private const val PREFS_OPEN = "666tv_open"
+
+    /** Réglage (Outils 666) : à chaque retour sur FrankenStream, on arrive sur l'Abattoir. Activé par défaut. */
+    fun abattoirOnOpen(context: Context): Boolean =
+        context.getSharedPreferences(PREFS_OPEN, Context.MODE_PRIVATE).getBoolean("abattoir", true)
+
+    fun setAbattoirOnOpen(context: Context, on: Boolean) =
+        context.getSharedPreferences(PREFS_OPEN, Context.MODE_PRIVATE).edit().putBoolean("abattoir", on).apply()
+
+    /**
+     * Règle pure (testée) : en revenant sur FrankenStream (réveil de la Shield, retour depuis l'accueil
+     * Nvidia, démarrage), faut-il repartir de l'Abattoir ? Oui, sauf réglage coupé ou film en cours.
+     */
+    fun shouldOpenAbattoir(settingOn: Boolean, inPlayer: Boolean): Boolean = settingOn && !inPlayer
+
     fun isDefaultHome(context: Context): Boolean = runCatching {
         val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
         context.packageManager.resolveActivity(home, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
@@ -45,8 +74,8 @@ object WakeLaunch666 {
     fun canAutoLaunch(context: Context): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context)
 
-    fun start(context: Context) {
-        val intent = Intent(context, WakeLaunchService::class.java)
+    fun start(context: Context, boot: Boolean = false) {
+        val intent = Intent(context, WakeLaunchService::class.java).putExtra(EXTRA_BOOT, boot)
         runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent)
             else context.startService(intent)
@@ -67,8 +96,23 @@ object WakeLaunch666 {
 class WakeBootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED || intent.action == Intent.ACTION_LOCKED_BOOT_COMPLETED) {
-            WakeLaunch666.start(context)
+            // 16/11 : journal des coupures (redémarrage ou coupure de courant)
+            runCatching { com.nuvio.tv.core.tools.Net666.onBoot(context) }
+            WakeLaunch666.start(context, boot = intent.action == Intent.ACTION_BOOT_COMPLETED)
             WakeLaunch666.launchApp(context)
+            // 16/11 : un enregistrement coupé par la coupure de courant repart tout de suite, même si
+            // FrankenStream ne s'ouvre pas (avant : seulement à l'ouverture de l'appli)
+            if (intent.action == Intent.ACTION_BOOT_COMPLETED) runCatching {
+                val rec = com.nuvio.tv.core.tools.Record666
+                if (rec.enabledHere()) {
+                    rec.init(context)
+                    if (rec.items.value.any {
+                            it.status == com.nuvio.tv.core.tools.Record666.Status.QUEUED ||
+                                it.status == com.nuvio.tv.core.tools.Record666.Status.RUNNING
+                        })
+                        com.nuvio.tv.core.tools.Record666Service.start(context)
+                }
+            }
         }
     }
 }
@@ -106,11 +150,31 @@ class WakeLaunchService : Service() {
         }
         receiver = r
         registerReceiver(r, IntentFilter(Intent.ACTION_SCREEN_ON))
+        // 16/11 : journal des coupures réseau (ce service tourne tout le temps)
+        runCatching { com.nuvio.tv.core.tools.Net666.start(this) }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var bootRetriesArmed = false
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // 16/11 : après une coupure de courant, la Shield restait sur l'accueil Nvidia. On réessaie
+        // d'ouvrir FrankenStream à 5, 15, 30 et 60 s, tant qu'il ne s'est pas affiché.
+        if (intent?.getBooleanExtra(WakeLaunch666.EXTRA_BOOT, false) == true && !bootRetriesArmed) {
+            bootRetriesArmed = true
+            WakeLaunch666.BOOT_RETRIES_MS.forEach { ms ->
+                handler.postDelayed({
+                    if (WakeLaunch666.shouldRetryBoot(WakeLaunch666.resumedOnce, WakeLaunch666.resumed)) {
+                        WakeLaunch666.launchApp(this)
+                    }
+                }, ms)
+            }
+        }
+        return START_STICKY
+    }
 
     override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
         receiver?.let { runCatching { unregisterReceiver(it) } }
         receiver = null
         super.onDestroy()

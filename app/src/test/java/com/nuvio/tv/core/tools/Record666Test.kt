@@ -103,4 +103,16 @@ class Record666Test {
         // 3 liens neufs essayés : on s'arrête
         org.junit.Assert.assertFalse(Record666.shouldRelink(0L, 41, expired = true, relinks = 3))
     }
+
+    @org.junit.Test
+    fun `piege box redemarree deux fois - l'enregistrement qui avance repart de zero essai`() {
+        // 16/11 : David redémarre la box l'après-midi ; les essais ratés ne doivent pas s'accumuler jusqu'à 40
+        var attempts = 0
+        repeat(2) {
+            attempts += 25                                                  // box en panne : essais ratés
+            attempts = Record666.attemptsAfterProgress(attempts, 50_000_000L) // puis ça repart et avance
+        }
+        org.junit.Assert.assertEquals(0, attempts)
+        org.junit.Assert.assertEquals(7, Record666.attemptsAfterProgress(7, 200_000L))   // presque rien reçu : on garde le compte
+    }
 }

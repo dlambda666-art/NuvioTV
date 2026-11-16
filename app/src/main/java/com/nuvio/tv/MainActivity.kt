@@ -1412,7 +1412,7 @@ open class MainActivity : ComponentActivity() {
                                         }
                                     }
                                     // 666TVF (11/11) : plus aucune adresse French-Stream ne répond depuis 3 h → la cloche, une fois
-                                    if (!inPlayerNow666 && runCatching { com.nuvio.tv.core.tools.VfCheck666.takeFsDownAlert() }.getOrDefault(false)) {
+                                    if (!inPlayerNow666 && runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.nuvio.tv.core.tools.VfCheck666.takeFsDownAlert() } }.getOrDefault(false)) {
                                         found = found + com.nuvio.tv.core.calendar.CalendarEpisode(
                                             seriesId = "alerte:frenchstream",
                                             seriesName = "French-Stream",
@@ -1697,6 +1697,7 @@ open class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        com.nuvio.tv.core.wake.WakeLaunch666.onResumed(true)
         // 666TV : arrête Orange TV (ou autre appli de TV en direct) restée en arrière-plan.
         com.nuvio.tv.ui.screens.livetv.LaunchedApp666.stopIfBackground(this)
         if (::jankStats.isInitialized) jankStats.isTrackingEnabled = true
@@ -1738,11 +1739,19 @@ open class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.getBooleanExtra(com.nuvio.tv.core.wake.WakeLaunch666.EXTRA_WAKE, false)) {
+        val wake666 = intent.getBooleanExtra(com.nuvio.tv.core.wake.WakeLaunch666.EXTRA_WAKE, false)
+        if (wake666) {
             com.nuvio.tv.core.wake.WakeLaunch666.notifyWake()
         }
         if (intent.hasCategory(Intent.CATEGORY_HOME)) {
             com.nuvio.tv.core.wake.WakeLaunch666.notifyHome()
+        } else if (wake666 || intent.getBooleanExtra(com.nuvio.tv.core.wake.Return666.EXTRA_RETURN, false)) {
+            // 16/11 : réveil de la Shield ou retour depuis l'accueil Nvidia → on repart de l'Abattoir
+            if (com.nuvio.tv.core.wake.WakeLaunch666.shouldOpenAbattoir(
+                    com.nuvio.tv.core.wake.WakeLaunch666.abattoirOnOpen(this),
+                    com.nuvio.tv.core.tools.Announce666.inPlayer()
+                )
+            ) com.nuvio.tv.core.wake.WakeLaunch666.notifyHome()
         }
         setIntent(intent)
         captureDeepLinkIntent(intent)
@@ -1763,6 +1772,7 @@ open class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
+        com.nuvio.tv.core.wake.WakeLaunch666.onResumed(false)
         if (::jankStats.isInitialized) jankStats.isTrackingEnabled = false
     }
 

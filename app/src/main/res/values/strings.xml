@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">FrankenStream</string>
+    <string name="return666_label">FrankenStream · Toujours revenir</string>
+    <string name="return666_description">Quand l'accueil Nvidia ou Google TV apparaît (bouton Accueil, fin d'une appli, démarrage), FrankenStream se rouvre tout seul. Rien n'est lu à l'écran : seul le nom de l'appli au premier plan est regardé. Appuie deux fois sur Accueil pour rester sur l'accueil Nvidia.</string>
     <string name="tv_channel_continue_watching">Continue Watching</string>
     <string name="type_movie">Movie</string>
     <string name="type_movies">Movies</string>

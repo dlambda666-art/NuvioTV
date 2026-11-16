@@ -76,6 +76,27 @@ internal object SourceFailoverRules {
         !url.isNullOrBlank() && url !in refreshed && hasPlayed && positionMs >= 30_000L &&
             (isServerRefusal(error) || Regex("HTTP\\s*410|expired|expir", RegexOption.IGNORE_CASE).containsMatchIn(error))
 
+    /** 16/11 : erreur due au réseau de la maison (câble, box) plutôt qu'au lien. */
+    fun isNetworkError(error: String): Boolean =
+        Regex(
+            "IO_NETWORK|NETWORK_CONNECTION|UnknownHost|Unable to resolve|SocketTimeout|timed out|Connection reset|" +
+                "ECONNRESET|ENETUNREACH|EHOSTUNREACH|Network is unreachable|Failed to connect|ConnectException|connection abort",
+            RegexOption.IGNORE_CASE
+        ).containsMatchIn(error)
+
+    /**
+     * 16/11 — règle pure (testée) : coupure réseau pendant la lecture (Shield du haut, « Ethernet non
+     * connecté »). Le lien n'y est pour rien : on attend le retour du réseau et on reprend à la même
+     * seconde, au lieu de changer de lien (qui échouerait aussi). Il faut que le film ait déjà joué, et
+     * que le réseau soit coupé en ce moment ou l'ait été il y a moins de 2 min ([dropAgoMs] : 0 = coupé,
+     * -1 = jamais coupé).
+     */
+    fun shouldWaitForNetwork(error: String, hasPlayed: Boolean, linkedNow: Boolean, dropAgoMs: Long): Boolean =
+        hasPlayed && isNetworkError(error) && (!linkedNow || dropAgoMs in 0L..120_000L)
+
+    /** 16/11 : combien de temps on attend le réseau avant d'abandonner. */
+    const val NETWORK_WAIT_MS = 180_000L
+
     fun isServerRefusal(error: String): Boolean =
         Regex("HTTP\\s*(40[134]|5\\d\\d)|BAD_HTTP_STATUS", RegexOption.IGNORE_CASE).containsMatchIn(error)
 
@@ -96,6 +117,43 @@ private fun PlayerRuntimeController.currentSourceRequestKey(): String? {
 }
 
 /** 666TV : message quand le fichier n'a aucune piste française (déclenche le lien suivant). */
+internal const val NETWORK_GONE_666 = "Plus de réseau depuis 3 min : relance quand internet est revenu"
+
+private fun PlayerRuntimeController.waitForNetworkThenResume666() {
+    val pos = _playbackTimeline.value.currentPosition
+    Log.i(PlayerRuntimeController.TAG, "Network drop during playback → waiting, then resume at ${pos}ms")
+    _uiState.update {
+        it.copy(
+            error = null, isBuffering = true, showLoadingOverlay = it.loadingOverlayEnabled,
+            showStreamSourceIndicator = true, streamSourceIndicatorText = "Plus de réseau : reprise toute seule dès son retour…"
+        )
+    }
+    hideStreamSourceIndicatorJob?.cancel()
+    networkWaitJob666 = scope.launch {
+        val deadline = System.currentTimeMillis() + SourceFailoverRules.NETWORK_WAIT_MS
+        var back = false
+        while (System.currentTimeMillis() < deadline) {
+            if (kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.nuvio.tv.core.tools.Net666.internetUp() }) {
+                back = true
+                break
+            }
+            delay(3_000)
+        }
+        if (back) {
+            _uiState.update { it.copy(streamSourceIndicatorText = "Réseau revenu : reprise à la même seconde") }
+            scheduleDeferredPlayerReinitialize(fromPositionMs = pos)
+            hideStreamSourceIndicatorJob = scope.launch {
+                delay(4_000)
+                _uiState.update { it.copy(showStreamSourceIndicator = false) }
+            }
+        } else {
+            _uiState.update {
+                it.copy(isBuffering = false, showLoadingOverlay = false, showStreamSourceIndicator = false, error = NETWORK_GONE_666)
+            }
+        }
+    }
+}
+
 internal const val NO_FRENCH_AUDIO_666 = "Aucune piste audio française dans ce fichier"
 
 /** 666TVF : torrent que le débrideur n'a pas pu préparer (déclenche le lien suivant). */
@@ -170,6 +228,15 @@ internal fun PlayerRuntimeController.observeSourceFailover() {
 }
 
 private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
+    if (error == NETWORK_GONE_666) return
+    if (networkWaitJob666?.isActive == true) return
+    // 16/11 : coupure réseau pendant la lecture → on attend le réseau, puis reprise à la même seconde
+    // (avant : l'épisode s'arrêtait au milieu et il fallait le relancer). Aussi pour les fichiers du disque.
+    val linked666 = com.nuvio.tv.core.tools.Net666.linked(context)
+    if (SourceFailoverRules.shouldWaitForNetwork(error, hasRenderedFirstFrame, linked666, com.nuvio.tv.core.tools.Net666.lastDropAgo(context))) {
+        waitForNetworkThenResume666()
+        return
+    }
     if (contentType.equals("cloud", ignoreCase = true)) return
     if (sourceFailoverJob?.isActive == true) return
     val requestKey = currentSourceRequestKey() ?: return
