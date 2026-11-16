@@ -2,7 +2,7 @@
 const fs = require('fs');
 (async () => {
   const r = { at: new Date().toISOString() };
-  for (const u of ['https://wacustom.nipva.com/', 'https://wacustom.nipva.com/manifest.json', 'https://wacustom.nipva.com/health', 'https://viewio.fr/', 'https://viewio.app/']) {
+  for (const u of ['https://viewio.me/', 'https://viewio.me/manifest.json', 'https://viewio.me/configure']) {
     const t0 = Date.now();
     try {
       const x = await fetch(u, { headers: { 'User-Agent': 'Mozilla/5.0' }, redirect: 'manual', signal: AbortSignal.timeout(30000) });
