@@ -1,14 +1,14 @@
-// Sonde (15/11) : comment French-Stream annonce sa nouvelle adresse
+// Sonde (16/11) : Wastream répond-il (sans aucune config ni clé) ?
 const fs = require('fs');
 (async () => {
   const r = { at: new Date().toISOString() };
-  for (const u of ['https://maj.french-stream.pink/', 'https://fs23.lol/', 'https://french-stream.pink/', 'https://french-stream.legal/']) {
+  for (const u of ['https://wastream.noplay.fr/', 'https://wastream.noplay.fr/manifest.json', 'https://wastream.noplay.fr/stream/movie/tt0133093.json', 'https://wastream.noplay.fr/health']) {
+    const t0 = Date.now();
     try {
-      const x = await fetch(u, { headers: { 'User-Agent': 'Mozilla/5.0' }, redirect: 'manual', signal: AbortSignal.timeout(20000) });
+      const x = await fetch(u, { headers: { 'User-Agent': 'Mozilla/5.0' }, redirect: 'manual', signal: AbortSignal.timeout(30000) });
       const t = await x.text();
-      const links = [...new Set((t.match(/https?:\/\/[a-z0-9.-]+\.[a-z]{2,}/gi) || []))].filter(l => !/google|cloudflare|jquery|gstatic|w3\.org|schema|facebook|twitter|discord|telegram|font/i.test(l)).slice(0, 40);
-      r[u] = { status: x.status, location: x.headers.get('location'), title: (t.match(/<title>([^<]*)/i) || [])[1], links, text: t.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 1500) };
-    } catch (e) { r[u] = String(e).slice(0, 120); }
+      r[u] = { status: x.status, ms: Date.now() - t0, location: x.headers.get('location'), server: x.headers.get('server'), body: t.replace(/\s+/g, ' ').slice(0, 300) };
+    } catch (e) { r[u] = { error: String(e).slice(0, 160), cause: String(e.cause || '').slice(0, 160), ms: Date.now() - t0 }; }
   }
   fs.writeFileSync('test-report.json', JSON.stringify(r)); console.log('ok');
 })();
