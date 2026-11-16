@@ -1,8 +1,8 @@
-// Sonde (16/11) : Wastream répond-il (sans aucune config ni clé) ?
+// Sonde (16/11) : Wacustom / Viewio répondent-ils (sans aucune config ni clé) ?
 const fs = require('fs');
 (async () => {
   const r = { at: new Date().toISOString() };
-  for (const u of ['https://wastream.noplay.fr/', 'https://wastream.noplay.fr/manifest.json', 'https://wastream.noplay.fr/stream/movie/tt0133093.json', 'https://wastream.noplay.fr/health']) {
+  for (const u of ['https://wacustom.nipva.com/', 'https://wacustom.nipva.com/manifest.json', 'https://wacustom.nipva.com/health', 'https://viewio.fr/', 'https://viewio.app/']) {
     const t0 = Date.now();
     try {
       const x = await fetch(u, { headers: { 'User-Agent': 'Mozilla/5.0' }, redirect: 'manual', signal: AbortSignal.timeout(30000) });
