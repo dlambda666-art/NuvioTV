@@ -275,11 +275,41 @@ function ordinalDigits(t) {
     }).replace(/\b(\d{1,2})(?:e|eme|ieme|ème|ième)\b/gi, '$1eme');
 }
 
+// 666TV (16/11, idée prise dans Cauldron) : « autre film du même nom ». Le titre de la fiche est bien
+// dans le nom du fichier, mais suivi d'un numéro de suite (« Avatar 2 », « Dune Part Two » pour
+// « Dune ») alors que la fiche n'en a pas. Un fichier dont le nom ne contient pas le titre (titre
+// étranger, abrégé…) n'est jamais écarté ici : on ne sait pas, on garde.
+var SEQUEL_WORDS = { '2': 1, '3': 1, '4': 1, '5': 1, '6': 1, '7': 1, '8': 1, '9': 1, 'ii': 1, 'iii': 1, 'iv': 1, 'v': 1, 'vi': 1,
+    'part': 1, 'partie': 1, 'chapter': 1, 'chapitre': 1, 'returns': 1, 'reloaded': 1, 'revolutions': 1, 'resurrection': 1,
+    'origins': 1, 'rises': 1, 'forever': 1, 'deuxieme': 1, 'troisieme': 1, 'two': 1, 'three': 1, 'retour': 1, 'revanche': 1 };
+function seqNorm(t) {
+    var x = String(t || '');
+    try { x = x.normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch (e) { }
+    return x.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function sequelMismatch(release, titles) {
+    var r = ' ' + seqNorm(release) + ' ';
+    var found = false, clean = false;
+    (titles || []).forEach(function (t) {
+        var n = seqNorm(t);
+        if (n.length < 2) return;
+        var from = 0, i;
+        while ((i = r.indexOf(' ' + n + ' ', from)) >= 0) {
+            found = true;
+            var next = r.slice(i + n.length + 2).split(' ')[0];
+            if (!SEQUEL_WORDS[next]) clean = true;
+            from = i + 1;
+        }
+    });
+    return found && !clean;
+}
+
 // Une release trouvée par recherche texte doit porter le titre (et la bonne année pour un film)
 function releaseMatches(release, titles, year, isTv) {
     var r = ' ' + normTitle(release) + ' ';
     var named = titles.some(function (t) { var n = normTitle(t); return n.length >= 2 && r.indexOf(' ' + n + ' ') >= 0; });
     if (!named) return false;
+    if (!isTv && sequelMismatch(release, titles)) return false;
     if (isTv || !year) return true;
     var re = /(?:^|[^0-9])(19[2-9]\d|20[0-4]\d)(?![0-9])/g, m, any = false;
     var inTitle = titles.join(' ');
@@ -831,4 +861,4 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; }, _parseTorboxCached: parseTorboxCached };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _sequelMismatch: sequelMismatch, _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; }, _parseTorboxCached: parseTorboxCached };

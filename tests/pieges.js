@@ -493,6 +493,27 @@ const cases = [
         if (!ok || !base.other.includes('MIXIO')) { fails++; console.log('✗ Groupes sans Frank → ' + JSON.stringify(g).slice(0, 300)); }
         else console.log('✓ Groupes : base intégrée (Mixio étranger) + ce que la Shield apprend (la lecture l\'emporte)');
     }
+    // 16/11 (Cauldron) : autre film du même nom → écarté ; titre absent du nom → gardé
+    {
+        const tpl = loadTemplate(() => undefined);
+        const comet = require(path.join(__dirname, '..', 'comet666.js'));
+        for (const f of [tpl._sequelMismatch, comet._sequelMismatch]) {
+            const cases = [
+                ['Avatar.2.2022.MULTi.VFF.1080p.WEB', ['Avatar'], true],
+                ['Dune.Part.Two.2024.MULTi.2160p', ['Dune'], true],
+                ['Avatar.2009.MULTi.VFF.1080p.BluRay', ['Avatar'], false],
+                ['Taken.2.2012.TRUEFRENCH.1080p', ['Taken 2'], false],
+                ['Dune.Part.Two.2024.MULTi.2160p', ['Dune : Deuxième partie', 'Dune: Part Two'], false],
+                ['Avatar.2.La.Voie.de.l.Eau.2022.MULTi.1080p', ["Avatar : La Voie de l'eau", 'Avatar: The Way of Water'], false],
+                ['Street.Fighter.2026.MULTi.VFF.1080p.WEB', ['Street Fighter'], false]
+            ];
+            for (const [rel, titles, want] of cases) {
+                if (f(rel, titles) !== want) { fails++; console.log('✗ Suite / même nom → ' + rel + ' attendu ' + want); }
+            }
+        }
+        if (comet._releaseMatches('Avatar.2.2022.MULTi.1080p', ['Avatar'], 2009, false)) { fails++; console.log('✗ Comet : Avatar 2 gardé pour Avatar'); }
+        console.log('✓ Autre film du même nom (suite) écarté, titre étranger ou absent gardé');
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();

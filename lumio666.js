@@ -237,6 +237,35 @@ function yearMismatch(text, info) {
     return any;
 }
 
+// 666TV (16/11, idée prise dans Cauldron) : « autre film du même nom ». Le titre de la fiche est bien
+// dans le nom du fichier, mais suivi d'un numéro de suite (« Avatar 2 », « Dune Part Two » pour
+// « Dune ») alors que la fiche n'en a pas. Un fichier dont le nom ne contient pas le titre (titre
+// étranger, abrégé…) n'est jamais écarté ici : on ne sait pas, on garde.
+var SEQUEL_WORDS = { '2': 1, '3': 1, '4': 1, '5': 1, '6': 1, '7': 1, '8': 1, '9': 1, 'ii': 1, 'iii': 1, 'iv': 1, 'v': 1, 'vi': 1,
+    'part': 1, 'partie': 1, 'chapter': 1, 'chapitre': 1, 'returns': 1, 'reloaded': 1, 'revolutions': 1, 'resurrection': 1,
+    'origins': 1, 'rises': 1, 'forever': 1, 'deuxieme': 1, 'troisieme': 1, 'two': 1, 'three': 1, 'retour': 1, 'revanche': 1 };
+function seqNorm(t) {
+    var x = String(t || '');
+    try { x = x.normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch (e) { }
+    return x.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function sequelMismatch(release, titles) {
+    var r = ' ' + seqNorm(release) + ' ';
+    var found = false, clean = false;
+    (titles || []).forEach(function (t) {
+        var n = seqNorm(t);
+        if (n.length < 2) return;
+        var from = 0, i;
+        while ((i = r.indexOf(' ' + n + ' ', from)) >= 0) {
+            found = true;
+            var next = r.slice(i + n.length + 2).split(' ')[0];
+            if (!SEQUEL_WORDS[next]) clean = true;
+            from = i + 1;
+        }
+    });
+    return found && !clean;
+}
+
 // 666TV : film français encore au cinéma. En France, la VOD n'arrive que 4 mois
 // après la sortie en salle : avant ça, un « fichier » est soit un CAM, soit un
 // homonyme (ex. Kraken avec Gazo, sorti le 30/09/2026, contre le Kraken norvégien).
@@ -341,6 +370,7 @@ async function getStreams(tmdbId, mediaType, season, episode) {
             else { dropped.ep++; return; }
         }
         if (!isTv && yearMismatch(text, film)) { dropped.ep++; return; }
+        if (!isTv && film && sequelMismatch(filename || String(s.description || s.title || '').split('\n')[0], film.titles)) { dropped.ep++; return; }
         var lang = frenchLabel(text);
         if (!lang) { dropped.lang++; return; }
         var quality = qualityOf(text);
@@ -403,4 +433,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     });
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _groupsLists: groupsLists, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _addonBase: addonBase };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _sequelMismatch: sequelMismatch, _groupsLists: groupsLists, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _addonBase: addonBase };
