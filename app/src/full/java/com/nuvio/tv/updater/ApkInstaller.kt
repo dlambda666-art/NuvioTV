@@ -39,6 +39,8 @@ object ApkInstaller {
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
+        // 16/11 : après l'installation, FrankenStream se rouvre tout seul (sur l'Abattoir)
+        com.nuvio.tv.core.wake.WakeLaunch666.markRelaunchAfterUpdate(context)
         context.startActivity(intent)
     }
 }

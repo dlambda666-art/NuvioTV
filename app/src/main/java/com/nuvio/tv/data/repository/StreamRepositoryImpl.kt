@@ -294,7 +294,8 @@ class StreamRepositoryImpl @Inject constructor(
                 // → rang du plugin qui la garde. En cas de doublon, c'est le plugin le
                 // mieux placé dans l'ordre (StreamFusion, Frenchio, Lumio, Wastream, Comet)
                 // qui la garde, quel que soit celui qui a répondu le premier.
-                val seenPluginReleases = HashMap<String, Int>()
+                // 16/11 : aussi le même torrent (même hash) venu de deux plugins → une seule copie (la meilleure)
+                val pluginDedup666 = com.nuvio.tv.core.streams.PluginDedup666()
 
                 // Emit results as they arrive
                 for (result in resultChannel) {
@@ -328,35 +329,25 @@ class StreamRepositoryImpl @Inject constructor(
                             annotatedResult.copy(streams = com.nuvio.tv.core.debrid.AllDebridFallback666.applyProbes(annotatedResult.streams, verdicts))
                         } ?: annotatedResult
                     val displacedReleases = HashSet<String>()
-                    val checkedResult = probedResult.copy(
-                        streams = probedResult.streams.filter { stream ->
-                            // P2P coupé : un torrent absent du cache debrid ne se lancerait pas.
-                            val hiddenUncached = !com.nuvio.tv.core.torrent.TorrentService.P2P_ENABLED &&
-                                stream.debridCacheStatus?.state == com.nuvio.tv.domain.model.StreamDebridCacheState.NOT_CACHED
-                            if (hiddenUncached) return@filter false
-                            // 666TVF : fichier annoncé VF mais sans piste française (déjà essayé) → plus jamais proposé
-                            if (com.nuvio.tv.core.tools.NoFrench666.isLiar(context, stream.getEffectiveInfoHash())) return@filter false
-                            val releaseKey = stream.pluginReleaseKey() ?: return@filter true
-                            // Un lien « AllDebrid ? » ne remplace jamais une copie sûre : gardé seulement s'il est seul.
-                            if (com.nuvio.tv.core.debrid.AllDebridFallback666.isGuess(stream)) {
-                                return@filter releaseKey !in seenPluginReleases
-                            }
-                            val rank = stream.plugin666Rank()
-                            val keptRank = seenPluginReleases[releaseKey]
-                            when {
-                                keptRank == null -> {
-                                    seenPluginReleases[releaseKey] = rank
-                                    true
-                                }
-                                rank < keptRank -> {
-                                    seenPluginReleases[releaseKey] = rank
-                                    displacedReleases += releaseKey
-                                    true
-                                }
-                                else -> false
-                            }
+                    val keptInBatch = ArrayList<Stream>()
+                    for (stream in probedResult.streams) {
+                        // P2P coupé : un torrent absent du cache debrid ne se lancerait pas.
+                        val hiddenUncached = !com.nuvio.tv.core.torrent.TorrentService.P2P_ENABLED &&
+                            stream.debridCacheStatus?.state == com.nuvio.tv.domain.model.StreamDebridCacheState.NOT_CACHED
+                        if (hiddenUncached) continue
+                        // 666TVF : fichier annoncé VF mais sans piste française (déjà essayé) → plus jamais proposé
+                        if (com.nuvio.tv.core.tools.NoFrench666.isLiar(context, stream.getEffectiveInfoHash())) continue
+                        val keys = stream.plugin666Keys()
+                        if (keys.isEmpty()) { keptInBatch += stream; continue }
+                        val verdict = pluginDedup666.admit(keys, stream.plugin666DedupScore(), com.nuvio.tv.core.debrid.AllDebridFallback666.isGuess(stream))
+                        if (!verdict.keep) continue
+                        if (verdict.displaced.isNotEmpty()) {
+                            displacedReleases += verdict.displaced
+                            keptInBatch.removeAll { other -> other.plugin666Keys().any { it in verdict.displaced } }
                         }
-                    )
+                        keptInBatch += stream
+                    }
+                    val checkedResult = probedResult.copy(streams = keptInBatch)
                     if (checkedResult.streams.isEmpty()) continue
                     com.nuvio.tv.core.tools.SourceStats666.recordShown(context, checkedResult.streams)
                     if (displacedReleases.isNotEmpty()) {
@@ -364,7 +355,7 @@ class StreamRepositoryImpl @Inject constructor(
                         val iterator = accumulatedResults.listIterator()
                         while (iterator.hasNext()) {
                             val group = iterator.next()
-                            val remaining = group.streams.filterNot { it.pluginReleaseKey() in displacedReleases }
+                            val remaining = group.streams.filterNot { st -> st.plugin666Keys().any { it in displacedReleases } }
                             when {
                                 remaining.size == group.streams.size -> Unit
                                 remaining.isEmpty() -> iterator.remove()
@@ -673,6 +664,22 @@ class StreamRepositoryImpl @Inject constructor(
     private fun Stream.plugin666Rank(): Int {
         val id = behaviorHints?.bingeGroup?.split('|')?.getOrNull(1).orEmpty()
         return com.nuvio.tv.core.player.StreamAutoPlaySelector.plugin666Rank(id)
+    }
+
+    /** 16/11 : les clés de doublon d'un flux de nos plugins : release + qualité, et l'empreinte du torrent. */
+    private fun Stream.plugin666Keys(): List<String> {
+        if (behaviorHints?.bingeGroup?.startsWith("666|") != true) return emptyList()
+        return listOfNotNull(pluginReleaseKey(), com.nuvio.tv.core.streams.PluginDedup666.hashKey(getEffectiveInfoHash()))
+    }
+
+    private fun Stream.plugin666DedupScore(): Int {
+        val state = debridCacheStatus?.state
+        val adFallback = com.nuvio.tv.core.debrid.AllDebridFallback666.isFallback(this)
+        return com.nuvio.tv.core.streams.PluginDedup666.score(
+            cachedTorBox = !adFallback && state == com.nuvio.tv.domain.model.StreamDebridCacheState.CACHED,
+            allDebridReady = adFallback && state == com.nuvio.tv.domain.model.StreamDebridCacheState.CACHED,
+            pluginRank = plugin666Rank()
+        )
     }
 
     /** 666TV : clé « release + qualité » des flux de nos plugins (groupe Binge « 666|… »). */

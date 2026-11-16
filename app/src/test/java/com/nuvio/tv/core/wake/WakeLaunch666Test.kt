@@ -22,4 +22,11 @@ class WakeLaunch666Test {
         assertFalse(WakeLaunch666.shouldOpenAbattoir(settingOn = true, inPlayer = true))
         assertFalse(WakeLaunch666.shouldOpenAbattoir(settingOn = false, inPlayer = false))
     }
+
+    @Test fun `piege mise a jour - Frank se rouvre, mais jamais devant Orange TV`() {
+        // 16/11 : après la mise à jour, David forçait l'arrêt et retombait sur Orange TV
+        assertTrue(WakeLaunch666.shouldRelaunchAfterUpdate(fromBanner = true, wasFront = false))   // installée depuis la bannière
+        assertTrue(WakeLaunch666.shouldRelaunchAfterUpdate(fromBanner = false, wasFront = true))   // poussée par l'autre Shield, Frank à l'écran
+        assertFalse(WakeLaunch666.shouldRelaunchAfterUpdate(fromBanner = false, wasFront = false)) // Orange TV devant : on ne passe pas devant
+    }
 }

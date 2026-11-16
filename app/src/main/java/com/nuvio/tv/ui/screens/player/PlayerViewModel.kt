@@ -285,6 +285,31 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    /** 16/11 : ce que le lecteur décode (badges sous le titre). Null avec le moteur MPV. */
+    fun mediaInfo666(): MediaInfo666? = runCatching {
+        val exo = controller._exoPlayer ?: return null
+        val v = exo.videoFormat
+        val a = exo.audioFormat
+        val hdr = buildList {
+            val c = v?.codecs.orEmpty().lowercase()
+            if (v?.sampleMimeType == androidx.media3.common.MimeTypes.VIDEO_DOLBY_VISION ||
+                c.contains("dvhe") || c.contains("dvh1") || c.contains("dav1") || c.contains("dvav")
+            ) add("DV")
+            when (v?.colorInfo?.colorTransfer) {
+                androidx.media3.common.C.COLOR_TRANSFER_ST2084 -> add("HDR10")
+                androidx.media3.common.C.COLOR_TRANSFER_HLG -> add("HLG")
+            }
+        }
+        MediaInfo666(
+            videoWidth = v?.width?.takeIf { it > 0 }, videoHeight = v?.height?.takeIf { it > 0 }, hdr = hdr,
+            audioMime = a?.sampleMimeType, audioCodecs = a?.codecs, audioLabel = a?.label,
+            audioChannels = a?.channelCount?.takeIf { it > 0 }
+        )
+    }.getOrNull()
+
+    /** 16/11 : nom du fichier / de la release en lecture (source WEB-DL, BluRay…). */
+    fun release666(): String? = controller.currentRelease666 ?: controller.currentFilename
+
     /** Début du générique de fin, si on le connaît (chapitres ou IntroDB). */
     fun creditsStartMs666(): Long? = controller.skipIntervals
         .filter { it.type in PlayerNextEpisodeRules.OUTRO_SEGMENT_TYPES }

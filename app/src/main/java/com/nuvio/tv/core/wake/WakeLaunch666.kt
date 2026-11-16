@@ -42,6 +42,33 @@ object WakeLaunch666 {
 
     fun onResumed(r: Boolean) { resumed = r; if (r) resumedOnce = true }
 
+    /** Garde en mémoire (même si l'appli est tuée par une mise à jour) que FrankenStream était à l'écran. */
+    fun onResumed(context: Context, r: Boolean) {
+        onResumed(r)
+        runCatching { context.getSharedPreferences(PREFS_OPEN, Context.MODE_PRIVATE).edit().putBoolean("was_front", r).apply() }
+    }
+
+    // ---------- 16/11 : se rouvrir après une mise à jour ----------
+    fun markRelaunchAfterUpdate(context: Context) {
+        context.getSharedPreferences(PREFS_OPEN, Context.MODE_PRIVATE).edit().putBoolean("relaunch_update", true).commit()
+    }
+
+    /**
+     * Règle pure (testée) : après une mise à jour, faut-il rouvrir FrankenStream ? Oui si on l'installait
+     * depuis la bannière, ou s'il était à l'écran quand la mise à jour l'a fermé. Non s'il était derrière une
+     * autre appli (Orange TV en direct : on ne lui passe pas devant).
+     */
+    fun shouldRelaunchAfterUpdate(fromBanner: Boolean, wasFront: Boolean): Boolean = fromBanner || wasFront
+
+    /** Appelé quand Android signale que FrankenStream vient d'être mis à jour (MY_PACKAGE_REPLACED). */
+    fun onUpdated(context: Context) {
+        val p = context.getSharedPreferences(PREFS_OPEN, Context.MODE_PRIVATE)
+        val relaunch = shouldRelaunchAfterUpdate(p.getBoolean("relaunch_update", false), p.getBoolean("was_front", false))
+        p.edit().putBoolean("relaunch_update", false).apply()
+        start(context)
+        if (relaunch) launchApp(context)
+    }
+
     /** 16/11 : après un démarrage, on réessaie d'ouvrir FrankenStream (Android laisse parfois l'accueil Nvidia devant). */
     val BOOT_RETRIES_MS = listOf(5_000L, 15_000L, 30_000L, 60_000L)
     const val EXTRA_BOOT = "666tv.boot"
@@ -95,6 +122,11 @@ object WakeLaunch666 {
 
 class WakeBootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+            // 16/11 : plus besoin de forcer l'arrêt après une mise à jour : FrankenStream se rouvre tout seul
+            runCatching { WakeLaunch666.onUpdated(context) }
+            return
+        }
         if (intent.action == Intent.ACTION_BOOT_COMPLETED || intent.action == Intent.ACTION_LOCKED_BOOT_COMPLETED) {
             // 16/11 : journal des coupures (redémarrage ou coupure de courant)
             runCatching { com.nuvio.tv.core.tools.Net666.onBoot(context) }

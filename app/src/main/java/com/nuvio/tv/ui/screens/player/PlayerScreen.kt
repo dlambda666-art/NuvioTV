@@ -2254,6 +2254,12 @@ private fun PlayerControlsOverlay(
                         )
                     }
 
+                    // 16/11 : badges de ce qui est en lecture (qualité, HDR, son, canaux, langue, source)
+                    val badges666 = rememberPlayerBadges666(viewModel, uiState)
+                    if (badges666.isNotEmpty()) {
+                        PlayerBadges666(badges666, modifier = Modifier.padding(top = 6.dp, bottom = 4.dp))
+                    }
+
                     val hasYear = !uiState.releaseYear.isNullOrBlank()
                     val showVia = !uiState.isPlaying && !uiState.currentStreamName.isNullOrBlank()
                     val yearText = uiState.releaseYear.orEmpty()

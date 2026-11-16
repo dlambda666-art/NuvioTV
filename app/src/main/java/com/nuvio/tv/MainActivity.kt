@@ -1697,7 +1697,7 @@ open class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        com.nuvio.tv.core.wake.WakeLaunch666.onResumed(true)
+        com.nuvio.tv.core.wake.WakeLaunch666.onResumed(this, true)
         // 666TV : arrête Orange TV (ou autre appli de TV en direct) restée en arrière-plan.
         com.nuvio.tv.ui.screens.livetv.LaunchedApp666.stopIfBackground(this)
         if (::jankStats.isInitialized) jankStats.isTrackingEnabled = true
@@ -1772,7 +1772,7 @@ open class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        com.nuvio.tv.core.wake.WakeLaunch666.onResumed(false)
+        com.nuvio.tv.core.wake.WakeLaunch666.onResumed(this, false)
         if (::jankStats.isInitialized) jankStats.isTrackingEnabled = false
     }
 
