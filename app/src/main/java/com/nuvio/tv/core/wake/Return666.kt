@@ -45,11 +45,29 @@ object Return666 {
         screenOn && foreground != own && foreground !in NEVER && foreground in homes &&
             (sinceLastReturnMs < 0 || sinceLastReturnMs >= 10_000L)
 
-    /** Tous les accueils installés (sauf FrankenStream), plus ceux connus. */
-    fun homes(context: Context): Set<String> = runCatching {
-        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-        context.packageManager.queryIntentActivities(home, 0).mapNotNull { it.activityInfo?.packageName }.toSet()
-    }.getOrDefault(emptySet()).minus(context.packageName) + KNOWN_HOMES
+    /**
+     * 17/11 (piège Orange TV) : les accueils à surveiller. Avant : toutes les applis qui se déclarent
+     * « accueil » auprès d'Android — or Orange TV se déclare comme tel, et Frank la prenait pour l'accueil
+     * Nvidia (impossible d'ouvrir Orange TV). Maintenant : seulement les accueils connus d'Android TV /
+     * Google TV, plus l'accueil réellement choisi par Android s'il est d'un fabricant connu.
+     */
+    fun homes(context: Context): Set<String> {
+        val default = runCatching {
+            val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+            context.packageManager.resolveActivity(home, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+                ?.activityInfo?.packageName
+        }.getOrNull()
+        return homesFrom(default, context.packageName)
+    }
+
+    /** Règle pure (testée) : l'accueil par défaut n'est retenu que s'il ressemble à un vrai accueil système. */
+    fun homesFrom(defaultHome: String?, own: String): Set<String> {
+        val d = defaultHome?.takeIf { it != own && it != "android" && looksLikeSystemHome(it) }
+        return if (d != null) KNOWN_HOMES + d else KNOWN_HOMES
+    }
+
+    private fun looksLikeSystemHome(pkg: String): Boolean =
+        pkg in KNOWN_HOMES || Regex("""(^com\.google\.android\..*launcher|^com\.nvidia\..*launcher|^com\.android\.launcher|tvlauncher)""").containsMatchIn(pkg)
 
     fun component(context: Context): String = context.packageName + "/" + Return666Service::class.java.name
 

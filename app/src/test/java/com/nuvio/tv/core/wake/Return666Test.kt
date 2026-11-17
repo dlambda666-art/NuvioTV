@@ -45,4 +45,15 @@ class Return666Test {
         assertEquals("x/y:$c", Return666.withService("x/y", c))
         assertEquals("x/y:$c", Return666.withService("x/y:$c", c))
     }
+
+    @Test fun `piege Orange TV se declare accueil - on ne la prend jamais pour l'accueil Nvidia`() {
+        // 17/11 : impossible d'entrer dans Orange TV, Frank revenait aussitôt (Orange TV déclare un « accueil »)
+        val h = Return666.homesFrom(defaultHome = "com.google.android.tvlauncher", own = own)
+        assertFalse(Return666.shouldReturn("be.orange.tv", h, own, true, -1))
+        assertFalse(Return666.shouldReturn("com.orange.owtv.tv", h, own, true, -1))
+        assertTrue(Return666.shouldReturn("com.google.android.tvlauncher", h, own, true, -1))
+        // même si Android a Orange TV comme accueil par défaut, il n'est pas retenu
+        assertFalse("be.orange.tv" in Return666.homesFrom("be.orange.tv", own))
+        assertFalse(own in Return666.homesFrom(own, own))
+    }
 }
