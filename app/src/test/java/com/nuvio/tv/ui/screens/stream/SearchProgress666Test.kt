@@ -49,14 +49,13 @@ class SearchProgress666Test {
     }
 
     @Test fun `plugins groupes - chaque plugin a son etat (18-11)`() {
-        val P = com.nuvio.tv.core.streams.PluginProgress666
         val g = "Les 4 cavaliers de l'apocalypse"
         val chips = listOf(SourceChipItem(g, SourceChipStatus.SUCCESS))
         val plugins = listOf(
-            P.Plugin("Lumio666", g, P.State.OK, links = 2),
-            P.Plugin("Comet666", g, P.State.FAILED, cause = "Thepiratebay : 1 trouvé · 1 pas de VF"),
-            P.Plugin("Wastream666", g, P.State.RUNNING),
-            P.Plugin("StreamFusion666", g, P.State.ASLEEP)
+            com.nuvio.tv.core.streams.PluginProgress666.Plugin("Lumio666", g, com.nuvio.tv.core.streams.PluginProgress666.State.OK, links = 2),
+            com.nuvio.tv.core.streams.PluginProgress666.Plugin("Comet666", g, com.nuvio.tv.core.streams.PluginProgress666.State.FAILED, cause = "Thepiratebay : 1 trouvé · 1 pas de VF"),
+            com.nuvio.tv.core.streams.PluginProgress666.Plugin("Wastream666", g, com.nuvio.tv.core.streams.PluginProgress666.State.RUNNING),
+            com.nuvio.tv.core.streams.PluginProgress666.Plugin("StreamFusion666", g, com.nuvio.tv.core.streams.PluginProgress666.State.ASLEEP)
         )
         val items = SearchProgress666.items(chips, emptyList(), plugins)
         assertEquals(
