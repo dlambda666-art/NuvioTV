@@ -172,12 +172,25 @@ class MetaDetailsViewModel @Inject constructor(
         prefetch666Job = viewModelScope.launch {
             delay(2_500L)
             if (com.nuvio.tv.core.tools.Lien666.playing) return@launch
-            // On lance la recherche puis on lâche : elle continue toute seule dans le cache.
-            kotlinx.coroutines.withTimeoutOrNull(1_000L) {
+            // La recherche vit dans le cache ; on la suit (90 s max) pour le badge « ⚡ Prêt » (18/11).
+            Ready666.set(meta.id, Ready666.State.SEARCHING)
+            // émission datée (Raw) : la date de l'épisode, pour ne jamais dire « Prêt » sur un vieux Raw
+            if (target.second != null && target.third != null) {
+                meta.videos.firstOrNull { it.id == target.first }?.released?.take(10)
+                    ?.takeIf { Regex("\\d{4}-\\d{2}-\\d{2}").matches(it) }
+                    ?.let { com.nuvio.tv.core.player.StreamAutoPlaySelector.airDateHint666 = Triple(target.second!!, target.third!!, it) }
+            }
+            var last = Ready666.State.SEARCHING
+            kotlinx.coroutines.withTimeoutOrNull(90_000L) {
                 streamRepository666.getStreamsFromAllAddons(
                     type = meta.apiType, videoId = target.first, season = target.second, episode = target.third, forceRefresh = false
-                ).collect { }
+                ).collect { r ->
+                    val data = (r as? com.nuvio.tv.core.network.NetworkResult.Success)?.data ?: return@collect
+                    last = Ready666.decide(true, data.flatMap { it.streams }, target.second, target.third)
+                    Ready666.set(meta.id, last)
+                }
             }
+            if (last == Ready666.State.SEARCHING) Ready666.set(meta.id, Ready666.State.NONE)
         }
     }
 

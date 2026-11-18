@@ -784,12 +784,17 @@ class StreamScreenViewModel @Inject constructor(
                     // All addons finished with no instant stream to auto-play: drop the loader and
                     // reveal the manual picker now instead of holding until the hard timeout. Clear
                     // isLoading too, so an empty result set doesn't leave the screen stuck loading.
+                    // 18/11 (piège Raw) : émission datée sans fichier du bon jour → on le dit (au lieu d'un vieux Raw)
+                    val notYet666 = StreamAutoPlaySelector.notYetMessage666(
+                        StreamAutoPlaySelector.airDateFor(season, episode), _uiState.value.title
+                    )
                     updateUiStateIfChanged {
                         it.copy(
                             isLoading = false,
                             isDirectAutoPlayFlow = false,
                             showDirectAutoPlayOverlay = false,
-                            directAutoPlayMessage = null
+                            directAutoPlayMessage = null,
+                            playbackErrorMessage = notYet666 ?: it.playbackErrorMessage
                         )
                     }
                     externalPlaybackTracker.releaseAutoNextOverlay(forceRelease = true)

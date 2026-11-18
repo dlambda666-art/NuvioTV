@@ -1436,6 +1436,8 @@ open class MainActivity : ComponentActivity() {
                                         )
                                     }
                                     if (found.isNotEmpty()) {
+                                        // 18/11 : on note l'heure où la VF a été trouvée (minutage du cri dans le journal)
+                                        found.forEach { com.nuvio.tv.core.tools.Announce666.markFound("${it.seriesId}|${it.season}|${it.episode}") }
                                         pending666 = (pending666 + found).distinctBy { "${it.seriesId}|${it.season}|${it.episode}" }
                                     }
                                     // 666TVF : nouvel épisode VF annoncé → enregistré tout seul ; vus effacés après 3 jours
@@ -1557,7 +1559,14 @@ open class MainActivity : ComponentActivity() {
                                     overlay -> "vue par-dessus une autre appli"
                                     else -> "en attente (autre appli, pas d'autorisation)"
                                 }
-                                shown.forEach { com.nuvio.tv.core.tools.Announce666.log(pendingContext666, announceLogText666(it), where) }
+                                shown.forEach {
+                                    val k666 = "${it.seriesId}|${it.season}|${it.episode}"
+                                    val plainEpisode = it.season > 0 && listOf("serie:", "film:", "ple:", "alerte:", "sport:", "test:", "retard:").none { p -> it.seriesId.startsWith(p) }
+                                    val w = if (plainEpisode) where + " · " + com.nuvio.tv.core.tools.Announce666.timing(
+                                        it.airInstant.toEpochMilli(), com.nuvio.tv.core.tools.Announce666.foundAt(k666), System.currentTimeMillis()
+                                    ) else where
+                                    com.nuvio.tv.core.tools.Announce666.log(pendingContext666, announceLogText666(it), w)
+                                }
                                 // La bannière reste jusqu'à OK (dans 666TVF, ou à ton retour si tu étais ailleurs).
                                 calendarVfAnnouncements = (calendarVfAnnouncements + shown).distinctBy { "${it.seriesId}|${it.season}|${it.episode}" }
                                 pending666 = emptyList()

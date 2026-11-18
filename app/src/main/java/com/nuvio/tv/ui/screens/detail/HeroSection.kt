@@ -254,6 +254,9 @@ fun HeroContentSection(
                             }
                         )
 
+                        // 18/11 : « ⚡ Prêt » quand un lien en cache est déjà trouvé pour cet épisode
+                        ReadyBadge666(metaId = meta.id)
+
                         // 666TV : rappel de la saison précédente (avant d'attaquer la nouvelle).
                         if (recapSeason != null) {
                             ActionIconButton(

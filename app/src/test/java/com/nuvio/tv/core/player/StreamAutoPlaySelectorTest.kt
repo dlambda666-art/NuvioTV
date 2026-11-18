@@ -314,6 +314,57 @@ class StreamAutoPlaySelectorTest {
     }
 
     @Test
+    fun `piege Raw 18-11 - seul un vieux Raw dispo, rien n'est lance`() {
+        StreamAutoPlaySelector.airDateHint666 = Triple(2026, 46, "2026-11-16")
+        try {
+            val old1 = stream("Comet666", url = "https://a.test/old1", name = "WWE.Raw.2026.11.09.FRENCH.1080p")
+            val old2 = stream("Lumio666", url = "https://a.test/old2", name = "WWE Raw 02.11.2026 FRENCH 1080p")
+            val selected = StreamAutoPlaySelector.selectAutoPlayStream(
+                streams = listOf(old1, old2), mode = StreamAutoPlayMode.FIRST_STREAM, regexPattern = "",
+                source = StreamAutoPlaySource.ALL_SOURCES, installedAddonNames = emptySet(),
+                selectedAddons = emptySet(), selectedPlugins = emptySet(), season = 2026, episode = 46
+            )
+            org.junit.Assert.assertNull(selected)
+            assertEquals("WWE Raw du 16/11 : pas encore disponible en VF (aucun ancien épisode lancé)",
+                StreamAutoPlaySelector.notYetMessage666("2026-11-16", "WWE Raw"))
+            org.junit.Assert.assertNull(StreamAutoPlaySelector.notYetMessage666(null, "Dexter"))
+        } finally {
+            StreamAutoPlaySelector.airDateHint666 = null
+        }
+    }
+
+    @Test
+    fun `piege Raw 18-11 - date a la francaise reconnue, fichier sans date ecarte`() {
+        StreamAutoPlaySelector.airDateHint666 = Triple(2026, 46, "2026-11-16")
+        try {
+            val noDate = stream("Comet666", url = "https://a.test/nodate", name = "WWE Raw FRENCH 1080p")
+            val good = stream("Lumio666", url = "https://a.test/good", name = "WWE.RAW.17.11.2026.FRENCH.1080p")
+            val selected = StreamAutoPlaySelector.selectAutoPlayStream(
+                streams = listOf(noDate, good), mode = StreamAutoPlayMode.FIRST_STREAM, regexPattern = "",
+                source = StreamAutoPlaySource.ALL_SOURCES, installedAddonNames = emptySet(),
+                selectedAddons = emptySet(), selectedPlugins = emptySet(), season = 2026, episode = 46
+            )
+            assertEquals(good, selected)
+            org.junit.Assert.assertTrue(StreamAutoPlaySelector.dateMismatch("Raw 09.11.2026", "2026-11-16"))
+            org.junit.Assert.assertFalse(StreamAutoPlaySelector.dateMismatch("Raw 16-11-2026", "2026-11-16"))
+            org.junit.Assert.assertFalse(StreamAutoPlaySelector.dateMismatch("Matrix 1999 1080p", "2026-11-16"))
+        } finally {
+            StreamAutoPlaySelector.airDateHint666 = null
+        }
+    }
+
+    @Test
+    fun `serie normale - un autre episode n'est jamais lance en repli`() {
+        val other = stream("Comet666", url = "https://a.test/e4", name = "Dexter.S01E04.FRENCH.1080p")
+        val selected = StreamAutoPlaySelector.selectAutoPlayStream(
+            streams = listOf(other), mode = StreamAutoPlayMode.FIRST_STREAM, regexPattern = "",
+            source = StreamAutoPlaySource.ALL_SOURCES, installedAddonNames = emptySet(),
+            selectedAddons = emptySet(), selectedPlugins = emptySet(), season = 1, episode = 5
+        )
+        org.junit.Assert.assertNull(selected)
+    }
+
+    @Test
     fun `ligne d'enquete Comet666 jamais lancee en auto`() {
         val diag = stream(addonName = "Comet666", url = "https://diagnostic.invalid/comet", name = "Comet666 enquête")
         val selected = StreamAutoPlaySelector.selectAutoPlayStream(

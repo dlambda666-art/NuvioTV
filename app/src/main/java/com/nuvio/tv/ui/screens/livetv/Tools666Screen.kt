@@ -407,6 +407,54 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     }
                 )
             }
+            // 18/11 : son d'ambiance de l'Abattoir (fichier choisi sur la Shield, coupé par défaut)
+            item {
+                var snd by remember { mutableStateOf(com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(context)) }
+                var files by remember { mutableStateOf<List<Pair<String, String>>?>(null) }
+                val perm = if (android.os.Build.VERSION.SDK_INT >= 33) android.Manifest.permission.READ_MEDIA_AUDIO
+                    else android.Manifest.permission.READ_EXTERNAL_STORAGE
+                val ask = androidx.activity.compose.rememberLauncherForActivityResult(
+                    androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+                ) { ok -> files = if (ok) com.nuvio.tv.ui.screens.home.AbattoirSound666.audioFiles(context) else emptyList() }
+                Column {
+                    ActionRow(
+                        "Son de l'Abattoir : " + com.nuvio.tv.ui.screens.home.AbattoirSound666.modeLabel(snd.mode),
+                        "Seulement quand l'Abattoir est à l'écran ; jamais pendant un film, Orange TV, l'écran de veille. OK : coupé → 1 → 2 → 5 → 10 min → boucle douce",
+                        onClick = {
+                            com.nuvio.tv.ui.screens.home.AbattoirSound666.nextMode(context)
+                            snd = com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(context)
+                        }
+                    )
+                    ActionRow(
+                        "Fichier : " + (snd.name ?: "aucun (choisir)"),
+                        "Un fichier audio de la Shield (Download, disque). Il reste sur la Shield.",
+                        onClick = {
+                            if (files != null) files = null
+                            else if (androidx.core.content.ContextCompat.checkSelfPermission(context, perm) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+                                files = com.nuvio.tv.ui.screens.home.AbattoirSound666.audioFiles(context)
+                            else ask.launch(perm)
+                        }
+                    )
+                    files?.let { list ->
+                        if (list.isEmpty()) Text("Aucun fichier audio trouvé sur la Shield", modifier = Modifier.padding(horizontal = 18.dp), color = Color(0xFFC8C3BE))
+                        list.forEach { (uri, name) ->
+                            ActionRow("♪ $name", "Choisir ce son", onClick = {
+                                com.nuvio.tv.ui.screens.home.AbattoirSound666.setFile(context, uri, name)
+                                snd = com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(context)
+                                files = null
+                            })
+                        }
+                    }
+                    ActionRow(
+                        "Volume du son : ${snd.volume} %",
+                        "Bas par défaut, avec fondu d'entrée et de sortie. OK : 10 → 20 → 30 → 40 → 60 %",
+                        onClick = {
+                            com.nuvio.tv.ui.screens.home.AbattoirSound666.nextVolume(context)
+                            snd = com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(context)
+                        }
+                    )
+                }
+            }
             item {
                 var level by remember { mutableStateOf(com.nuvio.tv.ui.screens.player.Level666.enabled(context)) }
                 ActionRow(

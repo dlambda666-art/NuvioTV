@@ -299,7 +299,8 @@ class PluginRuntime @Inject constructor() {
                                 mapOf(
                                     "ok" to false,
                                     "status" to 0,
-                                    "statusText" to (t.message ?: "Fetch failed"),
+                                    // 18/11 : la vraie cause (« adresse introuvable »…) au lieu de « HTTP 0 »
+                                    "statusText" to NetCause666.describe(t),
                                     "url" to url,
                                     "body" to "",
                                     "headers" to emptyMap<String, String>()
@@ -623,7 +624,7 @@ class PluginRuntime @Inject constructor() {
             gson.toJson(mapOf(
                 "ok" to false,
                 "status" to 0,
-                "statusText" to (e.message ?: "Fetch failed"),
+                "statusText" to NetCause666.describe(e),
                 "url" to url,
                 "body" to "",
                 "headers" to emptyMap<String, String>()

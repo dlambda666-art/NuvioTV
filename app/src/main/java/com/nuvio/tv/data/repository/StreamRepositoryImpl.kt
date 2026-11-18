@@ -337,6 +337,11 @@ class StreamRepositoryImpl @Inject constructor(
                         if (hiddenUncached) continue
                         // 666TVF : fichier annoncé VF mais sans piste française (déjà essayé) → plus jamais proposé
                         if (com.nuvio.tv.core.tools.NoFrench666.isLiar(context, stream.getEffectiveInfoHash())) continue
+                        // 18/11 (piège Raw) : émission datée → un fichier daté d'un autre jour (vieux Raw) n'est pas proposé
+                        if (com.nuvio.tv.core.player.StreamAutoPlaySelector.dateMismatch(
+                                listOfNotNull(stream.name, stream.title, stream.description, stream.behaviorHints?.filename).joinToString(" "),
+                                com.nuvio.tv.core.player.StreamAutoPlaySelector.airDateFor(season, episode)
+                            )) continue
                         val keys = stream.plugin666Keys()
                         if (keys.isEmpty()) { keptInBatch += stream; continue }
                         val verdict = pluginDedup666.admit(keys, stream.plugin666DedupScore(), com.nuvio.tv.core.debrid.AllDebridFallback666.isGuess(stream))

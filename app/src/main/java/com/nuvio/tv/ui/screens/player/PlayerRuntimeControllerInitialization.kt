@@ -592,6 +592,17 @@ internal fun PlayerRuntimeController.initializePlayer(
             } else {
                 // Reset each playback so the factory doesn't keep last stream's state.
                 mediaSourceFactory.useParallelConnections = false
+                // 18/11 : WiFi qui rechargeait → 4 connexions parallèles toutes seules (réglage manuel prioritaire)
+                com.nuvio.tv.core.tools.WifiParallel666.decide(
+                    manualNetwork = false,
+                    onWifi = com.nuvio.tv.core.tools.WifiParallel666.onWifi(context),
+                    learned = com.nuvio.tv.core.tools.WifiParallel666.learned(context)
+                )?.let { n ->
+                    mediaSourceFactory.useParallelConnections = true
+                    mediaSourceFactory.parallelConnectionCount = n
+                    mediaSourceFactory.parallelChunkSizeKb = playerSettings.parallelChunkSizeKb
+                    Log.i(PlayerRuntimeController.TAG, "WifiParallel666: $n connexions (WiFi, rechargements appris)")
+                }
             }
 
             // Log the effective state (post-gating), not the raw settings.
@@ -1141,6 +1152,11 @@ internal fun PlayerRuntimeController.initializePlayer(
                             if (hasRenderedFirstFrame && rebufferStartedAtMs == 0L) {
                                 rebufferCount += 1
                                 rebufferStartedAtMs = SystemClock.elapsedRealtime()
+                                if (com.nuvio.tv.core.tools.WifiParallel666.shouldLearn(
+                                        manualNetwork = currentPlayerSettingsForReport.parallelNetworkEnabled,
+                                        onWifi = rebufferCount == 2 && com.nuvio.tv.core.tools.WifiParallel666.onWifi(context),
+                                        rebuffers = rebufferCount
+                                    )) com.nuvio.tv.core.tools.WifiParallel666.learn(context)
                                 playbackAnalyticsDiagnostics.onRebufferStarted(this@apply, rebufferCount)
                                 Log.i(
                                     PlayerRuntimeController.TAG,

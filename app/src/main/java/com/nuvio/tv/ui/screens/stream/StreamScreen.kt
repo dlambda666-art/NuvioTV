@@ -449,6 +449,9 @@ fun StreamScreen(
                     streams = uiState.filteredStreams,
                     availableAddons = uiState.availableAddons,
                     sourceChips = uiState.sourceChips,
+                    progress666 = remember(uiState.sourceChips, uiState.addonStreams) {
+                        SearchProgress666.items(uiState.sourceChips, uiState.addonStreams)
+                    },
                     selectedAddonFilter = uiState.selectedAddonFilter,
                     showFileSizeBadges = streamBadgeSettings.showFileSizeBadges,
                     showAddonLogo = streamBadgeSettings.showAddonLogo,
@@ -776,6 +779,7 @@ private fun RightStreamSection(
     streams: List<Stream>,
     availableAddons: List<String>,
     sourceChips: List<SourceChipItem>,
+    progress666: List<SearchProgress666.Item> = emptyList(),
     selectedAddonFilter: String?,
     showFileSizeBadges: Boolean,
     showAddonLogo: Boolean,
@@ -906,6 +910,9 @@ private fun RightStreamSection(
                 )
             }
         }
+
+        // 18/11 : la recherche en direct, source par source
+        SearchProgress666Line(progress666)
 
         Spacer(modifier = Modifier.height(NuvioTheme.spacing.lg))
 

@@ -34,5 +34,7 @@ object PluginOrder666 {
         return known + DEFAULT.filter { it !in known }
     }
 
-    fun labelOf(name: String): String = name.removeSuffix("666")
+    /** 18/11 : Wastream666 s'affiche « Wacustom » (id interne inchangé : le lien collé reste en place). */
+    fun labelOf(name: String): String =
+        if (name.equals("Wastream666", ignoreCase = true)) "Wacustom" else name.removeSuffix("666")
 }

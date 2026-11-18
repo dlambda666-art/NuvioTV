@@ -143,6 +143,12 @@ jobs:
             --tests 'com.nuvio.tv.core.wake.*' \
             --tests 'com.nuvio.tv.core.streams.PluginDedup666Test' \
             --tests 'com.nuvio.tv.ui.screens.player.PlayerInfoBadges666Test' \
+            --tests 'com.nuvio.tv.core.plugin.NetCause666Test' \
+            --tests 'com.nuvio.tv.core.tools.Announce666TimingTest' \
+            --tests 'com.nuvio.tv.core.tools.WifiParallel666Test' \
+            --tests 'com.nuvio.tv.ui.screens.stream.SearchProgress666Test' \
+            --tests 'com.nuvio.tv.ui.screens.detail.Ready666Test' \
+            --tests 'com.nuvio.tv.ui.screens.home.AbattoirSound666Test' \
             :app:assembleFullRelease \
             --stacktrace 2>&1 | tee build.log
           status=${PIPESTATUS[0]}

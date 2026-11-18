@@ -126,19 +126,51 @@ object StreamAutoPlaySelector {
         airDateHint666?.takeIf { it.first == season && it.second == episode }?.third
 
     private val DATED = Regex("""\b(20\d\d)[ ._-](\d\d)[ ._-](\d\d)\b""")
+    // 18/11 : dates à la française dans les noms de fichiers (WWE.RAW.16.11.2026.FRENCH…)
+    private val DATED_DMY = Regex("""(?<!\d)(\d{1,2})[ ._/-](\d{1,2})[ ._/-](20\d\d)(?!\d)""")
+
+    private fun datesIn(text: String): List<java.time.LocalDate> =
+        DATED.findAll(text).mapNotNull { m ->
+            runCatching { java.time.LocalDate.of(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.groupValues[3].toInt()) }.getOrNull()
+        }.toList() + DATED_DMY.findAll(text).mapNotNull { m ->
+            runCatching { java.time.LocalDate.of(m.groupValues[3].toInt(), m.groupValues[2].toInt(), m.groupValues[1].toInt()) }.getOrNull()
+        }.toList()
 
     /** Vrai si le texte porte une date qui n'est pas celle de l'épisode (± 1 jour 1/2). */
     fun dateMismatch(text: String, airDate: String?): Boolean {
         val target = airDate?.take(10)?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() } ?: return false
-        var any = false
-        for (m in DATED.findAll(text)) {
-            val d = runCatching {
-                java.time.LocalDate.of(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.groupValues[3].toInt())
-            }.getOrNull() ?: continue
-            any = true
-            if (kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(target, d)) <= 1) return false
-        }
-        return any
+        val dates = datesIn(text)
+        if (dates.isEmpty()) return false
+        return dates.none { kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(target, it)) <= 1 }
+    }
+
+    /** 18/11 : message quand l'épisode daté n'a pas encore de fichier du bon jour (null si pas d'émission datée). */
+    fun notYetMessage666(airDate: String?, title: String?): String? {
+        val d = airDate?.take(10)?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() } ?: return null
+        val name = title?.takeIf { it.isNotBlank() } ?: "Cet épisode"
+        return "$name du ${"%02d/%02d".format(d.dayOfMonth, d.monthValue)} : pas encore disponible en VF (aucun ancien épisode lancé)"
+    }
+
+    /** 18/11 : le texte porte-t-il une date (émission datée comme WWE Raw) ? */
+    fun hasDate(text: String): Boolean = datesIn(text).isNotEmpty()
+
+    private fun textOf(stream: Stream): String =
+        listOfNotNull(stream.name, stream.title, stream.description, stream.behaviorHints?.filename).joinToString(" ")
+
+    /**
+     * 18/11 (piège Raw) — règle pure (testée) : les flux qu'on a le droit de lancer tout seul pour CET
+     * épisode. Avant : si aucun flux ne correspondait (le Raw de la semaine pas encore sorti), Frank
+     * lançait quand même le premier… un vieux Raw. Maintenant : jamais un autre épisode ; et pour une
+     * émission datée (date de diffusion connue, fichiers datés), seulement un fichier qui porte la bonne
+     * date. Liste vide = rien à lancer (Frank le dit au lieu de lancer l'ancien).
+     */
+    fun playableForEpisode(streams: List<Stream>, season: Int?, episode: Int?): List<Stream> {
+        if (season == null || episode == null) return streams
+        val notOther = streams.filter { episodeRank(it, season, episode) < 2 }
+        val air = airDateFor(season, episode) ?: return notOther
+        val datedShow = streams.any { hasDate(textOf(it)) }
+        if (!datedShow) return notOther
+        return notOther.filter { episodeRank(it, season, episode) == 0 || hasDate(textOf(it)) && !dateMismatch(textOf(it), air) }
     }
 
     private val DV = Regex("""(?i)(?<![a-z0-9])(DV|DoVi|Dolby[ ._-]?Vision)(?![a-z0-9])""")
@@ -196,10 +228,13 @@ object StreamAutoPlaySelector {
         // 666TVF (10/11) : jamais de lecture auto d'un fichier déjà prouvé sans VF (4e dimension S03E08 :
         // la liste préchargée avait encore le pack S03 retenu comme « menteur » pendant le S03E07).
         val liars = com.nuvio.tv.core.tools.NoFrench666.cachedHashes()
-        val epStreams = streams.filter { !autoPlayBlocked(it, season, episode) &&
+        // 18/11 (piège Raw) : jamais de repli sur un autre épisode, même s'il n'y a que ça
+        val rightEpisode = playableForEpisode(streams, season, episode)
+        if (rightEpisode.isEmpty()) return null
+        val epStreams = rightEpisode.filter { !autoPlayBlocked(it, season, episode) &&
             (liars.isEmpty() || it.getEffectiveInfoHash()?.trim()?.lowercase() !in liars) }
         @Suppress("NAME_SHADOWING")
-        val streams = if (epStreams.isNotEmpty()) epStreams else streams
+        val streams = if (epStreams.isNotEmpty()) epStreams else rightEpisode
 
         val effectiveSource = if (!AppFeaturePolicy.pluginsEnabled && source == StreamAutoPlaySource.ENABLED_PLUGINS_ONLY) {
             StreamAutoPlaySource.INSTALLED_ADDONS_ONLY

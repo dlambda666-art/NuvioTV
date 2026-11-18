@@ -170,6 +170,8 @@ internal fun PlaybackException.toDisplayMessage(context: android.content.Context
     val responseException = findInvalidResponseCodeException()
     if (responseException != null) {
         val code = responseException.responseCode
+        // 18/11 : 429 / 503 → Frank oublie les 4 connexions WiFi apprises (retour à 1)
+        if (com.nuvio.tv.core.tools.WifiParallel666.shouldForget(code)) com.nuvio.tv.core.tools.WifiParallel666.forget(context.applicationContext)
         val statusText = responseException.responseMessage?.takeIf { it.isNotBlank() }
         val providerHint = httpStatusExplanation(context, code)
         return buildString {

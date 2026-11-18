@@ -65,7 +65,7 @@ data class PrivateSource(
 val PRIVATE_SOURCES = listOf(
     PrivateSource("lumio666", "Lumio"),
     PrivateSource("streamfusion666", "StreamFusion"),
-    PrivateSource("wastream666", "Wastream"),
+    PrivateSource("wastream666", "Wacustom"),   // 18/11 : ex-Wastream (même id, lien conservé)
     // 666TVF : trackers français lus directement par Comet666 (repris de Frenchio)
     PrivateSource("comet666", "C411 · clé API", settingKey = "c411", isUrl = false),
     PrivateSource("comet666", "Tr4ker · clé API", settingKey = "tr4ker", isUrl = false),   // Torr9 a fusionné avec Tr4ker

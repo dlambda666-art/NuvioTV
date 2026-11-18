@@ -64,6 +64,25 @@ object Announce666 {
     val testRequest: StateFlow<Long> = _testRequest
     fun requestTest() { _testRequest.value = System.currentTimeMillis() }
 
+    // ---------- 18/11 : minutage des cris (diffusion → VF trouvée → cri) ----------
+    private val foundAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    fun markFound(key: String, now: Long = System.currentTimeMillis()) { foundAt.putIfAbsent(key, now) }
+    fun foundAt(key: String): Long? = foundAt[key]
+
+    /**
+     * Règle pure (testée) : la ligne de minutage ajoutée au journal d'un cri d'épisode.
+     * « diffusé il y a 27 h · VF trouvée à 05:12 · cri à 05:30 (écran éteint entre-temps) »
+     */
+    fun timing(airMs: Long, foundMs: Long?, shownMs: Long, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String {
+        fun hm(ms: Long) = java.time.Instant.ofEpochMilli(ms).atZone(zone).toLocalTime().let { "%02d:%02d".format(it.hour, it.minute) }
+        val hours = ((shownMs - airMs) / 3_600_000L).coerceAtLeast(0)
+        val parts = arrayListOf("diffusé il y a $hours h")
+        if (foundMs != null) parts += "VF trouvée à ${hm(foundMs)}"
+        parts += "cri à ${hm(shownMs)}"
+        val waited = if (foundMs != null) (shownMs - foundMs) / 60_000L else 0
+        return parts.joinToString(" · ") + if (waited >= 20) " (attendu ${waited} min : film en cours ou écran éteint)" else ""
+    }
+
     // ---------- Journal ----------
     fun log(context: Context, text: String, where: String, now: Long = System.currentTimeMillis()) {
         runCatching {
