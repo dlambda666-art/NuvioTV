@@ -514,6 +514,16 @@ const cases = [
         if (comet._releaseMatches('Avatar.2.2022.MULTi.1080p', ['Avatar'], 2009, false)) { fails++; console.log('✗ Comet : Avatar 2 gardé pour Avatar'); }
         console.log('✓ Autre film du même nom (suite) écarté, titre étranger ou absent gardé');
     }
+    // 18/11 : plus de « HTTP 0 » muet : la cause donnée par Frank, sans adresse
+    {
+        const tpl = loadTemplate(() => undefined);
+        const w = tpl._httpWhy;
+        if (w({ status: 0, statusText: 'adresse introuvable (site fermé, déplacé ou bloqué par le fournisseur d\'accès)' }).indexOf('adresse introuvable') !== 0) { fails++; console.log('✗ cause réseau'); }
+        if (w({ status: 404 }) !== 'HTTP 404') { fails++; console.log('✗ HTTP 404'); }
+        if (w({ status: 0, statusText: 'https://secret.example/abc/manifest.json' }).indexOf('http') >= 0) { fails++; console.log('✗ adresse dans le diag'); }
+        if (w(null) !== 'pas de réponse du serveur') { fails++; console.log('✗ réponse vide'); }
+        console.log('✓ Diagnostic : la vraie cause au lieu de HTTP 0');
+    }
     console.log(fails ? `\n${fails} cas piège(s) cassé(s)` : '\nTous les cas pièges passent');
     process.exit(fails ? 1 : 0);
 })();

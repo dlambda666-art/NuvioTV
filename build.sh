@@ -2,8 +2,9 @@
 # Génère les plugins « addon666 » depuis le modèle commun.
 set -e
 cd "$(dirname "$0")"
-for n in Lumio StreamFusion Wastream; do
-  id=$(echo "$n" | tr 'A-Z' 'a-z')666
+# 18/11 : Wastream666 s'affiche « Wacustom666 » (même fichier et même id : le lien collé sur les Shield reste)
+for pair in Lumio:lumio666 StreamFusion:streamfusion666 Wacustom:wastream666; do
+  n=${pair%%:*}; id=${pair##*:}
   sed "s/__NAME__/$n/g" src/addon666.js > "$id.js"
 done
 

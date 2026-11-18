@@ -8,7 +8,7 @@
       "id": "comet666",
       "name": "Comet666",
       "description": "Torrents en VF, lus via TorBox/AllDebrid. Tes trackers C411 / Tr4ker / YggReborn (clés dans Plugins → « mes sources »), puis StremThru, Torrentio, Zilean, TorrentsDB. Jamais de P2P.",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "filename": "comet666.js",
       "supportedTypes": [
         "movie",
@@ -23,7 +23,7 @@
       "id": "streamfusion666",
       "name": "StreamFusion666",
       "description": "Ton addon StreamFusion avec ta config, interrogé depuis la Shield. VF, 1080p/4K, liens debrid en cache. Adresse à coller dans Plugins → « mes sources ».",
-      "version": "1.0.11",
+      "version": "1.0.12",
       "filename": "streamfusion666.js",
       "supportedTypes": [
         "movie",
@@ -38,7 +38,7 @@
       "id": "lumio666",
       "name": "Lumio666",
       "description": "Ton addon Lumio avec ta config, interrogé depuis la Shield. VF, 1080p/4K, liens debrid en cache. Adresse à coller dans Plugins → « mes sources ».",
-      "version": "1.0.11",
+      "version": "1.0.12",
       "filename": "lumio666.js",
       "supportedTypes": [
         "movie",
@@ -51,9 +51,9 @@
     },
     {
       "id": "wastream666",
-      "name": "Wastream666",
-      "description": "Ton addon Wastream (téléchargement direct FR) avec ta config, interrogé depuis la Shield. VF, 1080p/4K. Adresse à coller dans Plugins → « mes sources ».",
-      "version": "1.0.10",
+      "name": "Wacustom666",
+      "description": "Liens des sites de téléchargement français via TorBox / AllDebrid (Wacustom), avec ta config, interrogé depuis la Shield. VF, 1080p/4K. Adresse à coller dans Plugins → « mes sources ».",
+      "version": "1.0.11",
       "filename": "wastream666.js",
       "supportedTypes": [
         "movie",

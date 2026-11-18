@@ -1,6 +1,6 @@
 /*
- * Wastream666 — plugin de flux VF pour 666TV (généré depuis src/addon666.js).
- * Interroge TON addon Wastream avec TA config, directement depuis la Shield.
+ * Wacustom666 — plugin de flux VF pour 666TV (généré depuis src/addon666.js).
+ * Interroge TON addon Wacustom avec TA config, directement depuis la Shield.
  * L'adresse de config (qui contient les clés debrid) n'est jamais dans ce
  * fichier : 666TV la fournit via SCRAPER_SETTINGS.url, stockée uniquement
  * sur l'appareil (Plugins → « Comet666 – mes sources »).
@@ -8,7 +8,7 @@
  * 1080p et 4K, liens debrid déjà en cache, aucun torrent P2P.
  */
 
-var ADDON_NAME = 'Wastream';
+var ADDON_NAME = 'Wacustom';
 var MAX_RESULTS = 30;
 
 // --- Règles de langue (mêmes que Frank et Comet666) -----------------------
@@ -73,11 +73,19 @@ function formatSize(bytes) {
 
 var LAST_ERROR = '';
 
+// 18/11 : « HTTP 404 », ou la cause donnée par Frank quand il n'y a pas de réponse (jamais d'adresse ni de clé)
+function httpWhy(res) {
+    if (res && res.status) return 'HTTP ' + res.status;
+    var t = String((res && res.statusText) || '').replace(/https?:\/\/\S+/g, '').trim();
+    return t ? t : 'pas de réponse du serveur';
+}
+
 async function getJson(url, label) {
     try {
         var res = await fetch(url, { headers: { 'Accept': 'application/json' } });
         if (!res || !res.ok) {
-            LAST_ERROR = (label || 'requête') + ' → HTTP ' + (res && res.status);
+            // 18/11 : la vraie cause quand le site ne répond pas du tout (« adresse introuvable »…)
+            LAST_ERROR = (label || 'requête') + ' → ' + httpWhy(res);
             console.log(ADDON_NAME + '666 : ' + LAST_ERROR);
             return null;
         }
@@ -433,4 +441,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     });
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _sequelMismatch: sequelMismatch, _groupsLists: groupsLists, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _addonBase: addonBase };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _httpWhy: httpWhy, _sequelMismatch: sequelMismatch, _groupsLists: groupsLists, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _addonBase: addonBase };

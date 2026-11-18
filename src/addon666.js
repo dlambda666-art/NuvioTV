@@ -73,11 +73,19 @@ function formatSize(bytes) {
 
 var LAST_ERROR = '';
 
+// 18/11 : « HTTP 404 », ou la cause donnée par Frank quand il n'y a pas de réponse (jamais d'adresse ni de clé)
+function httpWhy(res) {
+    if (res && res.status) return 'HTTP ' + res.status;
+    var t = String((res && res.statusText) || '').replace(/https?:\/\/\S+/g, '').trim();
+    return t ? t : 'pas de réponse du serveur';
+}
+
 async function getJson(url, label) {
     try {
         var res = await fetch(url, { headers: { 'Accept': 'application/json' } });
         if (!res || !res.ok) {
-            LAST_ERROR = (label || 'requête') + ' → HTTP ' + (res && res.status);
+            // 18/11 : la vraie cause quand le site ne répond pas du tout (« adresse introuvable »…)
+            LAST_ERROR = (label || 'requête') + ' → ' + httpWhy(res);
             console.log(ADDON_NAME + '666 : ' + LAST_ERROR);
             return null;
         }
@@ -433,4 +441,4 @@ async function getStreams(tmdbId, mediaType, season, episode) {
     });
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _sequelMismatch: sequelMismatch, _groupsLists: groupsLists, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _addonBase: addonBase };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _httpWhy: httpWhy, _sequelMismatch: sequelMismatch, _groupsLists: groupsLists, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _addonBase: addonBase };
