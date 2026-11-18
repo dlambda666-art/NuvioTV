@@ -269,6 +269,42 @@ object Lien666 {
         Net666.fromJson(raw)
     }
 
+    /**
+     * 18/11 (réparation, Shield du haut) : récupère le son de l'Abattoir choisi sur l'autre Shield
+     * (seulement ce fichier-là, rien d'autre) et le range dans le dossier privé de Frank ici.
+     * Renvoie le nom du fichier, ou null si l'autre Shield ne répond pas / n'a pas de son choisi.
+     */
+    suspend fun fetchAbattoirSound(context: Context): String? = withContext(Dispatchers.IO) {
+        val info = fetch("/abattoir-son/info")?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return@withContext null
+        val name = safeSoundName(info.optString("name")) ?: return@withContext null
+        val base = peer?.base ?: return@withContext null
+        val dir = File(context.filesDir, "abattoir666").apply { mkdirs() }
+        val out = File(dir, name)
+        val ok = runCatching {
+            (URL("$base/abattoir-son").openConnection() as HttpURLConnection).run {
+                connectTimeout = 8_000; readTimeout = 20_000
+                try {
+                    if (responseCode != 200) return@run false
+                    val tmp = File(dir, "$name.part")
+                    inputStream.use { i -> tmp.outputStream().use { o -> i.copyTo(o) } }
+                    if (tmp.length() <= 0L || tmp.length() > MAX_SOUND_BYTES) { tmp.delete(); return@run false }
+                    dir.listFiles()?.filter { it.name != tmp.name }?.forEach { it.delete() }
+                    tmp.renameTo(out)
+                } finally { disconnect() }
+            }
+        }.getOrDefault(false)
+        if (ok) name else null
+    }
+
+    const val MAX_SOUND_BYTES = 20L * 1024 * 1024
+
+    /** Règle pure (testée) : nom de fichier son acceptable (pas de dossier, extension audio). */
+    fun safeSoundName(raw: String?): String? {
+        val n = raw?.substringAfterLast('/')?.substringAfterLast('\\')?.trim().orEmpty()
+        if (n.isEmpty() || n.startsWith(".") || n.length > 120) return null
+        return n.takeIf { com.nuvio.tv.ui.screens.home.AbattoirSound666.isAudioName(it) }
+    }
+
     fun recUrl(id: String): String? = peer?.let { it.base + "/rec/" + java.net.URLEncoder.encode(id, "UTF-8") }
 
     /** Règle pure (testée) : en-tête Range « bytes=a-b » → (début, fin incluse), ou null. */
@@ -298,6 +334,20 @@ object Lien666 {
                     // l'adresse d'origine (lien debrid) et ses en-têtes ne quittent jamais la Shield
                     val list = if (Record666.enabledHere()) Record666.ready().map { it.copy(url = "", headers = emptyMap()) } else emptyList()
                     newFixedLengthResponse(Response.Status.OK, "application/json", Record666.toJson(list).toString())
+                }
+                // 18/11 : le son de l'Abattoir choisi ici (seulement lui), pour l'autre Shield
+                uri == "/abattoir-son/info" -> {
+                    val s = com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(app)
+                    if (s.uri == null || s.name == null) notFound()
+                    else newFixedLengthResponse(Response.Status.OK, "application/json", JSONObject().put("name", s.name).toString())
+                }
+                uri == "/abattoir-son" -> {
+                    val s = com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(app)
+                    val u = s.uri ?: return@runCatching notFound()
+                    val bytes = app.contentResolver.openInputStream(android.net.Uri.parse(u))?.use { it.readBytes() }
+                        ?: return@runCatching notFound()
+                    if (bytes.size > MAX_SOUND_BYTES) return@runCatching notFound()
+                    newFixedLengthResponse(Response.Status.OK, "audio/mpeg", java.io.ByteArrayInputStream(bytes), bytes.size.toLong())
                 }
                 uri.startsWith("/rec/") -> {
                     val id = java.net.URLDecoder.decode(uri.removePrefix("/rec/"), "UTF-8")

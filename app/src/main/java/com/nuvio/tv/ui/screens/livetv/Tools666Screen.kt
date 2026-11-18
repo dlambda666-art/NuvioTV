@@ -412,6 +412,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 var snd by remember { mutableStateOf(com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(context)) }
                 var files by remember { mutableStateOf<List<Pair<String, String>>?>(null) }
                 var denied by remember { mutableStateOf(false) }
+                var fetchMsg by remember { mutableStateOf<String?>(null) }
                 val perm = if (android.os.Build.VERSION.SDK_INT >= 33) android.Manifest.permission.READ_MEDIA_AUDIO
                     else android.Manifest.permission.READ_EXTERNAL_STORAGE
                 val ask = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -462,6 +463,26 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                             })
                         }
                     }
+                    // 18/11 (réparation) : récupérer le son choisi sur l'autre Shield, par le lien entre les Shield
+                    ActionRow(
+                        "Récupérer le son de l'autre Shield",
+                        fetchMsg ?: "Prend le son déjà choisi sur l'autre Shield (rien à envoyer) et le garde ici",
+                        onClick = {
+                            fetchMsg = "Récupération…"
+                            scope.launch {
+                                val name = com.nuvio.tv.core.tools.Lien666.fetchAbattoirSound(context)
+                                if (name != null) {
+                                    val f = java.io.File(java.io.File(context.filesDir, "abattoir666"), name)
+                                    com.nuvio.tv.ui.screens.home.AbattoirSound666.setFile(context, android.net.Uri.fromFile(f).toString(), name)
+                                    snd = com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(context)
+                                    files = null
+                                    fetchMsg = "✓ $name récupéré"
+                                } else {
+                                    fetchMsg = "✗ L'autre Shield ne répond pas, ou aucun son n'y est choisi"
+                                }
+                            }
+                        }
+                    )
                     ActionRow(
                         "Volume du son : ${snd.volume} %",
                         "Bas par défaut, avec fondu d'entrée et de sortie. OK : 10 → 20 → 30 → 40 → 60 %",

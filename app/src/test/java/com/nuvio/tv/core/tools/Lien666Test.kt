@@ -52,4 +52,12 @@ class Lien666Test {
         org.junit.Assert.assertEquals("192.168.0.1", Lien666.subnetCandidates("192.168.0.30", "10.0.0.5").first())
         org.junit.Assert.assertTrue(Lien666.subnetCandidates("pas une ip", null).isEmpty())
     }
+
+    @Test fun `son de l'Abattoir recupere de l'autre Shield - nom sur (18-11)`() {
+        org.junit.Assert.assertEquals("Abattoir_long.mp3", Lien666.safeSoundName("Abattoir_long.mp3"))
+        org.junit.Assert.assertEquals("a.mp3", Lien666.safeSoundName("../../etc/a.mp3"))
+        org.junit.Assert.assertNull(Lien666.safeSoundName("film.mkv"))
+        org.junit.Assert.assertNull(Lien666.safeSoundName(".mp3"))
+        org.junit.Assert.assertNull(Lien666.safeSoundName(null))
+    }
 }
