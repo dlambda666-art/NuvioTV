@@ -20,8 +20,15 @@ import kotlinx.coroutines.delay
  */
 object AbattoirSound666 {
     private const val PREFS = "666tv_abattoir_sound"
-    /** En secondes : 0 = coupé, -1 = boucle douce, sinon une fois toutes les N secondes (18/11 : 20 s ajouté). */
-    val MODES = listOf(0, 20, 60, 120, 300, 600, -1)
+    /** En secondes : 0 = coupé, sinon une fois toutes les N secondes (18/11 : seulement 10 s et 20 s, voulu par David). */
+    val MODES = listOf(0, 10, 20)
+
+    /** Règle pure (testée) : un ancien réglage plus long (1 min, boucle…) devient 20 s. */
+    fun migrate(seconds: Int): Int = when {
+        seconds == 0 -> 0
+        seconds in MODES -> seconds
+        else -> 20
+    }
     val VOLUMES = listOf(10, 20, 30, 40, 60)
     const val FADE_MS = 1_500L
 
@@ -31,7 +38,7 @@ object AbattoirSound666 {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         // 1.0.154 rangeait des minutes sous « mode » : repris en secondes
         val every = if (p.contains("every_s")) p.getInt("every_s", 0) else p.getInt("mode", 0).let { if (it > 0) it * 60 else it }
-        Settings(every, p.getString("uri", null), p.getString("name", null), p.getInt("volume", 20))
+        Settings(migrate(every), p.getString("uri", null), p.getString("name", null), p.getInt("volume", 20))
     }.getOrDefault(Settings(0, null, null, 20))
 
     private fun edit(context: Context, block: android.content.SharedPreferences.Editor.() -> Unit) =
@@ -132,8 +139,48 @@ object AbattoirSound666 {
         runCatching { p.release() }
     }
 
-    /** Liste des fichiers audio de la Shield (Download, disque USB), via la médiathèque d'Android. */
-    fun audioFiles(context: Context): List<Pair<String, String>> = runCatching {
+    private val AUDIO_EXT = Regex("""\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|wma|amr)$""", RegexOption.IGNORE_CASE)
+
+    /** Règle pure (testée) : ce nom de fichier est-il un son ? */
+    fun isAudioName(name: String): Boolean = AUDIO_EXT.containsMatchIn(name.trim())
+
+    /**
+     * 18/11 (piège Shield du haut) : un fichier reçu par « Send Files to TV » n'est pas toujours rangé
+     * dans la médiathèque d'Android → invisible dans « Choisir ». On regarde donc aussi directement les
+     * dossiers Download (et les sous-dossiers), sur la Shield et sur les disques branchés.
+     */
+    private fun directAudioFiles(context: Context): List<Pair<String, String>> {
+        val roots = LinkedHashSet<java.io.File>()
+        runCatching { roots += android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS) }
+        runCatching { roots += java.io.File(android.os.Environment.getExternalStorageDirectory(), "Download") }
+        runCatching { roots += java.io.File(android.os.Environment.getExternalStorageDirectory(), "Music") }
+        runCatching {
+            java.io.File("/storage").listFiles()?.forEach { v ->
+                if (v.name != "self" && v.name != "emulated") { roots += java.io.File(v, "Download"); roots += v }
+            }
+        }
+        val out = ArrayList<Pair<String, String>>()
+        fun walk(dir: java.io.File, depth: Int) {
+            if (depth > 2 || out.size >= 40) return
+            val list = runCatching { dir.listFiles() }.getOrNull() ?: return
+            for (f in list) {
+                if (f.isDirectory) { if (depth < 2 && !f.name.startsWith(".") && f.name != "Android") walk(f, depth + 1) }
+                else if (isAudioName(f.name)) {
+                    out += android.net.Uri.fromFile(f).toString() to f.name
+                    // et on le range dans la médiathèque pour la prochaine fois
+                    runCatching { android.media.MediaScannerConnection.scanFile(context, arrayOf(f.absolutePath), null, null) }
+                }
+            }
+        }
+        roots.forEach { r -> if (r.isDirectory) walk(r, if (r.parentFile?.path == "/storage") 1 else 0) }
+        return out
+    }
+
+    /** Liste des fichiers audio de la Shield (Download, disque USB) : médiathèque d'Android + dossiers Download. */
+    fun audioFiles(context: Context): List<Pair<String, String>> =
+        (mediaStoreAudioFiles(context) + directAudioFiles(context)).distinctBy { it.second.lowercase() }.take(40)
+
+    private fun mediaStoreAudioFiles(context: Context): List<Pair<String, String>> = runCatching {
         val out = ArrayList<Pair<String, String>>()
         val volumes = runCatching { android.provider.MediaStore.getExternalVolumeNames(context) }.getOrDefault(setOf("external"))
         for (vol in volumes) {

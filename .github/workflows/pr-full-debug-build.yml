@@ -149,6 +149,7 @@ jobs:
             --tests 'com.nuvio.tv.ui.screens.stream.SearchProgress666Test' \
             --tests 'com.nuvio.tv.ui.screens.detail.Ready666Test' \
             --tests 'com.nuvio.tv.ui.screens.home.AbattoirSound666Test' \
+            --tests 'com.nuvio.tv.core.tools.PluginName666Test' \
             :app:assembleFullRelease \
             --stacktrace 2>&1 | tee build.log
           status=${PIPESTATUS[0]}

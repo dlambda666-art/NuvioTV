@@ -19,7 +19,7 @@ import com.nuvio.tv.ui.components.SourceChipStatus
 /**
  * FrankenStream (18/11, idée vue chez ToothPowerful, r/NuvioForks) : la recherche en direct, source par
  * source, sous les puces de l'écran des sources :
- * « Lumio666 ✓ 8 liens · StreamFusion666 ✓ 5 · Comet666 … en cours · Wacustom666 ✗ adresse introuvable »
+ * « Lumio666 ✓ 8 liens · StreamFusion666 ✓ 5 · Comet666 … en cours · Wascustom666 ✗ adresse introuvable »
  * Vert ✓, mauve « en cours », rouge seulement pour ✗.
  */
 object SearchProgress666 {
@@ -28,8 +28,8 @@ object SearchProgress666 {
 
     private const val DIAG = "diagnostic.invalid"
 
-    /** Nom affiché (Wastream666 → Wacustom666 : seul le nom change). */
-    fun displayName(name: String): String = if (name.equals("Wastream666", true)) "Wacustom666" else name
+    /** Nom affiché (Wastream666 → Wascustom666 : seul le nom change). */
+    fun displayName(name: String): String = com.nuvio.tv.core.tools.PluginOrder666.displayName("", name)
 
     /** Cause courte tirée de la ligne de diagnostic du plugin (« Aucune réponse : Matrix → délai dépassé … »). */
     fun shortCause(diagTitle: String?): String {
@@ -45,9 +45,9 @@ object SearchProgress666 {
      * n'empêche jamais d'afficher les autres).
      */
     fun items(chips: List<SourceChipItem>, addonStreams: List<AddonStreams>): List<Item> {
-        val byName = addonStreams.groupBy { it.addonName }
+        val byName = addonStreams.groupBy { displayName(it.addonName) }
         return chips.map { chip ->
-            val streams = byName[chip.name].orEmpty().flatMap { it.streams }
+            val streams = byName[displayName(chip.name)].orEmpty().flatMap { it.streams }
             val real = streams.count { s -> listOfNotNull(s.url, s.externalUrl).none { it.contains(DIAG) } }
             val diag = streams.firstOrNull { s -> listOfNotNull(s.url, s.externalUrl).any { it.contains(DIAG) } }
             val name = displayName(chip.name)

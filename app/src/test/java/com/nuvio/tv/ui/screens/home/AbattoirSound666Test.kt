@@ -31,6 +31,24 @@ class AbattoirSound666Test {
         assertFalse(play(mode = 60, since = 120_000, playing = true))
     }
 
+    @Test fun `seulement coupe, 10 s et 20 s (18-11)`() {
+        assertEquals(listOf(0, 10, 20), AbattoirSound666.MODES)
+        assertFalse(play(mode = 10, since = 9_000))
+        assertTrue(play(mode = 10, since = 10_000))
+        assertEquals("toutes les 10 s", AbattoirSound666.modeLabel(10))
+        assertEquals(20, AbattoirSound666.migrate(60))
+        assertEquals(20, AbattoirSound666.migrate(-1))
+        assertEquals(10, AbattoirSound666.migrate(10))
+        assertEquals(0, AbattoirSound666.migrate(0))
+    }
+
+    @Test fun `fichier recu par Send Files to TV reconnu (piege Shield du haut)`() {
+        assertTrue(AbattoirSound666.isAudioName("Abattoir_long.mp3"))
+        assertTrue(AbattoirSound666.isAudioName("abattoir.M4A"))
+        assertFalse(AbattoirSound666.isAudioName("film.mkv"))
+        assertFalse(AbattoirSound666.isAudioName("mp3.txt"))
+    }
+
     @Test fun `toutes les 20 s (18-11)`() {
         assertFalse(play(mode = 20, since = 19_000))
         assertTrue(play(mode = 20, since = 20_000))

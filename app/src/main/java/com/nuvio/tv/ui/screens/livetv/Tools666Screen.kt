@@ -411,15 +411,19 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
             item {
                 var snd by remember { mutableStateOf(com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(context)) }
                 var files by remember { mutableStateOf<List<Pair<String, String>>?>(null) }
+                var denied by remember { mutableStateOf(false) }
                 val perm = if (android.os.Build.VERSION.SDK_INT >= 33) android.Manifest.permission.READ_MEDIA_AUDIO
                     else android.Manifest.permission.READ_EXTERNAL_STORAGE
                 val ask = androidx.activity.compose.rememberLauncherForActivityResult(
                     androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-                ) { ok -> files = if (ok) com.nuvio.tv.ui.screens.home.AbattoirSound666.audioFiles(context) else emptyList() }
+                ) { ok ->
+                    denied = !ok
+                    files = if (ok) com.nuvio.tv.ui.screens.home.AbattoirSound666.audioFiles(context) else emptyList()
+                }
                 Column {
                     ActionRow(
                         "Son de l'Abattoir : " + com.nuvio.tv.ui.screens.home.AbattoirSound666.modeLabel(snd.mode),
-                        "Seulement quand l'Abattoir est à l'écran ; jamais pendant un film, Orange TV, l'écran de veille. OK : coupé → 20 s → 1 → 2 → 5 → 10 min → boucle douce",
+                        "Seulement quand l'Abattoir est à l'écran ; jamais pendant un film, Orange TV, l'écran de veille. OK : coupé → 10 s → 20 s",
                         onClick = {
                             com.nuvio.tv.ui.screens.home.AbattoirSound666.nextMode(context)
                             snd = com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(context)
@@ -436,7 +440,20 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                         }
                     )
                     files?.let { list ->
-                        if (list.isEmpty()) Text("Aucun fichier audio trouvé sur la Shield", modifier = Modifier.padding(horizontal = 18.dp), color = Color(0xFFC8C3BE))
+                        if (denied) ActionRow(
+                            "Autorisation refusée",
+                            "OK : ouvre les réglages de Frank › Autorisations › autoriser les fichiers audio, puis reviens choisir",
+                            onClick = {
+                                runCatching {
+                                    context.startActivity(
+                                        android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                            .setData(android.net.Uri.fromParts("package", context.packageName, null))
+                                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    )
+                                }
+                                files = null
+                            }
+                        ) else if (list.isEmpty()) Text("Aucun fichier audio trouvé (dossier Download de la Shield, disques branchés)", modifier = Modifier.padding(horizontal = 18.dp), color = Color(0xFFC8C3BE))
                         list.forEach { (uri, name) ->
                             ActionRow("♪ $name", "Choisir ce son", onClick = {
                                 com.nuvio.tv.ui.screens.home.AbattoirSound666.setFile(context, uri, name)

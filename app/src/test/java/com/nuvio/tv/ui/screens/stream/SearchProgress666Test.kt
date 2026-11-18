@@ -32,7 +32,7 @@ class SearchProgress666Test {
             listOf(
                 "Lumio666 ✓ 8 liens",
                 "Comet666 … en cours",
-                "Wacustom666 ✗ adresse introuvable",
+                "Wascustom666 ✗ adresse introuvable",
                 "StreamFusion666 ✗ ne répond pas"
             ),
             items.map { it.name + " " + it.text }

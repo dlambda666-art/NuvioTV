@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -230,7 +231,10 @@ class PluginManager @Inject constructor(
     val repositories: Flow<List<PluginRepository>> = dataStore.repositories
     
     // Flow of all scrapers
-    val scrapers: Flow<List<ScraperInfo>> = dataStore.scrapers
+    // 18/11 : wastream666 s'affiche « Wascustom666 » partout (liste, Tester, sources), même si la Shield a l'ancien manifeste
+    val scrapers: Flow<List<ScraperInfo>> = dataStore.scrapers.map { list ->
+        list.map { s -> s.copy(name = com.nuvio.tv.core.tools.PluginOrder666.displayName(s.id, s.name)) }
+    }
     
     // Flow of plugins enabled state
     val pluginsEnabled: Flow<Boolean> = dataStore.pluginsEnabled

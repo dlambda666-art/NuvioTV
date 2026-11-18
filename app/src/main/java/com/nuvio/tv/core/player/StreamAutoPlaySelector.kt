@@ -16,7 +16,7 @@ object StreamAutoPlaySelector {
     val PLUGIN_666_ORDER: List<String> get() = com.nuvio.tv.core.tools.PluginOrder666.order
 
     fun plugin666Rank(name: String): Int =
-        PLUGIN_666_ORDER.indexOfFirst { it.equals(name.trim(), ignoreCase = true) }
+        PLUGIN_666_ORDER.indexOfFirst { it.equals(com.nuvio.tv.core.tools.PluginOrder666.canonical(name), ignoreCase = true) }
             .let { if (it < 0) Int.MAX_VALUE else it }
 
     fun orderAddonStreams(
@@ -252,7 +252,8 @@ object StreamAutoPlaySelector {
             if (isAddonStream) {
                 selectedAddons.isEmpty() || stream.addonName in selectedAddons
             } else {
-                selectedPlugins.isEmpty() || stream.addonName in selectedPlugins
+                selectedPlugins.isEmpty() || stream.addonName in selectedPlugins ||
+                    selectedPlugins.any { com.nuvio.tv.core.tools.PluginOrder666.canonical(it).equals(com.nuvio.tv.core.tools.PluginOrder666.canonical(stream.addonName), true) }
             }
         }
         if (candidateStreams.isEmpty()) return null
