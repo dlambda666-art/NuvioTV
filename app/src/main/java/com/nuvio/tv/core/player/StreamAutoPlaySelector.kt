@@ -129,7 +129,26 @@ object StreamAutoPlaySelector {
     // 18/11 : dates à la française dans les noms de fichiers (WWE.RAW.16.11.2026.FRENCH…)
     private val DATED_DMY = Regex("""(?<!\d)(\d{1,2})[ ._/-](\d{1,2})[ ._/-](20\d\d)(?!\d)""")
 
+    // 18/11 (bis) : dates écrites en toutes lettres (« WWE Raw du 16 Novembre 2026 », « Nov 16 2026 »)
+    private val MONTHS = mapOf(
+        "janvier" to 1, "janv" to 1, "jan" to 1, "january" to 1, "fevrier" to 2, "février" to 2, "fev" to 2, "fév" to 2, "feb" to 2, "february" to 2,
+        "mars" to 3, "mar" to 3, "march" to 3, "avril" to 4, "avr" to 4, "apr" to 4, "april" to 4, "mai" to 5, "may" to 5,
+        "juin" to 6, "jun" to 6, "june" to 6, "juillet" to 7, "juil" to 7, "jul" to 7, "july" to 7, "aout" to 8, "août" to 8, "aug" to 8, "august" to 8,
+        "septembre" to 9, "sept" to 9, "sep" to 9, "september" to 9, "octobre" to 10, "oct" to 10, "october" to 10,
+        "novembre" to 11, "nov" to 11, "november" to 11, "decembre" to 12, "décembre" to 12, "dec" to 12, "déc" to 12, "december" to 12
+    )
+    private val MONTH_RE = MONTHS.keys.sortedByDescending { it.length }.joinToString("|")
+    private val DATED_DMONY = Regex("""(?<!\d)(\d{1,2})(?:er)?[ ._-]+($MONTH_RE)\.?[ ._-]+(20\d\d)(?!\d)""", RegexOption.IGNORE_CASE)
+    private val DATED_MONDY = Regex("""\b($MONTH_RE)\.?[ ._-]+(\d{1,2})(?:st|nd|rd|th)?,?[ ._-]+(20\d\d)(?!\d)""", RegexOption.IGNORE_CASE)
+
+    private fun month(name: String): Int? = MONTHS[name.lowercase()]
+
     private fun datesIn(text: String): List<java.time.LocalDate> =
+        DATED_DMONY.findAll(text).mapNotNull { m ->
+            runCatching { java.time.LocalDate.of(m.groupValues[3].toInt(), month(m.groupValues[2])!!, m.groupValues[1].toInt()) }.getOrNull()
+        }.toList() + DATED_MONDY.findAll(text).mapNotNull { m ->
+            runCatching { java.time.LocalDate.of(m.groupValues[3].toInt(), month(m.groupValues[1])!!, m.groupValues[2].toInt()) }.getOrNull()
+        }.toList() +
         DATED.findAll(text).mapNotNull { m ->
             runCatching { java.time.LocalDate.of(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.groupValues[3].toInt()) }.getOrNull()
         }.toList() + DATED_DMY.findAll(text).mapNotNull { m ->
@@ -168,9 +187,10 @@ object StreamAutoPlaySelector {
         if (season == null || episode == null) return streams
         val notOther = streams.filter { episodeRank(it, season, episode) < 2 }
         val air = airDateFor(season, episode) ?: return notOther
-        val datedShow = streams.any { hasDate(textOf(it)) }
-        if (!datedShow) return notOther
-        return notOther.filter { episodeRank(it, season, episode) == 0 || hasDate(textOf(it)) && !dateMismatch(textOf(it), air) }
+        // 18/11 (bis, piège « Reprendre » Raw en haut) : si un fichier porte la bonne date, on ne garde que
+        // ceux-là ; sinon les fichiers sans date restent permis (un fichier daté d'un autre jour, jamais).
+        val rightDated = notOther.filter { episodeRank(it, season, episode) == 0 || hasDate(textOf(it)) && !dateMismatch(textOf(it), air) }
+        return if (rightDated.isNotEmpty()) rightDated else notOther
     }
 
     private val DV = Regex("""(?i)(?<![a-z0-9])(DV|DoVi|Dolby[ ._-]?Vision)(?![a-z0-9])""")

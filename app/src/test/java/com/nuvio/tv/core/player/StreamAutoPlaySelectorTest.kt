@@ -354,6 +354,32 @@ class StreamAutoPlaySelectorTest {
     }
 
     @Test
+    fun `piege Reprendre Raw 18-11 - fichiers sans date ou date en lettres`() {
+        StreamAutoPlaySelector.airDateHint666 = Triple(2026, 46, "2026-11-16")
+        try {
+            val noDate = stream("Lumio666", url = "https://a.test/nodate", name = "WWE Raw FRENCH 1080p WEB")
+            fun pick(vararg s: com.nuvio.tv.domain.model.Stream) = StreamAutoPlaySelector.selectAutoPlayStream(
+                streams = s.toList(), mode = StreamAutoPlayMode.FIRST_STREAM, regexPattern = "",
+                source = StreamAutoPlaySource.ALL_SOURCES, installedAddonNames = emptySet(),
+                selectedAddons = emptySet(), selectedPlugins = emptySet(), season = 2026, episode = 46
+            )
+            // seul un fichier sans date : il est lancé (avant : chargement sans fin)
+            assertEquals(noDate, pick(noDate))
+            // date en toutes lettres
+            val oldFr = stream("Wascustom666", url = "https://a.test/oldfr", name = "WWE Raw du 9 Novembre 2026 VF")
+            val goodFr = stream("Wascustom666", url = "https://a.test/goodfr", name = "WWE Raw du 17 novembre 2026 VF")
+            assertEquals(noDate, pick(oldFr, noDate))
+            assertEquals(goodFr, pick(noDate, oldFr, goodFr))
+            org.junit.Assert.assertTrue(StreamAutoPlaySelector.dateMismatch("Raw Nov 9, 2026", "2026-11-16"))
+            org.junit.Assert.assertTrue(StreamAutoPlaySelector.hasDate("Raw 16 Nov 2026"))
+            org.junit.Assert.assertFalse(StreamAutoPlaySelector.dateMismatch("Raw 16 Nov 2026", "2026-11-16"))
+            org.junit.Assert.assertTrue(StreamAutoPlaySelector.hasDate("Raw du 1er décembre 2026"))
+        } finally {
+            StreamAutoPlaySelector.airDateHint666 = null
+        }
+    }
+
+    @Test
     fun `serie normale - un autre episode n'est jamais lance en repli`() {
         val other = stream("Comet666", url = "https://a.test/e4", name = "Dexter.S01E04.FRENCH.1080p")
         val selected = StreamAutoPlaySelector.selectAutoPlayStream(
