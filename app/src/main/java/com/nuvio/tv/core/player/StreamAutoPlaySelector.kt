@@ -160,7 +160,9 @@ object StreamAutoPlaySelector {
         val target = airDate?.take(10)?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() } ?: return false
         val dates = datesIn(text)
         if (dates.isEmpty()) return false
-        return dates.none { kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(target, it)) <= 1 }
+        // 18/11 (bis) : ± 2 jours (date américaine du lundi, date de mise en ligne, date de la fiche en heure
+        // d'Europe…) ; un épisode hebdomadaire plus ancien est 7 jours avant, il reste écarté.
+        return dates.none { kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(target, it)) <= 2 }
     }
 
     /** 18/11 : message quand l'épisode daté n'a pas encore de fichier du bon jour (null si pas d'émission datée). */

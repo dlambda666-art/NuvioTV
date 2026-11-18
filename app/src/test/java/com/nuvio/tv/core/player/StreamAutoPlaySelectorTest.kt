@@ -374,6 +374,9 @@ class StreamAutoPlaySelectorTest {
             org.junit.Assert.assertTrue(StreamAutoPlaySelector.hasDate("Raw 16 Nov 2026"))
             org.junit.Assert.assertFalse(StreamAutoPlaySelector.dateMismatch("Raw 16 Nov 2026", "2026-11-16"))
             org.junit.Assert.assertTrue(StreamAutoPlaySelector.hasDate("Raw du 1er décembre 2026"))
+            // fiche datée du 18 (heure d'Europe / mise en ligne), fichier daté du lundi 16 aux USA : c'est le bon
+            org.junit.Assert.assertFalse(StreamAutoPlaySelector.dateMismatch("WWE.RAW.2026.11.16.FRENCH", "2026-11-18"))
+            org.junit.Assert.assertTrue(StreamAutoPlaySelector.dateMismatch("WWE.RAW.2026.11.09.FRENCH", "2026-11-16"))
         } finally {
             StreamAutoPlaySelector.airDateHint666 = null
         }
