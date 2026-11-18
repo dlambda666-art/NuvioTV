@@ -20,8 +20,8 @@ import kotlinx.coroutines.delay
  */
 object AbattoirSound666 {
     private const val PREFS = "666tv_abattoir_sound"
-    /** 0 = coupé, -1 = boucle douce, sinon une fois toutes les N minutes. */
-    val MODES = listOf(0, 1, 2, 5, 10, -1)
+    /** En secondes : 0 = coupé, -1 = boucle douce, sinon une fois toutes les N secondes (18/11 : 20 s ajouté). */
+    val MODES = listOf(0, 20, 60, 120, 300, 600, -1)
     val VOLUMES = listOf(10, 20, 30, 40, 60)
     const val FADE_MS = 1_500L
 
@@ -29,7 +29,9 @@ object AbattoirSound666 {
 
     fun settings(context: Context): Settings = runCatching {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        Settings(p.getInt("mode", 0), p.getString("uri", null), p.getString("name", null), p.getInt("volume", 20))
+        // 1.0.154 rangeait des minutes sous « mode » : repris en secondes
+        val every = if (p.contains("every_s")) p.getInt("every_s", 0) else p.getInt("mode", 0).let { if (it > 0) it * 60 else it }
+        Settings(every, p.getString("uri", null), p.getString("name", null), p.getInt("volume", 20))
     }.getOrDefault(Settings(0, null, null, 20))
 
     private fun edit(context: Context, block: android.content.SharedPreferences.Editor.() -> Unit) =
@@ -38,7 +40,7 @@ object AbattoirSound666 {
     fun nextMode(context: Context): Int {
         val cur = settings(context).mode
         val next = MODES[(MODES.indexOf(cur).coerceAtLeast(0) + 1) % MODES.size]
-        edit(context) { putInt("mode", next) }
+        edit(context) { putInt("every_s", next) }
         return next
     }
 
@@ -51,11 +53,12 @@ object AbattoirSound666 {
 
     fun setFile(context: Context, uri: String, name: String) = edit(context) { putString("uri", uri); putString("name", name) }
 
-    fun modeLabel(mode: Int): String = when (mode) {
-        0 -> "coupé"
-        -1 -> "en boucle douce"
-        1 -> "toutes les minutes"
-        else -> "toutes les $mode min"
+    fun modeLabel(mode: Int): String = when {
+        mode == 0 -> "coupé"
+        mode < 0 -> "en boucle douce"
+        mode < 60 -> "toutes les $mode s"
+        mode == 60 -> "toutes les minutes"
+        else -> "toutes les ${mode / 60} min"
     }
 
     /**
@@ -70,7 +73,7 @@ object AbattoirSound666 {
     ): Boolean {
         if (mode == 0 || !hasFile || !abattoirOnScreen || !frankInFront || !screenOn || inPlayer || playing) return false
         if (sinceLastStartMs < 0) return true
-        return if (mode == -1) true else sinceLastStartMs >= mode * 60_000L
+        return if (mode < 0) true else sinceLastStartMs >= mode * 1_000L
     }
 
     /** Règle pure (testée) : volume du fondu (0..1) à l'instant t d'un son de durée d. */

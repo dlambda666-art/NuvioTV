@@ -419,7 +419,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 Column {
                     ActionRow(
                         "Son de l'Abattoir : " + com.nuvio.tv.ui.screens.home.AbattoirSound666.modeLabel(snd.mode),
-                        "Seulement quand l'Abattoir est à l'écran ; jamais pendant un film, Orange TV, l'écran de veille. OK : coupé → 1 → 2 → 5 → 10 min → boucle douce",
+                        "Seulement quand l'Abattoir est à l'écran ; jamais pendant un film, Orange TV, l'écran de veille. OK : coupé → 20 s → 1 → 2 → 5 → 10 min → boucle douce",
                         onClick = {
                             com.nuvio.tv.ui.screens.home.AbattoirSound666.nextMode(context)
                             snd = com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(context)

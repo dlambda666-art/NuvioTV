@@ -8,7 +8,7 @@ import org.junit.Test
 /** Cas pièges (18/11) : jamais de son pendant un film ; l'intervalle est respecté. */
 class AbattoirSound666Test {
     private fun play(
-        mode: Int = 1, hasFile: Boolean = true, onScreen: Boolean = true, front: Boolean = true,
+        mode: Int = 60, hasFile: Boolean = true, onScreen: Boolean = true, front: Boolean = true,
         screenOn: Boolean = true, inPlayer: Boolean = false, playing: Boolean = false, since: Long = -1L
     ) = AbattoirSound666.shouldPlay(mode, hasFile, onScreen, front, screenOn, inPlayer, playing, since)
 
@@ -23,12 +23,20 @@ class AbattoirSound666Test {
     }
 
     @Test fun `intervalle respecte`() {
-        assertTrue(play(mode = 1, since = -1))
-        assertFalse(play(mode = 1, since = 59_000))
-        assertTrue(play(mode = 1, since = 60_000))
-        assertFalse(play(mode = 5, since = 4 * 60_000L))
-        assertTrue(play(mode = 5, since = 5 * 60_000L))
-        assertFalse(play(mode = 1, since = 120_000, playing = true))
+        assertTrue(play(mode = 60, since = -1))
+        assertFalse(play(mode = 60, since = 59_000))
+        assertTrue(play(mode = 60, since = 60_000))
+        assertFalse(play(mode = 300, since = 4 * 60_000L))
+        assertTrue(play(mode = 300, since = 5 * 60_000L))
+        assertFalse(play(mode = 60, since = 120_000, playing = true))
+    }
+
+    @Test fun `toutes les 20 s (18-11)`() {
+        assertFalse(play(mode = 20, since = 19_000))
+        assertTrue(play(mode = 20, since = 20_000))
+        assertEquals("toutes les 20 s", AbattoirSound666.modeLabel(20))
+        assertEquals("toutes les minutes", AbattoirSound666.modeLabel(60))
+        assertEquals("toutes les 5 min", AbattoirSound666.modeLabel(300))
     }
 
     @Test fun `boucle douce enchaine des que le son est fini`() {
