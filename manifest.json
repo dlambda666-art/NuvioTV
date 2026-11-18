@@ -51,9 +51,9 @@
     },
     {
       "id": "wastream666",
-      "name": "Wacustom666",
-      "description": "Liens des sites de téléchargement français via TorBox / AllDebrid (Wacustom), avec ta config, interrogé depuis la Shield. VF, 1080p/4K. Adresse à coller dans Plugins → « mes sources ».",
-      "version": "1.0.11",
+      "name": "Wascustom666",
+      "description": "Liens des sites de téléchargement français via TorBox / AllDebrid (Wascustom), avec ta config, interrogé depuis la Shield. VF, 1080p/4K. Adresse à coller dans Plugins → « mes sources ».",
+      "version": "1.0.12",
       "filename": "wastream666.js",
       "supportedTypes": [
         "movie",
