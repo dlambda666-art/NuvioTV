@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -449,8 +450,11 @@ fun StreamScreen(
                     streams = uiState.filteredStreams,
                     availableAddons = uiState.availableAddons,
                     sourceChips = uiState.sourceChips,
-                    progress666 = remember(uiState.sourceChips, uiState.addonStreams) {
-                        SearchProgress666.items(uiState.sourceChips, uiState.addonStreams)
+                    progress666 = run {
+                        val plugins666 by com.nuvio.tv.core.streams.PluginProgress666.search.collectAsState()
+                        remember(uiState.sourceChips, uiState.addonStreams, plugins666) {
+                            SearchProgress666.items(uiState.sourceChips, uiState.addonStreams, plugins666?.plugins.orEmpty())
+                        }
                     },
                     selectedAddonFilter = uiState.selectedAddonFilter,
                     showFileSizeBadges = streamBadgeSettings.showFileSizeBadges,

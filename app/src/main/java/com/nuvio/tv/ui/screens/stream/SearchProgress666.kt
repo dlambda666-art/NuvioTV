@@ -23,7 +23,7 @@ import com.nuvio.tv.ui.components.SourceChipStatus
  * Vert ✓, mauve « en cours », rouge seulement pour ✗.
  */
 object SearchProgress666 {
-    enum class State { RUNNING, OK, FAILED }
+    enum class State { RUNNING, OK, FAILED, GROUP, ASLEEP }
     data class Item(val name: String, val state: State, val text: String)
 
     private const val DIAG = "diagnostic.invalid"
@@ -44,9 +44,45 @@ object SearchProgress666 {
      * Règle pure (testée) : une ligne par source, chacune indépendante (un plugin qui ne répond pas
      * n'empêche jamais d'afficher les autres).
      */
-    fun items(chips: List<SourceChipItem>, addonStreams: List<AddonStreams>): List<Item> {
+    fun items(
+        chips: List<SourceChipItem>,
+        addonStreams: List<AddonStreams>,
+        plugins: List<com.nuvio.tv.core.streams.PluginProgress666.Plugin> = emptyList()
+    ): List<Item> {
         val byName = addonStreams.groupBy { displayName(it.addonName) }
-        return chips.map { chip ->
+        // 18/11 : plugins groupés (« Les 4 cavaliers… ») → le détail de chaque plugin dans la ligne
+        val grouped = plugins.filter { it.group != it.name }.groupBy { it.group }
+        return chips.flatMap { chip ->
+            val members = grouped[chip.name]
+            if (members.isNullOrEmpty()) listOf(chipItem(chip, byName))
+            else listOf(Item(chip.name + " :", State.GROUP, "")) + members.map { pluginItem(it) }
+        }
+    }
+
+    /** Règle pure (testée) : l'état d'un plugin du groupe. */
+    fun pluginItem(p: com.nuvio.tv.core.streams.PluginProgress666.Plugin): Item {
+        val name = displayName(p.name)
+        return when (p.state) {
+            com.nuvio.tv.core.streams.PluginProgress666.State.RUNNING -> Item(name, State.RUNNING, "…")
+            com.nuvio.tv.core.streams.PluginProgress666.State.OK -> Item(name, State.OK, "✓ ${p.links}")
+            com.nuvio.tv.core.streams.PluginProgress666.State.ASLEEP -> Item(name, State.ASLEEP, "💤")
+            com.nuvio.tv.core.streams.PluginProgress666.State.FAILED -> Item(name, State.FAILED, "✗ " + causeOf(p.cause))
+        }
+    }
+
+    /** Cause courte : « Thepiratebay : 1 trouvé · 1 pas de VF » → « pas de VF ». */
+    private fun causeOf(raw: String?): String {
+        val r = raw?.lineSequence()?.firstOrNull()?.trim().orEmpty()
+        return when {
+            r.isEmpty() -> "ne répond pas"
+            r.contains("pas de VF", true) -> "pas de VF"
+            r == "aucun lien" || r == "ne répond pas" -> r
+            else -> shortCause(r)
+        }
+    }
+
+    private fun chipItem(chip: SourceChipItem, byName: Map<String, List<AddonStreams>>): Item {
+        return run {
             val streams = byName[displayName(chip.name)].orEmpty().flatMap { it.streams }
             val real = streams.count { s -> listOfNotNull(s.url, s.externalUrl).none { it.contains(DIAG) } }
             val diag = streams.firstOrNull { s -> listOfNotNull(s.url, s.externalUrl).any { it.contains(DIAG) } }
@@ -70,12 +106,16 @@ internal fun SearchProgress666Line(items: List<SearchProgress666.Item>, modifier
     if (items.isEmpty()) return
     val text = buildAnnotatedString {
         items.forEachIndexed { i, it ->
-            if (i > 0) withStyle(SpanStyle(color = Color(0x99FFFFFF))) { append("  ·  ") }
-            withStyle(SpanStyle(color = Color.White)) { append(it.name + " ") }
+            if (i > 0) withStyle(SpanStyle(color = Color(0x99FFFFFF))) {
+                append(if (items[i - 1].state == SearchProgress666.State.GROUP) " " else "  ·  ")
+            }
+            withStyle(SpanStyle(color = Color.White)) { append(if (it.text.isEmpty()) it.name else it.name + " ") }
             val c = when (it.state) {
                 SearchProgress666.State.OK -> com.nuvio.tv.ui.components.Font666.Green
                 SearchProgress666.State.RUNNING -> Mauve666
                 SearchProgress666.State.FAILED -> Red666
+                SearchProgress666.State.GROUP -> Color.White
+                SearchProgress666.State.ASLEEP -> Color(0x99FFFFFF)
             }
             withStyle(SpanStyle(color = c)) { append(it.text) }
         }

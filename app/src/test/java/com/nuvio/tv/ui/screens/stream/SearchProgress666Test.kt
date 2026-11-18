@@ -47,4 +47,21 @@ class SearchProgress666Test {
         assertEquals("HTTP 403", SearchProgress666.shortCause("Aucune réponse : Matrix → HTTP 403"))
         assertEquals("ne répond pas", SearchProgress666.shortCause(null))
     }
+
+    @Test fun `plugins groupes - chaque plugin a son etat (18-11)`() {
+        val P = com.nuvio.tv.core.streams.PluginProgress666
+        val g = "Les 4 cavaliers de l'apocalypse"
+        val chips = listOf(SourceChipItem(g, SourceChipStatus.SUCCESS))
+        val plugins = listOf(
+            P.Plugin("Lumio666", g, P.State.OK, links = 2),
+            P.Plugin("Comet666", g, P.State.FAILED, cause = "Thepiratebay : 1 trouvé · 1 pas de VF"),
+            P.Plugin("Wastream666", g, P.State.RUNNING),
+            P.Plugin("StreamFusion666", g, P.State.ASLEEP)
+        )
+        val items = SearchProgress666.items(chips, emptyList(), plugins)
+        assertEquals(
+            listOf("$g :", "Lumio666 ✓ 2", "Comet666 ✗ pas de VF", "Wascustom666 …", "StreamFusion666 💤"),
+            items.map { if (it.text.isEmpty()) it.name else it.name + " " + it.text }
+        )
+    }
 }

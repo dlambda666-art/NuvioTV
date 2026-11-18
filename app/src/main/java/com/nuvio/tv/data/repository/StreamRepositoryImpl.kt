@@ -555,8 +555,17 @@ class StreamRepositoryImpl @Inject constructor(
                 emptyMap()
             }
 
+            // 18/11 : état de chaque plugin pour la ligne de recherche en direct (même groupés)
+            val progressKey666 = "$mediaType|$pluginId|$season|$episode|${System.nanoTime()}"
+            val allScrapers666 = pluginManager.enabledScrapers.first().filter { it.supportsType(mediaType) }
+            com.nuvio.tv.core.streams.PluginProgress666.start(
+                progressKey666, allScrapers666.map { it.name to it.pluginAddonName(groupByRepository, repositoriesById) }
+            )
+            val ranIds666 = HashSet<String>()
+
             // Collect streaming results from each scraper
             suspend fun runScrapers(only: ((com.nuvio.tv.domain.model.ScraperInfo) -> Boolean)?): List<AddonStreams> {
+                allScrapers666.filter { only == null || only(it) }.forEach { ranIds666 += it.id }
                 val sent = mutableListOf<AddonStreams>()
                 pluginManager.executeScrapersStreaming(
                     tmdbId = pluginId,
@@ -565,6 +574,14 @@ class StreamRepositoryImpl @Inject constructor(
                     episode = episode,
                     only = only
                 ).collect { (scraper, results) ->
+                    run {
+                        val diag = results.firstOrNull { it.url.contains("diagnostic.invalid") }
+                        com.nuvio.tv.core.streams.PluginProgress666.done(
+                            progressKey666, scraper.name,
+                            results.count { !it.url.contains("diagnostic.invalid") },
+                            diag?.let { d -> d.title.takeIf { t -> t.isNotBlank() } ?: d.name }
+                        )
+                    }
                     if (results.isNotEmpty()) {
                         val addonName = scraper.pluginAddonName(groupByRepository, repositoriesById)
                         val addonStreams = AddonStreams(
@@ -594,6 +611,9 @@ class StreamRepositoryImpl @Inject constructor(
                 Log.d(TAG, "Hibernation : " + if (wake) "1er cavalier sans lien lisible → réveil des autres" else "1er cavalier suffit")
                 if (wake) runScrapers { !com.nuvio.tv.core.tools.Hibernate666.isLeader(it.id) }
             }
+            com.nuvio.tv.core.streams.PluginProgress666.finish(
+                progressKey666, allScrapers666.filter { it.id !in ranIds666 }.map { it.name }.toSet()
+            )
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             Log.e(TAG, "Failed to stream plugins: ${e.message}", e)
