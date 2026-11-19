@@ -71,6 +71,13 @@ object StreamAutoPlaySelector {
     fun isDiag666(stream: Stream): Boolean =
         listOfNotNull(stream.url, stream.externalUrl).any { it.contains("diagnostic.invalid") }
 
+    /** 19/11 : message montré quand on clique la ligne d'info d'un plugin (pas un lien). */
+    fun diagClickMessage666(stream: Stream): String {
+        val line = listOfNotNull(stream.title, stream.name, stream.description)
+            .firstOrNull { it.isNotBlank() }?.lineSequence()?.firstOrNull()?.trim().orEmpty()
+        return if (line.isEmpty()) "Ce n'est pas un lien : c'est une info du plugin" else "Ce n'est pas un lien : $line"
+    }
+
     private fun isPlayable(stream: Stream): Boolean {
         // External URL streams (e.g. error pages, web links) are not playable.
         if (stream.isExternal()) return false

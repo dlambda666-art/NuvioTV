@@ -383,6 +383,18 @@ class StreamAutoPlaySelectorTest {
     }
 
     @Test
+    fun `piege NXT 19-11 - la ligne d'info d'un plugin n'est jamais lancee`() {
+        val diag = stream("Comet666", url = "https://diagnostic.invalid/x", name = "Comet666").copy(title = "Thepiratebay : 1 trouvé · 1 pas de VF")
+        org.junit.Assert.assertTrue(StreamAutoPlaySelector.isDiag666(diag))
+        org.junit.Assert.assertNull(StreamAutoPlaySelector.selectAutoPlayStream(
+            streams = listOf(diag), mode = StreamAutoPlayMode.FIRST_STREAM, regexPattern = "",
+            source = StreamAutoPlaySource.ALL_SOURCES, installedAddonNames = emptySet(),
+            selectedAddons = emptySet(), selectedPlugins = emptySet(), season = 2026, episode = 47
+        ))
+        assertEquals("Ce n'est pas un lien : Thepiratebay : 1 trouvé · 1 pas de VF", StreamAutoPlaySelector.diagClickMessage666(diag))
+    }
+
+    @Test
     fun `serie normale - un autre episode n'est jamais lance en repli`() {
         val other = stream("Comet666", url = "https://a.test/e4", name = "Dexter.S01E04.FRENCH.1080p")
         val selected = StreamAutoPlaySelector.selectAutoPlayStream(

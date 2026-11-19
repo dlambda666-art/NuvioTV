@@ -28,6 +28,9 @@ object Hibernate666 {
     /** Id court du cavalier de tête (« comet666 »). */
     fun leaderId(): String = PluginOrder666.order.firstOrNull()?.lowercase().orEmpty()
 
+    /** 19/11 : temps laissé au 1er cavalier avant de réveiller les autres quand même. */
+    const val LEADER_BUDGET_MS = 10_000L
+
     fun isLeader(scraperId: String): Boolean = scraperId.substringAfterLast(':').lowercase() == leaderId()
 
     /**

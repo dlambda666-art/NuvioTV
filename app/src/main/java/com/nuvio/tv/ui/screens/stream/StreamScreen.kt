@@ -463,7 +463,17 @@ fun StreamScreen(
                     hasBadgeRules = streamBadgeSettings.rules.hasImport,
                     onAddonFilterSelected = { viewModel.onEvent(StreamScreenEvent.OnAddonFilterSelected(it)) },
                     onRefresh = { viewModel.onEvent(StreamScreenEvent.OnRefresh) },
-                    onStreamSelected = { stream ->
+                    onStreamSelected = RightStreamSectionClick666@{ stream ->
+                        // 19/11 (piège NXT) : la ligne d'info d'un plugin (« Thepiratebay : 1 trouvé · 1 pas de VF »)
+                        // n'est pas un lien : on affiche son message au lieu d'une « Erreur de lecture » diagnostic.invalid
+                        if (com.nuvio.tv.core.player.StreamAutoPlaySelector.isDiag666(stream)) {
+                            android.widget.Toast.makeText(
+                                context,
+                                com.nuvio.tv.core.player.StreamAutoPlaySelector.diagClickMessage666(stream),
+                                android.widget.Toast.LENGTH_LONG
+                            ).show()
+                            return@RightStreamSectionClick666
+                        }
                         val currentIndex = uiState.filteredStreams.indexOfFirst {
                             it.url == stream.url &&
                                 it.infoHash == stream.infoHash &&

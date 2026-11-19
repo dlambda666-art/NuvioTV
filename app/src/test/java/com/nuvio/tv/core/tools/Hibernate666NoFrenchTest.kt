@@ -58,4 +58,8 @@ class Hibernate666NoFrenchTest {
         val guess = AllDebridFallback666.relabel(listOf(s(good, StreamDebridCacheState.NOT_CACHED)), true, emptySet())
         assertTrue(Hibernate666.shouldWake(guess, emptySet(), emptySet()))
     }
+
+    @Test fun `piege NXT 19-11 - le 1er cavalier ne fait plus attendre les autres longtemps`() {
+        org.junit.Assert.assertTrue(Hibernate666.LEADER_BUDGET_MS in 5_000L..15_000L)
+    }
 }
