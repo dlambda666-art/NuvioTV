@@ -2,14 +2,17 @@ package com.nuvio.tv.core.debrid
 
 /**
  * 666TV : formateur perso de David.
- * Ligne 1 : la tête bleue qui parle face au drapeau (🗣️ 🇫🇷).
+ * Ligne 1 : 🐎 le cavalier qui donne le lien (20/11 : avant, la tête bleue + drapeau 🗣️ 🇫🇷, inutile en VF seule).
  * Ligne 2 : 🎬 titre (année) · S01E01.
  * Source, qualité, HDR, codec, audio et taille : en badges image (Elite Badges,
  * importés dans Paramètres → Disposition → Badges de flux) + badge de taille.
  * Modifiable dans Intégrations → Debrid → Éditeur web.
  */
 object DebridStreamFormatterDefaults {
-    const val NAME_TEMPLATE = "🗣️ 🇫🇷"
+    const val NAME_TEMPLATE = ""
+
+    /** 20/11 : l'ancienne 1re ligne (tête bleue + drapeau), remplacée automatiquement. */
+    const val HEAD_FLAG_TEMPLATE = "🗣️ 🇫🇷"
 
     const val DESCRIPTION_TEMPLATE = "{stream.title::exists[\"🎬 {stream.title::title}\"||\"\"]}{stream.year::exists[\" ({stream.year})\"||\"\"]}{stream.seasonEpisode::exists[\" · {stream.seasonEpisode::join(' ')}\"||\"\"]}"
 
@@ -24,7 +27,7 @@ object DebridStreamFormatterDefaults {
 
     private const val EMOJI_DESCRIPTION_TEMPLATE = "{stream.title::exists[\"🎬 {stream.title::title}\"||\"\"]}{stream.year::exists[\" ({stream.year})\"||\"\"]}{stream.seasonEpisode::exists[\" · {stream.seasonEpisode::join(' ')}\"||\"\"]}\n{stream.languageEmojis::exists[\"🗣️ {stream.languageEmojis::join(' ')}\"||\"\"]}\n{stream.quality::exists[\"📺 {stream.quality} \"||\"\"]}{stream.visualTags::exists[\"✨ {stream.visualTags::join(' · ')} \"||\"\"]}{stream.encode::exists[\"⚙️ {stream.encode}\"||\"\"]}\n{stream.audioTags::exists[\"🔊 {stream.audioTags::join(' · ')} \"||\"\"]}{stream.audioChannels::exists[\"{stream.audioChannels::join(' ')}\"||\"\"]}\n{stream.size::>0[\"📦 {stream.size::bytes} \"||\"\"]}{stream.releaseGroup::exists[\"🏷️ {stream.releaseGroup}\"||\"\"]}\n{service.cached::istrue[\"⚡ Prêt\"||\"⏳ Pas prêt\"]}{service.shortName::exists[\" ({service.shortName})\"||\"\"]}"
 
-    private val LEGACY_NAMES = setOf(LEGACY_NAME_TEMPLATE, EMOJI_NAME_TEMPLATE)
+    private val LEGACY_NAMES = setOf(LEGACY_NAME_TEMPLATE, EMOJI_NAME_TEMPLATE, HEAD_FLAG_TEMPLATE)
     private val LEGACY_DESCRIPTIONS = setOf(LEGACY_DESCRIPTION_TEMPLATE.trim(), EMOJI_DESCRIPTION_TEMPLATE.trim())
 
     fun upgradeName(stored: String?): String =

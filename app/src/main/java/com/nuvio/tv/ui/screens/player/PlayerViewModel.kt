@@ -310,6 +310,12 @@ class PlayerViewModel @Inject constructor(
     /** 16/11 : nom du fichier / de la release en lecture (source WEB-DL, BluRay…). */
     fun release666(): String? = controller.currentRelease666 ?: controller.currentFilename
 
+    /** 20/11 : le cavalier qui donne le lien en lecture (Lumio666, Comet666…). */
+    fun cavalier666(): String? = PlayerInfoBadges666.cavalierName(
+        com.nuvio.tv.core.player.StreamAutoPlaySelector.cavalierFromBinge666(controller.currentStreamBingeGroup),
+        uiState.value.currentStreamAddonName
+    )
+
     /** Début du générique de fin, si on le connaît (chapitres ou IntroDB). */
     fun creditsStartMs666(): Long? = controller.skipIntervals
         .filter { it.type in PlayerNextEpisodeRules.OUTRO_SEGMENT_TYPES }

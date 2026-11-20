@@ -39,7 +39,20 @@ data class MediaInfo666(
 )
 
 object PlayerInfoBadges666 {
-    data class Badge(val text: String, val vf: Boolean = false)
+    data class Badge(val text: String, val vf: Boolean = false, val cavalier: Boolean = false)
+
+    /**
+     * 20/11 — règle pure (testée) : nom du cavalier à afficher. D'abord celui du lien (bingeGroup « 666|… »),
+     * sinon le nom de la source s'il ressemble à un cavalier (pas « Les 4 cavaliers… », le nom du groupe).
+     */
+    fun cavalierName(fromBinge: String?, addonName: String?): String? {
+        val raw = fromBinge ?: addonName?.trim()?.takeIf { it.endsWith("666", ignoreCase = true) } ?: return null
+        return com.nuvio.tv.core.tools.PluginOrder666.displayName("", raw)
+    }
+
+    /** 20/11 : badge du cavalier, en tête des badges. */
+    fun withCavalier(badges: List<Badge>, cavalier: String?): List<Badge> =
+        if (cavalier.isNullOrBlank()) badges else listOf(Badge("🐎 $cavalier", cavalier = true)) + badges
 
     private fun has(text: String, re: String) = Regex(re, RegexOption.IGNORE_CASE).containsMatchIn(text)
 
@@ -131,8 +144,9 @@ internal fun rememberPlayerBadges666(viewModel: PlayerViewModel, uiState: Player
         if (uiState.showControls && !uiState.isBuffering) info = viewModel.mediaInfo666()
     }
     val release = viewModel.release666()
-    return remember(info, release, selectedAudio?.language) {
-        PlayerInfoBadges666.badges(info, release, selectedAudio?.language)
+    val cavalier = viewModel.cavalier666()
+    return remember(info, release, selectedAudio?.language, cavalier) {
+        PlayerInfoBadges666.withCavalier(PlayerInfoBadges666.badges(info, release, selectedAudio?.language), cavalier)
     }
 }
 
@@ -143,7 +157,7 @@ internal fun PlayerBadges666(badges: List<PlayerInfoBadges666.Badge>, modifier: 
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        badges.take(8).forEach { b ->
+        badges.take(9).forEach { b ->
             val color = if (b.vf) com.nuvio.tv.ui.components.Font666.Green else Mauve666
             Text(
                 text = b.text,

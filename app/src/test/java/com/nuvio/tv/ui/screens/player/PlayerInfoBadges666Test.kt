@@ -29,4 +29,13 @@ class PlayerInfoBadges666Test {
         assertEquals(emptyList<String>(), texts(null, null, null))
         assertEquals(emptyList<String>(), texts(null, "fichier", "und"))
     }
+
+    @org.junit.Test fun `nom du cavalier en lecture (20-11)`() {
+        org.junit.Assert.assertEquals("Lumio666", PlayerInfoBadges666.cavalierName("Lumio666", "Les 4 cavaliers de l'apocalypse"))
+        org.junit.Assert.assertEquals("Wascustom666", PlayerInfoBadges666.cavalierName("Wastream666", null))
+        org.junit.Assert.assertEquals("Comet666", PlayerInfoBadges666.cavalierName(null, "Comet666"))
+        org.junit.Assert.assertNull(PlayerInfoBadges666.cavalierName(null, "Les 4 cavaliers de l'apocalypse"))
+        val b = PlayerInfoBadges666.withCavalier(listOf(PlayerInfoBadges666.Badge("4K")), "Lumio666")
+        org.junit.Assert.assertEquals(listOf("🐎 Lumio666", "4K"), b.map { it.text })
+    }
 }

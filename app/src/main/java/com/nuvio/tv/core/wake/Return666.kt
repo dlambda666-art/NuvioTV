@@ -137,11 +137,54 @@ class Return666Service : AccessibilityService() {
         super.onServiceConnected()
         homes = Return666.homes(this)
         homesAt = SystemClock.elapsedRealtime()
+        // 20/11 : le service redémarre après une mise à jour (ou si Android a fermé Frank pendant un film)
+        handler.postDelayed({ rescueCheck(rootInActiveWindow?.packageName?.toString()) }, 1_500L)
+        handler.postDelayed({ rescueCheck(rootInActiveWindow?.packageName?.toString()) }, 6_000L)
+    }
+
+    /** 20/11 : retour sur Frank après une mise à jour, ou si une autre appli a pris la place d'un film. */
+    private fun rescueCheck(foreground: String?): Boolean {
+        val now = System.currentTimeMillis()
+        val orange = Rescue666.isOrange(this, foreground)
+        if (Rescue666.shouldReturnAfterUpdate(Rescue666.updatePendingAt(this), now, foreground, packageName, orange)) {
+            Rescue666.onFrankInFront(this)
+            lastReturnAt = SystemClock.elapsedRealtime()
+            handler.postDelayed({ Return666.bringBack(this) }, 350L)
+            return true
+        }
+        if (Rescue666.shouldRescuePlayback(Rescue666.lastBeat(this), now, foreground, packageName, orange, Rescue666.isSettings(foreground))) {
+            // Accueil ou autre appli choisie par toi : Frank arrête son battement (onStop) dans la seconde.
+            // On revérifie 2 s plus tard : seul un Frank vraiment disparu (fermé par Android) garde son battement.
+            if (!delayedPlaybackCheck) {
+                delayedPlaybackCheck = true
+                handler.postDelayed({ delayedPlaybackCheck = false; rescuePlaybackConfirmed() }, 2_000L)
+            }
+            return false
+        }
+        return false
+    }
+
+    private var delayedPlaybackCheck = false
+
+    private fun rescuePlaybackConfirmed() {
+        val foreground = rootInActiveWindow?.packageName?.toString()
+        val now = System.currentTimeMillis()
+        if (!Rescue666.shouldRescuePlayback(Rescue666.lastBeat(this), now, foreground, packageName,
+                Rescue666.isOrange(this, foreground), Rescue666.isSettings(foreground))) return
+        run {
+            Rescue666.stopBeat(this)
+            lastReturnAt = SystemClock.elapsedRealtime()
+            runCatching {
+                com.nuvio.tv.core.tools.Announce666.log(this, "🧟 Frank fermé pendant la lecture ($foreground est passé devant) → retour sur Frank", "lecture")
+            }
+            handler.postDelayed({ Return666.bringBack(this) }, 350L)
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val pkg = event.packageName?.toString() ?: return
+        if (pkg != packageName && rescueCheck(pkg)) return
         val now = SystemClock.elapsedRealtime()
         if (now - homesAt > 3_600_000L) { homes = Return666.homes(this); homesAt = now }
         val screenOn = runCatching { (getSystemService(POWER_SERVICE) as android.os.PowerManager).isInteractive }.getOrDefault(true)

@@ -38,7 +38,11 @@ object Ready666 {
         val ready = right.any { s ->
             val urls = listOfNotNull(s.url, s.externalUrl)
             urls.none { it.contains("diagnostic.invalid") } &&
-                (s.debridCacheStatus?.state == StreamDebridCacheState.CACHED || urls.any { it.startsWith("file:") })
+                (s.debridCacheStatus?.state == StreamDebridCacheState.CACHED || urls.any { it.startsWith("file:") } ||
+                    // 20/11 : lien direct d'un cavalier (Lumio, StreamFusion, Wascustom : déjà passé par le
+                    // débrideur) → se lance tout de suite. Avant, seuls les torrents vérifiés ✓ comptaient.
+                    (s.debridCacheStatus == null && s.behaviorHints?.bingeGroup?.startsWith("666|") == true &&
+                        urls.any { it.startsWith("http", ignoreCase = true) }))
         }
         return when {
             ready -> State.READY

@@ -18,11 +18,12 @@ object Hibernate666 {
     @Volatile var wakeAllUntil: Long = 0L
 
     fun enabled(context: Context): Boolean = System.currentTimeMillis() >= wakeAllUntil && runCatching {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("on", true)
-    }.getOrDefault(true)
+        // 20/11 : coupé par défaut (David : « fini l'hibernation », les 4 cavaliers ensemble c'est plus rapide)
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("on_v2", false)
+    }.getOrDefault(false)
 
     fun setEnabled(context: Context, on: Boolean) {
-        runCatching { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("on", on).apply() }
+        runCatching { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("on_v2", on).apply() }
     }
 
     /** Id court du cavalier de tête (« comet666 »). */

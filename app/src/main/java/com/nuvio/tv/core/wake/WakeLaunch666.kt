@@ -46,6 +46,7 @@ object WakeLaunch666 {
     fun onResumed(context: Context, r: Boolean) {
         onResumed(r)
         runCatching { context.getSharedPreferences(PREFS_OPEN, Context.MODE_PRIVATE).edit().putBoolean("was_front", r).apply() }
+        if (r) Rescue666.onFrankInFront(context)
     }
 
     // ---------- 16/11 : se rouvrir après une mise à jour ----------
@@ -66,7 +67,11 @@ object WakeLaunch666 {
         val relaunch = shouldRelaunchAfterUpdate(p.getBoolean("relaunch_update", false), p.getBoolean("was_front", false))
         p.edit().putBoolean("relaunch_update", false).apply()
         start(context)
-        if (relaunch) launchApp(context)
+        if (relaunch) {
+            // 20/11 : le service « Toujours revenir » rouvrira Frank (Android refuse souvent l'ouverture directe)
+            Rescue666.markUpdatePending(context)
+            launchApp(context)
+        }
     }
 
     /** 16/11 : après un démarrage, on réessaie d'ouvrir FrankenStream (Android laisse parfois l'accueil Nvidia devant). */

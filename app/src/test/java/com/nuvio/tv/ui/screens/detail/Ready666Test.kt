@@ -39,4 +39,16 @@ class Ready666Test {
             StreamAutoPlaySelector.airDateHint666 = null
         }
     }
+
+    @Test fun `lien direct d'un cavalier - pret (20-11)`() {
+        val lumio = Stream(
+            name = "Lumio666", title = "Matrix.1999.MULTi.1080p", description = null, url = "https://torbox.test/dl/1", ytId = null,
+            infoHash = null, fileIdx = null, externalUrl = null,
+            behaviorHints = com.nuvio.tv.domain.model.StreamBehaviorHints(notWebReady = null, bingeGroup = "666|lumio666|1080p", countryWhitelist = null, proxyHeaders = null),
+            addonName = "Les 4 cavaliers de l'apocalypse", addonLogo = null
+        )
+        assertEquals(Ready666.State.READY, Ready666.decide(true, listOf(lumio), null, null))
+        val diag = lumio.copy(url = "https://diagnostic.invalid/x")
+        assertEquals(Ready666.State.SEARCHING, Ready666.decide(true, listOf(diag), null, null))
+    }
 }

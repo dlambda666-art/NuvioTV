@@ -42,7 +42,8 @@ class DebridStreamFormatterTest {
 
         val formatted = formatter.format(stream, DebridSettings())
 
-        assertEquals("🗣️ 🇫🇷", formatted.name)
+        // 20/11 : plus de tête bleue + drapeau ; un lien d'addon garde son nom d'origine
+        assertEquals("Original torrent", formatted.name)
         assertTrue(formatted.description.orEmpty(), formatted.description.orEmpty().startsWith("🎬"))
     }
 
@@ -80,7 +81,7 @@ class DebridStreamFormatterTest {
     }
 
     @Test
-    fun `666TV default formatter shows the talking head, the flag and the title only`() {
+    fun `666TV default formatter shows the cavalier then the title (20-11, plus de tete bleue)`() {
         val formatter = DebridStreamFormatter(DebridStreamTemplateEngine())
         val stream = Stream(
             name = "Frenchio666 1080p",
@@ -104,8 +105,10 @@ class DebridStreamFormatterTest {
 
         val formatted = formatter.format(stream, DebridSettings())
 
-        assertEquals("🗣️ 🇫🇷", formatted.name)
+        assertEquals("🐎 Frenchio666", formatted.name)
         assertEquals("🎬 The Last Of Us · S01E01", formatted.description)
+        // l'ancien réglage enregistré (tête bleue + drapeau) est remplacé tout seul
+        assertEquals(DebridStreamFormatterDefaults.NAME_TEMPLATE, DebridStreamFormatterDefaults.upgradeName("🗣️ 🇫🇷"))
     }
 
     @Test

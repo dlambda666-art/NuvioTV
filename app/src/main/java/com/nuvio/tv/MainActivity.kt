@@ -379,6 +379,8 @@ open class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         com.nuvio.tv.ui.components.Tomb666.init(this)
+        // 20/11 : pourquoi Frank s'est fermé la dernière fois (mémoire, plantage…) → journal des annonces
+        runCatching { com.nuvio.tv.core.wake.ExitReason666.logLastExit(this) }
         com.nuvio.tv.core.tools.Light666.init(this)
         com.nuvio.tv.core.tools.Clock666.init(this)
         com.nuvio.tv.core.tools.PhoneLink666.init(this)
@@ -1358,6 +1360,17 @@ open class MainActivity : ComponentActivity() {
                             val inPlayerNow666 by androidx.compose.runtime.rememberUpdatedState(currentRoute?.startsWith("player/") == true)
                             // 666TVF (12/11) : l'autre Shield ne nous installe pas de mise à jour pendant un film
                             androidx.compose.runtime.SideEffect { com.nuvio.tv.core.tools.Lien666.playing = inPlayerNow666 }
+                            // 20/11 : battement du lecteur (si Frank disparaît en plein film, le service le rouvre)
+                            val beatContext666 = androidx.compose.ui.platform.LocalContext.current.applicationContext
+                            val beatLifecycle666 = androidx.compose.ui.platform.LocalLifecycleOwner.current.lifecycle
+                            LaunchedEffect(inPlayerNow666) {
+                                if (!inPlayerNow666) { com.nuvio.tv.core.wake.Rescue666.stopBeat(beatContext666); return@LaunchedEffect }
+                                while (true) {
+                                    if (beatLifecycle666.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED))
+                                        com.nuvio.tv.core.wake.Rescue666.beat(beatContext666)
+                                    delay(5_000L)
+                                }
+                            }
                             LaunchedEffect(activeProfile?.id) {
                                 delay(20_000L)
                                 var loops666 = 0
@@ -1838,6 +1851,8 @@ open class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        // 20/11 : tu quittes Frank toi-même (Accueil, autre appli) → pas de « retour en plein film »
+        com.nuvio.tv.core.wake.Rescue666.stopBeat(this)
         externalPlaybackTracker.onExternalPlayerCoveredApp()
         super.onStop()
         startupSyncService.stopPeriodicSurfacePulls()
