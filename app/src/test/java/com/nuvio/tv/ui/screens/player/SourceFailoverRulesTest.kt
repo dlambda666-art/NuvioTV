@@ -62,7 +62,7 @@ class SourceFailoverRulesTest {
     @Test
     fun `plugin order keeps known plugins and fills the missing ones`() {
         assertEquals(
-            listOf("Lumio666", "Comet666", "StreamFusion666", "Wastream666"),
+            listOf("Lumio666", "Comet666", "StreamFusion666", "Wastream666", "AIOSources666"),
             com.nuvio.tv.core.tools.PluginOrder666.normalize(listOf("lumio666", "Frenchio666", "Comet666"))
         )
     }

@@ -11,7 +11,7 @@ object PluginOrder666 {
     private const val PREFS = "666tv_plugin_order"
 
     /** Ordre par défaut : Comet666 d'abord (rapide, trackers C411/Tr4ker), puis les autres. */
-    val DEFAULT = listOf("Comet666", "StreamFusion666", "Lumio666", "Wastream666")
+    val DEFAULT = listOf("Comet666", "StreamFusion666", "Lumio666", "Wastream666", "AIOSources666")
 
     @Volatile
     var order: List<String> = DEFAULT
