@@ -63,21 +63,6 @@
       "contentLanguage": [
         "fr"
       ]
-    },
-    {
-      "id": "aiosources666",
-      "name": "AIOSources666",
-      "description": "Sources françaises et VO regroupées (AIOSources, instance publique) via TorBox / AllDebrid, avec ta config (clé du débrideur seulement), interrogé depuis la Shield. Adresse à coller dans Plugins → « mes sources ».",
-      "version": "1.0.0",
-      "filename": "aiosources666.js",
-      "supportedTypes": [
-        "movie",
-        "tv"
-      ],
-      "enabled": true,
-      "contentLanguage": [
-        "fr"
-      ]
     }
   ]
 }
