@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -328,9 +329,22 @@ private fun timeSuffix(ep: CalendarEpisode, zone: ZoneId): String {
 /** 666TV : bandeau « nouvel épisode en VF » (séries avec la cloche), quelques secondes. */
 @Composable
 fun CalendarVfBanner(episodes: List<CalendarEpisode>, modifier: Modifier = Modifier) {
+    // 20/11 : Frankhorreur surgit à côté de l'annonce (le cri)
+    androidx.compose.foundation.layout.Row(modifier = modifier, verticalAlignment = androidx.compose.ui.Alignment.Top) {
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(com.nuvio.tv.R.drawable.frank_cri_666),
+            contentDescription = null,
+            modifier = Modifier.height(170.dp).offset(x = 18.dp)
+        )
+        CalendarVfBannerBox666(episodes)
+    }
+}
+
+@Composable
+private fun CalendarVfBannerBox666(episodes: List<CalendarEpisode>) {
     val shape = RoundedCornerShape(NuvioTheme.radii.md)
     Column(
-        modifier = modifier
+        modifier = Modifier
             .width(420.dp)
             .clip(shape)
             .background(NuvioTheme.colors.BackgroundElevated.copy(alpha = 0.96f))

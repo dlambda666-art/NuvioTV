@@ -8,6 +8,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,15 +53,23 @@ internal fun Stinger666Banner(viewModel: PlayerViewModel, modifier: Modifier = M
         exit = fadeOut() + slideOutVertically { -it },
         modifier = modifier.padding(top = 36.dp)
     ) {
-        Text(
-            text = Stinger666.warning(k),
-            color = Color(0xFFF2EFE9),
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier
-                .background(Color(0xE6141018), RoundedCornerShape(14.dp))
-                .border(2.dp, Color(0xFF9B5CC4), RoundedCornerShape(14.dp))
-                .padding(horizontal = 26.dp, vertical = 14.dp)
-        )
+        // 20/11 : Frankhorreur dans son fauteuil de cinéma, qui te montre du doigt
+        androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(com.nuvio.tv.R.drawable.frank_generique_666),
+                contentDescription = null,
+                modifier = Modifier.height(150.dp)
+            )
+            Text(
+                text = Stinger666.warning(k),
+                color = Color(0xFFF2EFE9),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .background(Color(0xE6141018), RoundedCornerShape(14.dp))
+                    .border(2.dp, Color(0xFF9B5CC4), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 26.dp, vertical = 14.dp)
+            )
+        }
     }
 }

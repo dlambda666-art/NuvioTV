@@ -2,6 +2,7 @@ package com.nuvio.tv.ui.screens.stream
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -120,7 +121,15 @@ internal fun SearchProgress666Line(items: List<SearchProgress666.Item>, modifier
             withStyle(SpanStyle(color = c)) { append(it.text) }
         }
     }
-    Row(modifier = modifier.padding(top = 6.dp)) {
+    Row(modifier = modifier.padding(top = 6.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        // 20/11 : Frankhorreur et sa lanterne tant qu'un cavalier cherche encore
+        if (items.any { it.state == SearchProgress666.State.RUNNING }) {
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(com.nuvio.tv.R.drawable.frank_lanterne_666),
+                contentDescription = null,
+                modifier = androidx.compose.ui.Modifier.height(56.dp).padding(end = 8.dp)
+            )
+        }
         Text(text = text, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }

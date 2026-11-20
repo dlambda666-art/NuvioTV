@@ -3422,6 +3422,12 @@ private fun ErrorOverlay(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.lg)
         ) {
+            // 20/11 : Frankhorreur en court-circuit
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(R.drawable.frank_panne_666),
+                contentDescription = null,
+                modifier = Modifier.height(190.dp)
+            )
             Text(
                 text = stringResource(R.string.player_error_title),
                 style = MaterialTheme.typography.headlineMedium,
