@@ -62,9 +62,17 @@ class SourceFailoverRulesTest {
     @Test
     fun `plugin order keeps known plugins and fills the missing ones`() {
         assertEquals(
-            listOf("Lumio666", "Comet666", "StreamFusion666", "Wastream666"),
+            listOf("Lumio666", "Comet666", "StreamFusion666"),
             com.nuvio.tv.core.tools.PluginOrder666.normalize(listOf("lumio666", "Frenchio666", "Comet666"))
         )
+    }
+
+    // Cas piège 20/11 : Wascustom (instance fermée, HTTP 502) ne revient jamais, même depuis un vieil ordre enregistré
+    @Test
+    fun `dead Wascustom never comes back in the plugin order`() {
+        val order = com.nuvio.tv.core.tools.PluginOrder666.normalize(listOf("Wastream666", "Wascustom666", "Lumio666"))
+        org.junit.Assert.assertTrue(order.none { it.contains("wast", true) || it.contains("wasc", true) || it.contains("aiosources", true) })
+        org.junit.Assert.assertEquals(listOf("Lumio666", "Comet666", "StreamFusion666"), order)
     }
 
     // Cas piège 28/10 : image violette (Dolby Vision sans HDR) et vieux WWE Raw
