@@ -1,6 +1,6 @@
 /*
- * Wascustom666 — plugin de flux VF pour 666TV (généré depuis src/addon666.js).
- * Interroge TON addon Wascustom avec TA config, directement depuis la Shield.
+ * Wastream666 — plugin de flux VF pour 666TV (généré depuis src/addon666.js).
+ * Interroge TON addon Wastream avec TA config, directement depuis la Shield.
  * L'adresse de config (qui contient les clés debrid) n'est jamais dans ce
  * fichier : 666TV la fournit via SCRAPER_SETTINGS.url, stockée uniquement
  * sur l'appareil (Plugins → « Comet666 – mes sources »).
@@ -8,7 +8,7 @@
  * 1080p et 4K, liens debrid déjà en cache, aucun torrent P2P.
  */
 
-var ADDON_NAME = 'Wascustom';
+var ADDON_NAME = 'Wastream';
 var MAX_RESULTS = 30;
 
 // --- Règles de langue (mêmes que Frank et Comet666) -----------------------
