@@ -32,7 +32,7 @@ class SearchProgress666Test {
             listOf(
                 "Lumio666 ✓ 8 liens",
                 "Comet666 … en cours",
-                "Wascustom666 ✗ adresse introuvable",
+                "Wastream666 ✗ adresse introuvable",
                 "StreamFusion666 ✗ ne répond pas"
             ),
             items.map { it.name + " " + it.text }
@@ -59,7 +59,7 @@ class SearchProgress666Test {
         )
         val items = SearchProgress666.items(chips, emptyList(), plugins)
         assertEquals(
-            listOf("$g :", "Lumio666 ✓ 2", "Comet666 ✗ pas de VF", "Wascustom666 …", "StreamFusion666 💤"),
+            listOf("$g :", "Lumio666 ✓ 2", "Comet666 ✗ pas de VF", "Wastream666 …", "StreamFusion666 💤"),
             items.map { if (it.text.isEmpty()) it.name else it.name + " " + it.text }
         )
     }

@@ -32,7 +32,7 @@ class PlayerInfoBadges666Test {
 
     @org.junit.Test fun `nom du cavalier en lecture (20-11)`() {
         org.junit.Assert.assertEquals("Lumio666", PlayerInfoBadges666.cavalierName("Lumio666", "Les 4 cavaliers de l'apocalypse"))
-        org.junit.Assert.assertEquals("Wascustom666", PlayerInfoBadges666.cavalierName("Wastream666", null))
+        org.junit.Assert.assertEquals("Wastream666", PlayerInfoBadges666.cavalierName("Wastream666", null))
         org.junit.Assert.assertEquals("Comet666", PlayerInfoBadges666.cavalierName(null, "Comet666"))
         org.junit.Assert.assertNull(PlayerInfoBadges666.cavalierName(null, "Les 4 cavaliers de l'apocalypse"))
         val b = PlayerInfoBadges666.withCavalier(listOf(PlayerInfoBadges666.Badge("4K")), "Lumio666")

@@ -36,7 +36,7 @@ object PluginOrder666 {
 
     /** Anciens / nouveaux noms affichés du plugin wastream666 (id interne inchangé : le lien collé reste). */
     private val WASCUSTOM_NAMES = setOf("wastream666", "wacustom666", "wascustom666")
-    const val WASCUSTOM = "Wascustom666"
+    const val WASCUSTOM = "Wastream666"   // 20/11 : Wastream est de retour, son vrai nom revient partout
 
     /** 18/11 : nom de classement (ordre des cavaliers) : Wascustom666 / Wacustom666 → Wastream666. */
     fun canonical(name: String): String =
@@ -48,5 +48,5 @@ object PluginOrder666 {
 
     /** 18/11 : Wastream666 s'affiche « Wascustom » (id interne inchangé : le lien collé reste en place). */
     fun labelOf(name: String): String =
-        if (name.trim().lowercase() in WASCUSTOM_NAMES) "Wascustom" else name.removeSuffix("666")
+        if (name.trim().lowercase() in WASCUSTOM_NAMES) "Wastream" else name.removeSuffix("666")
 }
