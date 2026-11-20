@@ -101,6 +101,9 @@ class Dream666Service : DreamService() {
     }
 }
 
+private const val MOON_X = 1137f
+private const val MOON_Y = 163f
+
 private class Dream666View(context: Context) : View(context) {
     private val handler = Handler(Looper.getMainLooper())
     private val rng = Random(System.currentTimeMillis())
@@ -183,6 +186,41 @@ private class Dream666View(context: Context) : View(context) {
     // Nuages sombres qui filent en haut du ciel.
     private val clouds = List(9) { floatArrayOf(rng.nextFloat() * 1.3f, 0.03f + rng.nextFloat() * 0.25f, 0.12f + rng.nextFloat() * 0.18f, 0.6f + rng.nextFloat() * 0.8f) }
     private val puffs = List(14) { floatArrayOf(rng.nextFloat(), 0.62f + rng.nextFloat() * 0.38f, 0.15f + rng.nextFloat() * 0.25f, 0.2f + rng.nextFloat() * 0.8f) }
+
+    // ---- 20/11 : lune rouge (dans le fond), cachée de temps en temps par un nuage qui passe ----
+    private val cloudBitmaps: List<Bitmap> = listOf(R.drawable.nuage_666_0, R.drawable.nuage_666_1).mapNotNull { res ->
+        runCatching { BitmapFactory.decodeResource(resources, res, BitmapFactory.Options().apply { inScaled = false }) }.getOrNull()
+    }
+    private val cloudPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    private var cloudStart = start + 5_000L
+    private var cloudDuration = 16_000L
+    private var cloudSprite = 0
+    private var cloudToLeft = false
+
+    /** Nuage devant la lune (coordonnées de l'image du fond : lune en 1137 × 163, rayon 52). */
+    private fun drawMoonCloud(canvas: Canvas, now: Long, dst: RectF, scale: Float) {
+        if (cloudBitmaps.isEmpty()) return
+        if (now >= cloudStart + cloudDuration) {
+            cloudStart = now + 12_000L + rng.nextLong(18_000L)
+            cloudDuration = 14_000L + rng.nextLong(8_000L)
+            cloudSprite = rng.nextInt(cloudBitmaps.size)
+            cloudToLeft = rng.nextBoolean()
+        }
+        if (now < cloudStart) return
+        val bmp = cloudBitmaps[cloudSprite]
+        val p = ((now - cloudStart).toFloat() / cloudDuration).coerceIn(0f, 1f)
+        val moonX = dst.left + MOON_X * scale
+        val moonY = dst.top + MOON_Y * scale
+        val cw = bmp.width * scale
+        val ch = bmp.height * scale
+        val travel = 900f * scale
+        val from = if (cloudToLeft) moonX + travel else moonX - travel
+        val to = if (cloudToLeft) moonX - travel else moonX + travel
+        val cx = from + (to - from) * p
+        val fade = minOf(1f, p * 6f, (1f - p) * 6f)
+        cloudPaint.alpha = (200 * fade).toInt()   // même voile que le fond (alpha 200)
+        canvas.drawBitmap(bmp, null, RectF(cx - cw / 2, moonY - ch / 2, cx + cw / 2, moonY + ch / 2), cloudPaint)
+    }
 
     // ---- Spectres (sprites sur fond noir, dessinés en lumière additive) ----
     private val ghostBitmaps: List<Bitmap> = listOf(
@@ -317,6 +355,7 @@ private class Dream666View(context: Context) : View(context) {
             paint.alpha = 200
             canvas.drawBitmap(it, null, dst, paint)
             paint.alpha = 255
+            drawMoonCloud(canvas, now, dst, bw / it.width)
         }
 
         // Éclair (flash + zébrure), de temps en temps.
