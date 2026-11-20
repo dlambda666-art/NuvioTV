@@ -63,6 +63,36 @@
       "contentLanguage": [
         "fr"
       ]
+    },
+    {
+      "id": "case4666",
+      "name": "Case4666",
+      "description": "Case de cavalier n°4 : colle le lien de n'importe quel addon dans Plugins → « mes sources », Frank affiche son nom. Vide = endormie. VF, 1080p/4K.",
+      "version": "1.0.0",
+      "filename": "case4666.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "enabled": true,
+      "contentLanguage": [
+        "fr"
+      ]
+    },
+    {
+      "id": "case5666",
+      "name": "Case5666",
+      "description": "Case de cavalier n°5 : colle le lien de n'importe quel addon dans Plugins → « mes sources », Frank affiche son nom. Vide = endormie. VF, 1080p/4K.",
+      "version": "1.0.0",
+      "filename": "case5666.js",
+      "supportedTypes": [
+        "movie",
+        "tv"
+      ],
+      "enabled": true,
+      "contentLanguage": [
+        "fr"
+      ]
     }
   ]
 }
