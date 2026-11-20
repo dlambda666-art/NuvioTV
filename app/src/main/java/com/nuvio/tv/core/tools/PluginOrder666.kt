@@ -11,7 +11,8 @@ object PluginOrder666 {
     private const val PREFS = "666tv_plugin_order"
 
     /** Ordre par défaut : Comet666 d'abord (rapide, trackers C411/Tr4ker), puis les autres. */
-    val DEFAULT = listOf("Comet666", "StreamFusion666", "Lumio666", "Wastream666")
+    // 20/11 : + les cases 4 et 5 (cases de cavalier sans nom, voir CavalierSlots666)
+    val DEFAULT = listOf("Comet666", "StreamFusion666", "Lumio666", "Wastream666", "Case4666", "Case5666")
 
     @Volatile
     var order: List<String> = DEFAULT
@@ -40,13 +41,17 @@ object PluginOrder666 {
 
     /** 18/11 : nom de classement (ordre des cavaliers) : Wascustom666 / Wacustom666 → Wastream666. */
     fun canonical(name: String): String =
-        if (name.trim().lowercase() in WASCUSTOM_NAMES) "Wastream666" else name.trim()
+        if (name.trim().lowercase() in WASCUSTOM_NAMES) "Wastream666"
+        else CavalierSlots666.slotOfName(name)?.internal ?: name.trim()
 
     /** 18/11 : nom affiché d'un plugin, d'après son id (wastream666 → « Wascustom666 », partout). */
-    fun displayName(id: String, name: String): String =
-        if (id.substringAfterLast(':').equals("wastream666", true) || name.trim().lowercase() in WASCUSTOM_NAMES) WASCUSTOM else name
+    fun displayName(id: String, name: String): String {
+        // 20/11 : case de cavalier → le nom donné par l'addon lui-même
+        val slot = CavalierSlots666.slotOfId(id) ?: CavalierSlots666.slotOfName(canonical(name))
+        return if (slot != null) CavalierSlots666.display(slot) else name
+    }
 
     /** 18/11 : Wastream666 s'affiche « Wascustom » (id interne inchangé : le lien collé reste en place). */
     fun labelOf(name: String): String =
-        if (name.trim().lowercase() in WASCUSTOM_NAMES) "Wastream" else name.removeSuffix("666")
+        CavalierSlots666.slotOfName(canonical(name))?.let { CavalierSlots666.label(it) } ?: name.trim().removeSuffix("666")
 }

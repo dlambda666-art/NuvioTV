@@ -55,6 +55,17 @@ class PluginViewModel @Inject constructor(
                 value?.takeIf { it.isNotBlank() }?.let { source.rowId to if (source.isUrl) privateSourceHost(it) else "clé" }
             }.toMap()
             _uiState.update { it.copy(privateSourceHosts = hosts) }
+            refreshCavalierSlots666()
+        }
+    }
+
+    /** 20/11 : cases de cavalier : relit les liens et va chercher le nom des addons. */
+    private suspend fun refreshCavalierSlots666() {
+        runCatching {
+            com.nuvio.tv.core.tools.CavalierSlots666.refresh(
+                read = { pluginDataStore.getScraperSettings(it) },
+                write = { id, settings -> pluginDataStore.setScraperSettings(id, settings) }
+            )
         }
     }
 
@@ -68,13 +79,16 @@ class PluginViewModel @Inject constructor(
         }
         viewModelScope.launch {
             val current = pluginDataStore.getScraperSettings(source.scraperId)
-            pluginDataStore.setScraperSettings(source.scraperId, current + (source.settingKey to value))
+            // 20/11 : nouveau lien dans une case → on oublie l'ancien nom, il sera relu dans le manifeste
+            val base = if (source.isUrl) current - com.nuvio.tv.core.tools.CavalierSlots666.NAME_KEY else current
+            pluginDataStore.setScraperSettings(source.scraperId, base + (source.settingKey to value))
             _uiState.update {
                 it.copy(
                     privateSourceHosts = it.privateSourceHosts + (rowId to if (source.isUrl) privateSourceHost(value) else "clé"),
                     successMessage = "$label enregistré sur cet appareil"
                 )
             }
+            refreshCavalierSlots666()
         }
     }
 
@@ -82,13 +96,17 @@ class PluginViewModel @Inject constructor(
         val source = PRIVATE_SOURCES.firstOrNull { it.rowId == rowId } ?: return
         viewModelScope.launch {
             val current = pluginDataStore.getScraperSettings(source.scraperId)
-            pluginDataStore.setScraperSettings(source.scraperId, current - source.settingKey)
+            pluginDataStore.setScraperSettings(
+                source.scraperId,
+                if (source.isUrl) current - source.settingKey - com.nuvio.tv.core.tools.CavalierSlots666.NAME_KEY else current - source.settingKey
+            )
             _uiState.update {
                 it.copy(
                     privateSourceHosts = it.privateSourceHosts - rowId,
                     successMessage = "${source.label} effacé"
                 )
             }
+            refreshCavalierSlots666()
         }
     }
 

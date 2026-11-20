@@ -18,6 +18,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,9 +64,12 @@ data class PrivateSource(
 }
 
 val PRIVATE_SOURCES = listOf(
-    PrivateSource("lumio666", "Lumio"),
-    PrivateSource("streamfusion666", "StreamFusion"),
-    PrivateSource("wastream666", "Wastream"),   // 20/11 : Wastream de retour (même id, lien conservé)
+    // 20/11 : cases de cavalier sans nom (mêmes id qu'avant pour 1 à 3 → les liens collés restent)
+    PrivateSource("lumio666", "Case 1"),
+    PrivateSource("streamfusion666", "Case 2"),
+    PrivateSource("wastream666", "Case 3"),
+    PrivateSource("case4666", "Case 4"),
+    PrivateSource("case5666", "Case 5"),
     // 666TVF : trackers français lus directement par Comet666 (repris de Frenchio)
     PrivateSource("comet666", "C411 · clé API", settingKey = "c411", isUrl = false),
     PrivateSource("comet666", "Tr4ker · clé API", settingKey = "tr4ker", isUrl = false),   // Torr9 a fusionné avec Tr4ker
@@ -104,13 +108,15 @@ internal fun PrivateSourcesCard(
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
-                text = "Comet666 – mes sources",
+                text = "Mes cavaliers – mes sources",
                 style = MaterialTheme.typography.titleMedium,
                 color = NuvioTheme.colors.TextPrimary
             )
             Spacer(modifier = Modifier.height(NuvioTheme.spacing.xs))
             Text(
-                text = "Colle l'adresse de config (ou du manifest) de chaque addon, et tes clés de trackers (C411, Tr4ker, YggReborn) si tu en as. " +
+                text = "Une case par cavalier : colle l'adresse de config (ou du manifest) de n'importe quel addon, Frank affiche son nom tout seul. " +
+                    "Un cavalier tombe ? Colle un autre lien dans sa case, sans mise à jour. Une case vide dort. " +
+                    "Et tes clés de trackers pour Comet666 (C411, Tr4ker, YggReborn) si tu en as. " +
                     "Tout reste sur cet appareil uniquement et n'est jamais affiché.",
                 style = MaterialTheme.typography.bodySmall,
                 color = NuvioTheme.colors.TextSecondary
@@ -165,12 +171,28 @@ private fun PrivateSourceRow(
         horizontalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.md),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = source.label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = NuvioTheme.colors.TextPrimary,
-            modifier = Modifier.width(130.dp)
-        )
+        // 20/11 : case de cavalier → « Case 1 » + le nom donné par l'addon (ou « libre »)
+        val slot = if (source.isUrl) com.nuvio.tv.core.tools.CavalierSlots666.slotOfId(source.scraperId) else null
+        val slotNames by com.nuvio.tv.core.tools.CavalierSlots666.names.collectAsState()
+        Column(modifier = Modifier.width(150.dp)) {
+            Text(
+                text = source.label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = NuvioTheme.colors.TextPrimary
+            )
+            if (slot != null) {
+                val addonName = slotNames[slot.internal]
+                Text(
+                    text = when {
+                        addonName != null -> "🐎 $addonName"
+                        savedHost != null -> "🐎 ${slot.oldName?.removeSuffix("666") ?: "nom en lecture…"}"
+                        else -> "libre"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (savedHost != null) NuvioTheme.colors.Secondary else NuvioTheme.colors.TextTertiary
+                )
+            }
+        }
         Surface(
             onClick = { isEditing = true },
             modifier = Modifier.weight(1f),

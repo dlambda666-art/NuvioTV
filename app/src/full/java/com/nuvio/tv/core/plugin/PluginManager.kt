@@ -232,7 +232,8 @@ class PluginManager @Inject constructor(
     
     // Flow of all scrapers
     // 18/11 : wastream666 s'affiche « Wascustom666 » partout (liste, Tester, sources), même si la Shield a l'ancien manifeste
-    val scrapers: Flow<List<ScraperInfo>> = dataStore.scrapers.map { list ->
+    // 20/11 : cases de cavalier → le nom donné par l'addon lui-même (se met à jour dès qu'un lien change)
+    val scrapers: Flow<List<ScraperInfo>> = combine(dataStore.scrapers, com.nuvio.tv.core.tools.CavalierSlots666.names) { list, _ ->
         list.map { s -> s.copy(name = com.nuvio.tv.core.tools.PluginOrder666.displayName(s.id, s.name)) }
     }
     
@@ -287,11 +288,25 @@ class PluginManager @Inject constructor(
     }
 
     // Combined flow of enabled scrapers
+    // 20/11 : une case de cavalier sans lien est endormie : jamais cherchée
     val enabledScrapers: Flow<List<ScraperInfo>> = combine(
         scrapers,
-        pluginsEnabled
-    ) { scraperList, enabled ->
-        if (enabled) scraperList.filter { it.enabled } else emptyList()
+        pluginsEnabled,
+        com.nuvio.tv.core.tools.CavalierSlots666.emptySlots
+    ) { scraperList, enabled, emptySlots ->
+        if (enabled) scraperList.filter { it.enabled && it.id.substringAfterLast(':').lowercase() !in emptySlots } else emptyList()
+    }
+
+    /** 20/11 : relit les cases de cavalier (lien présent ? nom de l'addon ?). */
+    suspend fun refreshCavalierSlots() {
+        com.nuvio.tv.core.tools.CavalierSlots666.refresh(
+            read = { dataStore.getScraperSettings(it) },
+            write = { id, settings -> dataStore.setScraperSettings(id, settings) }
+        )
+    }
+
+    init {
+        syncScope.launch { runCatching { refreshCavalierSlots() } }
     }
     
     /**
