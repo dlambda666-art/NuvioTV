@@ -196,8 +196,24 @@ object Announce666 {
                 loadPoster(url) { bmp -> img.post { img.setImageBitmap(bmp) } }
             }
             box.addView(text("Appuie sur OK pour fermer · Détails dans le Calendrier FrankenStream", 13f, Color.rgb(0x8F, 0x8A, 0x85)))
+            // 21/11 : Frank surgit à côté de l'annonce, aussi par-dessus les autres applis (comme dans le Calendrier)
+            val frank = android.widget.ImageView(app).apply {
+                setImageResource(com.nuvio.tv.R.drawable.frank_cri_666)
+                adjustViewBounds = true
+                scaleType = android.widget.ImageView.ScaleType.FIT_END
+                alpha = 0f
+                translationY = dp(80).toFloat()
+            }
+            val container = LinearLayout(app).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.BOTTOM
+                addView(frank, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(170)).apply { rightMargin = -dp(14) })
+                addView(box, LinearLayout.LayoutParams(dp(420), LinearLayout.LayoutParams.WRAP_CONTENT))
+            }
+            frank.animate().alpha(1f).translationY(0f).setStartDelay(120).setDuration(520)
+                .setInterpolator(android.view.animation.OvershootInterpolator(1.4f)).start()
             val params = WindowManager.LayoutParams(
-                dp(420),
+                WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                 else @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE,
@@ -208,9 +224,9 @@ object Announce666 {
                 x = dp(24)
                 y = dp(24)
             }
-            wm.addView(box, params)
+            wm.addView(container, params)
             box.requestFocus()
-            overlayView = box
+            overlayView = container
             true
         }.getOrDefault(false)
     }
