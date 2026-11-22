@@ -21,4 +21,13 @@ class Home666Test {
         assertTrue(corps.y + 500f < 540f)     // l'image fait 500 px de haut : finit avant la moitié de l'écran
         assertTrue(corps.amp <= 2f)           // il est lourd : il bouge à peine
     }
+
+    @Test fun `l ampoule eclaire le corps, grésille a peine, jamais eteinte`() {
+        var min = 1f
+        var t = 0.0
+        while (t < 14.0) { min = minOf(min, Abattoir666.bulbLevel(t)); t += 0.01 }
+        assertTrue(min >= 0.3f)
+        assertEquals(1f, Abattoir666.bulbLevel(1.0))
+        assertTrue(Abattoir666.BULB_X < 640f && Abattoir666.BULB_Y < 200f)
+    }
 }

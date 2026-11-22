@@ -288,12 +288,15 @@ internal fun ModernHeroGradientLayer(
 
                 onDrawBehind {
                     // 1. Horizontal fade (reversed in RTL)
+                    // 22/11 : Abattoir dégagé : plus de texte à gauche → plus de voile noir (on voit le corps pendu)
+                    if (!Home666.ABATTOIR_DEGAGE) {
                     val rectLeft = if (isRtl) size.width - horizontalFadeEndX else 0f
                     drawRect(
                         brush = horizontalGradient,
                         topLeft = Offset(rectLeft, 0f),
                         size = Size(horizontalFadeEndX, size.height)
                     )
+                    }
                     
                     // 2. Bottom vertical strip
                     drawRect(

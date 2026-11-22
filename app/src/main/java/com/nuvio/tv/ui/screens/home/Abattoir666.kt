@@ -122,6 +122,20 @@ object Abattoir666 {
     /** Règle pure (testée) : angle du balancier à l'instant t (petit, lent, jamais au-delà de l'amplitude). */
     fun swing(h: Hang, t: Double): Float = (h.amp * kotlin.math.sin(2.0 * Math.PI * t / h.period + h.phase)).toFloat()
 
+    /** 22/11 : l'ampoule au-dessus du corps pendu (image 1920×1080). */
+    const val BULB_X = 235f
+    const val BULB_Y = 70f
+
+    /** Règle pure (testée) : lumière de l'ampoule (1 = allumée), petit grésillement toutes les 7 s. */
+    fun bulbLevel(t: Double): Float {
+        val tt = t % 7.0
+        return when {
+            tt in 3.0..3.08 -> 0.35f
+            tt in 3.16..3.22 -> 0.6f
+            else -> 1f
+        }
+    }
+
     /** Néon éteint : les morceaux s'assombrissent avec la pièce (1 = pleine lumière). */
     fun hangLight(off: Float): Float = 1f - 0.5f * off.coerceIn(0f, 1f)
 
@@ -270,6 +284,32 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                     colorFilter = tint
                 )
             }
+        }
+        // 22/11 : une ampoule nue au-dessus du corps pendu (David : « on voit à peine le corps ») ;
+        // elle baisse avec le néon et grésille un peu de son côté
+        run {
+            val f = Abattoir666.bulbLevel(t) * (1f - 0.75f * off)
+            val bx = left + Abattoir666.BULB_X * scale
+            val by = Abattoir666.BULB_Y * scale
+            val cx = left + 330f * scale
+            val cy = 250f * scale
+            drawLine(Color(0xFF1A1816), Offset(bx, 0f), Offset(bx, by - 8f * scale), strokeWidth = 2f * scale, alpha = alpha)
+            drawCircle(
+                brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                    listOf(Color(0xFFE8F0C8).copy(alpha = 0.38f * f), Color(0xFFB8D08A).copy(alpha = 0.16f * f), Color.Transparent),
+                    center = Offset(cx, cy), radius = 330f * scale
+                ),
+                radius = 330f * scale, center = Offset(cx, cy), alpha = alpha,
+                blendMode = androidx.compose.ui.graphics.BlendMode.Screen
+            )
+            drawCircle(
+                brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                    listOf(Color(0xFFFFF6D0).copy(alpha = 0.9f * f), Color(0xFFFFE08A).copy(alpha = 0.25f * f), Color.Transparent),
+                    center = Offset(bx, by), radius = 46f * scale
+                ),
+                radius = 46f * scale, center = Offset(bx, by), alpha = alpha
+            )
+            drawCircle(Color(0xFFFFF8E0), radius = 7f * scale, center = Offset(bx, by), alpha = alpha * (0.35f + 0.65f * f))
         }
         if (deep > 0f) drawRect(Color.Black, alpha = deep * alpha)
         val u = iw / 1280f
