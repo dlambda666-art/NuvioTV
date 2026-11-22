@@ -42,19 +42,20 @@ object Abattoir666 {
 
     val SOURCES = listOf(
         Src(135f, 410f, 560f, 1.5f), Src(152f, 414f, 562f, 2.2f), Src(240f, 282f, 575f, 1.2f), Src(266f, 276f, 575f, 1.9f),
-        Src(400f, 332f, 560f, 1.1f), Src(388f, 336f, 560f, 1.7f), Src(452f, 78f, 560f, 1.4f), Src(471f, 74f, 562f, 2.3f),
+        Src(400f, 332f, 560f, 1.1f), Src(388f, 336f, 560f, 1.7f), Src(330f, 432f, 560f, 1.4f), Src(345f, 440f, 562f, 2.3f),
         Src(598f, 342f, 600f, 1.6f), Src(876f, 560f, 655f, 0.85f), Src(902f, 540f, 652f, 1.5f), Src(850f, 530f, 650f, 2.0f),
-        Src(1030f, 210f, 520f, 1.8f), Src(1046f, 205f, 522f, 2.6f), Src(1012f, 392f, 520f, 1.3f), Src(1180f, 386f, 515f, 1.15f),
+        Src(967f, 52f, 520f, 1.8f), Src(950f, 50f, 522f, 2.6f), Src(1012f, 392f, 520f, 1.3f), Src(1180f, 386f, 515f, 1.15f),
         Src(1162f, 380f, 512f, 1.9f), Src(884f, 300f, 650f, 2.4f), Src(965f, 398f, 520f, 1.7f),
-        Src(520f, 120f, 700f, 2.9f), Src(640f, 165f, 700f, 3.4f), Src(760f, 150f, 700f, 2.7f), Src(1110f, 110f, 640f, 3.1f),
-        Src(440f, 82f, 600f, 3.6f), Src(260f, 410f, 560f, 2.0f), Src(486f, 80f, 560f, 2.6f), Src(450f, 410f, 565f, 1.8f),
+        Src(520f, 120f, 700f, 2.9f), Src(640f, 165f, 700f, 3.4f), Src(760f, 150f, 700f, 2.7f), Src(935f, 54f, 640f, 3.1f),
+        Src(300f, 90f, 600f, 3.6f), Src(260f, 410f, 560f, 2.0f), Src(330f, 412f, 560f, 2.6f), Src(450f, 410f, 565f, 1.8f),
         Src(420f, 474f, 630f, 1.0f), Src(470f, 470f, 628f, 1.6f), Src(520f, 476f, 630f, 1.25f), Src(560f, 478f, 632f, 2.1f),
         Src(610f, 474f, 630f, 1.4f), Src(650f, 470f, 628f, 1.9f), Src(690f, 468f, 625f, 1.1f), Src(740f, 465f, 622f, 1.7f),
         Src(780f, 462f, 620f, 1.3f), Src(815f, 440f, 600f, 2.2f),
         // 666TVF : le corps pendu à gauche du néon — ça goutte des doigts et du bas du drap (31/10)
         Src(839f, 374f, 540f, 0.8f), Src(834f, 247f, 540f, 1.6f), Src(836f, 375f, 540f, 1.3f)
         // 22/11 : le corps pendu (coin gauche) est vieux et sec : plus aucune goutte ne part de lui ;
-        // les 4 gouttes de ce coin tombent d'une tache de sang au plafond (vers x 440-490, y 75-85)
+        // les 3 gouttes de ce coin tombent d'une tache de sang au plafond (image 1920 : x 470-520, y 75-80).
+        // Attention : ces sources sont dans l'espace 1280 en miroir (x écran = (1280 - x) × 1,5).
     )
 
     private const val GRAVITY = 1700f
@@ -268,27 +269,9 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 alpha = off * alpha
             )
         }
-        // 666TVF (05/11) : les morceaux pendus (chaîne + crochet + morceau), balancés autour de l'accroche
-        val light = Abattoir666.hangLight(off)
-        val tint = androidx.compose.ui.graphics.ColorFilter.tint(Color(light, light, light), androidx.compose.ui.graphics.BlendMode.Modulate)
-        Abattoir666.HANGS.forEachIndexed { i, h ->
-            val img = hangs.getOrNull(i) ?: return@forEachIndexed
-            val px = left + h.x * scale
-            val py = h.y * scale
-            val w = img.width * scale
-            val hh = img.height * scale
-            rotate(Abattoir666.swing(h, t), pivot = Offset(px, py)) {
-                drawImage(
-                    img,
-                    dstOffset = IntOffset((px - w / 2f).toInt(), py.toInt()),
-                    dstSize = IntSize(w.toInt(), hh.toInt()),
-                    alpha = alpha,
-                    colorFilter = tint
-                )
-            }
-        }
         // 22/11 : une ampoule nue au-dessus du corps pendu (David : « on voit à peine le corps ») ;
-        // elle baisse avec le néon et grésille un peu de son côté
+        // elle baisse avec le néon et grésille un peu de son côté.
+        // Dessinée AVANT les morceaux pendus : elle éclaire le mur derrière sans délaver le corps (22/11)
         run {
             val f = Abattoir666.bulbLevel(t) * (1f - 0.75f * off)
             val bx = left + Abattoir666.BULB_X * scale
@@ -312,6 +295,25 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 radius = 46f * scale, center = Offset(bx, by), alpha = alpha
             )
             drawCircle(Color(0xFFFFF8E0), radius = 7f * scale, center = Offset(bx, by), alpha = alpha * (0.35f + 0.65f * f))
+        }
+        // 666TVF (05/11) : les morceaux pendus (chaîne + crochet + morceau), balancés autour de l'accroche
+        val light = Abattoir666.hangLight(off)
+        val tint = androidx.compose.ui.graphics.ColorFilter.tint(Color(light, light, light), androidx.compose.ui.graphics.BlendMode.Modulate)
+        Abattoir666.HANGS.forEachIndexed { i, h ->
+            val img = hangs.getOrNull(i) ?: return@forEachIndexed
+            val px = left + h.x * scale
+            val py = h.y * scale
+            val w = img.width * scale
+            val hh = img.height * scale
+            rotate(Abattoir666.swing(h, t), pivot = Offset(px, py)) {
+                drawImage(
+                    img,
+                    dstOffset = IntOffset((px - w / 2f).toInt(), py.toInt()),
+                    dstSize = IntSize(w.toInt(), hh.toInt()),
+                    alpha = alpha,
+                    colorFilter = tint
+                )
+            }
         }
         if (deep > 0f) drawRect(Color.Black, alpha = deep * alpha)
         val u = iw / 1280f

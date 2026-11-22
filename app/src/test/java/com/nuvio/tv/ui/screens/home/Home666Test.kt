@@ -32,9 +32,13 @@ class Home666Test {
     }
 
     @Test fun `le corps pendu est sec - aucune goutte ne part de lui ni ne lui tombe dessus`() {
-        // le corps : environ x 245..415, y 60..494 dans l'image 1920 x 1080
+        // le corps : environ x 245..415, y 60..494 dans l'image 1920 x 1080 ;
+        // les gouttes sont dans l'espace 1280 en miroir : x écran = (1280 - x) × 1,5, y écran = y × 1,5
         Abattoir666.SOURCES.forEach { s ->
-            val surLui = s.x in 245f..415f && (s.y0 in 60f..494f || (s.y0 < 60f && s.y1 > 60f))
+            val x = (1280f - s.x) * 1.5f
+            val y0 = s.y0 * 1.5f
+            val y1 = s.y1 * 1.5f
+            val surLui = x in 245f..415f && y0 < 494f && y1 > 60f
             assertTrue("goutte en ${s.x},${s.y0}", !surLui)
         }
     }
