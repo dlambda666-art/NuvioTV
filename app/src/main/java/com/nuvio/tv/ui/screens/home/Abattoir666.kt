@@ -108,12 +108,13 @@ object Abattoir666 {
     /** Un morceau pendu : point d'accroche (image 1920×1080 telle qu'affichée), amplitude (°), période (s). */
     data class Hang(val x: Float, val y: Float, val amp: Float, val period: Float, val phase: Float)
 
-    /** bras, jambe, main, pied — dans l'ordre des images pend_*_666. */
+    /** bras, jambe, main, pied, corps (22/11, photo de David, dans le coin dégagé) — dans l'ordre des images pend_*_666. */
     val HANGS = listOf(
         Hang(1000f, 250f, 3.0f, 3.4f, 0.0f),
         Hang(1830f, 130f, 2.5f, 4.1f, 1.3f),
         Hang(478f, 596f, 4.0f, 2.9f, 2.1f),
-        Hang(1550f, 652f, 5.0f, 3.7f, 0.7f)
+        Hang(1550f, 652f, 5.0f, 3.7f, 0.7f),
+        Hang(330f, -6f, 1.6f, 5.3f, 0.4f)
     )
 
     /** Règle pure (testée) : angle du balancier à l'instant t (petit, lent, jamais au-delà de l'amplitude). */
@@ -198,7 +199,8 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
         ImageBitmap.imageResource(R.drawable.pend_bras_666),
         ImageBitmap.imageResource(R.drawable.pend_jambe_666),
         ImageBitmap.imageResource(R.drawable.pend_main_666),
-        ImageBitmap.imageResource(R.drawable.pend_pied_666)
+        ImageBitmap.imageResource(R.drawable.pend_pied_666),
+        ImageBitmap.imageResource(R.drawable.pend_corps_666)
     )
     var time by remember { mutableFloatStateOf(0f) }
     var level by remember { mutableFloatStateOf(0f) }

@@ -117,6 +117,15 @@ object Morgue666 {
     }
 }
 
+/** 22/11 : réglages de l'accueil (l'Abattoir). */
+object Home666 {
+    /** Abattoir dégagé : pas de description ni de bouton Lecture / Reprendre en haut à gauche. */
+    const val ABATTOIR_DEGAGE = true
+
+    /** Libellé du bouton sur le tiroir choisi dans la morgue (pur, testé). */
+    fun drawerPlayLabel(progress: Float): String = if (progress > 0f) "▶ Reprendre en VF" else "▶ Lecture VF"
+}
+
 /** La tuile-porte, à la place de la rangée « Continuer à regarder ». */
 @Composable
 fun MorgueTile666(
@@ -430,6 +439,22 @@ private fun DrawerDoor666(
                 drawer.code.ifBlank { "      " },
                 style = TextStyle(fontSize = 15.sp, color = Color(0xFF281912), fontWeight = FontWeight.SemiBold)
             )
+        }
+        // 22/11 : le bouton « Reprendre en VF » (déplacé de l'accueil) sur le tiroir choisi
+        if (glow > 0.01f) {
+            Box(
+                Modifier.align(Alignment.Center)
+                    .graphicsLayer { alpha = glow; val s = 0.85f + 0.15f * glow; scaleX = s; scaleY = s }
+                    .background(Color(0xFF7A3FD9), RoundedCornerShape(50))
+                    .border(2.dp, Color(0xFFB98CFF), RoundedCornerShape(50))
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    Home666.drawerPlayLabel(drawer.progress),
+                    style = TextStyle(fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.SemiBold),
+                    maxLines = 1, softWrap = false
+                )
+            }
         }
         // progression
         if (drawer.progress > 0f) {

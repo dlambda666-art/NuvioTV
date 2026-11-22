@@ -191,6 +191,9 @@ object Lien666 {
         return if (first != null) listOf(first) + (all - first) else all
     }
 
+    /** 22/11 : l'adresse de cette Shield sur le réseau de la maison (pour le QR code du rapport). */
+    fun ownIp(context: Context): String? = ownIpv4(context.applicationContext)
+
     private fun ownIpv4(app: Context): String? = runCatching {
         val cm = app.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
         cm.getLinkProperties(cm.activeNetwork)?.linkAddresses
@@ -329,6 +332,8 @@ object Lien666 {
                     JSONObject().put("code", Maj666.myCode(app)).put("name", Maj666.myName(app)).put("playing", playing).put("device", Build.DEVICE).toString())
                 // 16/11 : journal des coupures réseau (heures et durées seulement)
                 uri == "/netlog" -> newFixedLengthResponse(Response.Status.OK, "application/json", Net666.export(app))
+                // 22/11 : le « Rapport pour Claude » (texte filtré : ni clé, ni token, ni lien de config)
+                uri == Rapport666.PATH -> newFixedLengthResponse(Response.Status.OK, "text/html; charset=utf-8", Rapport666.page(Rapport666.build(app)))
                 uri == "/memoire" -> newFixedLengthResponse(Response.Status.OK, "application/json", Memoire666.export(app).toString())
                 uri == "/recs" -> {
                     // l'adresse d'origine (lien debrid) et ses en-têtes ne quittent jamais la Shield

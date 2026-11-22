@@ -5,6 +5,12 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -221,6 +227,8 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
     var abattoirOpen by remember { mutableStateOf(com.nuvio.tv.core.wake.WakeLaunch666.abattoirOnOpen(context)) }
     var netLocal by remember { mutableStateOf(com.nuvio.tv.core.tools.Net666.entries(context)) }
     var netRemote by remember { mutableStateOf<List<com.nuvio.tv.core.tools.Net666.Entry>?>(null) }
+    // 22/11 : Rapport pour Claude (QR code vers la page du rapport, sur le réseau de la maison)
+    var showRapport by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { netRemote = runCatching { com.nuvio.tv.core.tools.Lien666.remoteNetLog() }.getOrNull() }
     LaunchedEffect(Unit) {
         // l'autorisation se donne dans les réglages Android, puis on revient ici
@@ -262,6 +270,16 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
         ) {
             item {
                 Text("OUTILS 666", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black, color = Blood)
+            }
+
+            // ---------- 22/11 : Rapport pour Claude ----------
+            item { Section("Rapport pour Claude", "Un souci ? Scanne le QR code avec ton téléphone et colle le rapport dans la conversation") }
+            item {
+                ActionRow(
+                    "📋 Rapport pour Claude",
+                    "Version, réglages, cavaliers, annonces et coupures des 7 derniers jours. Jamais de clé, de token ni de lien de config.",
+                    onClick = { showRapport = true }
+                )
             }
 
             // ---------- État 666 ----------
@@ -885,6 +903,60 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                         com.nuvio.tv.ui.components.Tomb666.setEnabled(context, !com.nuvio.tv.ui.components.Tomb666.enabled)
                     }
                 )
+            }
+        }
+        if (showRapport) Rapport666Overlay(onClose = { showRapport = false })
+    }
+}
+
+/** 22/11 : Frank tient la feuille, le QR code est dessus ; l'adresse en clair à côté. Retour = fermer. */
+@Composable
+private fun Rapport666Overlay(onClose: () -> Unit) {
+    val context = LocalContext.current
+    androidx.activity.compose.BackHandler { onClose() }
+    val url = remember { com.nuvio.tv.core.tools.Rapport666.pageUrl(com.nuvio.tv.core.tools.Lien666.ownIp(context)) }
+    val qr = remember(url) { url?.let { runCatching { com.nuvio.tv.core.qr.QrCodeGenerator.generate(it, 600, 1).asImageBitmap() }.getOrNull() } }
+    val preview = remember { com.nuvio.tv.core.tools.Rapport666.build(context).lines().take(14).joinToString("\n") }
+    val closeFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { closeFocus.requestFocus() } }
+    Box(Modifier.fillMaxSize().background(Color(0xF20E0C0E))) {
+        Row(Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxHeight().aspectRatio(773f / 900f)) {
+                val w = maxWidth; val h = maxHeight
+                Image(
+                    painter = androidx.compose.ui.res.painterResource(com.nuvio.tv.R.drawable.frank_rapport_666),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize()
+                )
+                // le QR code, posé sur la feuille que Frank tient
+                val side = w * 0.315f
+                if (qr != null) Image(
+                    bitmap = qr,
+                    contentDescription = "QR code du rapport",
+                    modifier = Modifier.offset(w * 0.5054f - side / 2, h * 0.7066f - side / 2).size(side)
+                )
+            }
+            Column(Modifier.weight(1f).padding(start = 40.dp)) {
+                Text("RAPPORT POUR CLAUDE", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = Green666)
+                Text(
+                    "1. Scanne le QR code avec ton téléphone (sur le WiFi de la maison).\n2. Appuie sur « Tout copier ».\n3. Colle le texte dans la conversation avec Claude.",
+                    modifier = Modifier.padding(top = 10.dp), color = Color.White, style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    url ?: "Pas de réseau : branche la Shield sur la box, puis réessaie.",
+                    modifier = Modifier.padding(top = 14.dp), color = if (url != null) com.nuvio.tv.ui.components.Font666.Green else Red666,
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Seulement sur le réseau de la maison. Jamais de clé, de token, de passkey ni de lien de config.",
+                    modifier = Modifier.padding(top = 6.dp), color = Color(0xFFC8C3BE), style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    preview,
+                    modifier = Modifier.padding(top = 16.dp).background(Color(0x55000000), RoundedCornerShape(8.dp)).padding(12.dp),
+                    color = Color(0xFFE6E0DA), style = MaterialTheme.typography.bodySmall, maxLines = 14
+                )
+                ActionRow("Fermer", null, modifier = Modifier.padding(top = 16.dp).width(220.dp).focusRequester(closeFocus), onClick = onClose)
             }
         }
     }

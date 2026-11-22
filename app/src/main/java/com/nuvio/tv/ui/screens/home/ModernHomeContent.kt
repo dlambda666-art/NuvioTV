@@ -1080,7 +1080,9 @@ fun ModernHomeContent(
                     .fillMaxWidth(MODERN_HERO_TEXT_WIDTH_FRACTION)
             }
 
-            HeroTitleBlock(
+            // 22/11 : Abattoir dégagé (idée de David) : plus aucune description en haut à gauche
+            // (logo, infos, résumé) ni bouton Lecture / Reprendre ; « Reprendre en VF » est dans la morgue.
+            if (!Home666.ABATTOIR_DEGAGE) HeroTitleBlock(
                 previewProvider = {
                     val state = heroSceneStateLambda()
                     if (isRapidHorizontalNav.value || state.enrichmentActive) null
@@ -1140,6 +1142,7 @@ fun ModernHomeContent(
             val heroPlayVisibleState = rememberUpdatedState(heroPlayVisible)
             // 666TVF (10/11) : en arrivant dans la boucherie, le curseur est sur le bouton mauve (pas sur la morgue)
             LaunchedEffect(heroPlayVisible) {
+                if (Home666.ABATTOIR_DEGAGE) return@LaunchedEffect
                 if (!heroPlayVisible || !com.nuvio.tv.ui.components.Splash666.focusHeroOnce) return@LaunchedEffect
                 kotlinx.coroutines.delay(150)
                 runCatching { heroPlayFocusRequester.requestFocus() }
@@ -1148,7 +1151,7 @@ fun ModernHomeContent(
                 runCatching { heroPlayFocusRequester.requestFocus() }
                 com.nuvio.tv.ui.components.Splash666.focusHeroOnce = false
             }
-            Hero666PlayButton(
+            if (!Home666.ABATTOIR_DEGAGE) Hero666PlayButton(
                 visible = heroPlayVisible,
                 focusRequester = heroPlayFocusRequester,
                 onMoveDown = { runCatching { contentFocusRequester.requestFocus() } },
