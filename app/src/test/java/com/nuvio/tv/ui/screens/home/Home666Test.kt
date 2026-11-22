@@ -30,4 +30,12 @@ class Home666Test {
         assertEquals(1f, Abattoir666.bulbLevel(1.0))
         assertTrue(Abattoir666.BULB_X < 640f && Abattoir666.BULB_Y < 200f)
     }
+
+    @Test fun `le corps pendu est sec - aucune goutte ne part de lui ni ne lui tombe dessus`() {
+        // le corps : environ x 245..415, y 60..494 dans l'image 1920 x 1080
+        Abattoir666.SOURCES.forEach { s ->
+            val surLui = s.x in 245f..415f && (s.y0 in 60f..494f || (s.y0 < 60f && s.y1 > 60f))
+            assertTrue("goutte en ${s.x},${s.y0}", !surLui)
+        }
+    }
 }

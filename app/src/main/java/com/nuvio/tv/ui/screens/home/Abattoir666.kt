@@ -42,17 +42,19 @@ object Abattoir666 {
 
     val SOURCES = listOf(
         Src(135f, 410f, 560f, 1.5f), Src(152f, 414f, 562f, 2.2f), Src(240f, 282f, 575f, 1.2f), Src(266f, 276f, 575f, 1.9f),
-        Src(400f, 332f, 560f, 1.1f), Src(388f, 336f, 560f, 1.7f), Src(330f, 432f, 560f, 1.4f), Src(345f, 440f, 562f, 2.3f),
+        Src(400f, 332f, 560f, 1.1f), Src(388f, 336f, 560f, 1.7f), Src(452f, 78f, 560f, 1.4f), Src(471f, 74f, 562f, 2.3f),
         Src(598f, 342f, 600f, 1.6f), Src(876f, 560f, 655f, 0.85f), Src(902f, 540f, 652f, 1.5f), Src(850f, 530f, 650f, 2.0f),
         Src(1030f, 210f, 520f, 1.8f), Src(1046f, 205f, 522f, 2.6f), Src(1012f, 392f, 520f, 1.3f), Src(1180f, 386f, 515f, 1.15f),
         Src(1162f, 380f, 512f, 1.9f), Src(884f, 300f, 650f, 2.4f), Src(965f, 398f, 520f, 1.7f),
         Src(520f, 120f, 700f, 2.9f), Src(640f, 165f, 700f, 3.4f), Src(760f, 150f, 700f, 2.7f), Src(1110f, 110f, 640f, 3.1f),
-        Src(300f, 90f, 600f, 3.6f), Src(260f, 410f, 560f, 2.0f), Src(330f, 412f, 560f, 2.6f), Src(450f, 410f, 565f, 1.8f),
+        Src(440f, 82f, 600f, 3.6f), Src(260f, 410f, 560f, 2.0f), Src(486f, 80f, 560f, 2.6f), Src(450f, 410f, 565f, 1.8f),
         Src(420f, 474f, 630f, 1.0f), Src(470f, 470f, 628f, 1.6f), Src(520f, 476f, 630f, 1.25f), Src(560f, 478f, 632f, 2.1f),
         Src(610f, 474f, 630f, 1.4f), Src(650f, 470f, 628f, 1.9f), Src(690f, 468f, 625f, 1.1f), Src(740f, 465f, 622f, 1.7f),
         Src(780f, 462f, 620f, 1.3f), Src(815f, 440f, 600f, 2.2f),
         // 666TVF : le corps pendu à gauche du néon — ça goutte des doigts et du bas du drap (31/10)
         Src(839f, 374f, 540f, 0.8f), Src(834f, 247f, 540f, 1.6f), Src(836f, 375f, 540f, 1.3f)
+        // 22/11 : le corps pendu (coin gauche) est vieux et sec : plus aucune goutte ne part de lui ;
+        // les 4 gouttes de ce coin tombent d'une tache de sang au plafond (vers x 440-490, y 75-85)
     )
 
     private const val GRAVITY = 1700f
@@ -296,7 +298,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
             drawLine(Color(0xFF1A1816), Offset(bx, 0f), Offset(bx, by - 8f * scale), strokeWidth = 2f * scale, alpha = alpha)
             drawCircle(
                 brush = androidx.compose.ui.graphics.Brush.radialGradient(
-                    listOf(Color(0xFFE8F0C8).copy(alpha = 0.38f * f), Color(0xFFB8D08A).copy(alpha = 0.16f * f), Color.Transparent),
+                    listOf(Color(0xFFE8F0C8).copy(alpha = 0.22f * f), Color(0xFFB8D08A).copy(alpha = 0.10f * f), Color.Transparent),
                     center = Offset(cx, cy), radius = 330f * scale
                 ),
                 radius = 330f * scale, center = Offset(cx, cy), alpha = alpha,
