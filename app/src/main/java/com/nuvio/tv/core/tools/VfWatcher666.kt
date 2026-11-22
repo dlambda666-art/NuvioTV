@@ -159,6 +159,8 @@ class VfWatcher666 @Inject constructor(
             val texts = res.orEmpty().map { r -> listOfNotNull(r.name, r.title).joinToString(" ") }
             Groups666.observe(texts)
             if (texts.any { FrankVf666.isSureVfRelease(it) && !VfCheck666.CAM_RELEASE.containsMatchIn(it) }) VfCheck666.confirm(imdb)
+            // 22/11 : le cavalier a répondu sans aucune release VF → une VF « plateforme » à confirmer sort des listes
+            else if (res != null) VfCheck666.refute(imdb)
             VfCheck666.streamChecked(imdb, type)
         }
     }

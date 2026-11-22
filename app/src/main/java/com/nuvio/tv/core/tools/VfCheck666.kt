@@ -120,7 +120,7 @@ object VfCheck666 {
     fun isVf(t: Tag?) = t == Tag.DUB || t == Tag.DUB_SUB
 
     @Volatile private var ctx: Context? = null
-    fun init(context: Context) { if (ctx == null) ctx = context.applicationContext }
+    fun init(context: Context) { if (ctx == null) { ctx = context.applicationContext; runCatching { migrate2211() } } }
     private fun prefs() = ctx?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -210,9 +210,9 @@ object VfCheck666 {
         return tag
     }
 
-    private fun store(ids: List<String>, tag: Tag, recent: Boolean) {
+    private fun store(ids: List<String>, tag: Tag, recent: Boolean, platformOnly: Boolean = false) {
         val p = prefs() ?: return
-        val v = "${tag.name}|${System.currentTimeMillis()}" + if (recent) "|r" else ""
+        val v = "${tag.name}|${System.currentTimeMillis()}" + (if (recent) "|r" else "") + (if (platformOnly) "|p" else "")
         p.edit().apply { ids.filter { it.isNotBlank() }.forEach { putString(key(it), v) } }.apply()
     }
 
@@ -256,6 +256,35 @@ object VfCheck666 {
     fun forget(id: String?) {
         val i = id?.substringBefore(':')?.takeIf { it.startsWith("tt") } ?: return
         prefs()?.edit()?.remove(key(i))?.apply()
+    }
+
+    /** Règle pure (testée) : un verdict « plateforme » est à confirmer si le titre est sorti il y a moins de 180 jours. */
+    fun platformProvisional(date: String, today: LocalDate): Boolean =
+        runCatching { !LocalDate.parse(date.take(10)).isBefore(today.minusDays(180)) }.getOrDefault(false)
+
+    /** Règle pure (testée) : ce verdict en cache est une VF « plateforme » pas encore confirmée par les liens. */
+    fun isProvisional(raw: String?): Boolean = raw != null && raw.startsWith("DUB|") && raw.contains("|p")
+
+    /** 22/11 : le 1er cavalier n'a trouvé aucune release VF : une VF « plateforme » à confirmer est retirée. */
+    fun refute(id: String?) {
+        val i = id?.substringBefore(':')?.takeIf { it.startsWith("tt") } ?: return
+        val raw = prefs()?.getString(key(i), null)
+        if (!isProvisional(raw)) return
+        val tmdbKeys = prefs()?.all?.filter { (k, v) -> k.startsWith("imdb:tmdb:") && v == i }?.keys?.map { it.removePrefix("imdb:") }.orEmpty()
+        store(listOf(i) + tmdbKeys, Tag.NONE, true)
+    }
+
+    /**
+     * 22/11 : une fois, on oublie les VF récentes venues des plateformes (elles n'avaient pas encore la
+     * marque « à confirmer ») : elles sont revérifiées avec la nouvelle règle. Les VF confirmées par une
+     * piste française entendue ou par les liens (confirm) ne sont pas touchées.
+     */
+    fun migrate2211() {
+        val p = prefs() ?: return
+        if (p.getBoolean("mig_2211", false)) return
+        val e = p.edit()
+        p.all.forEach { (k, v) -> if (v is String && v.startsWith("DUB|") && v.endsWith("|r")) e.remove(k) }
+        e.putBoolean("mig_2211", true).apply()
     }
 
     fun confirm(id: String?) {
@@ -303,7 +332,15 @@ object VfCheck666 {
         // 1. pas encore sorti
         if (date.isBlank() || date > LocalDate.now().plusDays(1).toString()) { store(ids, Tag.NONE, true); return Tag.NONE }
         // 2. grande plateforme qui double
-        if (onDubbingPlatform(d.optJSONObject("watch/providers")?.optJSONObject("results"))) { store(ids, Tag.DUB, recent); return Tag.DUB }
+        // 22/11 (Psycho Killer, Disney+) : un film tout juste arrivé sur une plateforme n'a pas forcément
+        // de VF (ou pas encore de lien VF) → verdict « à confirmer » : le 1er cavalier vérifie, et s'il ne
+        // trouve aucune release VF, le titre sort des listes (revérifié dans 3 jours).
+        if (onDubbingPlatform(d.optJSONObject("watch/providers")?.optJSONObject("results"))) {
+            val provisional = platformProvisional(date, LocalDate.now())
+            store(ids, Tag.DUB, recent, platformOnly = provisional)
+            if (provisional && imdb.startsWith("tt")) enqueueStreamCheck(imdb, if (series) "series" else "movie")
+            return Tag.DUB
+        }
         // 3. French-Stream
         val titles = listOf(d.optString("title").ifBlank { d.optString("name") }, d.optString("original_title").ifBlank { d.optString("original_name") })
             .filter { it.isNotBlank() }.distinctBy { canon(it) }
