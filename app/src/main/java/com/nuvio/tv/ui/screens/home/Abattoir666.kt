@@ -74,8 +74,10 @@ object Abattoir666 {
         val visc = isViscous(i)
         val size = 1.4f + 0.6f * ((i * 7) % 5) / 4f
         val release = if (visc) 0.78f else 0.6f
-        val per = if (visc) s.period * 1.6f else s.period
         val y1 = s.y1 + ((i * 13) % 21) - 10
+        // 22/11 : la chute doit avoir le temps d'aller jusqu'au sol (sinon la goutte disparaissait en l'air)
+        val fallNeed = kotlin.math.sqrt(2f * (y1 - s.y0).coerceAtLeast(0f) / GRAVITY)
+        val per = maxOf(if (visc) s.period * 1.6f else s.period, (fallNeed + 0.25f) / (1f - release))
         val ph = (((t / per) + i * 0.37) % 1.0).toFloat()
         if (ph < release) {
             val k = ph / release
