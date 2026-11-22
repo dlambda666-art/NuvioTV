@@ -89,7 +89,9 @@ jobs:
         id: version
         shell: bash
         run: |
-          echo "name=1.0.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          # 22/11 : FrankenStream v2 (ère Frankhorreur) : 2.0.1 = le run qui suit la 1.0.169.
+          # Le code (versionCode) continue de monter : mises à jour et envoi vers l'autre Shield inchangés.
+          echo "name=2.0.$((GITHUB_RUN_NUMBER - 169))" >> "$GITHUB_OUTPUT"
           echo "code=$((1062 + GITHUB_RUN_NUMBER))" >> "$GITHUB_OUTPUT"
 
       - name: Build fullRelease
@@ -106,7 +108,7 @@ jobs:
         shell: bash
         run: |
           VERSION="${{ steps.version.outputs.name }}"
-          PREV=$(git describe --tags --abbrev=0 --match 'v1.0.*' 2>/dev/null || true)
+          PREV=$(git describe --tags --abbrev=0 --match 'v2.0.*' 2>/dev/null || git describe --tags --abbrev=0 --match 'v1.0.*' 2>/dev/null || true)
           {
             echo "666TV $VERSION"
             echo
