@@ -208,12 +208,14 @@ private class Dream666View(context: Context) : View(context) {
         val k = ((now - figureChangedAt) / 1_500f).coerceIn(0f, 1f)
         val a = if (on) k else 1f - k
         if (a <= 0.01f || figureChangedAt == 0L && !on) return
-        val hh = frameW * 0.95f                      // hauteur visible (tête + épaules) au-dessus de la tombe
-        val cx = frameLeft + frameW * 0.84f
-        val base = frameTop + frameW * 0.28f
-        // corps sombre (combinaison), épaules
+        val hh = frameW * 0.8f                       // tête + épaules au-dessus de la tombe du milieu
+        val cx = frameLeft + frameW * 0.86f
+        val base = frameTop + frameW * 0.36f
+        fun c(r: Int, g: Int, b: Int, al: Int) { figurePaint.color = Color.argb((al * a).toInt(), r, g, b) }
         figurePaint.shader = null
-        figurePaint.color = Color.argb((235 * a).toInt(), 10, 10, 14)
+        figurePaint.maskFilter = figureBlur
+        // corps sombre, épaules tombantes
+        c(6, 6, 9, 240)
         val body = Path().apply {
             moveTo(cx - hh * 0.26f, base + hh * 0.2f)
             cubicTo(cx - hh * 0.25f, base - hh * 0.28f, cx - hh * 0.12f, base - hh * 0.36f, cx, base - hh * 0.37f)
@@ -221,18 +223,29 @@ private class Dream666View(context: Context) : View(context) {
             close()
         }
         canvas.drawPath(body, figurePaint)
-        // le masque : ovale pâle sans expression, deux trous noirs (générique, pas un masque de film)
-        val mx = cx; val my = base - hh * 0.55f
-        val mw = hh * 0.16f; val mh = hh * 0.22f
-        figurePaint.color = Color.argb((205 * a).toInt(), 214, 210, 200)
+        // cou et tête (cheveux sombres)
+        canvas.drawRect(cx - hh * 0.065f, base - hh * 0.42f, cx + hh * 0.065f, base - hh * 0.30f, figurePaint)
+        val hx = cx; val hy = base - hh * 0.56f
+        c(8, 7, 8, 245)
+        canvas.drawOval(hx - hh * 0.15f, hy - hh * 0.19f, hx + hh * 0.15f, hy + hh * 0.19f, figurePaint)
+        // le masque pâle, sans expression (générique) : front dans l'ombre, deux trous, un trait de nez
+        val mx = cx + hh * 0.005f; val my = hy + hh * 0.025f
+        val mw = hh * 0.105f; val mh = hh * 0.15f
+        c(160, 160, 155, 175)
         canvas.drawOval(mx - mw, my - mh, mx + mw, my + mh, figurePaint)
-        figurePaint.color = Color.argb((230 * a).toInt(), 8, 8, 10)
-        canvas.drawOval(mx - mw * 0.6f, my - mh * 0.22f, mx - mw * 0.15f, my + mh * 0.02f, figurePaint)
-        canvas.drawOval(mx + mw * 0.15f, my - mh * 0.22f, mx + mw * 0.6f, my + mh * 0.02f, figurePaint)
-        // cheveux sombres
-        figurePaint.color = Color.argb((240 * a).toInt(), 18, 14, 12)
-        canvas.drawArc(mx - mw * 1.08f, my - mh * 1.12f, mx + mw * 1.08f, my + mh * 0.2f, 180f, 180f, true, figurePaint)
+        c(8, 7, 8, 200)
+        canvas.drawOval(mx - mw, my - mh, mx + mw, my - mh * 0.55f, figurePaint)
+        c(5, 5, 6, 235)
+        canvas.drawOval(mx - mw * 0.62f, my - mh * 0.32f, mx - mw * 0.18f, my - mh * 0.08f, figurePaint)
+        canvas.drawOval(mx + mw * 0.18f, my - mh * 0.32f, mx + mw * 0.62f, my - mh * 0.08f, figurePaint)
+        figurePaint.maskFilter = null
+        figurePaint.strokeWidth = 2f
+        c(90, 90, 88, 160)
+        canvas.drawLine(mx, my - mh * 0.05f, mx + mw * 0.08f, my + mh * 0.25f, figurePaint)
+        c(70, 70, 68, 150)
+        canvas.drawLine(mx - mw * 0.3f, my + mh * 0.55f, mx + mw * 0.3f, my + mh * 0.55f, figurePaint)
     }
+    private val figureBlur = android.graphics.BlurMaskFilter(2.5f, android.graphics.BlurMaskFilter.Blur.NORMAL)
 
     /** The Thing : tempête de neige, une nuit sur dix environ. */
     private val snowNight = com.nuvio.tv.core.horreur.Horreur666.snowNight(System.currentTimeMillis() / 86_400_000L)
@@ -243,9 +256,9 @@ private class Dream666View(context: Context) : View(context) {
         for (f in flakes) {
             val sp = f[2]
             val y = ((f[1] + t * 0.12f * sp) % 1.05f) * h
-            val x = ((f[0] + t * 0.05f * sp + sin(t * 1.3f + f[3]) * 0.01f) % 1f + 1f) % 1f * w
+            val x = ((f[0] + t * 0.11f * sp + sin(t * 1.3f + f[3]) * 0.01f) % 1f + 1f) % 1f * w   // vent du blizzard
             snowPaint.alpha = (110 + 120 * sp).toInt()
-            canvas.drawCircle(x, y, 1.2f + 2.6f * sp, snowPaint)
+            canvas.drawCircle(x, y, 1.8f + 3.6f * sp, snowPaint)
         }
         // le blizzard : un voile blanc qui pulse
         snowPaint.alpha = (18 + 14 * sin(t * 0.7f)).toInt().coerceAtLeast(0)
@@ -257,19 +270,17 @@ private class Dream666View(context: Context) : View(context) {
     private fun entity(now: Long): Float? = com.nuvio.tv.core.horreur.Horreur666.entityProgress(now - start)
     private fun drawRushStreaks(canvas: Canvas, p: Float, t: Float, w: Float, h: Float) {
         val e = sin(p * Math.PI.toFloat())                  // monte puis retombe
-        rushPaint.strokeWidth = 3f
-        for (i in 0 until 26) {
-            val seed = i * 97.13f
-            val ang = (seed % 6.28f)
-            val r0 = ((t * 2.2f + i / 26f) % 1f)
-            val cx = w * 0.5f; val cy = h * 0.66f
-            val len = w * (0.06f + 0.18f * r0)
-            val x0 = cx + kotlin.math.cos(ang) * w * 0.7f * r0
-            val y0 = cy + sin(ang) * h * 0.55f * r0
-            val x1 = x0 + kotlin.math.cos(ang) * len
-            val y1 = y0 + sin(ang) * len * 0.6f
-            rushPaint.color = Color.argb((120 * e * r0).toInt(), 200, 205, 215)
-            canvas.drawLine(x0, y0, x1, y1, rushPaint)
+        // la brume file de chaque côté, à ras du sol, de plus en plus vite
+        for (i in 0 until 10) {
+            val r0 = (t * 1.6f + i / 10f) % 1f
+            val side = if (i % 2 == 0) 1f else -1f
+            val cx = w * 0.5f + side * w * (0.05f + 0.62f * r0 * r0)
+            val cy = h * (0.70f + 0.22f * r0)
+            val rad = w * (0.04f + 0.22f * r0)
+            rushPaint.shader = android.graphics.RadialGradient(
+                cx, cy, rad, Color.argb((150 * e * (0.3f + 0.7f * r0)).toInt(), 205, 210, 220), Color.TRANSPARENT, Shader.TileMode.CLAMP
+            )
+            canvas.drawOval(cx - rad, cy - rad * 0.6f, cx + rad, cy + rad * 0.6f, rushPaint)
         }
         // le noir qui se resserre autour (vision de la bête)
         rushPaint.shader = android.graphics.RadialGradient(
