@@ -1618,7 +1618,8 @@ open class MainActivity : ComponentActivity() {
                                 // 666TVF : le néon de l'abattoir coupe au moment du cri
                                 com.nuvio.tv.ui.screens.home.Abattoir666.requestCut()
                                 runCatching {
-                                    android.media.MediaPlayer.create(bellContext, R.raw.bell_vf_666)?.apply {
+                                    // 23/11 : le rire de David (Three Fingers) à la place de la cloche
+                                    android.media.MediaPlayer.create(bellContext, R.raw.rire_vf_666)?.apply {
                                         setVolume(0.8f, 0.8f)
                                         setOnCompletionListener { it.release() }
                                         start()

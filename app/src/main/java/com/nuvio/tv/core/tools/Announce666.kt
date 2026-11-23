@@ -225,6 +225,14 @@ object Announce666 {
                 y = dp(24)
             }
             wm.addView(container, params)
+            // 23/11 : le même rire que dans Frank (les deux annonces vont ensemble)
+            runCatching {
+                android.media.MediaPlayer.create(app, com.nuvio.tv.R.raw.rire_vf_666)?.apply {
+                    setVolume(0.8f, 0.8f)
+                    setOnCompletionListener { it.release() }
+                    start()
+                }
+            }
             box.requestFocus()
             overlayView = container
             true
