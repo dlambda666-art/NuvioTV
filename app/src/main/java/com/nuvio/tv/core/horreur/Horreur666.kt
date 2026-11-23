@@ -10,17 +10,22 @@ import android.content.Context
 object Horreur666 {
     // ---------- Vendredi 13 : « ki-ki-ki ma-ma-ma » à l'entrée de l'onglet Slasher ----------
     private val SLASHER = Regex("slasher", RegexOption.IGNORE_CASE)
-    const val KIKI_GAP_MS = 90_000L
+    const val KIKI_GAP_MS = 6_000L   // 23/11 (réparation 3) : à chaque entrée sur Slasher (6 s : pas de doublon)
     @Volatile private var kikiAt = 0L
+    @Volatile private var lastLabel: String? = null
 
-    /** Règle pure (testée) : jouer le chuchotement ? Onglet Slasher, pas pendant un film, pas plus d'une fois par 90 s. */
+    /** Règle pure (testée) : jouer le chuchotement ? Onglet / rangée Slasher, pas pendant un film, pas deux fois en 6 s. */
     fun shouldWhisper(tabLabel: String?, inPlayer: Boolean, sinceLastMs: Long): Boolean =
         tabLabel != null && SLASHER.containsMatchIn(tabLabel) && !inPlayer && (sinceLastMs < 0 || sinceLastMs >= KIKI_GAP_MS)
 
     fun onTab(context: Context, tabLabel: String?) {
         val now = System.currentTimeMillis()
         val since = if (kikiAt == 0L) -1L else now - kikiAt
-        if (!shouldWhisper(tabLabel, com.nuvio.tv.core.tools.Announce666.inPlayer(), since)) return
+        // seulement en ARRIVANT sur Slasher (pas à chaque redessin de la même rangée)
+        val isSlasher = tabLabel != null && SLASHER.containsMatchIn(tabLabel)
+        val entering = isSlasher && tabLabel != lastLabel
+        lastLabel = tabLabel
+        if (!entering || !shouldWhisper(tabLabel, com.nuvio.tv.core.tools.Announce666.inPlayer(), since)) return
         kikiAt = now
         runCatching {
             android.media.MediaPlayer.create(context.applicationContext, com.nuvio.tv.R.raw.kikimama_666)?.apply {

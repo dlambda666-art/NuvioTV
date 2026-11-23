@@ -24,7 +24,7 @@ object AbattoirSound666 {
 
     /** Durée jouée à l'ouverture des portes (le fichier est repris en boucle s'il est plus court). */
     const val PLAY_MS = 20_000L
-    const val FADE_IN_MS = 120L
+    const val FADE_IN_MS = 1_500L   // 23/11 : monte pendant que la bobine s'efface (fondu croisé)
     const val FADE_OUT_MS = 3_000L
 
     /** Règle pure (testée) : un ancien réglage (toutes les 10 s, 20 s, 1 min, boucle…) devient « aux portes ». */
@@ -69,10 +69,10 @@ object AbattoirSound666 {
         mode != 0 && hasFile && frankInFront && !inPlayer && !playing && (sinceLastDoorsMs < 0 || sinceLastDoorsMs >= DOORS_GAP_MS)
 
     /**
-     * 23/11 (réparation, David : « il a fait le son plusieurs fois la 1re fois ») : après une mise à jour, le
-     * cinéma peut se rejouer 2-3 fois de suite (démarrage, retour, réveil) → une seule fois par tranche de 3 min.
+     * 23/11 : le « 3 fois » venait de la boucle (corrigé) ; le son joue à chaque ouverture des portes,
+     * 15 s d'écart minimum seulement pour ne pas le doubler si deux cinémas s'enchaînent.
      */
-    const val DOORS_GAP_MS = 3 * 60_000L
+    const val DOORS_GAP_MS = 15_000L   // 23/11 (réparation 3) : à CHAQUE ouverture ; 15 s évite seulement un doublon
     @Volatile private var lastDoorsAt = 0L
 
     /** Règle pure (testée) : volume (0..1) à l'instant t : montée très courte, fondu de fin de 3 s (fichier plus long que 20 s). */

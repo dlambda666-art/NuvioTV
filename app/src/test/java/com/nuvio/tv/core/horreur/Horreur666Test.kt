@@ -16,7 +16,8 @@ class Horreur666Test {
         assertFalse(Horreur666.shouldWhisper("Classiques", inPlayer = false, sinceLastMs = -1))
         assertFalse(Horreur666.shouldWhisper(null, inPlayer = false, sinceLastMs = -1))
         assertFalse(Horreur666.shouldWhisper("Slasher", inPlayer = true, sinceLastMs = -1))
-        assertFalse(Horreur666.shouldWhisper("Slasher", inPlayer = false, sinceLastMs = 30_000))
+        assertFalse(Horreur666.shouldWhisper("Slasher", inPlayer = false, sinceLastMs = 3_000))
+        assertTrue(Horreur666.shouldWhisper("Slasher", inPlayer = false, sinceLastMs = 30_000))   // à chaque fois (23-11)
     }
 
     @Test fun `titre a l'envers puis droit (L'Exorciste)`() {

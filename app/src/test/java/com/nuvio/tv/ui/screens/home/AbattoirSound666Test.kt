@@ -46,10 +46,10 @@ class AbattoirSound666Test {
         assertFalse(AbattoirSound666.isAudioName("mp3.txt"))
     }
 
-    @Test fun `une seule fois apres une mise a jour (cinema rejoue plusieurs fois, 23-11)`() {
+    @Test fun `a chaque ouverture des portes, sauf doublon immediat (23-11)`() {
         assertTrue(AbattoirSound666.shouldPlayAtDoors(1, true, true, false, false, sinceLastDoorsMs = -1))
-        assertFalse(AbattoirSound666.shouldPlayAtDoors(1, true, true, false, false, sinceLastDoorsMs = 25_000))
-        assertFalse(AbattoirSound666.shouldPlayAtDoors(1, true, true, false, false, sinceLastDoorsMs = 120_000))
+        assertFalse(AbattoirSound666.shouldPlayAtDoors(1, true, true, false, false, sinceLastDoorsMs = 5_000))
+        assertTrue(AbattoirSound666.shouldPlayAtDoors(1, true, true, false, false, sinceLastDoorsMs = 25_000))
         assertTrue(AbattoirSound666.shouldPlayAtDoors(1, true, true, false, false, sinceLastDoorsMs = AbattoirSound666.DOORS_GAP_MS))
     }
 
@@ -57,7 +57,16 @@ class AbattoirSound666Test {
         assertEquals(7_700L, AbattoirSound666.playLength(7_700L))
         assertEquals(AbattoirSound666.PLAY_MS, AbattoirSound666.playLength(60_000L))
         // fondu de fin raccourci pour un fichier court : on l'entend jusqu'au bout
-        assertEquals(0.4f, AbattoirSound666.fadeGain(5_000, 40, 7_700L), 0.001f)
+        assertEquals(0.4f, AbattoirSound666.fadeGain(4_000, 40, 7_700L), 0.001f)
         assertEquals(0f, AbattoirSound666.fadeGain(7_700, 40, 7_700L), 0.001f)
+    }
+
+    @Test fun `bobine - jamais coupee net, fondu croise avec Machine Head (23-11)`() {
+        val b = com.nuvio.tv.ui.components.Bobine666
+        assertEquals(0.7f, b.fadeLevel(0.7f, 0, 2_600), 0.001f)
+        assertEquals(0.35f, b.fadeLevel(0.7f, 1_300, 2_600), 0.001f)
+        assertEquals(0f, b.fadeLevel(0.7f, 2_600, 2_600), 0.001f)
+        // Machine Head monte pendant que la bobine descend
+        assertTrue(AbattoirSound666.FADE_IN_MS in 800L..b.CROSSFADE_MS)
     }
 }

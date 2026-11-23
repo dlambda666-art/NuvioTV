@@ -49,9 +49,53 @@ object Splash666 {
     @Volatile var showing: Boolean = false
     /** À l'arrivée sur l'accueil : le curseur va sur le bouton mauve (une fois par ouverture). */
     @Volatile var focusHeroOnce: Boolean = true
-    /** 23/11 : fin du dernier cinéma (pas de bobine qui repart juste après). */
-    @Volatile var lastClosedAt: Long = 0L
 }
+/**
+ * 23/11 (réparation 3) : LA bobine du cinéma, une seule pour toute l'appli. Démarrer quand elle tourne déjà
+ * ne fait rien ; s'arrêter se fait toujours en fondu (jamais net).
+ */
+object Bobine666 {
+    const val VOLUME = 0.7f
+    const val CROSSFADE_MS = 2_600L
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var player: android.media.MediaPlayer? = null
+    private var vol = VOLUME
+
+    /** Règle pure (testée) : volume du fondu de sortie à l'instant t (part du volume courant, descend jusqu'à 0). */
+    fun fadeLevel(from: Float, tMs: Long, durationMs: Long): Float =
+        if (durationMs <= 0 || tMs >= durationMs) 0f else (from * (1f - tMs.toFloat() / durationMs)).coerceIn(0f, from)
+
+    fun start(context: android.content.Context) {
+        if (player != null) return
+        player = runCatching {
+            android.media.MediaPlayer.create(context.applicationContext, R.raw.projecteur_666)?.apply {
+                isLooping = false   // 75 s d'une traite
+                setVolume(VOLUME, VOLUME)
+                setOnCompletionListener { mp -> if (player === mp) player = null; runCatching { mp.release() } }
+                start()
+            }
+        }.getOrNull()
+        vol = VOLUME
+    }
+
+    fun fadeOut(durationMs: Long) {
+        val mp = player ?: return
+        player = null
+        val from = vol
+        val t0 = android.os.SystemClock.uptimeMillis()
+        val step = object : Runnable {
+            override fun run() {
+                val t = android.os.SystemClock.uptimeMillis() - t0
+                val v = fadeLevel(from, t, durationMs)
+                runCatching { mp.setVolume(v, v) }
+                if (v <= 0f) { runCatching { mp.stop() }; runCatching { mp.release() } }
+                else handler.postDelayed(this, 40L)
+            }
+        }
+        handler.post(step)
+    }
+}
+
 private val Blood666 = Color(0xFF4E1077)
 
 // Positions sur l'image de la salle (16:9), en fraction de la largeur / hauteur.
@@ -107,47 +151,18 @@ fun StartupSplashScreen(
     }
 
     // --- Son : la bobine du projecteur tourne tant que la salle est à l'écran ---
+    // 23/11 (réparation 3) : une seule bobine pour tout Frank (Bobine666) : jamais deux à la fois, jamais
+    // coupée net ; à l'ouverture des portes elle s'efface pendant que Machine Head monte (fondu croisé).
     val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
-    val projector = remember { arrayOfNulls<android.media.MediaPlayer>(1) }
-    // volume réel de la bobine : le fondu final part de là (11/11 : il repartait de 0.7 → bref bruit à l'arrivée)
-    val projectorVol = remember { floatArrayOf(0.7f) }
     DisposableEffect(lifecycleOwner) {
-        val handler = android.os.Handler(android.os.Looper.getMainLooper())
-        // 23/11 (réparation) : un 2e cinéma juste après le premier reste muet (plus de « reste de bobine »)
-        val recent = Splash666.lastClosedAt > 0 && System.currentTimeMillis() - Splash666.lastClosedAt < 60_000L
-        projector[0] = if (recent) null else runCatching {
-            android.media.MediaPlayer.create(context, R.raw.projecteur_666)?.apply {
-                isLooping = false   // 75 s d'une traite : pas de reprise audible
-                setVolume(0.7f, 0.7f)
-                start()
-            }
-        }.getOrNull()
-        fun fadeOut() {
-            val mp = projector[0] ?: return
-            projector[0] = null
-            val from = projectorVol[0]
-            if (from <= 0.01f) { runCatching { mp.stop(); mp.release() }; return }
-            var step = 0
-            val fade = object : Runnable {
-                override fun run() {
-                    step++
-                    val v = (from * (1f - step / 10f)).coerceAtLeast(0f)
-                    runCatching { mp.setVolume(v, v) }
-                    if (step < 10) handler.postDelayed(this, 60) else runCatching { mp.stop(); mp.release() }
-                }
-            }
-            handler.post(fade)
-        }
-        val cap = Runnable { fadeOut() }
-        handler.postDelayed(cap, 75_000L)
+        Bobine666.start(context)
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) fadeOut()
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) Bobine666.fadeOut(300)
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
-            handler.removeCallbacks(cap)
             lifecycleOwner.lifecycle.removeObserver(observer)
-            fadeOut()
+            Bobine666.fadeOut(800)
         }
     }
 
@@ -173,18 +188,9 @@ fun StartupSplashScreen(
     LaunchedEffect(Unit) { pool.animateTo(1f, tween(12_000, easing = LinearEasing)) }
     LaunchedEffect(closing) {
         if (!closing) return@LaunchedEffect
-        // 23/11 (David) : Machine Head dès que la salle commence à s'ouvrir (avant : un poil tard)
+        // 23/11 (David) : dès que la salle commence à s'ouvrir, la bobine s'efface pendant que Machine Head monte
+        Bobine666.fadeOut(Bobine666.CROSSFADE_MS)
         runCatching { com.nuvio.tv.ui.screens.home.AbattoirSound666.onDoorsOpening(context) }
-        // la bobine baisse doucement jusqu'à l'ouverture des portes et au fondu (pas de grincement)
-        val fade = launch {
-            val steps = 43
-            repeat(steps) { i ->
-                val v = 0.7f * (1f - (i + 1).toFloat() / steps)
-                projectorVol[0] = v
-                projector[0]?.let { mp -> runCatching { mp.setVolume(v, v) } }
-                kotlinx.coroutines.delay(100)
-            }
-        }
         toDoor.animateTo(1f, tween(700))
         kotlinx.coroutines.delay(400)
         // 12/11 : les portes s'ouvrent et on avance sans s'arrêter, jusqu'à ce que les montants sortent
@@ -195,10 +201,6 @@ fun StartupSplashScreen(
             push.animateTo(1f, tween(2_500, easing = androidx.compose.animation.core.CubicBezierEasing(0.5f, 0f, 0.9f, 0.6f)))
         }
         finalFade.snapTo(1f)
-        fade.join()
-        // la bobine s'arrête net à l'arrivée dans l'Abattoir
-        projector[0]?.let { mp -> projector[0] = null; runCatching { mp.stop(); mp.release() } }
-        Splash666.lastClosedAt = System.currentTimeMillis()
         onClosedNow()
     }
 
