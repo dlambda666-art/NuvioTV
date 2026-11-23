@@ -47,8 +47,8 @@ object Horreur666 {
     }
 
     // ---------- Evil Dead / Halloween / The Thing : rythme des apparitions dans l'écran de veille ----------
-    /** Règle pure (testée) : nuit de tempête de neige (≈ 1 sur 10), stable toute la nuit. */
-    fun snowNight(epochDay: Long): Boolean = Math.floorMod(epochDay * 7919L + 13L, 10L) == 0L
+    /** 23/11 (David) : la tempête de neige est TOUJOURS là (fond du cimetière enneigé refait avec Gemini). */
+    fun snowNight(@Suppress("UNUSED_PARAMETER") epochDay: Long): Boolean = true
 
     /** Règle pure (testée) : la caméra-entité d'Evil Dead passe toutes les 7 min (12 s de course). */
     const val ENTITY_EVERY_MS = 7 * 60_000L

@@ -28,9 +28,8 @@ class Horreur666Test {
         assertEquals(0f, Horreur666.titleRotation(60_000), 0.01f)
     }
 
-    @Test fun `tempete de neige environ une nuit sur dix`() {
-        val n = (0L until 1000L).count { Horreur666.snowNight(20_000L + it) }
-        assertTrue("$n", n in 60..140)
+    @Test fun `tempete de neige toutes les nuits (23-11, choix de David)`() {
+        assertTrue((0L until 1000L).all { Horreur666.snowNight(20_000L + it) })
     }
 
     @Test fun `camera Evil Dead passe de temps en temps, pas en permanence`() {

@@ -223,7 +223,7 @@ private class Dream666View(context: Context) : View(context) {
     }.getOrNull()
     private val figureDim = android.graphics.LightingColorFilter(0xC8C8C8, 0)
 
-    /** The Thing : tempête de neige, une nuit sur dix environ. */
+    /** The Thing : tempête de neige, toutes les nuits (23/11 : fond enneigé de David). */
     private val snowNight = com.nuvio.tv.core.horreur.Horreur666.snowNight(System.currentTimeMillis() / 86_400_000L)
     private val flakes = List(if (Light666.active) 90 else 170) { floatArrayOf(rng.nextFloat(), rng.nextFloat(), 0.4f + rng.nextFloat() * 0.6f, rng.nextFloat() * 6.28f) }
     private val snowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
@@ -237,7 +237,7 @@ private class Dream666View(context: Context) : View(context) {
             canvas.drawCircle(x, y, 1.8f + 3.6f * sp, snowPaint)
         }
         // le blizzard : un voile blanc qui pulse
-        snowPaint.alpha = (18 + 14 * sin(t * 0.7f)).toInt().coerceAtLeast(0)
+        snowPaint.alpha = (8 + 8 * sin(t * 0.7f)).toInt().coerceAtLeast(0)   // fond déjà enneigé : voile léger
         canvas.drawRect(0f, 0f, w, h, snowPaint)
     }
 
@@ -513,7 +513,7 @@ private class Dream666View(context: Context) : View(context) {
         // Le grand spectre passe devant tout (sauf l'heure).
         for (g in ghosts) if (g.near) drawGhost(canvas, g, now, w, h, flash)
 
-        // 23/11 : The Thing : tempête de neige certaines nuits
+        // 23/11 : The Thing : tempête de neige (toujours)
         drawSnow(canvas, t, w, h)
 
         drawProgramme(canvas, w, h)
