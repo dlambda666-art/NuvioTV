@@ -154,6 +154,7 @@ jobs:
             --tests 'com.nuvio.tv.ui.screens.home.Home666Test' \
             --tests 'com.nuvio.tv.core.tools.Rapport666Test' \
             --tests 'com.nuvio.tv.core.tools.VfPlatform666Test' \
+            --tests 'com.nuvio.tv.core.wake.ExitTrace666Test' \
             --tests 'com.nuvio.tv.ui.screens.home.Abattoir666Test' \
             --tests 'com.nuvio.tv.core.streams.PluginProgress666Test' \
             --tests 'com.nuvio.tv.core.wake.Rescue666Test' \

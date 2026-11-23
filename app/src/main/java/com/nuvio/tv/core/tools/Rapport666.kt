@@ -29,6 +29,13 @@ object Rapport666 {
         .replace(CARD_RE, "[masqué]")
         .replace(LONG_RE, "[masqué]")
 
+    /** Règle pure (testée) : une ligne de pile « at classe.méthode(Fichier.kt:12) » garde ses noms (longs mais sans secret) ;
+     *  toute autre ligne (message d'erreur) est filtrée comme le reste. */
+    fun cleanTrace(line: String): String {
+        val frame = Regex("""^\s*at [\w$.<>\-]+\([\w$.\- ]*(?::\d+)?\)\s*$""")
+        return if (frame.matches(line)) line else clean(line)
+    }
+
     /** Règle pure (testée) : vrai si le texte contient encore un secret possible (garde-fou). */
     fun looksSecret(text: String): Boolean =
         URL_RE.containsMatchIn(text) || KV_RE.containsMatchIn(text.replace("=[masqué]", "")) || LONG_RE.containsMatchIn(text)
@@ -85,6 +92,11 @@ object Rapport666 {
         val annonces = runCatching { Announce666.entries(context, now) }.getOrDefault(emptyList()).take(40)
         if (annonces.isEmpty()) line("(aucune)")
         annonces.forEach { line("${day.format(Date(it.at))} · ${it.text} · ${it.where}") }
+        line()
+
+        line("== Blocages / plantages (où, dans le code) ==")
+        val traces = runCatching { com.nuvio.tv.core.wake.ExitReason666.traces(context) }.getOrDefault("")
+        if (traces.isBlank()) line("(aucun noté)") else traces.lines().forEach { out.append(cleanTrace(it)).append('\n') }
         line()
 
         line("== Coupures réseau / redémarrages ==")

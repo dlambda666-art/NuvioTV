@@ -381,6 +381,7 @@ open class MainActivity : ComponentActivity() {
         com.nuvio.tv.ui.components.Tomb666.init(this)
         // 20/11 : pourquoi Frank s'est fermé la dernière fois (mémoire, plantage…) → journal des annonces
         runCatching { com.nuvio.tv.core.wake.ExitReason666.logLastExit(this) }
+        runCatching { com.nuvio.tv.core.wake.ExitReason666.installCrashCatcher(this) }
         com.nuvio.tv.core.tools.Light666.init(this)
         com.nuvio.tv.core.tools.Clock666.init(this)
         com.nuvio.tv.core.tools.PhoneLink666.init(this)
