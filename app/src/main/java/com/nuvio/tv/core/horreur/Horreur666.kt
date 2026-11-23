@@ -8,11 +8,26 @@ import android.content.Context
  * sont posés là où ils servent (écran de veille, Abattoir, Outils 666, annonces).
  */
 object Horreur666 {
+    // ---------- 23/11 : un son court joué jusqu'au bout (lecteur gardé, sinon Android peut le couper) ----------
+    private val held = java.util.Collections.synchronizedSet(HashSet<android.media.MediaPlayer>())
+
+    fun playHeld(context: Context, res: Int, volume: Float) {
+        runCatching {
+            android.media.MediaPlayer.create(context.applicationContext, res)?.apply {
+                held += this
+                setVolume(volume, volume)
+                setOnCompletionListener { mp -> held -= mp; mp.release() }
+                start()
+            }
+        }
+    }
+
     // ---------- Vendredi 13 : « ki-ki-ki ma-ma-ma » à l'entrée de l'onglet Slasher ----------
     private val SLASHER = Regex("slasher", RegexOption.IGNORE_CASE)
     const val KIKI_GAP_MS = 6_000L   // 23/11 (réparation 3) : à chaque entrée sur Slasher (6 s : pas de doublon)
     @Volatile private var kikiAt = 0L
     @Volatile private var lastLabel: String? = null
+    @Volatile private var whisper: android.media.MediaPlayer? = null
 
     /** Règle pure (testée) : jouer le chuchotement ? Onglet / rangée Slasher, pas pendant un film, pas deux fois en 6 s. */
     fun shouldWhisper(tabLabel: String?, inPlayer: Boolean, sinceLastMs: Long): Boolean =
@@ -27,13 +42,16 @@ object Horreur666 {
         lastLabel = tabLabel
         if (!entering || !shouldWhisper(tabLabel, com.nuvio.tv.core.tools.Announce666.inPlayer(), since)) return
         kikiAt = now
-        runCatching {
+        // 23/11 (réparation) : le lecteur est gardé jusqu'au bout (sans référence, Android pouvait le couper
+        // en plein son : « seulement 2 ki ») ; un nouveau passage relance proprement depuis le début.
+        runCatching { whisper?.let { it.stop(); it.release() } }
+        whisper = runCatching {
             android.media.MediaPlayer.create(context.applicationContext, com.nuvio.tv.R.raw.kikimama_666)?.apply {
                 setVolume(0.9f, 0.9f)
-                setOnCompletionListener { it.release() }
+                setOnCompletionListener { mp -> if (whisper === mp) whisper = null; mp.release() }
                 start()
             }
-        }
+        }.getOrNull()
     }
 
     // ---------- L'Exorciste : le titre d'un nouveau film en VF s'affiche une seconde à l'envers ----------

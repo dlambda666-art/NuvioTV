@@ -42,4 +42,11 @@ class WakeLaunch666Test {
         org.junit.Assert.assertFalse(WakeLaunch666.wakeAgain(10_000L, 12_000L))
         org.junit.Assert.assertTrue(WakeLaunch666.wakeAgain(10_000L, 16_000L))
     }
+
+    @Test fun `retour d'Orange TV ou d'une autre appli = cinema (23-11)`() {
+        org.junit.Assert.assertTrue(WakeLaunch666.replayCinemaAfterOtherApp(60_000L, inPlayer = false, externalPlayer = false))
+        org.junit.Assert.assertFalse(WakeLaunch666.replayCinemaAfterOtherApp(1_000L, inPlayer = false, externalPlayer = false))
+        org.junit.Assert.assertFalse(WakeLaunch666.replayCinemaAfterOtherApp(60_000L, inPlayer = true, externalPlayer = false))
+        org.junit.Assert.assertFalse(WakeLaunch666.replayCinemaAfterOtherApp(60_000L, inPlayer = false, externalPlayer = true))
+    }
 }

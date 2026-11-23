@@ -54,6 +54,16 @@ object WakeLaunch666 {
      */
     fun replayCinemaOnResume(screenWentOff: Boolean, inPlayer: Boolean): Boolean = screenWentOff && !inPlayer
 
+    /** 23/11 (David) : Frank est passé derrière une autre appli (Orange TV, YouTube…) : quand. 0 = non. */
+    @Volatile var backgroundSince: Long = 0L
+
+    /**
+     * Règle pure (testée) : en revenant d'une autre appli (Orange TV ou autre), cinéma aussi. Pas pour un aller-retour
+     * éclair (< 3 s), pas pendant un film, pas au retour d'un lecteur externe lancé par Frank.
+     */
+    fun replayCinemaAfterOtherApp(awayMs: Long, inPlayer: Boolean, externalPlayer: Boolean): Boolean =
+        awayMs >= 3_000L && !inPlayer && !externalPlayer
+
     private val _homeNonce = MutableStateFlow(0)
     /** Augmente à chaque appui sur le bouton Accueil quand 666TV est le launcher. */
     val homeNonce: StateFlow<Int> = _homeNonce

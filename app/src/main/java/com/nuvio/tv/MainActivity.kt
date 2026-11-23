@@ -1619,11 +1619,7 @@ open class MainActivity : ComponentActivity() {
                                 com.nuvio.tv.ui.screens.home.Abattoir666.requestCut()
                                 runCatching {
                                     // 23/11 : le rire de David (Three Fingers) à la place de la cloche
-                                    android.media.MediaPlayer.create(bellContext, R.raw.rire_vf_666)?.apply {
-                                        setVolume(0.8f, 0.8f)
-                                        setOnCompletionListener { it.release() }
-                                        start()
-                                    }
+                                    com.nuvio.tv.core.horreur.Horreur666.playHeld(bellContext, com.nuvio.tv.R.raw.rire_vf_666, 0.8f)
                                 }
                             }
                             if (calendarVfAnnouncements.isNotEmpty() && currentRoute?.startsWith("player/") != true && playerOpen666 == 0) {
@@ -1724,7 +1720,13 @@ open class MainActivity : ComponentActivity() {
         com.nuvio.tv.core.wake.WakeLaunch666.onResumed(this, true)
         // 23/11 (David) : à chaque allumage de la TV, on repart du cinéma, puis les portes de l'Abattoir
         // s'ouvrent avec le son (même si Android n'a pas laissé passer l'ouverture « réveil »)
-        if (com.nuvio.tv.core.wake.WakeLaunch666.screenWentOff) {
+        // 23/11 (David) : et aussi en revenant d'Orange TV ou d'une autre appli
+        val away666 = com.nuvio.tv.core.wake.WakeLaunch666.backgroundSince.let { if (it > 0) System.currentTimeMillis() - it else -1L }
+        com.nuvio.tv.core.wake.WakeLaunch666.backgroundSince = 0L
+        val fromOtherApp666 = away666 >= 0 && com.nuvio.tv.core.wake.WakeLaunch666.replayCinemaAfterOtherApp(
+            away666, com.nuvio.tv.core.tools.Announce666.inPlayer(), externalPlaybackTracker.awaitingExternal666 || externalPlaybackTracker.isTracking
+        )
+        if (com.nuvio.tv.core.wake.WakeLaunch666.screenWentOff || fromOtherApp666) {
             com.nuvio.tv.core.wake.WakeLaunch666.screenWentOff = false
             val inPlayer666 = com.nuvio.tv.core.tools.Announce666.inPlayer()
             if (com.nuvio.tv.core.wake.WakeLaunch666.replayCinemaOnResume(true, inPlayer666)) {
@@ -1868,6 +1870,8 @@ open class MainActivity : ComponentActivity() {
     override fun onStop() {
         // 20/11 : tu quittes Frank toi-même (Accueil, autre appli) → pas de « retour en plein film »
         com.nuvio.tv.core.wake.Rescue666.stopBeat(this)
+        // 23/11 : on note quand Frank passe derrière une autre appli (cinéma au retour)
+        com.nuvio.tv.core.wake.WakeLaunch666.backgroundSince = System.currentTimeMillis()
         externalPlaybackTracker.onExternalPlayerCoveredApp()
         super.onStop()
         startupSyncService.stopPeriodicSurfacePulls()
