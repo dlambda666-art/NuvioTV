@@ -56,14 +56,19 @@ object Splash666 {
  */
 object Bobine666 {
     const val VOLUME = 0.7f
-    const val CROSSFADE_MS = 2_600L
+    const val CROSSFADE_MS = 4_000L
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private var player: android.media.MediaPlayer? = null
     private var vol = VOLUME
 
     /** Règle pure (testée) : volume du fondu de sortie à l'instant t (part du volume courant, descend jusqu'à 0). */
-    fun fadeLevel(from: Float, tMs: Long, durationMs: Long): Float =
-        if (durationMs <= 0 || tMs >= durationMs) 0f else (from * (1f - tMs.toFloat() / durationMs)).coerceIn(0f, from)
+    fun fadeLevel(from: Float, tMs: Long, durationMs: Long): Float {
+        if (durationMs <= 0 || tMs >= durationMs) return 0f
+        // 23/11 (David : « ça s'arrête encore un peu sec ») : courbe douce (l'oreille entend en logarithme) :
+        // la baisse est surtout au début, la fin s'éteint lentement au lieu de tomber d'un coup
+        val k = 1f - tMs.toFloat() / durationMs
+        return (from * k * k * k).coerceIn(0f, from)
+    }
 
     fun start(context: android.content.Context) {
         if (player != null) return

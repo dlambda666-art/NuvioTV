@@ -63,9 +63,10 @@ class AbattoirSound666Test {
 
     @Test fun `bobine - jamais coupee net, fondu croise avec Machine Head (23-11)`() {
         val b = com.nuvio.tv.ui.components.Bobine666
-        assertEquals(0.7f, b.fadeLevel(0.7f, 0, 2_600), 0.001f)
-        assertEquals(0.35f, b.fadeLevel(0.7f, 1_300, 2_600), 0.001f)
-        assertEquals(0f, b.fadeLevel(0.7f, 2_600, 2_600), 0.001f)
+        assertEquals(0.7f, b.fadeLevel(0.7f, 0, 4_000), 0.001f)
+        assertEquals(0.0875f, b.fadeLevel(0.7f, 2_000, 4_000), 0.001f)   // courbe douce (cube)
+        assertTrue(b.fadeLevel(0.7f, 3_800, 4_000) > 0f)                // pas d'arrêt sec avant la fin
+        assertEquals(0f, b.fadeLevel(0.7f, 4_000, 4_000), 0.001f)
         // Machine Head monte pendant que la bobine descend
         assertTrue(AbattoirSound666.FADE_IN_MS in 800L..b.CROSSFADE_MS)
     }
