@@ -361,19 +361,19 @@ private fun CalendarVfBannerBox666(episodes: List<CalendarEpisode>) {
             color = if (vf) androidx.compose.ui.graphics.Color(0xFF4CC36B) else NuvioTheme.colors.TextPrimary
         )
         // 23/11 : clin d'œil à L'Exorciste : le 1er titre arrive à l'envers, puis se remet droit
-        var exorcistT by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+        val exorcistT = androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(0L) }
         androidx.compose.runtime.LaunchedEffect(Unit) {
             val start = System.currentTimeMillis()
             while (true) {
-                exorcistT = System.currentTimeMillis() - start
-                if (exorcistT > com.nuvio.tv.core.horreur.Horreur666.UPSIDE_MS + com.nuvio.tv.core.horreur.Horreur666.UPSIDE_TURN_MS) break
+                exorcistT.longValue = System.currentTimeMillis() - start
+                if (exorcistT.longValue > com.nuvio.tv.core.horreur.Horreur666.UPSIDE_MS + com.nuvio.tv.core.horreur.Horreur666.UPSIDE_TURN_MS) break
                 kotlinx.coroutines.delay(16)
             }
         }
         // 666TVF (04/11) : l'affiche à côté du nom, pour voir tout de suite de quel film / série il s'agit
         episodes.take(4).forEachIndexed { i, ep ->
             androidx.compose.foundation.layout.Row(
-                modifier = if (i == 0) Modifier.graphicsLayer { rotationZ = com.nuvio.tv.core.horreur.Horreur666.titleRotation(exorcistT) } else Modifier,
+                modifier = if (i == 0) Modifier.graphicsLayer { rotationZ = com.nuvio.tv.core.horreur.Horreur666.titleRotation(exorcistT.longValue) } else Modifier,
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
