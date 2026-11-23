@@ -202,50 +202,26 @@ private class Dream666View(context: Context) : View(context) {
 
     // ---- 23/11 : clins d'œil horreur (idées de David) ----
     /** Halloween : une silhouette masquée, immobile, derrière la tombe du milieu ; au passage suivant du nuage, partie. */
-    private val figurePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val figurePaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private fun drawFigure(canvas: Canvas, now: Long, w: Float, h: Float, frameTop: Float, frameLeft: Float, frameW: Float) {
         val on = com.nuvio.tv.core.horreur.Horreur666.figureVisible(cloudPasses)
         val k = ((now - figureChangedAt) / 1_500f).coerceIn(0f, 1f)
         val a = if (on) k else 1f - k
         if (a <= 0.01f || figureChangedAt == 0L && !on) return
-        val hh = frameW * 0.8f                       // tête + épaules au-dessus de la tombe du milieu
-        val cx = frameLeft + frameW * 0.86f
-        val base = frameTop + frameW * 0.36f
-        fun c(r: Int, g: Int, b: Int, al: Int) { figurePaint.color = Color.argb((al * a).toInt(), r, g, b) }
-        figurePaint.shader = null
-        figurePaint.maskFilter = figureBlur
-        // corps sombre, épaules tombantes
-        c(6, 6, 9, 240)
-        val body = Path().apply {
-            moveTo(cx - hh * 0.26f, base + hh * 0.2f)
-            cubicTo(cx - hh * 0.25f, base - hh * 0.28f, cx - hh * 0.12f, base - hh * 0.36f, cx, base - hh * 0.37f)
-            cubicTo(cx + hh * 0.12f, base - hh * 0.36f, cx + hh * 0.25f, base - hh * 0.28f, cx + hh * 0.26f, base + hh * 0.2f)
-            close()
-        }
-        canvas.drawPath(body, figurePaint)
-        // cou et tête (cheveux sombres)
-        canvas.drawRect(cx - hh * 0.065f, base - hh * 0.42f, cx + hh * 0.065f, base - hh * 0.30f, figurePaint)
-        val hx = cx; val hy = base - hh * 0.56f
-        c(8, 7, 8, 245)
-        canvas.drawOval(hx - hh * 0.15f, hy - hh * 0.19f, hx + hh * 0.15f, hy + hh * 0.19f, figurePaint)
-        // le masque pâle, sans expression (générique) : front dans l'ombre, deux trous, un trait de nez
-        val mx = cx + hh * 0.005f; val my = hy + hh * 0.025f
-        val mw = hh * 0.105f; val mh = hh * 0.15f
-        c(160, 160, 155, 175)
-        canvas.drawOval(mx - mw, my - mh, mx + mw, my + mh, figurePaint)
-        c(8, 7, 8, 200)
-        canvas.drawOval(mx - mw, my - mh, mx + mw, my - mh * 0.55f, figurePaint)
-        c(5, 5, 6, 235)
-        canvas.drawOval(mx - mw * 0.62f, my - mh * 0.32f, mx - mw * 0.18f, my - mh * 0.08f, figurePaint)
-        canvas.drawOval(mx + mw * 0.18f, my - mh * 0.32f, mx + mw * 0.62f, my - mh * 0.08f, figurePaint)
+        // 23/11 : image refaite par David (Gemini), découpée ; calée sur la tombe du milieu (fractions de sa largeur)
+        val bmp = figureBitmap ?: return
+        val k = frameW / 438f
+        val l = frameLeft + 251f * k
+        val tp = frameTop - 168.6f * k
         figurePaint.maskFilter = null
-        figurePaint.strokeWidth = 2f
-        c(90, 90, 88, 160)
-        canvas.drawLine(mx, my - mh * 0.05f, mx + mw * 0.08f, my + mh * 0.25f, figurePaint)
-        c(70, 70, 68, 150)
-        canvas.drawLine(mx - mw * 0.3f, my + mh * 0.55f, mx + mw * 0.3f, my + mh * 0.55f, figurePaint)
+        figurePaint.alpha = (255 * a).toInt()
+        figurePaint.colorFilter = figureDim   // même voile que le fond du cimetière
+        canvas.drawBitmap(bmp, null, RectF(l, tp, l + bmp.width * k, tp + bmp.height * k), figurePaint)
     }
-    private val figureBlur = android.graphics.BlurMaskFilter(2.5f, android.graphics.BlurMaskFilter.Blur.NORMAL)
+    private val figureBitmap: Bitmap? = runCatching {
+        BitmapFactory.decodeResource(resources, R.drawable.silhouette_666, BitmapFactory.Options().apply { inScaled = false })
+    }.getOrNull()
+    private val figureDim = android.graphics.LightingColorFilter(0xC8C8C8, 0)
 
     /** The Thing : tempête de neige, une nuit sur dix environ. */
     private val snowNight = com.nuvio.tv.core.horreur.Horreur666.snowNight(System.currentTimeMillis() / 86_400_000L)
