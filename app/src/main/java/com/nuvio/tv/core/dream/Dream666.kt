@@ -210,13 +210,13 @@ private class Dream666View(context: Context) : View(context) {
         if (a <= 0.01f || figureChangedAt == 0L && !on) return
         // 23/11 : image refaite par David (Gemini), découpée ; calée sur la tombe du milieu (fractions de sa largeur)
         val bmp = figureBitmap ?: return
-        val k = frameW / 438f
-        val l = frameLeft + 251f * k
-        val tp = frameTop - 168.6f * k
+        val sc = frameW / 438f
+        val l = frameLeft + 251f * sc
+        val tp = frameTop - 168.6f * sc
         figurePaint.maskFilter = null
         figurePaint.alpha = (255 * a).toInt()
         figurePaint.colorFilter = figureDim   // même voile que le fond du cimetière
-        canvas.drawBitmap(bmp, null, RectF(l, tp, l + bmp.width * k, tp + bmp.height * k), figurePaint)
+        canvas.drawBitmap(bmp, null, RectF(l, tp, l + bmp.width * sc, tp + bmp.height * sc), figurePaint)
     }
     private val figureBitmap: Bitmap? = runCatching {
         BitmapFactory.decodeResource(resources, R.drawable.silhouette_666, BitmapFactory.Options().apply { inScaled = false })
