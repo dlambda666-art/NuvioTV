@@ -42,4 +42,22 @@ class Home666Test {
             assertTrue("goutte en ${s.x},${s.y0}", !surLui)
         }
     }
+
+    // 23/11 : bouton du programme en cours sous le corps pendu
+    @Test fun `bouton sous le corps, centre sur lui, jamais dans les rangees`() {
+        val spot = Home666.bodyButtonSpot(960f, 540f, 540f * 0.52f)
+        org.junit.Assert.assertEquals(165f, spot.centerX, 0.5f)          // 330 / 2
+        assertTrue(spot.top >= 487f / 2f - 0.5f || spot.top <= 540f - 540f * 0.52f - 28f)
+        assertTrue(spot.top + 28f <= 540f - 540f * 0.52f)                 // au-dessus de « Continuer à regarder »
+        // écran plus étroit (Crop calé à droite) : le corps se décale, le bouton aussi
+        val narrow = Home666.bodyButtonSpot(800f, 540f, 280f)
+        assertTrue(narrow.centerX < 165f)
+    }
+
+    @Test fun `titre du programme dans le bouton`() {
+        org.junit.Assert.assertEquals("Godzilla Minus One", Home666.bodyButtonLabel("Godzilla Minus One"))
+        org.junit.Assert.assertEquals("Reprendre en VF", Home666.bodyButtonLabel(null))
+        org.junit.Assert.assertEquals("Reprendre en VF", Home666.bodyButtonLabel("  "))
+        assertTrue(Home666.bodyButtonLabel("x".repeat(60)).length <= 34)
+    }
 }

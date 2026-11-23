@@ -209,8 +209,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
         },
         label = "abattoir666"
     )
-    // 18/11 : son d'ambiance (coupé par défaut ; seulement l'Abattoir à l'écran, jamais pendant une porte)
-    AbattoirSound666Effect(abattoirOnScreen = visible && !opening)
+    // 23/11 : le son de l'Abattoir ne joue plus ici en boucle : une fois, à l'ouverture des portes du cinéma
     if (alpha <= 0f) return
     val context = androidx.compose.ui.platform.LocalContext.current
     val neonOff: ImageBitmap = ImageBitmap.imageResource(R.drawable.neon_off_666)

@@ -5,33 +5,32 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import kotlinx.coroutines.delay
 
 /**
  * FrankenStream (18/11) : son d'ambiance de l'Abattoir.
  *
  * Frank ne contient aucun son : il lit un fichier choisi sur la Shield (Download, disque de 4 To).
  * Le fichier reste sur la Shield, jamais envoyé ni publié. Coupé par défaut.
- * Seulement quand l'Abattoir est à l'écran et que Frank est au premier plan : silence pendant les films,
- * Orange TV, l'écran de veille et la veille de la Shield.
+ * 23/11 : il ne joue plus qu'une fois, ~20 s, quand les portes de l'Abattoir s'ouvrent après le cinéma.
+ * Silence pendant les films, Orange TV, l'écran de veille et la veille de la Shield.
  */
 object AbattoirSound666 {
     private const val PREFS = "666tv_abattoir_sound"
-    /** En secondes : 0 = coupé, sinon une fois toutes les N secondes (18/11 : seulement 10 s et 20 s, voulu par David). */
-    val MODES = listOf(0, 10, 20)
+    /**
+     * 23/11 (David) : plus de répétition. 0 = coupé, 1 = une seule fois, à l'ouverture des portes
+     * de l'Abattoir après le cinéma (lancement, mise à jour, allumage de la TV).
+     */
+    val MODES = listOf(0, 1)
 
-    /** Règle pure (testée) : un ancien réglage plus long (1 min, boucle…) devient 20 s. */
-    fun migrate(seconds: Int): Int = when {
-        seconds == 0 -> 0
-        seconds in MODES -> seconds
-        else -> 20
-    }
+    /** Durée jouée à l'ouverture des portes (le fichier est repris en boucle s'il est plus court). */
+    const val PLAY_MS = 20_000L
+    const val FADE_IN_MS = 400L
+    const val FADE_OUT_MS = 3_000L
+
+    /** Règle pure (testée) : un ancien réglage (toutes les 10 s, 20 s, 1 min, boucle…) devient « aux portes ». */
+    fun migrate(seconds: Int): Int = if (seconds == 0) 0 else 1
     val VOLUMES = listOf(10, 20, 30, 40, 60)
-    const val FADE_MS = 1_500L
-
+    
     data class Settings(val mode: Int, val uri: String?, val name: String?, val volume: Int)
 
     fun settings(context: Context): Settings = runCatching {
@@ -60,40 +59,33 @@ object AbattoirSound666 {
 
     fun setFile(context: Context, uri: String, name: String) = edit(context) { putString("uri", uri); putString("name", name) }
 
-    fun modeLabel(mode: Int): String = when {
-        mode == 0 -> "coupé"
-        mode < 0 -> "en boucle douce"
-        mode < 60 -> "toutes les $mode s"
-        mode == 60 -> "toutes les minutes"
-        else -> "toutes les ${mode / 60} min"
-    }
+    fun modeLabel(mode: Int): String = if (mode == 0) "coupé" else "à l'ouverture des portes"
 
     /**
-     * Règle pure (testée) : faut-il jouer maintenant ?
-     * Jamais si coupé, sans fichier, Abattoir pas à l'écran, Frank pas au premier plan (Orange TV, écran
-     * de veille), écran éteint ou film en cours. En boucle : dès que le son précédent est fini. Sinon :
-     * l'intervalle depuis le début du dernier son.
+     * Règle pure (testée) : les portes de l'Abattoir s'ouvrent (fin du cinéma) : faut-il jouer ?
+     * Jamais si coupé, sans fichier, pendant un film, Frank pas au premier plan ou déjà en train de jouer.
      */
-    fun shouldPlay(
-        mode: Int, hasFile: Boolean, abattoirOnScreen: Boolean, frankInFront: Boolean,
-        screenOn: Boolean, inPlayer: Boolean, playing: Boolean, sinceLastStartMs: Long
-    ): Boolean {
-        if (mode == 0 || !hasFile || !abattoirOnScreen || !frankInFront || !screenOn || inPlayer || playing) return false
-        if (sinceLastStartMs < 0) return true
-        return if (mode < 0) true else sinceLastStartMs >= mode * 1_000L
-    }
+    fun shouldPlayAtDoors(mode: Int, hasFile: Boolean, frankInFront: Boolean, inPlayer: Boolean, playing: Boolean): Boolean =
+        mode != 0 && hasFile && frankInFront && !inPlayer && !playing
 
-    /** Règle pure (testée) : volume du fondu (0..1) à l'instant t d'un son de durée d. */
-    fun fadeGain(tMs: Long, durationMs: Long, volumePct: Int): Float {
+    /** Règle pure (testée) : volume (0..1) à l'instant t des 20 s : montée courte, fondu de fin de 3 s. */
+    fun fadeGain(tMs: Long, volumePct: Int, totalMs: Long = PLAY_MS): Float {
         val v = volumePct.coerceIn(0, 100) / 100f
-        if (durationMs <= 0) return v
-        val fade = minOf(FADE_MS, durationMs / 3)
         val k = when {
-            tMs < fade -> tMs.toFloat() / fade
-            tMs > durationMs - fade -> (durationMs - tMs).toFloat() / fade
+            tMs < 0 || tMs >= totalMs -> 0f
+            tMs < FADE_IN_MS -> tMs.toFloat() / FADE_IN_MS
+            tMs > totalMs - FADE_OUT_MS -> (totalMs - tMs).toFloat() / FADE_OUT_MS
             else -> 1f
         }
-        return (v * k.coerceIn(0f, 1f))
+        return v * k.coerceIn(0f, 1f)
+    }
+
+    /** Appelé par le cinéma quand les portes commencent à s'ouvrir. */
+    fun onDoorsOpening(context: Context) {
+        val s = settings(context)
+        val inPlayer = com.nuvio.tv.core.tools.Announce666.inPlayer()
+        val front = com.nuvio.tv.core.wake.WakeLaunch666.resumed
+        if (shouldPlayAtDoors(s.mode, s.uri != null, front, inPlayer, isPlaying)) play(context, s.uri!!, s.volume)
     }
 
     // ---------- Lecture ----------
@@ -110,19 +102,23 @@ object AbattoirSound666 {
         runCatching {
             val mp = MediaPlayer()
             mp.setDataSource(app, Uri.parse(uri))
-            mp.setOnCompletionListener { stop() }
+            mp.isLooping = true            // un fichier plus court que 20 s repart du début
             mp.setOnErrorListener { _, _, _ -> stop(); true }
             mp.prepare()
             mp.setVolume(0f, 0f)
             mp.start()
             player = mp
-            lastStartAt = System.currentTimeMillis()
-            val duration = mp.duration.toLong()
+            val start = System.currentTimeMillis()
+            lastStartAt = start
             val tick = object : Runnable {
                 override fun run() {
                     val p = player ?: return
-                    val t = runCatching { p.currentPosition.toLong() }.getOrDefault(0L)
-                    val g = fadeGain(t, duration, volumePct)
+                    val t = System.currentTimeMillis() - start
+                    // un film qui démarre, Orange TV, la veille : on coupe tout de suite
+                    if (t >= PLAY_MS || com.nuvio.tv.core.tools.Announce666.inPlayer() || !com.nuvio.tv.core.wake.WakeLaunch666.resumed) {
+                        stop(); return
+                    }
+                    val g = fadeGain(t, volumePct)
                     runCatching { p.setVolume(g, g) }
                     handler.postDelayed(this, 50L)
                 }
@@ -201,26 +197,3 @@ object AbattoirSound666 {
     }.getOrDefault(emptyList())
 }
 
-/** À poser dans l'Abattoir : joue le son selon le réglage, tant que l'Abattoir est à l'écran. */
-@Composable
-fun AbattoirSound666Effect(abattoirOnScreen: Boolean) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val lifecycle = androidx.compose.ui.platform.LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(abattoirOnScreen) {
-        if (!abattoirOnScreen) { AbattoirSound666.stop(); return@LaunchedEffect }
-        while (true) {
-            val s = AbattoirSound666.settings(context)
-            val front = lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
-            val screenOn = runCatching {
-                (context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager).isInteractive
-            }.getOrDefault(true)
-            val inPlayer = com.nuvio.tv.core.tools.Announce666.inPlayer()
-            if (!front || !screenOn || inPlayer || s.mode == 0) AbattoirSound666.stop()
-            else if (AbattoirSound666.shouldPlay(
-                    s.mode, s.uri != null, true, front, screenOn, inPlayer, AbattoirSound666.isPlaying, AbattoirSound666.sinceLastStart()
-                )) AbattoirSound666.play(context, s.uri!!, s.volume)
-            delay(1_000L)
-        }
-    }
-    DisposableEffect(Unit) { onDispose { AbattoirSound666.stop() } }
-}

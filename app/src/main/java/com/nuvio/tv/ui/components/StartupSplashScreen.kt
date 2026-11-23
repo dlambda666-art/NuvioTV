@@ -182,6 +182,8 @@ fun StartupSplashScreen(
         kotlinx.coroutines.delay(400)
         // 12/11 : les portes s'ouvrent et on avance sans s'arrêter, jusqu'à ce que les montants sortent
         // de l'écran : on est dans l'abattoir. Plus de fondu (rien ne reste à effacer).
+        // 23/11 (David) : Machine Head, une fois, quand les portes de l'Abattoir s'ouvrent
+        runCatching { com.nuvio.tv.ui.screens.home.AbattoirSound666.onDoorsOpening(context) }
         kotlinx.coroutines.coroutineScope {
             launch { open.animateTo(1f, tween(3_200, easing = FastOutSlowInEasing)) }
             kotlinx.coroutines.delay(1_100)

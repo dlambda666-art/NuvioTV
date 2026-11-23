@@ -29,4 +29,17 @@ class WakeLaunch666Test {
         assertTrue(WakeLaunch666.shouldRelaunchAfterUpdate(fromBanner = false, wasFront = true))   // poussée par l'autre Shield, Frank à l'écran
         assertFalse(WakeLaunch666.shouldRelaunchAfterUpdate(fromBanner = false, wasFront = false)) // Orange TV devant : on ne passe pas devant
     }
+
+    // 23/11 : à chaque allumage de la TV → cinéma, portes, son ; jamais par-dessus un film ; un seul cinéma
+    @Test fun `allumage TV rejoue le cinema sauf pendant un film`() {
+        org.junit.Assert.assertTrue(WakeLaunch666.replayCinemaOnResume(screenWentOff = true, inPlayer = false))
+        org.junit.Assert.assertFalse(WakeLaunch666.replayCinemaOnResume(screenWentOff = true, inPlayer = true))
+        org.junit.Assert.assertFalse(WakeLaunch666.replayCinemaOnResume(screenWentOff = false, inPlayer = false))
+    }
+
+    @Test fun `deux reveils coup sur coup = un seul cinema`() {
+        org.junit.Assert.assertTrue(WakeLaunch666.wakeAgain(0L, 1_000L))
+        org.junit.Assert.assertFalse(WakeLaunch666.wakeAgain(10_000L, 12_000L))
+        org.junit.Assert.assertTrue(WakeLaunch666.wakeAgain(10_000L, 16_000L))
+    }
 }

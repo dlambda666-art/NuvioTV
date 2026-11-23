@@ -5,41 +5,38 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Cas pièges (18/11) : jamais de son pendant un film ; l'intervalle est respecté. */
+/** Cas pièges (18/11, revus le 23/11) : une seule fois aux portes, jamais pendant un film, ~20 s avec fondu. */
 class AbattoirSound666Test {
-    private fun play(
-        mode: Int = 60, hasFile: Boolean = true, onScreen: Boolean = true, front: Boolean = true,
-        screenOn: Boolean = true, inPlayer: Boolean = false, playing: Boolean = false, since: Long = -1L
-    ) = AbattoirSound666.shouldPlay(mode, hasFile, onScreen, front, screenOn, inPlayer, playing, since)
+    private fun doors(
+        mode: Int = 1, hasFile: Boolean = true, front: Boolean = true, inPlayer: Boolean = false, playing: Boolean = false
+    ) = AbattoirSound666.shouldPlayAtDoors(mode, hasFile, front, inPlayer, playing)
 
-    @Test fun `coupe par defaut`() = assertFalse(play(mode = 0))
-
-    @Test fun `jamais pendant un film, Orange TV, ecran eteint, ailleurs que l'Abattoir`() {
-        assertFalse(play(inPlayer = true))
-        assertFalse(play(front = false))
-        assertFalse(play(screenOn = false))
-        assertFalse(play(onScreen = false))
-        assertFalse(play(hasFile = false))
+    @Test fun `aux portes seulement si allume, avec un fichier, Frank devant, pas de film`() {
+        assertTrue(doors())
+        assertFalse(doors(mode = 0))
+        assertFalse(doors(hasFile = false))
+        assertFalse(doors(front = false))
+        assertFalse(doors(inPlayer = true))
+        assertFalse(doors(playing = true))
     }
 
-    @Test fun `intervalle respecte`() {
-        assertTrue(play(mode = 60, since = -1))
-        assertFalse(play(mode = 60, since = 59_000))
-        assertTrue(play(mode = 60, since = 60_000))
-        assertFalse(play(mode = 300, since = 4 * 60_000L))
-        assertTrue(play(mode = 300, since = 5 * 60_000L))
-        assertFalse(play(mode = 60, since = 120_000, playing = true))
-    }
-
-    @Test fun `seulement coupe, 10 s et 20 s (18-11)`() {
-        assertEquals(listOf(0, 10, 20), AbattoirSound666.MODES)
-        assertFalse(play(mode = 10, since = 9_000))
-        assertTrue(play(mode = 10, since = 10_000))
-        assertEquals("toutes les 10 s", AbattoirSound666.modeLabel(10))
-        assertEquals(20, AbattoirSound666.migrate(60))
-        assertEquals(20, AbattoirSound666.migrate(-1))
-        assertEquals(10, AbattoirSound666.migrate(10))
+    @Test fun `plus de repetition (23-11) - anciens reglages repris en marche`() {
+        assertEquals(listOf(0, 1), AbattoirSound666.MODES)
+        assertEquals(1, AbattoirSound666.migrate(10))
+        assertEquals(1, AbattoirSound666.migrate(20))
+        assertEquals(1, AbattoirSound666.migrate(60))
+        assertEquals(1, AbattoirSound666.migrate(-1))
         assertEquals(0, AbattoirSound666.migrate(0))
+        assertEquals("coupé", AbattoirSound666.modeLabel(0))
+        assertEquals("à l'ouverture des portes", AbattoirSound666.modeLabel(1))
+    }
+
+    @Test fun `plus long que 10 s, fondu de fin`() {
+        assertTrue(AbattoirSound666.PLAY_MS > 10_000L)
+        assertEquals(0f, AbattoirSound666.fadeGain(0, 40), 0.001f)
+        assertEquals(0.4f, AbattoirSound666.fadeGain(10_000, 40), 0.001f)
+        assertEquals(0.2f, AbattoirSound666.fadeGain(AbattoirSound666.PLAY_MS - 1_500, 40), 0.001f)
+        assertEquals(0f, AbattoirSound666.fadeGain(AbattoirSound666.PLAY_MS, 40), 0.001f)
     }
 
     @Test fun `fichier recu par Send Files to TV reconnu (piege Shield du haut)`() {
@@ -47,24 +44,5 @@ class AbattoirSound666Test {
         assertTrue(AbattoirSound666.isAudioName("abattoir.M4A"))
         assertFalse(AbattoirSound666.isAudioName("film.mkv"))
         assertFalse(AbattoirSound666.isAudioName("mp3.txt"))
-    }
-
-    @Test fun `toutes les 20 s (18-11)`() {
-        assertFalse(play(mode = 20, since = 19_000))
-        assertTrue(play(mode = 20, since = 20_000))
-        assertEquals("toutes les 20 s", AbattoirSound666.modeLabel(20))
-        assertEquals("toutes les minutes", AbattoirSound666.modeLabel(60))
-        assertEquals("toutes les 5 min", AbattoirSound666.modeLabel(300))
-    }
-
-    @Test fun `boucle douce enchaine des que le son est fini`() {
-        assertTrue(play(mode = -1, since = 8_000))
-        assertFalse(play(mode = -1, since = 3_000, playing = true))
-    }
-
-    @Test fun `fondus`() {
-        assertEquals(0f, AbattoirSound666.fadeGain(0, 7_700, 20), 0.001f)
-        assertEquals(0.2f, AbattoirSound666.fadeGain(4_000, 7_700, 20), 0.001f)
-        assertEquals(0f, AbattoirSound666.fadeGain(7_700, 7_700, 20), 0.001f)
     }
 }

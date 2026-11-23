@@ -1722,6 +1722,19 @@ open class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         com.nuvio.tv.core.wake.WakeLaunch666.onResumed(this, true)
+        // 23/11 (David) : à chaque allumage de la TV, on repart du cinéma, puis les portes de l'Abattoir
+        // s'ouvrent avec le son (même si Android n'a pas laissé passer l'ouverture « réveil »)
+        if (com.nuvio.tv.core.wake.WakeLaunch666.screenWentOff) {
+            com.nuvio.tv.core.wake.WakeLaunch666.screenWentOff = false
+            val inPlayer666 = com.nuvio.tv.core.tools.Announce666.inPlayer()
+            if (com.nuvio.tv.core.wake.WakeLaunch666.replayCinemaOnResume(true, inPlayer666)) {
+                com.nuvio.tv.core.wake.WakeLaunch666.notifyWake()
+                if (com.nuvio.tv.core.wake.WakeLaunch666.shouldOpenAbattoir(
+                        com.nuvio.tv.core.wake.WakeLaunch666.abattoirOnOpen(this), inPlayer666
+                    )
+                ) com.nuvio.tv.core.wake.WakeLaunch666.notifyHome()
+            }
+        }
         // 666TV : arrête Orange TV (ou autre appli de TV en direct) restée en arrière-plan.
         com.nuvio.tv.ui.screens.livetv.LaunchedApp666.stopIfBackground(this)
         if (::jankStats.isInitialized) jankStats.isTrackingEnabled = true
@@ -1764,7 +1777,7 @@ open class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         val wake666 = intent.getBooleanExtra(com.nuvio.tv.core.wake.WakeLaunch666.EXTRA_WAKE, false)
-        if (wake666) {
+        if (wake666 && !com.nuvio.tv.core.tools.Announce666.inPlayer()) {
             com.nuvio.tv.core.wake.WakeLaunch666.notifyWake()
         }
         if (intent.hasCategory(Intent.CATEGORY_HOME)) {

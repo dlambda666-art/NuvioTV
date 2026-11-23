@@ -29,7 +29,27 @@ object WakeLaunch666 {
     /** Augmente à chaque réveil : l'écran d'ouverture (pentagramme + orage) se rejoue. */
     val wakeNonce: StateFlow<Int> = _wakeNonce
 
-    fun notifyWake() { _wakeNonce.value = _wakeNonce.value + 1 }
+    @Volatile private var lastWakeAt = 0L
+
+    fun notifyWake(now: Long = System.currentTimeMillis()) {
+        // 23/11 : le réveil peut arriver deux fois (intention + retour à l'écran) : un seul cinéma
+        if (!wakeAgain(lastWakeAt, now)) return
+        lastWakeAt = now
+        _wakeNonce.value = _wakeNonce.value + 1
+    }
+
+    /** Règle pure (testée) : un nouveau réveil compte s'il arrive plus de 5 s après le précédent. */
+    fun wakeAgain(lastAt: Long, now: Long): Boolean = lastAt <= 0L || now - lastAt > 5_000L
+
+    // ---------- 23/11 : à chaque allumage de la TV, on repasse par le cinéma ----------
+    /** L'écran s'est éteint (TV éteinte, veille de la Shield) depuis le dernier passage de Frank à l'écran. */
+    @Volatile var screenWentOff: Boolean = false
+
+    /**
+     * Règle pure (testée) : en revenant à l'écran, faut-il rejouer le cinéma (puis les portes et le son) ?
+     * Oui si l'écran s'était éteint entre-temps, sauf pendant un film.
+     */
+    fun replayCinemaOnResume(screenWentOff: Boolean, inPlayer: Boolean): Boolean = screenWentOff && !inPlayer
 
     private val _homeNonce = MutableStateFlow(0)
     /** Augmente à chaque appui sur le bouton Accueil quand 666TV est le launcher. */
@@ -182,11 +202,12 @@ class WakeLaunchService : Service() {
         }
         val r = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action == Intent.ACTION_SCREEN_OFF) WakeLaunch666.screenWentOff = true
                 if (intent.action == Intent.ACTION_SCREEN_ON) WakeLaunch666.launchApp(context)
             }
         }
         receiver = r
-        registerReceiver(r, IntentFilter(Intent.ACTION_SCREEN_ON))
+        registerReceiver(r, IntentFilter(Intent.ACTION_SCREEN_ON).apply { addAction(Intent.ACTION_SCREEN_OFF) })
         // 16/11 : journal des coupures réseau (ce service tourne tout le temps)
         runCatching { com.nuvio.tv.core.tools.Net666.start(this) }
     }

@@ -442,7 +442,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 Column {
                     ActionRow(
                         "Son de l'Abattoir : " + com.nuvio.tv.ui.screens.home.AbattoirSound666.modeLabel(snd.mode),
-                        "Seulement quand l'Abattoir est à l'écran ; jamais pendant un film, Orange TV, l'écran de veille. OK : coupé → 10 s → 20 s",
+                        "Une fois (~20 s), quand les portes de l'Abattoir s'ouvrent après le cinéma ; jamais pendant un film. OK : marche / arrêt",
                         onClick = {
                             com.nuvio.tv.ui.screens.home.AbattoirSound666.nextMode(context)
                             snd = com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(context)
@@ -503,7 +503,7 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     )
                     ActionRow(
                         "Volume du son : ${snd.volume} %",
-                        "Bas par défaut, avec fondu d'entrée et de sortie. OK : 10 → 20 → 30 → 40 → 60 %",
+                        "Avec fondu de fin. OK : 10 → 20 → 30 → 40 → 60 %",
                         onClick = {
                             com.nuvio.tv.ui.screens.home.AbattoirSound666.nextVolume(context)
                             snd = com.nuvio.tv.ui.screens.home.AbattoirSound666.settings(context)

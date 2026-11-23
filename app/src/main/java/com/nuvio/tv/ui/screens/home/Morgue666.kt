@@ -124,6 +124,28 @@ object Home666 {
 
     /** Libellé du bouton sur le tiroir choisi dans la morgue (pur, testé). */
     fun drawerPlayLabel(progress: Float): String = if (progress > 0f) "▶ Reprendre en VF" else "▶ Lecture VF"
+
+    /** Bas du corps pendu (coordonnées de l'image 1920 × 1080) et centre du corps. */
+    const val BODY_X = 330f
+    const val BODY_BOTTOM = 487f
+
+    data class Spot(val centerX: Float, val top: Float)
+
+    /**
+     * Règle pure (testée) : où poser le bouton du programme en cours, en dp. Fond en Crop calé en haut
+     * à droite (comme l'Abattoir) : sous le corps, centré sur lui, jamais dans les rangées du bas.
+     */
+    fun bodyButtonSpot(widthDp: Float, heightDp: Float, rowsDp: Float, buttonDp: Float = 28f): Spot {
+        val scale = maxOf(widthDp / 1920f, heightDp / 1080f)
+        val left = widthDp - 1920f * scale
+        val wanted = BODY_BOTTOM * scale
+        val limit = heightDp - rowsDp - buttonDp - 6f
+        return Spot(left + BODY_X * scale, minOf(wanted, limit).coerceAtLeast(0f))
+    }
+
+    /** Règle pure (testée) : le titre du programme en cours dans le bouton (court, jamais vide). */
+    fun bodyButtonLabel(title: String?): String =
+        title?.trim()?.takeIf { it.isNotEmpty() }?.let { if (it.length > 34) it.take(33).trimEnd() + "…" else it } ?: "Reprendre en VF"
 }
 
 /** La tuile-porte, à la place de la rangée « Continuer à regarder ». */

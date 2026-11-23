@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -1162,6 +1163,47 @@ fun ModernHomeContent(
                     .padding(start = rowHorizontalPadding, bottom = rowsViewportHeight + NuvioTheme.spacing.sm)
             )
 
+            // 23/11 (David) : un seul bouton dans l'Abattoir dégagé, sous le corps pendu, avec le titre du
+            // programme en cours. Un appui = reprise directe (enregistrement d'abord, comme la morgue).
+            // Le curseur arrive dessus après le cinéma (la morgue ne s'ouvre plus toute seule).
+            if (Home666.ABATTOIR_DEGAGE) {
+                val firstCw = uiState.continueWatchingItems.firstOrNull()
+                val bodyButtonRequester = remember { FocusRequester() }
+                val firstCwState = rememberUpdatedState(firstCw)
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        if (com.nuvio.tv.ui.components.Splash666.focusHeroOnce && !com.nuvio.tv.ui.components.Splash666.showing &&
+                            firstCwState.value != null && !Morgue666.open
+                        ) {
+                            kotlinx.coroutines.delay(150)
+                            runCatching { bodyButtonRequester.requestFocus() }
+                            kotlinx.coroutines.delay(350)
+                            runCatching { bodyButtonRequester.requestFocus() }
+                            com.nuvio.tv.ui.components.Splash666.focusHeroOnce = false
+                        }
+                        kotlinx.coroutines.delay(200)
+                    }
+                }
+                if (firstCw != null) androidx.compose.foundation.layout.BoxWithConstraints(Modifier.matchParentSize()) {
+                    val spot = Home666.bodyButtonSpot(maxWidth.value, maxHeight.value, rowsViewportHeight.value)
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier
+                            .offset(x = (spot.centerX - 220f).dp, y = spot.top.dp)
+                            .width(440.dp),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        Hero666PlayButton(
+                            visible = true,
+                            focusRequester = bodyButtonRequester,
+                            onMoveDown = { runCatching { contentFocusRequester.requestFocus() } },
+                            label = Home666.bodyButtonLabel(Morgue666.lastLabel(firstCw)),
+                            onClick = { firstCwState.value?.let { latestOnContinueWatchingClick(it) } },
+                            compact = true
+                        )
+                    }
+                }
+            }
+
             val latestOnFocusedRowKeyChanged by rememberUpdatedState(onFocusedRowKeyChanged)
             val onActiveRowKeyChangeLambda = remember {
                 { key: String? ->
@@ -1429,7 +1471,8 @@ private fun Hero666PlayButton(
     onMoveDown: () -> Unit,
     label: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    compact: Boolean = false
 ) {
     if (!visible) return
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
@@ -1438,7 +1481,7 @@ private fun Hero666PlayButton(
     androidx.tv.material3.Surface(
         onClick = onClick,
         modifier = modifier
-            .height(42.dp)
+            .height(if (compact) 28.dp else 42.dp)
             .focusRequester(focusRequester)
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
@@ -1479,7 +1522,9 @@ private fun Hero666PlayButton(
             Text(
                 text = label,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
     }
