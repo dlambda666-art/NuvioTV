@@ -242,6 +242,16 @@ private fun AppTile(app: ShieldApp, plateRes: Int, moving: Boolean, modifier: Mo
             glow = ClickableSurfaceDefaults.glow(focusedGlow = Glow(elevationColor = Blood666, elevation = 14.dp)),
             scale = ClickableSurfaceDefaults.scale(focusedScale = if (moving) 1.12f else 1.06f)
         ) {
+            // 23/11 (David) : le Livre des morts = la couverture du Necronomicon, sans rien écrit dessus
+            if (app.launch.action == TOOLS_ACTION) {
+                Image(
+                    painter = androidx.compose.ui.res.painterResource(com.nuvio.tv.R.drawable.necronomicon_666),
+                    contentDescription = app.label,
+                    contentScale = ContentScale.Crop,
+                    alignment = androidx.compose.ui.BiasAlignment(0f, -0.25f),
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Image(
                     painter = androidx.compose.ui.res.painterResource(plateRes),
