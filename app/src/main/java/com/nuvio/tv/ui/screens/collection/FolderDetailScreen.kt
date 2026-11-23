@@ -892,6 +892,7 @@ private fun FollowLayoutContent(
     scrollToTopTrigger: Int = 0
 ) {
     val homeState = uiState.followLayoutHomeState
+    val horreurModernContext = androidx.compose.ui.platform.LocalContext.current
 
     if (homeState == null || (homeState.isLoading && homeState.catalogRows.isEmpty())) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -1007,7 +1008,15 @@ private fun FollowLayoutContent(
             onPreloadAdjacentItem = onPreloadAdjacentItem,
             onSaveFocusState = onSaveFocusState,
             scrollToTopTrigger = scrollToTopTrigger,
-            blockLeftOnFirstExpandedItem = true
+            blockLeftOnFirstExpandedItem = true,
+            // 23/11 (réparation 2) : la tuile Horreur est en mise en page « moderne » (rangées) : le
+            // chuchotement suit la rangée sélectionnée (nom du catalogue, ex. « Slasher »)
+            onFocusedRowKeyChanged = { key ->
+                if (key != null) {
+                    val row = homeState.catalogRows.firstOrNull { runCatching { it.key() == key }.getOrDefault(false) }
+                    com.nuvio.tv.core.horreur.Horreur666.onTab(horreurModernContext, listOfNotNull(row?.catalogName, key).joinToString(" "))
+                }
+            }
         )
     }
 }

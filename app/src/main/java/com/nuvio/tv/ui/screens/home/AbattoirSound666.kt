@@ -24,7 +24,7 @@ object AbattoirSound666 {
 
     /** Durée jouée à l'ouverture des portes (le fichier est repris en boucle s'il est plus court). */
     const val PLAY_MS = 20_000L
-    const val FADE_IN_MS = 400L
+    const val FADE_IN_MS = 120L
     const val FADE_OUT_MS = 3_000L
 
     /** Règle pure (testée) : un ancien réglage (toutes les 10 s, 20 s, 1 min, boucle…) devient « aux portes ». */
@@ -75,17 +75,19 @@ object AbattoirSound666 {
     const val DOORS_GAP_MS = 3 * 60_000L
     @Volatile private var lastDoorsAt = 0L
 
-    /** Règle pure (testée) : volume (0..1) à l'instant t des 20 s : montée courte, fondu de fin de 3 s. */
+    /** Règle pure (testée) : volume (0..1) à l'instant t : montée très courte, fondu de fin de 3 s (fichier plus long que 20 s). */
     fun fadeGain(tMs: Long, volumePct: Int, totalMs: Long = PLAY_MS): Float {
         val v = volumePct.coerceIn(0, 100) / 100f
         val k = when {
             tMs < 0 || tMs >= totalMs -> 0f
             tMs < FADE_IN_MS -> tMs.toFloat() / FADE_IN_MS
-            tMs > totalMs - FADE_OUT_MS -> (totalMs - tMs).toFloat() / FADE_OUT_MS
+            tMs > totalMs - fadeOut(totalMs) -> (totalMs - tMs).toFloat() / fadeOut(totalMs)
             else -> 1f
         }
         return v * k.coerceIn(0f, 1f)
     }
+
+    private fun fadeOut(totalMs: Long): Long = minOf(FADE_OUT_MS, totalMs / 4).coerceAtLeast(1L)
 
     /** Appelé par le cinéma quand les portes commencent à s'ouvrir. */
     fun onDoorsOpening(context: Context) {
@@ -94,7 +96,8 @@ object AbattoirSound666 {
         val front = com.nuvio.tv.core.wake.WakeLaunch666.resumed
         val now = System.currentTimeMillis()
         val since = if (lastDoorsAt == 0L) -1L else now - lastDoorsAt
-        if (shouldPlayAtDoors(s.mode, s.uri != null, front, inPlayer, isPlaying, since)) {
+        // pendant le cinéma Frank est déjà devant (WakeLaunch666.resumed peut arriver un poil après)
+        if (shouldPlayAtDoors(s.mode, s.uri != null, front || com.nuvio.tv.ui.components.Splash666.showing, inPlayer, isPlaying, since)) {
             lastDoorsAt = now
             play(context, s.uri!!, s.volume)
         }
@@ -108,29 +111,55 @@ object AbattoirSound666 {
 
     fun sinceLastStart(now: Long = System.currentTimeMillis()): Long = if (lastStartAt < 0) -1L else now - lastStartAt
 
+    // 23/11 (réparation) : le fichier est préparé pendant le cinéma → il part pile à l'ouverture
+    @Volatile private var ready: MediaPlayer? = null
+    @Volatile private var readyUri: String? = null
+
+    fun preload(context: Context) {
+        val s = settings(context)
+        val uri = s.uri ?: return
+        if (s.mode == 0 || (ready != null && readyUri == uri)) return
+        val app = context.applicationContext
+        Thread {
+            runCatching {
+                val mp = MediaPlayer()
+                mp.setDataSource(app, Uri.parse(uri))
+                mp.prepare()
+                ready?.let { old -> runCatching { old.release() } }
+                ready = mp; readyUri = uri
+            }
+        }.apply { isDaemon = true }.start()
+    }
+
+    /** Règle pure (testée) : durée jouée : le fichier une seule fois, coupé à 20 s s'il est plus long. */
+    fun playLength(fileMs: Long): Long = if (fileMs <= 0) PLAY_MS else minOf(fileMs, PLAY_MS)
+
     fun play(context: Context, uri: String, volumePct: Int) {
         stop()
         val app = context.applicationContext
         runCatching {
-            val mp = MediaPlayer()
-            mp.setDataSource(app, Uri.parse(uri))
-            mp.isLooping = true            // un fichier plus court que 20 s repart du début
+            // 23/11 (réparation, David : « tjrs 3x le son ») : plus de boucle, le fichier une seule fois
+            val mp = (if (readyUri == uri) ready else null) ?: MediaPlayer().apply {
+                setDataSource(app, Uri.parse(uri)); prepare()
+            }
+            ready = null; readyUri = null
+            mp.isLooping = false
+            mp.setOnCompletionListener { stop() }
             mp.setOnErrorListener { _, _, _ -> stop(); true }
-            mp.prepare()
             mp.setVolume(0f, 0f)
             mp.start()
             player = mp
             val start = System.currentTimeMillis()
             lastStartAt = start
+            val total = playLength(runCatching { mp.duration.toLong() }.getOrDefault(-1L))
             val tick = object : Runnable {
                 override fun run() {
                     val p = player ?: return
                     val t = System.currentTimeMillis() - start
-                    // un film qui démarre, Orange TV, la veille : on coupe tout de suite
-                    if (t >= PLAY_MS || com.nuvio.tv.core.tools.Announce666.inPlayer() || !com.nuvio.tv.core.wake.WakeLaunch666.resumed) {
+                    if (t >= total || com.nuvio.tv.core.tools.Announce666.inPlayer() || !com.nuvio.tv.core.wake.WakeLaunch666.resumed) {
                         stop(); return
                     }
-                    val g = fadeGain(t, volumePct)
+                    val g = fadeGain(t, volumePct, total)
                     runCatching { p.setVolume(g, g) }
                     handler.postDelayed(this, 50L)
                 }

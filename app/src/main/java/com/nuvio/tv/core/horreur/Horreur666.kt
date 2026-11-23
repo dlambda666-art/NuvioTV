@@ -24,7 +24,7 @@ object Horreur666 {
         kikiAt = now
         runCatching {
             android.media.MediaPlayer.create(context.applicationContext, com.nuvio.tv.R.raw.kikimama_666)?.apply {
-                setVolume(0.45f, 0.45f)
+                setVolume(0.9f, 0.9f)
                 setOnCompletionListener { it.release() }
                 start()
             }

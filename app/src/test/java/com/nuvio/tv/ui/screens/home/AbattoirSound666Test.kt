@@ -52,4 +52,12 @@ class AbattoirSound666Test {
         assertFalse(AbattoirSound666.shouldPlayAtDoors(1, true, true, false, false, sinceLastDoorsMs = 120_000))
         assertTrue(AbattoirSound666.shouldPlayAtDoors(1, true, true, false, false, sinceLastDoorsMs = AbattoirSound666.DOORS_GAP_MS))
     }
+
+    @Test fun `le fichier une seule fois, plus jamais en boucle (23-11, 3x le son)`() {
+        assertEquals(7_700L, AbattoirSound666.playLength(7_700L))
+        assertEquals(AbattoirSound666.PLAY_MS, AbattoirSound666.playLength(60_000L))
+        // fondu de fin raccourci pour un fichier court : on l'entend jusqu'au bout
+        assertEquals(0.4f, AbattoirSound666.fadeGain(5_000, 40, 7_700L), 0.001f)
+        assertEquals(0f, AbattoirSound666.fadeGain(7_700, 40, 7_700L), 0.001f)
+    }
 }

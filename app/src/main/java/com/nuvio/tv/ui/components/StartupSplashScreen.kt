@@ -49,6 +49,8 @@ object Splash666 {
     @Volatile var showing: Boolean = false
     /** À l'arrivée sur l'accueil : le curseur va sur le bouton mauve (une fois par ouverture). */
     @Volatile var focusHeroOnce: Boolean = true
+    /** 23/11 : fin du dernier cinéma (pas de bobine qui repart juste après). */
+    @Volatile var lastClosedAt: Long = 0L
 }
 private val Blood666 = Color(0xFF4E1077)
 
@@ -97,6 +99,7 @@ fun StartupSplashScreen(
     val density = LocalDensity.current
     val context = LocalContext.current
     val onClosedNow by rememberUpdatedState(onClosed)
+    LaunchedEffect(Unit) { runCatching { com.nuvio.tv.ui.screens.home.AbattoirSound666.preload(context) } }
     DisposableEffect(Unit) {
         Splash666.showing = true
         Splash666.focusHeroOnce = true
@@ -110,7 +113,9 @@ fun StartupSplashScreen(
     val projectorVol = remember { floatArrayOf(0.7f) }
     DisposableEffect(lifecycleOwner) {
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
-        projector[0] = runCatching {
+        // 23/11 (réparation) : un 2e cinéma juste après le premier reste muet (plus de « reste de bobine »)
+        val recent = Splash666.lastClosedAt > 0 && System.currentTimeMillis() - Splash666.lastClosedAt < 60_000L
+        projector[0] = if (recent) null else runCatching {
             android.media.MediaPlayer.create(context, R.raw.projecteur_666)?.apply {
                 isLooping = false   // 75 s d'une traite : pas de reprise audible
                 setVolume(0.7f, 0.7f)
@@ -168,6 +173,8 @@ fun StartupSplashScreen(
     LaunchedEffect(Unit) { pool.animateTo(1f, tween(12_000, easing = LinearEasing)) }
     LaunchedEffect(closing) {
         if (!closing) return@LaunchedEffect
+        // 23/11 (David) : Machine Head dès que la salle commence à s'ouvrir (avant : un poil tard)
+        runCatching { com.nuvio.tv.ui.screens.home.AbattoirSound666.onDoorsOpening(context) }
         // la bobine baisse doucement jusqu'à l'ouverture des portes et au fondu (pas de grincement)
         val fade = launch {
             val steps = 43
@@ -182,8 +189,6 @@ fun StartupSplashScreen(
         kotlinx.coroutines.delay(400)
         // 12/11 : les portes s'ouvrent et on avance sans s'arrêter, jusqu'à ce que les montants sortent
         // de l'écran : on est dans l'abattoir. Plus de fondu (rien ne reste à effacer).
-        // 23/11 (David) : Machine Head, une fois, quand les portes de l'Abattoir s'ouvrent
-        runCatching { com.nuvio.tv.ui.screens.home.AbattoirSound666.onDoorsOpening(context) }
         kotlinx.coroutines.coroutineScope {
             launch { open.animateTo(1f, tween(3_200, easing = FastOutSlowInEasing)) }
             kotlinx.coroutines.delay(1_100)
@@ -191,6 +196,9 @@ fun StartupSplashScreen(
         }
         finalFade.snapTo(1f)
         fade.join()
+        // la bobine s'arrête net à l'arrivée dans l'Abattoir
+        projector[0]?.let { mp -> projector[0] = null; runCatching { mp.stop(); mp.release() } }
+        Splash666.lastClosedAt = System.currentTimeMillis()
         onClosedNow()
     }
 
