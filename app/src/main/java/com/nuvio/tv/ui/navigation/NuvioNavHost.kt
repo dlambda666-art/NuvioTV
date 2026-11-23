@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -162,6 +163,7 @@ private fun PlaybackNavHost(
         }
 
         composable(Screen.Home.route) {
+            val homeScope666 = androidx.compose.runtime.rememberCoroutineScope()
             fun createContinueWatchingRoute(
                 item: ContinueWatchingItem,
                 manualSelection: Boolean = false,
@@ -238,7 +240,22 @@ private fun PlaybackNavHost(
                 },
                 onContinueWatchingClick = onContinueWatchingClick@{ item ->
                     // 666TVF (04/11) : en bas, s'il est sur le disque, on reprend le fichier (instantané, même sans internet)
-                    record666For(context, item)?.let { playRecord666(navController, it, false); return@onContinueWatchingClick }
+                    // 23/11 : la clé USB peut dormir (pause, Orange TV…) : on la lit hors de l'écran (sinon Frank se fige
+                    // et Android le ferme → YouTube revenait). Si elle ne répond pas en 4 s : on prend le lien en ligne.
+                    if (com.nuvio.tv.core.tools.Record666.enabledHere()) {
+                        homeScope666.launch {
+                            val rec = kotlinx.coroutines.withTimeoutOrNull(4_000) {
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { record666Ready(context, item) }
+                            }
+                            if (rec != null) { playRecord666(navController, rec.first, false, images = rec.second); return@launch }
+                            if (!playbackAvailability.canStream(item)) {
+                                Toast.makeText(context, R.string.playback_unavailable_message, Toast.LENGTH_SHORT).show()
+                                return@launch
+                            }
+                            navController.navigate(createContinueWatchingRoute(item))
+                        }
+                        return@onContinueWatchingClick
+                    }
                     if (!playbackAvailability.canStream(item)) {
                         Toast.makeText(context, R.string.playback_unavailable_message, Toast.LENGTH_SHORT).show()
                         return@onContinueWatchingClick
@@ -246,7 +263,20 @@ private fun PlaybackNavHost(
                     navController.navigate(createContinueWatchingRoute(item))
                 },
                 onContinueWatchingStartFromBeginning = onContinueWatchingStartFromBeginning@{ item ->
-                    record666For(context, item)?.let { playRecord666(navController, it, true); return@onContinueWatchingStartFromBeginning }
+                    if (com.nuvio.tv.core.tools.Record666.enabledHere()) {
+                        homeScope666.launch {
+                            val rec = kotlinx.coroutines.withTimeoutOrNull(4_000) {
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { record666Ready(context, item) }
+                            }
+                            if (rec != null) { playRecord666(navController, rec.first, true, images = rec.second); return@launch }
+                            if (!playbackAvailability.canStream(item)) {
+                                Toast.makeText(context, R.string.playback_unavailable_message, Toast.LENGTH_SHORT).show()
+                                return@launch
+                            }
+                            navController.navigate(createContinueWatchingRoute(item, startFromBeginning = true))
+                        }
+                        return@onContinueWatchingStartFromBeginning
+                    }
                     if (!playbackAvailability.canStream(item)) {
                         Toast.makeText(context, R.string.playback_unavailable_message, Toast.LENGTH_SHORT).show()
                         return@onContinueWatchingStartFromBeginning
@@ -1532,9 +1562,16 @@ private fun PlaybackNavHost(
 }
 
 /** 666TVF : lit un enregistrement depuis la clé / le disque (menu Enregistrements, ou « Reprendre » en bas). */
-internal fun playRecord666(navController: androidx.navigation.NavController, r: com.nuvio.tv.core.tools.Record666.Rec, fromStart: Boolean, remoteUrl: String? = null) {
+internal fun playRecord666(
+    navController: androidx.navigation.NavController,
+    r: com.nuvio.tv.core.tools.Record666.Rec,
+    fromStart: Boolean,
+    remoteUrl: String? = null,
+    images: Pair<Boolean, Boolean>? = null   // 23/11 : (affiche, fond) déjà vérifiés hors de l'écran
+) {
     val img = { f: java.io.File, url: String? ->
-        if (f.exists()) android.net.Uri.fromFile(f).toString() else url
+        val ok = when (f) { r.posterFile -> images?.first; r.backdropFile -> images?.second; else -> null } ?: f.exists()
+        if (ok) android.net.Uri.fromFile(f).toString() else url
     }
     navController.navigate(
         Screen.Player.createRoute(
@@ -1559,6 +1596,11 @@ internal fun playRecord666(navController: androidx.navigation.NavController, r: 
         )
     )
 }
+
+/** 23/11 : comme [record666For], plus « l'affiche et le fond sont-ils sur la clé ? » — à appeler HORS de l'écran (IO). */
+internal fun record666Ready(context: android.content.Context, item: com.nuvio.tv.ui.screens.home.ContinueWatchingItem):
+    Pair<com.nuvio.tv.core.tools.Record666.Rec, Pair<Boolean, Boolean>>? =
+    record666For(context, item)?.let { it to (it.posterFile.exists() to it.backdropFile.exists()) }
 
 /** 666TVF (04/11) : l'enregistrement terminé de ce « Continuer à regarder », s'il est sur le disque. */
 internal fun record666For(context: android.content.Context, item: com.nuvio.tv.ui.screens.home.ContinueWatchingItem): com.nuvio.tv.core.tools.Record666.Rec? {

@@ -23,8 +23,26 @@ object ExitReason666 {
         else -> null
     }
 
+    /** 23/11 : une fois, on récupère la pile des derniers blocages déjà notés (avant que le Rapport sache les lire). */
+    private fun backfill(context: Context, am: ActivityManager) {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (prefs.getBoolean("backfill_2311", false)) return
+        prefs.edit().putBoolean("backfill_2311", true).apply()
+        val entries = am.getHistoricalProcessExitReasons(context.packageName, 0, 8)
+            .filter { it.reason == ApplicationExitInfo.REASON_ANR }
+            .sortedBy { it.timestamp }
+            .mapNotNull { info ->
+                val frames = runCatching { info.traceInputStream?.bufferedReader()?.use { mainThreadFrames(it.readText()) } }.getOrNull()
+                    ?: return@mapNotNull null
+                val z = java.time.Instant.ofEpochMilli(info.timestamp).atZone(java.time.ZoneId.systemDefault())
+                "%02d/%02d %02d:%02d · %s\n%s".format(z.dayOfMonth, z.monthValue, z.hour, z.minute, describe(info.reason), frames)
+            }
+        if (entries.isNotEmpty()) prefs.edit().putString("traces", entries.takeLast(4).joinToString("\n\n")).apply()
+    }
+
     fun logLastExit(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        runCatching { backfill(context, context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager) }
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val info = am.getHistoricalProcessExitReasons(context.packageName, 0, 1).firstOrNull() ?: return
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
