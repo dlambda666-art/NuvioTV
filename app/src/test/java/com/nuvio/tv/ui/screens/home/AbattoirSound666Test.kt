@@ -45,4 +45,11 @@ class AbattoirSound666Test {
         assertFalse(AbattoirSound666.isAudioName("film.mkv"))
         assertFalse(AbattoirSound666.isAudioName("mp3.txt"))
     }
+
+    @Test fun `une seule fois apres une mise a jour (cinema rejoue plusieurs fois, 23-11)`() {
+        assertTrue(AbattoirSound666.shouldPlayAtDoors(1, true, true, false, false, sinceLastDoorsMs = -1))
+        assertFalse(AbattoirSound666.shouldPlayAtDoors(1, true, true, false, false, sinceLastDoorsMs = 25_000))
+        assertFalse(AbattoirSound666.shouldPlayAtDoors(1, true, true, false, false, sinceLastDoorsMs = 120_000))
+        assertTrue(AbattoirSound666.shouldPlayAtDoors(1, true, true, false, false, sinceLastDoorsMs = AbattoirSound666.DOORS_GAP_MS))
+    }
 }

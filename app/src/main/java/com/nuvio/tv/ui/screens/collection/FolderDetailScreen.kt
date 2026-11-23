@@ -124,6 +124,11 @@ fun FolderDetailScreen(
         return
     }
 
+    // 23/11 (réparation) : une tuile / un dossier « Slasher » chuchote dès l'entrée, quelle que soit la mise en page
+    val horreurFolderContext = androidx.compose.ui.platform.LocalContext.current
+    val horreurLabel = folder.title + " " + (uiState.tabs.getOrNull(uiState.selectedTabIndex)?.label ?: "")
+    LaunchedEffect(horreurLabel) { com.nuvio.tv.core.horreur.Horreur666.onTab(horreurFolderContext, horreurLabel) }
+
     val isItemWatched: (MetaPreview) -> Boolean = remember(uiState.movieWatchedStatus) {
         { item -> uiState.movieWatchedStatus[com.nuvio.tv.ui.screens.home.homeItemStatusKey(item.id, item.apiType)] == true }
     }
@@ -604,6 +609,13 @@ private fun RowsContent(
     val rowFocusedItemIndex = remember { mutableMapOf<String, Int>() }
     val focusedItemByRow = remember { mutableStateMapOf<String, Int>() }
     val currentFocusedRowKey = remember { mutableStateOf(focusState.focusedRowKey) }
+    // 23/11 (réparation) : en rangées, le chuchotement suit la rangée Slasher sélectionnée
+    val horreurRowsContext = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(currentFocusedRowKey.value) {
+        val key = currentFocusedRowKey.value ?: return@LaunchedEffect
+        val tab = sourceTabs.firstOrNull { runCatching { it.catalogRow?.key() == key }.getOrDefault(false) }
+        com.nuvio.tv.core.horreur.Horreur666.onTab(horreurRowsContext, listOfNotNull(tab?.label, tab?.catalogRow?.catalogName, key).joinToString(" "))
+    }
     val folderScope = rememberCoroutineScope()
 
     // Improved Back: scroll to first item in row before exiting collection

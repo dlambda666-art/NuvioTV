@@ -65,8 +65,15 @@ object AbattoirSound666 {
      * Règle pure (testée) : les portes de l'Abattoir s'ouvrent (fin du cinéma) : faut-il jouer ?
      * Jamais si coupé, sans fichier, pendant un film, Frank pas au premier plan ou déjà en train de jouer.
      */
-    fun shouldPlayAtDoors(mode: Int, hasFile: Boolean, frankInFront: Boolean, inPlayer: Boolean, playing: Boolean): Boolean =
-        mode != 0 && hasFile && frankInFront && !inPlayer && !playing
+    fun shouldPlayAtDoors(mode: Int, hasFile: Boolean, frankInFront: Boolean, inPlayer: Boolean, playing: Boolean, sinceLastDoorsMs: Long = -1L): Boolean =
+        mode != 0 && hasFile && frankInFront && !inPlayer && !playing && (sinceLastDoorsMs < 0 || sinceLastDoorsMs >= DOORS_GAP_MS)
+
+    /**
+     * 23/11 (réparation, David : « il a fait le son plusieurs fois la 1re fois ») : après une mise à jour, le
+     * cinéma peut se rejouer 2-3 fois de suite (démarrage, retour, réveil) → une seule fois par tranche de 3 min.
+     */
+    const val DOORS_GAP_MS = 3 * 60_000L
+    @Volatile private var lastDoorsAt = 0L
 
     /** Règle pure (testée) : volume (0..1) à l'instant t des 20 s : montée courte, fondu de fin de 3 s. */
     fun fadeGain(tMs: Long, volumePct: Int, totalMs: Long = PLAY_MS): Float {
@@ -85,7 +92,12 @@ object AbattoirSound666 {
         val s = settings(context)
         val inPlayer = com.nuvio.tv.core.tools.Announce666.inPlayer()
         val front = com.nuvio.tv.core.wake.WakeLaunch666.resumed
-        if (shouldPlayAtDoors(s.mode, s.uri != null, front, inPlayer, isPlaying)) play(context, s.uri!!, s.volume)
+        val now = System.currentTimeMillis()
+        val since = if (lastDoorsAt == 0L) -1L else now - lastDoorsAt
+        if (shouldPlayAtDoors(s.mode, s.uri != null, front, inPlayer, isPlaying, since)) {
+            lastDoorsAt = now
+            play(context, s.uri!!, s.volume)
+        }
     }
 
     // ---------- Lecture ----------

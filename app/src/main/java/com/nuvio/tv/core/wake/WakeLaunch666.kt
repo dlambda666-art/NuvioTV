@@ -30,10 +30,13 @@ object WakeLaunch666 {
     val wakeNonce: StateFlow<Int> = _wakeNonce
 
     @Volatile private var lastWakeAt = 0L
+    private val processStartAt = System.currentTimeMillis()
 
     fun notifyWake(now: Long = System.currentTimeMillis()) {
         // 23/11 : le réveil peut arriver deux fois (intention + retour à l'écran) : un seul cinéma
         if (!wakeAgain(lastWakeAt, now)) return
+        // 23/11 (réparation) : juste après le démarrage, le cinéma du lancement est déjà là : pas de 2e cinéma
+        if (now - processStartAt < 25_000L) { lastWakeAt = now; return }
         lastWakeAt = now
         _wakeNonce.value = _wakeNonce.value + 1
     }
