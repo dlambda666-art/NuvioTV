@@ -213,6 +213,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
     if (alpha <= 0f) return
     val context = androidx.compose.ui.platform.LocalContext.current
     val neonOff: ImageBitmap = ImageBitmap.imageResource(R.drawable.neon_off_666)
+    val nosfShadow: ImageBitmap = ImageBitmap.imageResource(R.drawable.ombre_nosferatu_666)
     val hangs: List<ImageBitmap> = listOf(
         ImageBitmap.imageResource(R.drawable.pend_bras_666),
         ImageBitmap.imageResource(R.drawable.pend_jambe_666),
@@ -318,7 +319,17 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
         com.nuvio.tv.core.horreur.Horreur666.nosferatu(t)?.let { p ->
             val fade = minOf(1f, p * 8f, (1f - p) * 10f)
             val a = 0.62f * fade * (1f - off) * alpha
-            if (a > 0.01f) drawNosferatu(left + (640f + 240f * p) * scale, (290f - 170f * p) * scale, 340f * scale, a)
+            // image refaite par David (Gemini), ombre découpée ; elle glisse en montant vers la droite
+            if (a > 0.01f) {
+                val w = 320f * scale
+                val hh = w * nosfShadow.height / nosfShadow.width
+                drawImage(
+                    nosfShadow,
+                    dstOffset = IntOffset((left + (740f + 110f * p) * scale).toInt(), ((250f - 90f * p) * scale).toInt()),
+                    dstSize = IntSize(w.toInt(), hh.toInt()),
+                    alpha = a
+                )
+            }
         }
         if (deep > 0f) drawRect(Color.Black, alpha = deep * alpha)
         val u = iw / 1280f
@@ -327,54 +338,6 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
             drawDrop(Abattoir666.state(i, t), left + (1280f - s.x) * u, s.y0 * u, u, alpha)
         }
     }
-}
-
-/** 23/11 : silhouette de Nosferatu (boîte 170 × 290, tournée vers la droite, penchée, la main griffue en avant), projetée de biais. */
-private fun DrawScope.drawNosferatu(x: Float, y: Float, h: Float, a: Float) {
-    val k = h / 290f
-    val skew = 0.25f
-    fun px(xx: Float, yy: Float) = Offset(x + (xx + skew * (290f - yy)) * k, y + yy * k)
-    fun poly(vararg pts: Float): androidx.compose.ui.graphics.Path = androidx.compose.ui.graphics.Path().apply {
-        val o = px(pts[0], pts[1]); moveTo(o.x, o.y)
-        var i = 2
-        while (i < pts.size) { val q = px(pts[i], pts[i + 1]); lineTo(q.x, q.y); i += 2 }
-        close()
-    }
-    val c = Color(0xFF040303).copy(alpha = a)
-    drawPath(poly(30f,276f, 27f,240f, 24f,200f, 20f,160f, 20f,128f, 26f,102f, 38f,86f, 54f,80f, 66f,84f, 74f,96f, 76f,116f, 74f,150f, 71f,196f, 68f,240f, 64f,276f), c)
-    drawPath(poly(60f,82f, 70f,70f, 82f,72f, 80f,88f), c)
-    drawPath(poly(78f,58f, 68f,40f, 86f,52f), c)
-    drawPath(poly(94f,62f, 104f,76f, 92f,76f), c)
-    drawPath(poly(26f,270f, 24f,280f, 48f,280f, 44f,270f), c)
-    drawPath(poly(62f,250f, 60f,258f, 86f,258f, 78f,250f), c)
-    // tête chauve, allongée, penchée
-    val head = androidx.compose.ui.graphics.Path().apply {
-        for (i in 0 until 36) {
-            val an = (2 * Math.PI * i / 36).toFloat()
-            val ex = 12f * kotlin.math.cos(an); val ey = 19f * kotlin.math.sin(an)
-            val r = Math.toRadians(40.0).toFloat()
-            val q = px(84f + ex * kotlin.math.cos(r) - ey * kotlin.math.sin(r), 64f + ex * kotlin.math.sin(r) + ey * kotlin.math.cos(r))
-            if (i == 0) moveTo(q.x, q.y) else lineTo(q.x, q.y)
-        }
-        close()
-    }
-    drawPath(head, c)
-    fun limb(w: Float, vararg pts: Float) {
-        var i = 0
-        while (i + 3 < pts.size) {
-            drawLine(c, px(pts[i], pts[i + 1]), px(pts[i + 2], pts[i + 3]), strokeWidth = w * k, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-            i += 2
-        }
-    }
-    limb(7f, 72f,100f, 104f,94f, 134f,82f)
-    limb(6f, 30f,110f, 24f,150f, 30f,178f)
-    limb(2.4f, 134f,82f, 146f,80f, 152f,90f)
-    limb(2.4f, 134f,82f, 148f,86f, 152f,98f)
-    limb(2.4f, 134f,82f, 146f,92f, 148f,104f)
-    limb(2.4f, 134f,82f, 142f,96f, 140f,108f)
-    limb(2f, 30f,178f, 26f,196f)
-    limb(2f, 30f,178f, 31f,198f)
-    limb(2f, 30f,178f, 36f,196f)
 }
 
 private fun DrawScope.drawDrop(d: Abattoir666.Drop, x: Float, y0: Float, u: Float, alpha: Float) {
