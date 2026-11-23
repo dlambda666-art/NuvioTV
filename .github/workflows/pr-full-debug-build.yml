@@ -140,6 +140,8 @@ jobs:
             --tests 'com.nuvio.tv.core.tools.Net666Test' \
             --tests 'com.nuvio.tv.core.tools.Record666Test' \
             --tests 'com.nuvio.tv.core.tools.Lien666Test' \
+            --tests 'com.nuvio.tv.core.wake.WakeLaunch666Test' \
+            --tests 'com.nuvio.tv.core.horreur.Horreur666Test' \
             --tests 'com.nuvio.tv.core.wake.*' \
             --tests 'com.nuvio.tv.core.streams.PluginDedup666Test' \
             --tests 'com.nuvio.tv.ui.screens.player.PlayerInfoBadges666Test' \

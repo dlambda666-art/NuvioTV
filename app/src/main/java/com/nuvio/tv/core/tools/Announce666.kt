@@ -179,7 +179,15 @@ object Announce666 {
             // 666TVF (04/11) : l'affiche à côté de chaque ligne, comme dans 666TVF (JT RTL sur Orange)
             lines.take(4).forEachIndexed { i, line ->
                 val url = posters.getOrNull(i)
-                if (url.isNullOrBlank()) { box.addView(text(line, 16f, Color.WHITE)); return@forEachIndexed }
+                // 23/11 : clin d'œil à L'Exorciste : le 1er titre arrive à l'envers, puis se remet droit
+                fun exorcise(v: android.view.View) {
+                    if (i != 0) return
+                    v.rotation = 180f
+                    v.animate().rotation(0f).setStartDelay(com.nuvio.tv.core.horreur.Horreur666.UPSIDE_MS)
+                        .setDuration(com.nuvio.tv.core.horreur.Horreur666.UPSIDE_TURN_MS)
+                        .setInterpolator(android.view.animation.DecelerateInterpolator(1.5f)).start()
+                }
+                if (url.isNullOrBlank()) { box.addView(text(line, 16f, Color.WHITE).also { exorcise(it) }); return@forEachIndexed }
                 val row = LinearLayout(app).apply {
                     orientation = LinearLayout.HORIZONTAL
                     gravity = Gravity.CENTER_VERTICAL
@@ -193,6 +201,7 @@ object Announce666 {
                 row.addView(img, LinearLayout.LayoutParams(dp(40), dp(60)).apply { rightMargin = dp(10) })
                 row.addView(text(line, 16f, Color.WHITE), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
                 box.addView(row)
+                exorcise(row)
                 loadPoster(url) { bmp -> img.post { img.setImageBitmap(bmp) } }
             }
             box.addView(text("Appuie sur OK pour fermer · Détails dans le Calendrier FrankenStream", 13f, Color.rgb(0x8F, 0x8A, 0x85)))

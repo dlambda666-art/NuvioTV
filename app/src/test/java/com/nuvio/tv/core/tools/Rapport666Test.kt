@@ -42,4 +42,10 @@ class Rapport666Test {
         assertNull(Rapport666.pageUrl(null))
         assertNull(Rapport666.pageUrl("fe80::1"))
     }
+
+    // 23/11 : la ligne de MacReady passe le filtre telle quelle et ne ressemble à aucun secret
+    @Test fun `ligne MacReady intacte`() {
+        org.junit.Assert.assertEquals(Rapport666.MACREADY, Rapport666.clean(Rapport666.MACREADY))
+        assertFalse(Rapport666.looksSecret(Rapport666.MACREADY))
+    }
 }

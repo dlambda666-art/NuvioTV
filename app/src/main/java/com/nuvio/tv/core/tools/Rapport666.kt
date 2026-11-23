@@ -16,6 +16,8 @@ import java.util.Locale
  */
 object Rapport666 {
     const val PATH = "/rapport"
+    /** 23/11 : clin d'œil à The Thing (film préféré de David) : MacReady enregistre son journal. */
+    const val MACREADY = "Avant-poste 31, journal de MacReady : je consigne ceci au cas où personne ne s'en sortirait…"
 
     private val URL_RE = Regex("""(?i)\b(?:https?|stremio|magnet|wss?|ftp)://\S+|magnet:\?\S+""")
     private val KV_RE = Regex("""(?i)\b(api[_-]?key|apikey|passkey|pass|password|token|secret|key|auth|sid|uid|hash)\s*[=:]\s*\S+""")
@@ -52,6 +54,8 @@ object Rapport666 {
         fun line(s: String = "") { out.append(clean(s)).append('\n') }
 
         line("RAPPORT POUR CLAUDE — FrankenStream ${runCatching { Maj666.myName(context) }.getOrDefault("?")}")
+        // 23/11 : The Thing, le journal de MacReady au magnéto
+        line(MACREADY)
         line("Shield du ${Net666.whereAmI()} (${Build.MODEL} · ${Build.DEVICE}) · Android ${Build.VERSION.RELEASE}")
         line(date)
         line()
@@ -117,7 +121,7 @@ object Rapport666 {
 h1{color:#78e66e;font-size:20px}button{background:#7a3fd9;color:#fff;border:0;border-radius:24px;padding:14px 22px;font-size:17px;width:100%}
 textarea{width:100%;height:65vh;margin-top:12px;background:#1f1c21;color:#eee;border:1px solid #7a3fd9;border-radius:8px;font:13px monospace;padding:8px;box-sizing:border-box}
 p{color:#bbb;font-size:14px}</style></head><body>
-<h1>Rapport pour Claude</h1><p>Appuie sur le bouton, puis colle le texte dans la conversation avec Claude.</p>
+<h1>Rapport pour Claude</h1><p><i>Avant-poste 31 · journal de MacReady</i></p><p>Appuie sur le bouton, puis colle le texte dans la conversation avec Claude.</p>
 <button onclick="var t=document.getElementById('r');t.focus();t.select();t.setSelectionRange(0,99999);var ok=false;try{ok=document.execCommand('copy')}catch(e){}if(navigator.clipboard&&!ok){navigator.clipboard.writeText(t.value)}this.textContent='Copié ✓'">Tout copier</button>
 <textarea id="r" readonly>$esc</textarea></body></html>"""
     }

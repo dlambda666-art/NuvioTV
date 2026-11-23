@@ -371,6 +371,9 @@ private fun TabbedGridContent(
     }
 
     val currentTab = uiState.tabs.getOrNull(uiState.selectedTabIndex)
+    // 23/11 (David) : « ki-ki-ki ma-ma-ma » (Vendredi 13) en entrant dans l'onglet Slasher
+    val horreurContext = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(currentTab?.label) { com.nuvio.tv.core.horreur.Horreur666.onTab(horreurContext, currentTab?.label) }
     if (currentTab == null) return
 
     when {

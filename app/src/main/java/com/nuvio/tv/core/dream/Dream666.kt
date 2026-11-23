@@ -196,6 +196,88 @@ private class Dream666View(context: Context) : View(context) {
     private var cloudDuration = 16_000L
     private var cloudSprite = 0
     private var cloudToLeft = false
+    private var lastHalfPass = 0L
+    private var cloudPasses = 0
+    private var figureChangedAt = 0L
+
+    // ---- 23/11 : clins d'œil horreur (idées de David) ----
+    /** Halloween : une silhouette masquée, immobile, derrière la tombe du milieu ; au passage suivant du nuage, partie. */
+    private val figurePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private fun drawFigure(canvas: Canvas, now: Long, w: Float, h: Float, frameTop: Float, frameLeft: Float, frameW: Float) {
+        val on = com.nuvio.tv.core.horreur.Horreur666.figureVisible(cloudPasses)
+        val k = ((now - figureChangedAt) / 1_500f).coerceIn(0f, 1f)
+        val a = if (on) k else 1f - k
+        if (a <= 0.01f || figureChangedAt == 0L && !on) return
+        val hh = frameW * 0.95f                      // hauteur visible (tête + épaules) au-dessus de la tombe
+        val cx = frameLeft + frameW * 0.84f
+        val base = frameTop + frameW * 0.28f
+        // corps sombre (combinaison), épaules
+        figurePaint.shader = null
+        figurePaint.color = Color.argb((235 * a).toInt(), 10, 10, 14)
+        val body = Path().apply {
+            moveTo(cx - hh * 0.26f, base + hh * 0.2f)
+            cubicTo(cx - hh * 0.25f, base - hh * 0.28f, cx - hh * 0.12f, base - hh * 0.36f, cx, base - hh * 0.37f)
+            cubicTo(cx + hh * 0.12f, base - hh * 0.36f, cx + hh * 0.25f, base - hh * 0.28f, cx + hh * 0.26f, base + hh * 0.2f)
+            close()
+        }
+        canvas.drawPath(body, figurePaint)
+        // le masque : ovale pâle sans expression, deux trous noirs (générique, pas un masque de film)
+        val mx = cx; val my = base - hh * 0.55f
+        val mw = hh * 0.16f; val mh = hh * 0.22f
+        figurePaint.color = Color.argb((205 * a).toInt(), 214, 210, 200)
+        canvas.drawOval(mx - mw, my - mh, mx + mw, my + mh, figurePaint)
+        figurePaint.color = Color.argb((230 * a).toInt(), 8, 8, 10)
+        canvas.drawOval(mx - mw * 0.6f, my - mh * 0.22f, mx - mw * 0.15f, my + mh * 0.02f, figurePaint)
+        canvas.drawOval(mx + mw * 0.15f, my - mh * 0.22f, mx + mw * 0.6f, my + mh * 0.02f, figurePaint)
+        // cheveux sombres
+        figurePaint.color = Color.argb((240 * a).toInt(), 18, 14, 12)
+        canvas.drawArc(mx - mw * 1.08f, my - mh * 1.12f, mx + mw * 1.08f, my + mh * 0.2f, 180f, 180f, true, figurePaint)
+    }
+
+    /** The Thing : tempête de neige, une nuit sur dix environ. */
+    private val snowNight = com.nuvio.tv.core.horreur.Horreur666.snowNight(System.currentTimeMillis() / 86_400_000L)
+    private val flakes = List(if (Light666.active) 90 else 170) { floatArrayOf(rng.nextFloat(), rng.nextFloat(), 0.4f + rng.nextFloat() * 0.6f, rng.nextFloat() * 6.28f) }
+    private val snowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
+    private fun drawSnow(canvas: Canvas, t: Float, w: Float, h: Float) {
+        if (!snowNight) return
+        for (f in flakes) {
+            val sp = f[2]
+            val y = ((f[1] + t * 0.12f * sp) % 1.05f) * h
+            val x = ((f[0] + t * 0.05f * sp + sin(t * 1.3f + f[3]) * 0.01f) % 1f + 1f) % 1f * w
+            snowPaint.alpha = (110 + 120 * sp).toInt()
+            canvas.drawCircle(x, y, 1.2f + 2.6f * sp, snowPaint)
+        }
+        // le blizzard : un voile blanc qui pulse
+        snowPaint.alpha = (18 + 14 * sin(t * 0.7f)).toInt().coerceAtLeast(0)
+        canvas.drawRect(0f, 0f, w, h, snowPaint)
+    }
+
+    /** Evil Dead : la caméra-entité fonce à ras du sol à travers le cimetière (12 s toutes les 7 min). */
+    private val rushPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private fun entity(now: Long): Float? = com.nuvio.tv.core.horreur.Horreur666.entityProgress(now - start)
+    private fun drawRushStreaks(canvas: Canvas, p: Float, t: Float, w: Float, h: Float) {
+        val e = sin(p * Math.PI.toFloat())                  // monte puis retombe
+        rushPaint.strokeWidth = 3f
+        for (i in 0 until 26) {
+            val seed = i * 97.13f
+            val ang = (seed % 6.28f)
+            val r0 = ((t * 2.2f + i / 26f) % 1f)
+            val cx = w * 0.5f; val cy = h * 0.66f
+            val len = w * (0.06f + 0.18f * r0)
+            val x0 = cx + kotlin.math.cos(ang) * w * 0.7f * r0
+            val y0 = cy + sin(ang) * h * 0.55f * r0
+            val x1 = x0 + kotlin.math.cos(ang) * len
+            val y1 = y0 + sin(ang) * len * 0.6f
+            rushPaint.color = Color.argb((120 * e * r0).toInt(), 200, 205, 215)
+            canvas.drawLine(x0, y0, x1, y1, rushPaint)
+        }
+        // le noir qui se resserre autour (vision de la bête)
+        rushPaint.shader = android.graphics.RadialGradient(
+            w * 0.5f, h * 0.62f, w * 0.75f, intArrayOf(Color.TRANSPARENT, Color.argb((210 * e).toInt(), 0, 0, 0)), floatArrayOf(0.45f, 1f), Shader.TileMode.CLAMP
+        )
+        canvas.drawRect(0f, 0f, w, h, rushPaint)
+        rushPaint.shader = null
+    }
 
     /** Nuage devant la lune (coordonnées de l'image du fond : lune en 1137 × 163, rayon 52). */
     private fun drawMoonCloud(canvas: Canvas, now: Long, dst: RectF, scale: Float) {
@@ -217,6 +299,8 @@ private class Dream666View(context: Context) : View(context) {
         val from = if (cloudToLeft) moonX + travel else moonX - travel
         val to = if (cloudToLeft) moonX - travel else moonX + travel
         val cx = from + (to - from) * p
+        // 23/11 : quand le nuage cache la lune, la silhouette (dé)apparaît derrière la tombe du milieu
+        if (p >= 0.5f && lastHalfPass != cloudStart) { lastHalfPass = cloudStart; cloudPasses++; figureChangedAt = now }
         val fade = minOf(1f, p * 6f, (1f - p) * 6f)
         cloudPaint.alpha = (200 * fade).toInt()   // même voile que le fond (alpha 200)
         canvas.drawBitmap(bmp, null, RectF(cx - cw / 2, moonY - ch / 2, cx + cw / 2, moonY + ch / 2), cloudPaint)
@@ -346,8 +430,18 @@ private class Dream666View(context: Context) : View(context) {
         val driftX = sin(t / 37f) * w * 0.012f
         val driftY = sin(t / 53f) * h * 0.01f
 
-        // Fond
+        // 23/11 : Evil Dead : pendant la course, tout le décor fonce vers nous à ras du sol
+        val rush = entity(now)
         canvas.drawColor(Color.BLACK)
+        val rushSave = canvas.save()
+        if (rush != null) {
+            val e = rush * rush * (3f - 2f * rush)
+            val z = 1f + 0.55f * e
+            val shake = sin(t * 31f) * h * 0.006f + sin(t * 17f) * h * 0.004f
+            canvas.translate(sin(t * 2.1f) * w * 0.03f * e, shake + h * 0.05f * e)
+            canvas.scale(z, z, w * 0.5f, h * 0.72f)
+        }
+        // Fond
         bg?.let {
             val scale = max(w / it.width, h / it.height) * 1.06f
             val bw = it.width * scale; val bh = it.height * scale
@@ -384,6 +478,7 @@ private class Dream666View(context: Context) : View(context) {
             val fh = fw * f.height / f.width
             val left = w * xs[i] - fw / 2 + driftX * 0.5f
             val top = h * ys[i] + driftY * 0.5f
+            if (i == 1) drawFigure(canvas, now, w, h, top, left, fw)
             val window = RectF(left + fw * 0.2381f, top + fh * 0.2456f, left + fw * 0.7651f, top + fh * 0.7379f)
             val p = posters[i]
             if (p != null) {
@@ -396,6 +491,9 @@ private class Dream666View(context: Context) : View(context) {
             canvas.drawBitmap(f, null, RectF(left, top, left + fw, top + fh), paint)
             paint.alpha = 255
         }
+
+        canvas.restoreToCount(rushSave)
+        if (rush != null) drawRushStreaks(canvas, rush, t, w, h)
 
         // Nuages qui passent.
         for (c in clouds) {
@@ -427,6 +525,9 @@ private class Dream666View(context: Context) : View(context) {
 
         // Le grand spectre passe devant tout (sauf l'heure).
         for (g in ghosts) if (g.near) drawGhost(canvas, g, now, w, h, flash)
+
+        // 23/11 : The Thing : tempête de neige certaines nuits
+        drawSnow(canvas, t, w, h)
 
         drawProgramme(canvas, w, h)
 

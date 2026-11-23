@@ -120,7 +120,7 @@ private fun loadApps(context: Context): List<ShieldApp> {
     return list
 }
 
-private const val TOOLS_LABEL = "Outils 666"
+private const val TOOLS_LABEL = "Livre des morts" // 23/11 : ex « Outils 666 » (Evil Dead)
 private const val TOOLS_ACTION = "com.nuvio.tv.OUTILS_666"
 
 @Composable

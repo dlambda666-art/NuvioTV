@@ -269,7 +269,11 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             item {
-                Text("OUTILS 666", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black, color = Blood)
+                // 23/11 : le Livre des morts (Evil Dead), idée de David
+                Column {
+                    Text("LIVRE DES MORTS", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black, color = Blood)
+                    Text("Outils 666 · Naturom Demonto", color = Color(0xFF8F8A85))
+                }
             }
 
             // ---------- 22/11 : Rapport pour Claude ----------
@@ -307,6 +311,12 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                         Text(row.detail, color = Color(0xFFC8C3BE))
                     }
                 }
+            }
+            // 23/11 : le test sanguin de The Thing (les cavaliers dans leurs boîtes de Petri)
+            item {
+                val dishes = checks.filter { it.name.startsWith("Plugin · ") }
+                val testing = checks.any { it.name.startsWith("Plugins · test Matrix") && it.ok == null }
+                BloodTest666Row(dishes = dishes, running = testing)
             }
             item {
                 Text(
