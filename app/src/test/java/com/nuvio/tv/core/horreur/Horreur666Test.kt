@@ -123,11 +123,13 @@ class Horreur666Test {
         assertEquals(1f, Horreur666.burstAlpha(1_000), 0.001f)
     }
 
-    @Test fun `facehugger saute de l'oeuf de droite une ouverture sur trois`() {
-        assertNull(Horreur666.facehuggerLeap(57.0 + 2.5))              // 1re ouverture : rien ne sort
-        assertNotNull(Horreur666.facehuggerLeap(57.0 + 75.0 + 2.5))    // 2e : il saute
-        assertNull(Horreur666.facehuggerLeap(57.0 + 75.0 + 3.5))       // le saut est fini
-        assertNull(Horreur666.facehuggerLeap(57.0 + 150.0 + 2.5))
-        assertNotNull(Horreur666.facehuggerLeap(57.0 + 300.0 + 2.2))
+    @Test fun `facehugger - les pattes sortent puis il bondit, une ouverture sur trois`() {
+        assertNull(Horreur666.facehuggerLeap(57.0 + 3.0))               // 1re ouverture : rien ne sort
+        assertNull(Horreur666.facehuggerEmerge(57.0 + 2.0))
+        assertNotNull(Horreur666.facehuggerEmerge(57.0 + 75.0 + 2.0))   // 2e : les pattes sortent
+        assertNull(Horreur666.facehuggerLeap(57.0 + 75.0 + 2.0))
+        assertNotNull(Horreur666.facehuggerLeap(57.0 + 75.0 + 3.0))     // puis le bond
+        assertNull(Horreur666.facehuggerLeap(57.0 + 75.0 + 4.0))        // fini
+        assertNotNull(Horreur666.facehuggerLeap(57.0 + 300.0 + 3.0))
     }
 }

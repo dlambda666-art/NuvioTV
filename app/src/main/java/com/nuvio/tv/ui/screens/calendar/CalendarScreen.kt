@@ -355,9 +355,11 @@ fun CalendarVfBanner(episodes: List<CalendarEpisode>, modifier: Modifier = Modif
                 if (tms >= 0) androidx.compose.foundation.Image(
                     painter = androidx.compose.ui.res.painterResource(com.nuvio.tv.R.drawable.chestburster_666),
                     contentDescription = null,
+                    // 24/11 (retouche de David) : il sort du bandeau lui-même, au bout à droite, et regarde vers le texte
                     modifier = Modifier
-                        .align(androidx.compose.ui.Alignment.Center)
-                        .width(300.dp)
+                        .align(androidx.compose.ui.Alignment.TopStart)
+                        .offset(x = 247.dp, y = 18.dp)
+                        .width(159.dp)
                         .graphicsLayer {
                             val sc = com.nuvio.tv.core.horreur.Horreur666.burstScale(tms)
                             scaleX = sc; scaleY = sc

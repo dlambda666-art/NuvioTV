@@ -232,7 +232,8 @@ object Announce666 {
                     alpha = 0f; scaleX = 0.2f; scaleY = 0.2f
                 }
                 // même hauteur que la carte (elle ne la fait pas grandir), il déborde en grossissant
-                addView(beast, android.widget.FrameLayout.LayoutParams(dp(300), android.widget.FrameLayout.LayoutParams.MATCH_PARENT, Gravity.CENTER))
+                // 24/11 (retouche de David) : au bout à droite du bandeau, il regarde vers le texte
+                addView(beast, android.widget.FrameLayout.LayoutParams(dp(159), dp(150), Gravity.TOP or Gravity.START).apply { leftMargin = dp(247); topMargin = dp(18) })
                 clipChildren = false
                 beast.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(1_600).setDuration(600)
                     .setInterpolator(android.view.animation.OvershootInterpolator(2.2f))

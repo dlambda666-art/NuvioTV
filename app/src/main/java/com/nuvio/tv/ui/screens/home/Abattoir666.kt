@@ -216,6 +216,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
     val nosfShadow: ImageBitmap = ImageBitmap.imageResource(R.drawable.ombre_nosferatu_666)
     val alienEgg: ImageBitmap = ImageBitmap.imageResource(R.drawable.oeuf_alien_666)
     val facehugger: ImageBitmap = ImageBitmap.imageResource(R.drawable.facehugger_666)
+    val eggLegs: ImageBitmap = ImageBitmap.imageResource(R.drawable.oeuf_pattes_666)
     val hangs: List<ImageBitmap> = listOf(
         ImageBitmap.imageResource(R.drawable.pend_bras_666),
         ImageBitmap.imageResource(R.drawable.pend_jambe_666),
@@ -274,7 +275,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
         // 24/11 (David) : deux œufs d'Alien sur l'étagère des têtes, au fond, à la place des têtes de gauche et de
         // droite (celle du milieu reste). Ils respirent ; de temps en temps l'un s'entrouvre (rien ne sort), l'autre
         // s'ouvre plus tard (le facehugger sortira de celui-là). Ils suivent la lumière du néon.
-        fun egg(cx1920: Float, bottom1920: Float, h1920: Float, stir: Float, phase: Double) {
+        fun egg(cx1920: Float, bottom1920: Float, h1920: Float, stir: Float, phase: Double, legs: Float = 0f) {
             val eh = h1920 * scale
             val ew = eh * alienEgg.width / alienEgg.height
             val ecx = left + cx1920 * scale
@@ -292,6 +293,24 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                     androidx.compose.ui.graphics.ColorFilter.lighting(Color(k * 0.94f, k, k * 0.92f), Color.Black)
                 }
             )
+            // 24/11 (image de David) : les pattes du facehugger sortent de l'œuf grand ouvert
+            if (legs > 0.01f) {
+                val k = (ew * 140f / 199f) / 151f           // corps de l'œuf de même largeur dans les deux images
+                val lw = 271f * k; val lh = 283f * k * (0.96f + 0.04f * legs)
+                val wig = 2.5f * kotlin.math.sin(t * 9.0).toFloat() * legs
+                rotate(degrees = wig, pivot = Offset(ecx, ebottom)) {
+                    drawImage(
+                        eggLegs,
+                        dstOffset = IntOffset((ecx - 154.5f * k).toInt(), (ebottom - lh).toInt()),
+                        dstSize = IntSize(lw.toInt(), lh.toInt()),
+                        alpha = (legs * 3f).coerceAtMost(1f) * alpha,
+                        colorFilter = run {
+                            val kk = 0.62f * (1f - 0.72f * off)
+                            androidx.compose.ui.graphics.ColorFilter.lighting(Color(kk * 0.94f, kk, kk * 0.92f), Color.Black)
+                        }
+                    )
+                }
+            }
             if (stir > 0.01f) {
                 val top = Offset(ecx, ebottom - h2 + eh * 0.12f)
                 drawCircle(
@@ -308,27 +327,35 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
             }
         }
         egg(Home666.EGG_LEFT_X, Home666.EGG_BOTTOM, Home666.EGG_H, com.nuvio.tv.core.horreur.Horreur666.eggStir(t), 0.0)
-        egg(Home666.EGG_RIGHT_X, Home666.EGG_BOTTOM, Home666.EGG_H, com.nuvio.tv.core.horreur.Horreur666.eggStir(t - 37.0), 1.7)
+        egg(Home666.EGG_RIGHT_X, Home666.EGG_BOTTOM, Home666.EGG_H, com.nuvio.tv.core.horreur.Horreur666.eggStir(t - 37.0), 1.7,
+            legs = com.nuvio.tv.core.horreur.Horreur666.facehuggerEmerge(t) ?: 0f)
         // 24/11 (David, image Gemini) : de temps en temps, le facehugger jaillit de l'œuf de droite et saute vers nous
         com.nuvio.tv.core.horreur.Horreur666.facehuggerLeap(t)?.let { k ->
+            // le bond : il se ramasse (0-15 %), jaillit en arc au-dessus de l'œuf, puis fonce sur nous en grossissant
             val eggW = Home666.EGG_H * scale * alienEgg.width / alienEgg.height
             val sx = left + Home666.EGG_RIGHT_X * scale
-            val sy = (Home666.EGG_BOTTOM - Home666.EGG_H * 0.85f) * scale
-            val e = k * k
-            val cxF = sx + (size.width * 0.5f - sx) * e
-            val cyF = sy + (size.height * 0.42f - sy) * e - kotlin.math.sin(k * Math.PI).toFloat() * 40f * scale
-            val fw = eggW * (0.6f + 9f * e)
+            val sy = (Home666.EGG_BOTTOM - Home666.EGG_H * 0.95f) * scale
+            val crouch = if (k < 0.15f) k / 0.15f else 0f
+            val j = ((k - 0.15f) / 0.85f).coerceIn(0f, 1f)
+            val e = j * j * (3f - 2f * j)
+            val tx = size.width * 0.52f; val ty = size.height * 0.40f
+            val cxF = sx + (tx - sx) * e
+            val cyF = sy + (ty - sy) * e - kotlin.math.sin(j * Math.PI).toFloat() * 90f * scale
+            val grow = 0.7f + 10f * e * e
+            val fw = eggW * grow
             val fh = fw * facehugger.height / facehugger.width
-            val a = if (k < 0.8f) 1f else (1f - (k - 0.8f) / 0.2f)
-            rotate(degrees = -12f + 20f * k, pivot = Offset(cxF, cyF)) {
+            val squashX = if (k < 0.15f) 1f - 0.18f * crouch else 1f + 0.08f * kotlin.math.sin(j * 6f)
+            val squashY = if (k < 0.15f) 1f + 0.22f * crouch else 1f
+            val a = if (j < 0.85f) 1f else (1f - (j - 0.85f) / 0.15f)
+            rotate(degrees = -25f + 35f * e, pivot = Offset(cxF, cyF)) {
                 drawImage(
                     facehugger,
-                    dstOffset = IntOffset((cxF - fw / 2f).toInt(), (cyF - fh / 2f).toInt()),
-                    dstSize = IntSize(fw.toInt(), fh.toInt()),
+                    dstOffset = IntOffset((cxF - fw * squashX / 2f).toInt(), (cyF - fh * squashY / 2f).toInt()),
+                    dstSize = IntSize((fw * squashX).toInt(), (fh * squashY).toInt()),
                     alpha = a * alpha,
                     // dans la pénombre au fond, plus éclairé en arrivant sur nous
                     colorFilter = run {
-                        val lk = (0.55f + 0.35f * k) * (1f - 0.6f * off)
+                        val lk = (0.55f + 0.4f * e) * (1f - 0.6f * off)
                         androidx.compose.ui.graphics.ColorFilter.lighting(Color(lk, lk * 0.95f, lk * 0.92f), Color.Black)
                     }
                 )
