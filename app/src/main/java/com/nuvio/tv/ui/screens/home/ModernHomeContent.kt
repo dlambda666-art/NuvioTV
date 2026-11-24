@@ -1192,6 +1192,8 @@ fun ModernHomeContent(
                             .width(440.dp),
                         contentAlignment = Alignment.TopCenter
                     ) {
+                        // 24/11 (David) : Predator : de temps en temps, les trois points laser se calent sur le bouton
+                        PredatorLaser666(Modifier.matchParentSize())
                         Hero666PlayButton(
                             visible = true,
                             focusRequester = bodyButtonRequester,
@@ -1526,6 +1528,38 @@ private fun Hero666PlayButton(
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
+        }
+    }
+}
+
+
+/** 24/11 : le viseur de Predator : trois points rouges qui arrivent de loin et se calent en triangle. */
+@Composable
+private fun PredatorLaser666(modifier: Modifier) {
+    var tMs by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    LaunchedEffect(Unit) {
+        val start = androidx.compose.runtime.withFrameMillis { it }
+        while (true) androidx.compose.runtime.withFrameMillis { tMs = it - start }
+    }
+    val p = com.nuvio.tv.core.horreur.Horreur666.predatorLaser(tMs) ?: return
+    val spread = com.nuvio.tv.core.horreur.Horreur666.laserSpread(p)
+    val fade = minOf(1f, (1f - p) * 8f)
+    androidx.compose.foundation.Canvas(modifier) {
+        val c = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height * 0.5f)
+        val tri = 9.dp.toPx()
+        val far = 260.dp.toPx() * spread
+        val t = tMs / 1000f
+        val base = listOf(-90.0, 30.0, 150.0)
+        base.forEachIndexed { i, deg ->
+            val a = Math.toRadians(deg).toFloat()
+            val jitter = 1.5.dp.toPx() * kotlin.math.sin(t * 23f + i * 2.1f)
+            val from = Math.toRadians(deg + 40.0 * spread).toFloat()
+            val pt = androidx.compose.ui.geometry.Offset(
+                c.x + tri * kotlin.math.cos(a) + far * kotlin.math.cos(from) + jitter,
+                c.y + tri * kotlin.math.sin(a) + far * kotlin.math.sin(from) - jitter
+            )
+            drawCircle(androidx.compose.ui.graphics.Color(0xFFFF1A1A).copy(alpha = 0.28f * fade), radius = 7.dp.toPx(), center = pt)
+            drawCircle(androidx.compose.ui.graphics.Color(0xFFFF2020).copy(alpha = 0.95f * fade), radius = 2.6.dp.toPx(), center = pt)
         }
     }
 }

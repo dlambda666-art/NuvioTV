@@ -100,4 +100,56 @@ object Horreur666 {
         if (Math.floorMod(cycle, 3L) != 1L || within >= 8.2) return null
         return (within / 8.2).toFloat()
     }
+
+    // ---------- Predator : le viseur (trois points laser en triangle) sur le bouton du programme en cours ----------
+    const val LASER_EVERY_MS = 40_000L
+    const val LASER_SHOW_MS = 5_000L
+
+    /** Règle pure (testée) : progression (0..1) du viseur, ou null s'il n'est pas là (5 s toutes les 40 s, après 12 s). */
+    fun predatorLaser(tMs: Long): Float? {
+        val u = tMs - 12_000L
+        if (u < 0) return null
+        val p = Math.floorMod(u, LASER_EVERY_MS)
+        return if (p < LASER_SHOW_MS) p.toFloat() / LASER_SHOW_MS else null
+    }
+
+    /** Règle pure (testée) : les trois points arrivent de loin (0..0,35) puis se calent en triangle et tremblent. */
+    fun laserSpread(progress: Float): Float = if (progress < 0.35f) 1f - progress / 0.35f else 0f
+
+    // ---------- Predator : vision thermique dans l'écran de veille ----------
+    const val THERMAL_EVERY_MS = 5 * 60_000L
+    const val THERMAL_SHOW_MS = 7_000L
+
+    /** Règle pure (testée) : progression (0..1) de la vision thermique, ou null (7 s toutes les 5 min, après 90 s). */
+    fun thermalVision(tMs: Long): Float? {
+        val u = tMs - 90_000L
+        if (u < 0) return null
+        val p = Math.floorMod(u, THERMAL_EVERY_MS)
+        return if (p < THERMAL_SHOW_MS) p.toFloat() / THERMAL_SHOW_MS else null
+    }
+
+    /** Règle pure (testée) : bascule du casque : clignote à l'entrée et à la sortie, plein au milieu. */
+    fun thermalAlpha(p: Float): Float = when {
+        p < 0.06f -> if ((p * 100).toInt() % 2 == 0) 1f else 0f
+        p > 0.94f -> if ((p * 100).toInt() % 2 == 0) 0f else 1f
+        else -> 1f
+    }
+
+    /** Règle pure (testée) : couleur de chaleur pour une luminosité 0..255 (froid bleu → vert → jaune → rouge chaud). */
+    fun thermalColor(lum: Int): Int {
+        val stops = intArrayOf(0x000820, 0x0A1F8F, 0x00A0C8, 0x18D048, 0xF0E020, 0xFF8A00, 0xFF2010, 0xFFFFFF)
+        val x = lum.coerceIn(0, 255) / 255f * (stops.size - 1)
+        val i = x.toInt().coerceAtMost(stops.size - 2)
+        val f = x - i
+        fun ch(c: Int, sh: Int) = (c shr sh) and 0xFF
+        fun mix(sh: Int) = (ch(stops[i], sh) + (ch(stops[i + 1], sh) - ch(stops[i], sh)) * f).toInt()
+        return (0xFF shl 24) or (mix(16) shl 16) or (mix(8) shl 8) or mix(0)
+    }
+
+    /** Règle pure (testée) : niveau de chaleur : le décor reste froid (bleu-vert), les corps chauds montent au rouge. */
+    fun thermalLevel(lum: Int, hot: Int): Int {
+        val cold = (lum.coerceIn(0, 255) * 0.40f).toInt()            // neige, pierres, arbres : froids
+        val body = if (hot > 8) (140 + hot * 0.36f).toInt() else 0   // corps : jaune → orange → rouge
+        return maxOf(cold, body).coerceIn(0, 255)
+    }
 }

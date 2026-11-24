@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -67,10 +68,11 @@ internal fun UpdateBanner(
         animationSpec = tween(durationMillis = 180),
         label = "updateBannerProgress"
     )
-    val containerColor = NuvioTheme.colors.BackgroundElevated
+    // 24/11 (David) : MOTHER, l'ordinateur du Nostromo (Alien) : écran noir, texte vert phosphore qui se tape
+    val containerColor = Mother666.Black
     val isWhiteTheme = NuvioTheme.currentTheme == AppTheme.WHITE
     val progressAlpha = if (isWhiteTheme) 0.18f else 1f
-    val dividerColor = NuvioTheme.colors.Border
+    val dividerColor = Mother666.Green.copy(alpha = 0.55f)
     val subtitle = when {
         state.errorMessage != null -> state.errorMessage
         state.isDownloading && state.downloadProgress != null -> stringResource(
@@ -91,18 +93,18 @@ internal fun UpdateBanner(
             .fillMaxWidth()
             .drawBehind {
                 drawRect(containerColor)
+                // lignes de balayage du vieux moniteur
+                val step = 3.dp.toPx()
+                var y = 0f
+                while (y < size.height) {
+                    drawRect(Mother666.Green.copy(alpha = 0.05f), topLeft = Offset(0f, y), size = Size(size.width, 1f))
+                    y += step
+                }
                 if (progress > 0f) {
                     drawRect(
                         // 666TVF : vert au départ, mauve à l'arrivée (28/10)
-                        brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                            0f to androidx.compose.ui.graphics.Color(0xFF2DD58F),
-                            0.33f to androidx.compose.ui.graphics.Color(0xFF2DD58F),
-                            0.67f to androidx.compose.ui.graphics.Color(0xFF9B30D9),
-                            1f to androidx.compose.ui.graphics.Color(0xFF9B30D9),
-                            startX = 0f,
-                            endX = size.width
-                        ),
-                        alpha = progressAlpha,
+                        // 24/11 : MOTHER : la barre de chargement en vert phosphore
+                        color = Mother666.Green.copy(alpha = 0.28f),
                         size = Size(width = size.width * progress, height = size.height)
                     )
                 }
@@ -121,34 +123,36 @@ internal fun UpdateBanner(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.CloudDownload,
-                contentDescription = null,
-                tint = NuvioTheme.colors.TextPrimary,
-                modifier = Modifier.size(28.dp)
+            Text(
+                text = "MOTHER",
+                color = Mother666.Green,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(end = 6.dp)
             )
 
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
+                val line1 = Mother666.line(updateLabel)
+                val typed = Mother666.rememberTyped(line1)
+                val cursorOn = Mother666.rememberBlink()
                 Text(
-                    text = updateLabel,
+                    text = typed + if (cursorOn) "█" else " ",
                     style = MaterialTheme.typography.titleMedium,
-                    color = NuvioTheme.colors.TextPrimary,
+                    color = Mother666.Green,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = subtitle,
+                    text = "> " + subtitle.uppercase(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = when {
-                        state.errorMessage != null -> NuvioTheme.colors.Error
-                        state.isDownloading && isWhiteTheme -> NuvioTheme.colors.TextPrimary
-                        state.isDownloading -> NuvioTheme.colors.OnSecondary
-                        else -> NuvioTheme.colors.TextSecondary
-                    },
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    color = if (state.errorMessage != null) NuvioTheme.colors.Error else Mother666.Green.copy(alpha = 0.75f),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -173,15 +177,16 @@ internal fun UpdateBanner(
                     state.downloadedApkPath != null ||
                     state.isUpdateAvailable,
                 colors = ButtonDefaults.colors(
-                    containerColor = NuvioTheme.colors.Secondary,
-                    focusedContainerColor = NuvioTheme.colors.SecondaryVariant,
-                    contentColor = NuvioTheme.colors.OnSecondary,
-                    focusedContentColor = NuvioTheme.colors.OnSecondaryVariant
+                    containerColor = Mother666.Green.copy(alpha = 0.18f),
+                    focusedContainerColor = Mother666.Green,
+                    contentColor = Mother666.Green,
+                    focusedContentColor = Mother666.Black
                 ),
                 shape = ButtonDefaults.shape(RoundedCornerShape(50)),
                 contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp)
             ) {
                 Text(
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                     text = when {
                         state.isDownloading -> stringResource(R.string.update_downloading_ellipsis)
                         state.downloadedApkPath != null -> stringResource(R.string.update_install)
@@ -233,5 +238,39 @@ private fun UpdateBannerIconButton(
             contentDescription = contentDescription,
             modifier = Modifier.size(22.dp)
         )
+    }
+}
+
+
+/** 24/11 : MOTHER (Alien) pour la bannière de mise à jour. */
+internal object Mother666 {
+    val Green = androidx.compose.ui.graphics.Color(0xFF39FF7A)
+    val Black = androidx.compose.ui.graphics.Color(0xFF030A05)
+
+    /** Règle pure (testée) : la ligne tapée par MOTHER, en capitales. */
+    fun line(updateLabel: String): String =
+        ("MISE À JOUR " + updateLabel.trim().removePrefix("v").removePrefix("V") + " DISPONIBLE").uppercase()
+
+    /** Règle pure (testée) : combien de lettres sont tapées après t ms (35 ms par lettre). */
+    fun typedCount(textLength: Int, tMs: Long): Int = (tMs / 35L).toInt().coerceIn(0, textLength)
+
+    @Composable
+    fun rememberTyped(text: String): String {
+        var t by androidx.compose.runtime.remember(text) { androidx.compose.runtime.mutableLongStateOf(0L) }
+        androidx.compose.runtime.LaunchedEffect(text) {
+            val start = System.currentTimeMillis()
+            while (t < text.length * 35L) {
+                kotlinx.coroutines.delay(35)
+                t = System.currentTimeMillis() - start
+            }
+        }
+        return text.take(typedCount(text.length, t))
+    }
+
+    @Composable
+    fun rememberBlink(): Boolean {
+        var on by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(true) }
+        androidx.compose.runtime.LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(530); on = !on } }
+        return on
     }
 }

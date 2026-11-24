@@ -216,7 +216,9 @@ private class Dream666View(context: Context) : View(context) {
         figurePaint.maskFilter = null
         figurePaint.alpha = (255 * a).toInt()
         figurePaint.colorFilter = figureDim   // même voile que le fond du cimetière
-        canvas.drawBitmap(bmp, null, RectF(l, tp, l + bmp.width * sc, tp + bmp.height * sc), figurePaint)
+        val figDst = RectF(l, tp, l + bmp.width * sc, tp + bmp.height * sc)
+        canvas.drawBitmap(bmp, null, figDst, figurePaint)
+        lastFigure.set(figDst); lastFigureAlpha = a; lastFigureAt = now
     }
     private val figureBitmap: Bitmap? = runCatching {
         BitmapFactory.decodeResource(resources, R.drawable.silhouette_666, BitmapFactory.Options().apply { inScaled = false })
@@ -408,14 +410,7 @@ private class Dream666View(context: Context) : View(context) {
     override fun onAttachedToWindow() { super.onAttachedToWindow(); handler.post(tick) }
     override fun onDetachedFromWindow() { handler.removeCallbacks(tick); super.onDetachedFromWindow() }
 
-    override fun onDraw(canvas: Canvas) {
-        val w = width.toFloat(); val h = height.toFloat()
-        if (w <= 0f || h <= 0f) return
-        val now = System.currentTimeMillis()
-        val t = (now - start) / 1000f
-        // Petit décalage lent (évite de marquer l'écran).
-        val driftX = sin(t / 37f) * w * 0.012f
-        val driftY = sin(t / 53f) * h * 0.01f
+    private fun drawScene(canvas: Canvas, w: Float, h: Float, now: Long, t: Float, driftX: Float, driftY: Float) {
 
         // 23/11 : Evil Dead : pendant la course, tout le décor fonce vers nous à ras du sol
         val rush = entity(now)
@@ -433,6 +428,7 @@ private class Dream666View(context: Context) : View(context) {
             val scale = max(w / it.width, h / it.height) * 1.06f
             val bw = it.width * scale; val bh = it.height * scale
             val dst = RectF((w - bw) / 2 + driftX, (h - bh) / 2 + driftY, (w + bw) / 2 + driftX, (h + bh) / 2 + driftY)
+            lastBgDst.set(dst); lastBgK = bw / it.width
             paint.alpha = 200
             canvas.drawBitmap(it, null, dst, paint)
             paint.alpha = 255
@@ -465,7 +461,7 @@ private class Dream666View(context: Context) : View(context) {
             val fh = fw * f.height / f.width
             val left = w * xs[i] - fw / 2 + driftX * 0.5f
             val top = h * ys[i] + driftY * 0.5f
-            if (i == 1) drawFigure(canvas, now, w, h, top, left, fw)
+            if (i == 1) { drawFigure(canvas, now, w, h, top, left, fw); lastTomb.set(left, top, left + fw, top + fh) }
             val window = RectF(left + fw * 0.2381f, top + fh * 0.2456f, left + fw * 0.7651f, top + fh * 0.7379f)
             val p = posters[i]
             if (p != null) {
@@ -517,6 +513,89 @@ private class Dream666View(context: Context) : View(context) {
         drawSnow(canvas, t, w, h)
 
         drawProgramme(canvas, w, h)
+
+    }
+
+    // ---- 24/11 : vision thermique de Predator (scène rendue en petit, couleurs de chaleur, agrandie floue) ----
+    private var thermBmp: Bitmap? = null
+    private var thermPx: IntArray = IntArray(0)
+    private val thermLut: IntArray = IntArray(256) { com.nuvio.tv.core.horreur.Horreur666.thermalColor(it) }
+    private val thermPaint = Paint(Paint.FILTER_BITMAP_FLAG)
+    private var heatBmp: Bitmap? = null
+    private var heatPx: IntArray = IntArray(0)
+    private val heatPaint = Paint(Paint.FILTER_BITMAP_FLAG)
+    private val whiteHeat = android.graphics.PorterDuffColorFilter(Color.WHITE, android.graphics.PorterDuff.Mode.SRC_IN)
+    private val zombieHeat: Bitmap? = runCatching {
+        BitmapFactory.decodeResource(resources, R.drawable.chaleur_zombie_666, BitmapFactory.Options().apply { inScaled = false })
+    }.getOrNull()
+    private val lastBgDst = RectF()
+    private var lastBgK = 0f
+    private val lastFigure = RectF()
+    private val lastTomb = RectF()
+    private var lastFigureAlpha = 0f
+    private var lastFigureAt = 0L
+
+    private fun drawThermal(canvas: Canvas, w: Float, h: Float, now: Long, t: Float, driftX: Float, driftY: Float, p: Float) {
+        val sw = (w / 4f).toInt().coerceAtLeast(1); val sh = (h / 4f).toInt().coerceAtLeast(1)
+        val bmp = thermBmp?.takeIf { it.width == sw && it.height == sh } ?: Bitmap.createBitmap(sw, sh, Bitmap.Config.ARGB_8888).also {
+            thermBmp = it; thermPx = IntArray(sw * sh)
+        }
+        val small = Canvas(bmp)
+        small.save(); small.scale(sw / w, sh / h)
+        drawScene(small, w, h, now, t, driftX, driftY)
+        small.restore()
+        // la chaleur des corps : le mort-vivant du fond et Michael (s'il est là) sont chauds, le reste froid
+        val heat = heatBmp?.takeIf { it.width == sw && it.height == sh } ?: Bitmap.createBitmap(sw, sh, Bitmap.Config.ARGB_8888).also {
+            heatBmp = it; heatPx = IntArray(sw * sh)
+        }
+        heat.eraseColor(Color.TRANSPARENT)
+        val hc = Canvas(heat)
+        hc.save(); hc.scale(sw / w, sh / h)
+        zombieHeat?.let { z ->
+            if (lastBgK > 0f) {
+                val zl = lastBgDst.left + 1150f * lastBgK; val zt = lastBgDst.top + 640f * lastBgK
+                hc.drawBitmap(z, null, RectF(zl, zt, zl + 320f * lastBgK, zt + 320f * lastBgK), heatPaint)
+            }
+        }
+        if (now - lastFigureAt < 500L && lastFigureAlpha > 0.05f) figureBitmap?.let { f ->
+            heatPaint.colorFilter = whiteHeat; heatPaint.alpha = (255 * lastFigureAlpha).toInt()
+            // Michael reste caché derrière la tombe, même en vision thermique
+            hc.save()
+            if (android.os.Build.VERSION.SDK_INT >= 26 && !lastTomb.isEmpty) hc.clipOutRect(lastTomb)
+            hc.drawBitmap(f, null, lastFigure, heatPaint)
+            hc.restore()
+            heatPaint.colorFilter = null; heatPaint.alpha = 255
+        }
+        hc.restore()
+        heat.getPixels(heatPx, 0, sw, 0, 0, sw, sh)
+        bmp.getPixels(thermPx, 0, sw, 0, 0, sw, sh)
+        for (i in thermPx.indices) {
+            val c = thermPx[i]
+            val lum = ((c shr 16 and 0xFF) * 3 + (c shr 8 and 0xFF) * 6 + (c and 0xFF)) / 10
+            val hot = (heatPx[i] ushr 24) and 0xFF
+            thermPx[i] = thermLut[com.nuvio.tv.core.horreur.Horreur666.thermalLevel(lum, hot)]
+        }
+        bmp.setPixels(thermPx, 0, sw, 0, 0, sw, sh)
+        // entrée / sortie en clignotant, comme le casque qui bascule
+        val flick = com.nuvio.tv.core.horreur.Horreur666.thermalAlpha(p)
+        if (flick < 1f) drawScene(canvas, w, h, now, t, driftX, driftY)
+        thermPaint.alpha = (255 * flick).toInt()
+        canvas.drawBitmap(bmp, null, RectF(0f, 0f, w, h), thermPaint)
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val w = width.toFloat(); val h = height.toFloat()
+        if (w <= 0f || h <= 0f) return
+        val now = System.currentTimeMillis()
+        val t = (now - start) / 1000f
+        // Petit décalage lent (évite de marquer l'écran).
+        val driftX = sin(t / 37f) * w * 0.012f
+        val driftY = sin(t / 53f) * h * 0.01f
+
+        // 24/11 (David) : Predator : de temps en temps, quelques secondes en vision thermique
+        val thermal = com.nuvio.tv.core.horreur.Horreur666.thermalVision(now - start)
+        if (thermal != null) drawThermal(canvas, w, h, now, t, driftX, driftY, thermal)
+        else drawScene(canvas, w, h, now, t, driftX, driftY)
 
         // Heure, date, météo.
         val d = Date(now)

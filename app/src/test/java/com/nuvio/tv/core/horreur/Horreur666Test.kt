@@ -75,4 +75,30 @@ class Horreur666Test {
         assertFalse(A.soundAllowed(frankInFront = true, inPlayer = false, cinemaShowing = false, abattoirSoundPlaying = true))
         assertTrue(A.OVERLAY_MS in 10_000L..30_000L)
     }
+
+    @Test fun `viseur de Predator 5 s toutes les 40 s, triangle cale apres l'arrivee`() {
+        assertNull(Horreur666.predatorLaser(5_000))
+        assertNotNull(Horreur666.predatorLaser(12_500))
+        assertNull(Horreur666.predatorLaser(12_000 + 6_000))
+        assertNotNull(Horreur666.predatorLaser(12_000 + 40_000 + 1_000))
+        assertEquals(1f, Horreur666.laserSpread(0f), 0.001f)
+        assertEquals(0f, Horreur666.laserSpread(0.5f), 0.001f)
+    }
+
+    @Test fun `vision thermique 7 s toutes les 5 min, froid bleu chaud rouge`() {
+        assertNull(Horreur666.thermalVision(60_000))
+        assertNotNull(Horreur666.thermalVision(90_000 + 1_000))
+        assertNull(Horreur666.thermalVision(90_000 + 8_000))
+        assertNotNull(Horreur666.thermalVision(90_000 + 5 * 60_000 + 3_000))
+        assertEquals(1f, Horreur666.thermalAlpha(0.5f), 0.001f)
+        val cold = Horreur666.thermalColor(0); val hot = Horreur666.thermalColor(220)
+        assertTrue((cold and 0xFF) > (cold shr 16 and 0xFF))          // froid : plus bleu que rouge
+        assertTrue((hot shr 16 and 0xFF) > (hot and 0xFF))            // chaud : plus rouge que bleu
+    }
+
+    @Test fun `vision thermique - la neige reste froide, les corps sont chauds`() {
+        assertTrue(Horreur666.thermalLevel(250, 0) < 110)     // neige blanche = froide
+        assertTrue(Horreur666.thermalLevel(40, 255) > 240)    // corps = très chaud
+        assertTrue(Horreur666.thermalLevel(40, 128) > 190)
+    }
 }
