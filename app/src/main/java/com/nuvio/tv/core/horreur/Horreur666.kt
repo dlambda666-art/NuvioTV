@@ -47,7 +47,7 @@ object Horreur666 {
         runCatching { whisper?.let { it.stop(); it.release() } }
         whisper = runCatching {
             android.media.MediaPlayer.create(context.applicationContext, com.nuvio.tv.R.raw.kikimama_666)?.apply {
-                setVolume(0.9f, 0.9f)
+                setVolume(0.55f, 0.55f)
                 setOnCompletionListener { mp -> if (whisper === mp) whisper = null; mp.release() }
                 start()
             }
