@@ -521,6 +521,8 @@ private class Dream666View(context: Context) : View(context) {
     private var thermPx: IntArray = IntArray(0)
     private val thermLut: IntArray = IntArray(256) { com.nuvio.tv.core.horreur.Horreur666.thermalColor(it) }
     private val thermPaint = Paint(Paint.FILTER_BITMAP_FLAG)
+    private val scanPaint = Paint().apply { color = Color.BLACK }
+    private var thermalNow = false
     private var heatBmp: Bitmap? = null
     private var heatPx: IntArray = IntArray(0)
     private val heatPaint = Paint(Paint.FILTER_BITMAP_FLAG)
@@ -581,6 +583,10 @@ private class Dream666View(context: Context) : View(context) {
         if (flick < 1f) drawScene(canvas, w, h, now, t, driftX, driftY)
         thermPaint.alpha = (255 * flick).toInt()
         canvas.drawBitmap(bmp, null, RectF(0f, 0f, w, h), thermPaint)
+        // lignes du viseur (comme la retouche de David)
+        scanPaint.alpha = (34 * flick).toInt()
+        var yy = 0f
+        while (yy < h) { canvas.drawRect(0f, yy, w, yy + 1.5f, scanPaint); yy += 5f }
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -594,12 +600,23 @@ private class Dream666View(context: Context) : View(context) {
 
         // 24/11 (David) : Predator : de temps en temps, quelques secondes en vision thermique
         val thermal = com.nuvio.tv.core.horreur.Horreur666.thermalVision(now - start)
+        thermalNow = thermal != null && com.nuvio.tv.core.horreur.Horreur666.thermalAlpha(thermal) > 0.5f
         if (thermal != null) drawThermal(canvas, w, h, now, t, driftX, driftY, thermal)
         else drawScene(canvas, w, h, now, t, driftX, driftY)
 
         // Heure, date, météo.
         val d = Date(now)
         clockPaint.textSize = h * 0.13f
+        if (thermalNow) {
+            // vision thermique : l'heure en cyan, avec un léger dédoublement (affichage du casque)
+            val keep = clockPaint.color
+            val hhmm = SimpleDateFormat("HH:mm", Locale.FRANCE).format(d)
+            clockPaint.color = Color.argb(110, 255, 60, 60)
+            canvas.drawText(hhmm, w / 2 - h * 0.004f, h * 0.2f, clockPaint)
+            clockPaint.color = Color.rgb(143, 232, 255)
+            canvas.drawText(hhmm, w / 2 + h * 0.002f, h * 0.2f, clockPaint)
+            clockPaint.color = keep
+        } else
         canvas.drawText(SimpleDateFormat("HH:mm", Locale.FRANCE).format(d), w / 2, h * 0.2f, clockPaint)
         smallPaint.textSize = h * 0.033f
         val wx = weather?.let { "${it.tempC}°  ·  " } ?: ""

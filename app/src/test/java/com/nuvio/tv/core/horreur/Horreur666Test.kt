@@ -98,7 +98,14 @@ class Horreur666Test {
 
     @Test fun `vision thermique - la neige reste froide, les corps sont chauds`() {
         assertTrue(Horreur666.thermalLevel(250, 0) < 110)     // neige blanche = froide
-        assertTrue(Horreur666.thermalLevel(40, 255) > 240)    // corps = très chaud
-        assertTrue(Horreur666.thermalLevel(40, 128) > 190)
+        assertTrue(Horreur666.thermalLevel(40, 255) > 180)    // corps = chaud
+        assertTrue(Horreur666.thermalLevel(220, 255) > Horreur666.thermalLevel(40, 255))   // visage plus chaud que le manteau
+    }
+
+    @Test fun `oeuf d'Alien s'entrouvre 6 s toutes les 75 s`() {
+        assertEquals(0f, Horreur666.eggStir(10.0), 0.001f)
+        assertEquals(1f, Horreur666.eggStir(20.0 + 3.0), 0.001f)
+        assertEquals(0f, Horreur666.eggStir(20.0 + 30.0), 0.001f)
+        assertEquals(1f, Horreur666.eggStir(20.0 + 75.0 + 2.0), 0.001f)
     }
 }

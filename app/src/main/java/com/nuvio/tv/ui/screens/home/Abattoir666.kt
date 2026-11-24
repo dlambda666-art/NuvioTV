@@ -214,6 +214,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val neonOff: ImageBitmap = ImageBitmap.imageResource(R.drawable.neon_off_666)
     val nosfShadow: ImageBitmap = ImageBitmap.imageResource(R.drawable.ombre_nosferatu_666)
+    val alienEgg: ImageBitmap = ImageBitmap.imageResource(R.drawable.oeuf_alien_666)
     val hangs: List<ImageBitmap> = listOf(
         ImageBitmap.imageResource(R.drawable.pend_bras_666),
         ImageBitmap.imageResource(R.drawable.pend_jambe_666),
@@ -268,6 +269,38 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 dstSize = IntSize(iw.toInt(), ih.toInt()),
                 alpha = off * alpha
             )
+        }
+        // 24/11 (David, image Gemini) : l'œuf d'Alien sur l'étagère à bocaux. Il respire ; de temps en temps
+        // il s'entrouvre : une lueur monte de l'intérieur avec un peu de vapeur. Il suit la lumière du néon.
+        run {
+            val eh = 95f * scale
+            val ew = eh * alienEgg.width / alienEgg.height
+            val ecx = left + 1175f * scale
+            val ebottom = 381f * scale
+            val breath = 1f + 0.018f * kotlin.math.sin(t * 1.3).toFloat()
+            val stir = com.nuvio.tv.core.horreur.Horreur666.eggStir(t)
+            val h2 = eh * (breath + 0.03f * stir)
+            drawImage(
+                alienEgg,
+                dstOffset = IntOffset((ecx - ew / 2f).toInt(), (ebottom - h2).toInt()),
+                dstSize = IntSize(ew.toInt(), h2.toInt()),
+                alpha = alpha,
+                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.Black.copy(alpha = 0.72f * off), androidx.compose.ui.graphics.BlendMode.SrcAtop)
+            )
+            if (stir > 0.01f) {
+                val top = Offset(ecx, ebottom - h2 + eh * 0.12f)
+                drawCircle(
+                    brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                        listOf(Color(0xFFB8FF9A).copy(alpha = 0.45f * stir * (1f - 0.7f * off)), Color.Transparent), center = top, radius = eh * 0.32f
+                    ),
+                    radius = eh * 0.32f, center = top, alpha = alpha
+                )
+                for (k in 0 until 4) {
+                    val u = ((t * 0.35 + k / 4.0) % 1.0).toFloat()
+                    drawCircle(Color(0xFFD8E8D0).copy(alpha = 0.18f * stir * (1f - u)), radius = eh * (0.06f + 0.12f * u),
+                        center = Offset(top.x + eh * 0.08f * kotlin.math.sin(t * 2 + k).toFloat(), top.y - eh * 0.5f * u), alpha = alpha)
+                }
+            }
         }
         // 22/11 : une ampoule nue au-dessus du corps pendu (David : « on voit à peine le corps ») ;
         // elle baisse avec le néon et grésille un peu de son côté.

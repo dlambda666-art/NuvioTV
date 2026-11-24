@@ -146,10 +146,30 @@ object Horreur666 {
         return (0xFF shl 24) or (mix(16) shl 16) or (mix(8) shl 8) or mix(0)
     }
 
-    /** Règle pure (testée) : niveau de chaleur : le décor reste froid (bleu-vert), les corps chauds montent au rouge. */
+    /**
+     * Règle pure (testée) : niveau de chaleur : le décor reste froid (bleu), les corps chauds montent à l'orange-rouge
+     * en gardant leurs détails (visage, mains plus chauds que les vêtements), comme la retouche Gemini de David.
+     */
     fun thermalLevel(lum: Int, hot: Int): Int {
-        val cold = (lum.coerceIn(0, 255) * 0.40f).toInt()            // neige, pierres, arbres : froids
-        val body = if (hot > 8) (140 + hot * 0.36f).toInt() else 0   // corps : jaune → orange → rouge
-        return maxOf(cold, body).coerceIn(0, 255)
+        val l = lum.coerceIn(0, 255)
+        val cold = (l * 0.40f).toInt()
+        if (hot <= 8) return cold
+        val body = (120 + hot * 0.30f + l * 0.30f).toInt()
+        val k = (hot / 255f).coerceIn(0f, 1f)
+        return (cold + (body - cold) * k).toInt().coerceIn(0, 255)
+    }
+
+    // ---------- Alien : l'œuf de l'Abattoir s'entrouvre de temps en temps ----------
+    /** Règle pure (testée) : intensité (0..1) : 6 s toutes les 75 s (montée, tenue, retombée), 0 le reste du temps. */
+    fun eggStir(t: Double): Float {
+        val u = (t - 20.0)
+        if (u < 0) return 0f
+        val p = u % 75.0
+        return when {
+            p < 1.5 -> (p / 1.5).toFloat()
+            p < 4.5 -> 1f
+            p < 6.0 -> ((6.0 - p) / 1.5).toFloat()
+            else -> 0f
+        }
     }
 }

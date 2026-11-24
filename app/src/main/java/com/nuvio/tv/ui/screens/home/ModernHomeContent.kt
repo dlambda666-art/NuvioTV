@@ -1558,8 +1558,13 @@ private fun PredatorLaser666(modifier: Modifier) {
                 c.x + tri * kotlin.math.cos(a) + far * kotlin.math.cos(from) + jitter,
                 c.y + tri * kotlin.math.sin(a) + far * kotlin.math.sin(from) - jitter
             )
-            drawCircle(androidx.compose.ui.graphics.Color(0xFFFF1A1A).copy(alpha = 0.28f * fade), radius = 7.dp.toPx(), center = pt)
-            drawCircle(androidx.compose.ui.graphics.Color(0xFFFF2020).copy(alpha = 0.95f * fade), radius = 2.6.dp.toPx(), center = pt)
+            // 24/11 (retouche Gemini de David) : point fin + éclat en croix, halo rouge
+            val red = androidx.compose.ui.graphics.Color(0xFFFF2020)
+            drawCircle(red.copy(alpha = 0.22f * fade), radius = 8.dp.toPx(), center = pt)
+            val g = 7.dp.toPx() * (0.85f + 0.15f * kotlin.math.sin(t * 9f + i))
+            drawLine(red.copy(alpha = 0.7f * fade), androidx.compose.ui.geometry.Offset(pt.x - g, pt.y), androidx.compose.ui.geometry.Offset(pt.x + g, pt.y), strokeWidth = 1.2.dp.toPx())
+            drawLine(red.copy(alpha = 0.7f * fade), androidx.compose.ui.geometry.Offset(pt.x, pt.y - g * 0.7f), androidx.compose.ui.geometry.Offset(pt.x, pt.y + g * 0.7f), strokeWidth = 1.2.dp.toPx())
+            drawCircle(androidx.compose.ui.graphics.Color(0xFFFFE0E0).copy(alpha = 0.95f * fade), radius = 1.6.dp.toPx(), center = pt)
         }
     }
 }

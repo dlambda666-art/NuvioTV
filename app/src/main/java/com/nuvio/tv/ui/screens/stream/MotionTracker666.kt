@@ -33,12 +33,15 @@ import kotlin.math.sin
  * Un bip qui s'accélère à mesure que les cavaliers répondent ; un point par cavalier qui a trouvé des liens.
  */
 object MotionTracker666 {
-    /** Règle pure (testée) : écart entre deux bips : 1,4 s au début, 0,35 s quand presque tous ont répondu. */
+    /** Règle pure (testée) : écart entre deux bips (le vrai rythme du film) : 1,05 s au début, 0,55 s quand tous ont répondu. */
     fun beepIntervalMs(done: Int, total: Int): Long {
-        if (total <= 0) return 1_400L
+        if (total <= 0) return 1_050L
         val p = (done.toFloat() / total).coerceIn(0f, 1f)
-        return (1_400L - (1_050L * p)).toLong().coerceIn(350L, 1_400L)
+        return (1_050L - (500L * p)).toLong().coerceIn(550L, 1_050L)
     }
+
+    /** Règle pure (testée) : le bip « proche » (le vrai son de fin du film) quand plus de la moitié a répondu. */
+    fun nearBeep(done: Int, total: Int): Boolean = total > 0 && done * 2 > total
 
     /** Règle pure (testée) : distance affichée (en mètres), qui se rapproche avec les réponses. */
     fun distanceMeters(done: Int, total: Int): Int {
@@ -67,7 +70,9 @@ fun MotionTracker666View(done: Int, total: Int, blips: Int) {
                 .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
         ).build()
     }
+    // 24/11 : le vrai son du détecteur d'Alien (fourni par David) : bip lointain puis bip proche
     val soundId = remember { runCatching { pool.load(context, com.nuvio.tv.R.raw.detecteur_666, 1) }.getOrDefault(0) }
+    val nearId = remember { runCatching { pool.load(context, com.nuvio.tv.R.raw.detecteur_pres_666, 1) }.getOrDefault(0) }
     DisposableEffect(Unit) { onDispose { runCatching { pool.release() } } }
 
     LaunchedEffect(Unit) {
@@ -77,7 +82,8 @@ fun MotionTracker666View(done: Int, total: Int, blips: Int) {
             withFrameMillis { now ->
                 t = (now - start) / 1000f
                 if (now >= nextBeep) {
-                    if (soundId != 0 && !com.nuvio.tv.core.tools.Announce666.inPlayer()) runCatching { pool.play(soundId, 0.55f, 0.55f, 1, 0, 1f) }
+                    val id = if (MotionTracker666.nearBeep(doneState.value, totalState.value) && nearId != 0) nearId else soundId
+                    if (id != 0 && !com.nuvio.tv.core.tools.Announce666.inPlayer()) runCatching { pool.play(id, 0.7f, 0.7f, 1, 0, 1f) }
                     pulse = 0f
                     nextBeep = now + MotionTracker666.beepIntervalMs(doneState.value, totalState.value)
                 } else {
