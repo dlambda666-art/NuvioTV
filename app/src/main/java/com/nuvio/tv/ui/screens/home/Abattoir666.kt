@@ -272,9 +272,9 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 alpha = off * alpha
             )
         }
-        // 24/11 (David) : deux œufs d'Alien sur l'étagère des têtes, au fond, à la place des têtes de gauche et de
-        // droite (celle du milieu reste). Ils respirent ; de temps en temps l'un s'entrouvre (rien ne sort), l'autre
-        // s'ouvre plus tard (le facehugger sortira de celui-là). Ils suivent la lumière du néon.
+        // 25/11 (David) : un seul œuf d'Alien, sur le rebord du mur à gauche du corps pendu (les têtes de gauche et
+        // de droite de l'étagère du fond sont retirées du décor, celle du milieu reste). Il respire ; toutes les 15 s
+        // il s'entrouvre (lueur verte + fumée) ; une fois sur deux (toutes les 30 s) le facehugger sort et bondit.
         fun egg(cx1920: Float, bottom1920: Float, h1920: Float, stir: Float, phase: Double, legs: Float = 0f) {
             val eh = h1920 * scale
             val ew = eh * alienEgg.width / alienEgg.height
@@ -326,41 +326,8 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 }
             }
         }
-        egg(Home666.EGG_LEFT_X, Home666.EGG_BOTTOM, Home666.EGG_H, com.nuvio.tv.core.horreur.Horreur666.eggStir(t), 0.0)
-        egg(Home666.EGG_RIGHT_X, Home666.EGG_BOTTOM, Home666.EGG_H, com.nuvio.tv.core.horreur.Horreur666.eggStir(t - 37.0), 1.7,
+        egg(Home666.EGG_X, Home666.EGG_BOTTOM, Home666.EGG_H, com.nuvio.tv.core.horreur.Horreur666.eggStir(t), 0.0,
             legs = com.nuvio.tv.core.horreur.Horreur666.facehuggerEmerge(t) ?: 0f)
-        // 24/11 (David, image Gemini) : de temps en temps, le facehugger jaillit de l'œuf de droite et saute vers nous
-        com.nuvio.tv.core.horreur.Horreur666.facehuggerLeap(t)?.let { k ->
-            // le bond : il se ramasse (0-15 %), jaillit en arc au-dessus de l'œuf, puis fonce sur nous en grossissant
-            val eggW = Home666.EGG_H * scale * alienEgg.width / alienEgg.height
-            val sx = left + Home666.EGG_RIGHT_X * scale
-            val sy = (Home666.EGG_BOTTOM - Home666.EGG_H * 0.95f) * scale
-            val crouch = if (k < 0.15f) k / 0.15f else 0f
-            val j = ((k - 0.15f) / 0.85f).coerceIn(0f, 1f)
-            val e = j * j * (3f - 2f * j)
-            val tx = size.width * 0.52f; val ty = size.height * 0.40f
-            val cxF = sx + (tx - sx) * e
-            val cyF = sy + (ty - sy) * e - kotlin.math.sin(j * Math.PI).toFloat() * 90f * scale
-            val grow = 0.7f + 10f * e * e
-            val fw = eggW * grow
-            val fh = fw * facehugger.height / facehugger.width
-            val squashX = if (k < 0.15f) 1f - 0.18f * crouch else 1f + 0.08f * kotlin.math.sin(j * 6f)
-            val squashY = if (k < 0.15f) 1f + 0.22f * crouch else 1f
-            val a = if (j < 0.85f) 1f else (1f - (j - 0.85f) / 0.15f)
-            rotate(degrees = -25f + 35f * e, pivot = Offset(cxF, cyF)) {
-                drawImage(
-                    facehugger,
-                    dstOffset = IntOffset((cxF - fw * squashX / 2f).toInt(), (cyF - fh * squashY / 2f).toInt()),
-                    dstSize = IntSize((fw * squashX).toInt(), (fh * squashY).toInt()),
-                    alpha = a * alpha,
-                    // dans la pénombre au fond, plus éclairé en arrivant sur nous
-                    colorFilter = run {
-                        val lk = (0.55f + 0.4f * e) * (1f - 0.6f * off)
-                        androidx.compose.ui.graphics.ColorFilter.lighting(Color(lk, lk * 0.95f, lk * 0.92f), Color.Black)
-                    }
-                )
-            }
-        }
         // 22/11 : une ampoule nue au-dessus du corps pendu (David : « on voit à peine le corps ») ;
         // elle baisse avec le néon et grésille un peu de son côté.
         // Dessinée AVANT les morceaux pendus : elle éclaire le mur derrière sans délaver le corps (22/11)
@@ -404,6 +371,40 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                     dstSize = IntSize(w.toInt(), hh.toInt()),
                     alpha = alpha,
                     colorFilter = tint
+                )
+            }
+        }
+        // 24/11 (David, image Gemini) : le facehugger jaillit de l'œuf et saute vers nous (25/11 : toutes les 30 s ;
+        // dessiné après les morceaux pendus pour passer devant le corps)
+        com.nuvio.tv.core.horreur.Horreur666.facehuggerLeap(t)?.let { k ->
+            // le bond : il se ramasse (0-15 %), jaillit en arc au-dessus de l'œuf, puis fonce sur nous en grossissant
+            val eggW = Home666.EGG_H * scale * alienEgg.width / alienEgg.height
+            val sx = left + Home666.EGG_X * scale
+            val sy = (Home666.EGG_BOTTOM - Home666.EGG_H * 0.95f) * scale
+            val crouch = if (k < 0.15f) k / 0.15f else 0f
+            val j = ((k - 0.15f) / 0.85f).coerceIn(0f, 1f)
+            val e = j * j * (3f - 2f * j)
+            val tx = size.width * 0.52f; val ty = size.height * 0.40f
+            val cxF = sx + (tx - sx) * e
+            val cyF = sy + (ty - sy) * e - kotlin.math.sin(j * Math.PI).toFloat() * 90f * scale
+            // même taille d'arrivée qu'en 2.0.8 (l'œuf de l'étagère faisait 86 de haut)
+            val grow = (0.7f + 10f * e * e) * 86f / Home666.EGG_H
+            val fw = eggW * grow
+            val fh = fw * facehugger.height / facehugger.width
+            val squashX = if (k < 0.15f) 1f - 0.18f * crouch else 1f + 0.08f * kotlin.math.sin(j * 6f)
+            val squashY = if (k < 0.15f) 1f + 0.22f * crouch else 1f
+            val a = if (j < 0.85f) 1f else (1f - (j - 0.85f) / 0.15f)
+            rotate(degrees = -25f + 35f * e, pivot = Offset(cxF, cyF)) {
+                drawImage(
+                    facehugger,
+                    dstOffset = IntOffset((cxF - fw * squashX / 2f).toInt(), (cyF - fh * squashY / 2f).toInt()),
+                    dstSize = IntSize((fw * squashX).toInt(), (fh * squashY).toInt()),
+                    alpha = a * alpha,
+                    // dans la pénombre au fond, plus éclairé en arrivant sur nous
+                    colorFilter = run {
+                        val lk = (0.55f + 0.4f * e) * (1f - 0.6f * off)
+                        androidx.compose.ui.graphics.ColorFilter.lighting(Color(lk, lk * 0.95f, lk * 0.92f), Color.Black)
+                    }
                 )
             }
         }

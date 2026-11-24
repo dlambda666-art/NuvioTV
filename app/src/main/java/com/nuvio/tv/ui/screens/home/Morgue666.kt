@@ -125,11 +125,10 @@ object Home666 {
     /** Libellé du bouton sur le tiroir choisi dans la morgue (pur, testé). */
     fun drawerPlayLabel(progress: Float): String = if (progress > 0f) "▶ Reprendre en VF" else "▶ Lecture VF"
 
-    /** 24/11 : les deux œufs d'Alien sur l'étagère des têtes (image 1920 × 1080) : à la place des têtes de gauche et de droite. */
-    const val EGG_LEFT_X = 820f
-    const val EGG_RIGHT_X = 934f
-    const val EGG_BOTTOM = 402f
-    const val EGG_H = 86f
+    /** 25/11 (David) : un seul œuf d'Alien, sur le rebord du mur à gauche du corps pendu (image 1920 × 1080). */
+    const val EGG_X = 222f
+    const val EGG_BOTTOM = 376f
+    const val EGG_H = 132f
 
     /** Bas du corps pendu (coordonnées de l'image 1920 × 1080) et centre du corps. */
     const val BODY_X = 330f

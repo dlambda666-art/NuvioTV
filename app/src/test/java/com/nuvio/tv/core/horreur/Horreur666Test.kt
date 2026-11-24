@@ -79,10 +79,12 @@ class Horreur666Test {
     @Test fun `viseur de Predator 5 s toutes les 40 s, triangle cale apres l'arrivee`() {
         assertNull(Horreur666.predatorLaser(5_000))
         assertNotNull(Horreur666.predatorLaser(12_500))
-        assertNull(Horreur666.predatorLaser(12_000 + 6_000))
-        assertNotNull(Horreur666.predatorLaser(12_000 + 40_000 + 1_000))
+        assertNotNull(Horreur666.predatorLaser(12_000 + 5_500))          // 25/11 : reste calé 6 s
+        assertNull(Horreur666.predatorLaser(12_000 + 7_000))
+        assertNotNull(Horreur666.predatorLaser(12_000 + 30_000 + 1_000))  // 25/11 : toutes les 30 s
+        assertNull(Horreur666.predatorLaser(12_000 + 40_000 + 1_000))
         assertEquals(1f, Horreur666.laserSpread(0f), 0.001f)
-        assertEquals(0f, Horreur666.laserSpread(0.5f), 0.001f)
+        assertEquals(0f, Horreur666.laserSpread(0.3f), 0.001f)           // calés après 1,5 s
     }
 
     @Test fun `vision thermique 7 s toutes les 5 min, froid bleu chaud rouge`() {
@@ -105,8 +107,8 @@ class Horreur666Test {
     @Test fun `oeuf d'Alien s'entrouvre 6 s toutes les 75 s`() {
         assertEquals(0f, Horreur666.eggStir(10.0), 0.001f)
         assertEquals(1f, Horreur666.eggStir(20.0 + 3.0), 0.001f)
-        assertEquals(0f, Horreur666.eggStir(20.0 + 30.0), 0.001f)
-        assertEquals(1f, Horreur666.eggStir(20.0 + 75.0 + 2.0), 0.001f)
+        assertEquals(0f, Horreur666.eggStir(20.0 + 10.0), 0.001f)
+        assertEquals(1f, Horreur666.eggStir(20.0 + 15.0 + 2.0), 0.001f)   // 25/11 : lueur verte + fumée toutes les 15 s
     }
 
     @Test fun `chestburster seulement pour un film en VF le jour de sa sortie`() {
@@ -123,13 +125,19 @@ class Horreur666Test {
         assertEquals(1f, Horreur666.burstAlpha(1_000), 0.001f)
     }
 
-    @Test fun `facehugger - les pattes sortent puis il bondit, une ouverture sur trois`() {
-        assertNull(Horreur666.facehuggerLeap(57.0 + 3.0))               // 1re ouverture : rien ne sort
-        assertNull(Horreur666.facehuggerEmerge(57.0 + 2.0))
-        assertNotNull(Horreur666.facehuggerEmerge(57.0 + 75.0 + 2.0))   // 2e : les pattes sortent
-        assertNull(Horreur666.facehuggerLeap(57.0 + 75.0 + 2.0))
-        assertNotNull(Horreur666.facehuggerLeap(57.0 + 75.0 + 3.0))     // puis le bond
-        assertNull(Horreur666.facehuggerLeap(57.0 + 75.0 + 4.0))        // fini
-        assertNotNull(Horreur666.facehuggerLeap(57.0 + 300.0 + 3.0))
+    @Test fun `facehugger - les pattes sortent puis il bondit, toutes les 30 s`() {
+        assertNull(Horreur666.facehuggerLeap(20.0 + 3.0))                // 1re ouverture : lueur + fumée, rien ne sort
+        assertNull(Horreur666.facehuggerEmerge(20.0 + 2.0))
+        assertNotNull(Horreur666.facehuggerEmerge(20.0 + 15.0 + 2.0))    // 2e : les pattes sortent
+        assertNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 2.0))
+        assertNotNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 3.0))      // puis le bond
+        assertNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 4.0))         // fini
+        assertNull(Horreur666.facehuggerLeap(20.0 + 30.0 + 3.0))         // la suivante : rien
+        assertNotNull(Horreur666.facehuggerLeap(20.0 + 45.0 + 3.0))      // 30 s plus tard : il ressaute
+        assertTrue(Horreur666.eggStir(20.0 + 15.0 + 2.0) > 0.9f)         // l'œuf est bien ouvert quand il sort
+    }
+
+    @Test fun `ki-ki-ki - encore plus bas`() {
+        assertTrue(Horreur666.KIKI_VOLUME <= 0.35f)
     }
 }

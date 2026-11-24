@@ -24,6 +24,8 @@ object Horreur666 {
 
     // ---------- Vendredi 13 : « ki-ki-ki ma-ma-ma » à l'entrée de l'onglet Slasher ----------
     private val SLASHER = Regex("slasher", RegexOption.IGNORE_CASE)
+    /** 25/11 (David) : encore plus bas (0,55 en 2.0.8). */
+    const val KIKI_VOLUME = 0.35f
     const val KIKI_GAP_MS = 6_000L   // 23/11 (réparation 3) : à chaque entrée sur Slasher (6 s : pas de doublon)
     @Volatile private var kikiAt = 0L
     @Volatile private var lastLabel: String? = null
@@ -47,7 +49,7 @@ object Horreur666 {
         runCatching { whisper?.let { it.stop(); it.release() } }
         whisper = runCatching {
             android.media.MediaPlayer.create(context.applicationContext, com.nuvio.tv.R.raw.kikimama_666)?.apply {
-                setVolume(0.55f, 0.55f)
+                setVolume(KIKI_VOLUME, KIKI_VOLUME)
                 setOnCompletionListener { mp -> if (whisper === mp) whisper = null; mp.release() }
                 start()
             }
@@ -102,10 +104,11 @@ object Horreur666 {
     }
 
     // ---------- Predator : le viseur (trois points laser en triangle) sur le bouton du programme en cours ----------
-    const val LASER_EVERY_MS = 40_000L
-    const val LASER_SHOW_MS = 5_000L
+    // 25/11 (David) : toutes les 30 s (40 s en 2.0.8), et ils restent calés plus longtemps sur le bouton
+    const val LASER_EVERY_MS = 30_000L
+    const val LASER_SHOW_MS = 6_000L
 
-    /** Règle pure (testée) : progression (0..1) du viseur, ou null s'il n'est pas là (5 s toutes les 40 s, après 12 s). */
+    /** Règle pure (testée) : progression (0..1) du viseur, ou null s'il n'est pas là (6 s toutes les 30 s, après 12 s). */
     fun predatorLaser(tMs: Long): Float? {
         val u = tMs - 12_000L
         if (u < 0) return null
@@ -113,8 +116,8 @@ object Horreur666 {
         return if (p < LASER_SHOW_MS) p.toFloat() / LASER_SHOW_MS else null
     }
 
-    /** Règle pure (testée) : les trois points arrivent de loin (0..0,35) puis se calent en triangle et tremblent. */
-    fun laserSpread(progress: Float): Float = if (progress < 0.35f) 1f - progress / 0.35f else 0f
+    /** Règle pure (testée) : les trois points arrivent des coins (0..0,25 = 1,5 s) puis restent calés en triangle (4 s). */
+    fun laserSpread(progress: Float): Float = if (progress < 0.25f) 1f - progress / 0.25f else 0f
 
     // ---------- Predator : vision thermique dans l'écran de veille ----------
     const val THERMAL_EVERY_MS = 5 * 60_000L
@@ -159,12 +162,16 @@ object Horreur666 {
         return (cold + (body - cold) * k).toInt().coerceIn(0, 255)
     }
 
-    // ---------- Alien : l'œuf de l'Abattoir s'entrouvre de temps en temps ----------
-    /** Règle pure (testée) : intensité (0..1) : 6 s toutes les 75 s (montée, tenue, retombée), 0 le reste du temps. */
+    // ---------- Alien : l'œuf de l'Abattoir (25/11 : un seul, à gauche du corps pendu) ----------
+    /** 25/11 (David) : une respiration verte (lueur + fumée) toutes les 15 s ; une sur deux, le facehugger sort (toutes les 30 s). */
+    const val EGG_EVERY_S = 15.0
+    private const val EGG_START_S = 20.0
+
+    /** Règle pure (testée) : intensité (0..1) : 6 s toutes les 15 s (montée, tenue, retombée), 0 le reste du temps. */
     fun eggStir(t: Double): Float {
-        val u = (t - 20.0)
+        val u = (t - EGG_START_S)
         if (u < 0) return 0f
-        val p = u % 75.0
+        val p = u % EGG_EVERY_S
         return when {
             p < 1.5 -> (p / 1.5).toFloat()
             p < 4.5 -> 1f
@@ -209,15 +216,16 @@ object Horreur666 {
     }
 
     /**
-     * Règle pure (testée) : le facehugger de l'œuf de droite, une ouverture sur trois (≈ toutes les 3 min 45).
+     * Règle pure (testée) : le facehugger sort de l'œuf une ouverture sur deux (25/11 : toutes les 30 s).
      * 1) ses pattes sortent de l'œuf grand ouvert (1,2 s) ; 2) il bondit vers nous (1,1 s).
+     * Entre deux, l'œuf garde sa lueur verte et sa fumée (rien ne sort).
      */
     private fun leapCyclePhase(t: Double): Double? {
-        val u = t - 37.0 - 20.0
+        val u = t - EGG_START_S
         if (u < 0) return null
-        val cycle = Math.floor(u / 75.0).toLong()
-        if (Math.floorMod(cycle, 3L) != 1L) return null
-        return u - cycle * 75.0
+        val cycle = Math.floor(u / EGG_EVERY_S).toLong()
+        if (Math.floorMod(cycle, 2L) != 1L) return null
+        return u - cycle * EGG_EVERY_S
     }
 
     /** Pattes qui sortent de l'œuf : progression 0..1 (1,4 s → 2,6 s du cycle), ou null. */

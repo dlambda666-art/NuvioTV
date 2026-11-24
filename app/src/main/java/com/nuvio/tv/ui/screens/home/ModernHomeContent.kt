@@ -1192,8 +1192,6 @@ fun ModernHomeContent(
                             .width(440.dp),
                         contentAlignment = Alignment.TopCenter
                     ) {
-                        // 24/11 (David) : Predator : de temps en temps, les trois points laser se calent sur le bouton
-                        PredatorLaser666(Modifier.matchParentSize())
                         Hero666PlayButton(
                             visible = true,
                             focusRequester = bodyButtonRequester,
@@ -1202,6 +1200,9 @@ fun ModernHomeContent(
                             onClick = { firstCwState.value?.let { latestOnContinueWatchingClick(it) } },
                             compact = true
                         )
+                        // 24/11 (David) : Predator : les trois points laser se calent sur le bouton.
+                        // 25/11 : dessinés APRÈS le bouton (avant, le bouton les cachait une fois calés)
+                        PredatorLaser666(Modifier.matchParentSize())
                     }
                 }
             }
@@ -1543,7 +1544,7 @@ private fun PredatorLaser666(modifier: Modifier) {
     }
     val p = com.nuvio.tv.core.horreur.Horreur666.predatorLaser(tMs) ?: return
     val spread = com.nuvio.tv.core.horreur.Horreur666.laserSpread(p)
-    val fade = minOf(1f, (1f - p) * 8f)
+    val fade = minOf(1f, (1f - p) * 12f)
     androidx.compose.foundation.Canvas(modifier) {
         val c = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height * 0.5f)
         val tri = 9.dp.toPx()
