@@ -1568,6 +1568,8 @@ open class MainActivity : ComponentActivity() {
                                     onDismiss = { announcements666.value = emptyList() },
                                     posters = shown.map { it.poster }
                                 )
+                                // 24/11 : la carte par-dessus l'autre appli a déjà ri : pas de 2e rire au retour dans Frank
+                                if (overlay) bellRung666 += shown.map { it.key }
                                 val where = when {
                                     inApp -> "vue dans FrankenStream"
                                     overlay -> "vue par-dessus une autre appli"
@@ -1617,18 +1619,21 @@ open class MainActivity : ComponentActivity() {
                                 }
                                 // 666TVF : le néon de l'abattoir coupe au moment du cri
                                 com.nuvio.tv.ui.screens.home.Abattoir666.requestCut()
-                                // 23/11 : le rire de Three Finger. 24/11 (réparation) : seulement quand Frank est devant,
-                                // après le cinéma et Machine Head (sinon son de la TV coupé / rire haché) ; il attend ton retour (2 h max).
-                                var waited666 = 0
-                                while (!com.nuvio.tv.core.tools.Announce666.soundAllowed(
-                                        bellLifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED),
-                                        com.nuvio.tv.core.tools.Announce666.inPlayer(),
-                                        com.nuvio.tv.ui.components.Splash666.showing,
-                                        com.nuvio.tv.ui.screens.home.AbattoirSound666.isPlaying
-                                    ) && waited666 < 7_200
-                                ) { delay(1_000L); waited666++ }
-                                if (waited666 < 7_200) runCatching {
-                                    com.nuvio.tv.core.horreur.Horreur666.playHeld(bellContext, com.nuvio.tv.R.raw.rire_vf_666, 0.8f)
+                                // 23/11 : le rire de Three Finger. 24/11 (réparation) : un seul rire. Frank derrière une autre
+                                // appli → c'est la carte qui l'a joué (pas de 2e rire au retour) ; Frank devant → ici, après
+                                // le cinéma et Machine Head s'ils sont en cours (30 s d'attente max).
+                                if (bellLifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                                    var waited666 = 0
+                                    while (!com.nuvio.tv.core.tools.Announce666.soundAllowed(
+                                            true,
+                                            com.nuvio.tv.core.tools.Announce666.inPlayer(),
+                                            com.nuvio.tv.ui.components.Splash666.showing,
+                                            com.nuvio.tv.ui.screens.home.AbattoirSound666.isPlaying
+                                        ) && waited666 < 30
+                                    ) { delay(1_000L); waited666++ }
+                                    if (waited666 < 30 && bellLifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) runCatching {
+                                        com.nuvio.tv.core.horreur.Horreur666.playHeld(bellContext, com.nuvio.tv.R.raw.rire_vf_666, 0.8f)
+                                    }
                                 }
                             }
                             if (calendarVfAnnouncements.isNotEmpty() && currentRoute?.startsWith("player/") != true && playerOpen666 == 0) {

@@ -141,8 +141,9 @@ object Announce666 {
     const val OVERLAY_MS = 20_000L
 
     /**
-     * Règle pure (testée) : peut-on jouer un son d'annonce maintenant ? Seulement Frank au premier plan, jamais
-     * pendant un film, jamais pendant le cinéma ni pendant Machine Head (sinon tout se mélange).
+     * Règle pure (testée) : Frank joue-t-il le rire lui-même ? Seulement s'il est devant quand l'annonce arrive
+     * (sinon c'est la carte par-dessus l'autre appli qui l'a déjà joué), jamais pendant un film, et après le cinéma
+     * et Machine Head (sinon tout se mélange).
      */
     fun soundAllowed(frankInFront: Boolean, inPlayer: Boolean, cinemaShowing: Boolean, abattoirSoundPlaying: Boolean): Boolean =
         frankInFront && !inPlayer && !cinemaShowing && !abattoirSoundPlaying
@@ -245,9 +246,9 @@ object Announce666 {
                 y = dp(24)
             }
             wm.addView(container, params)
-            // 24/11 (réparation) : AUCUN son par-dessus une autre appli. Orange TV envoie son son tel quel à la
-            // barre de son ; un son de Frank par-dessus force la Shield à changer de mode audio : son de la TV
-            // coupé, rire haché « comme un disque rayé ». Le rire attend le retour dans Frank.
+            // 24/11 (réparation) : UN SEUL rire, ici, tout de suite (comme le cri d'avant). Le 23/11 il partait
+            // deux fois (ici + Frank au retour) → rire haché et son de la TV coupé. Frank ne le rejoue plus.
+            runCatching { com.nuvio.tv.core.horreur.Horreur666.playHeld(app, com.nuvio.tv.R.raw.rire_vf_666, 0.8f) }
             overlayView = container
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                 if (overlayView === container) hideOverlay(app)

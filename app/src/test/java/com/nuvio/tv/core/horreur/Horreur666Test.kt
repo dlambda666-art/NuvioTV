@@ -65,7 +65,7 @@ class Horreur666Test {
         assertTrue(p in 0.45f..0.55f)
     }
 
-    // 24/11 : rire par-dessus Orange TV = son de la TV coupé + rire haché → jamais de son si Frank n'est pas devant
+    // 24/11 : un seul rire (la carte par-dessus l'autre appli, ou Frank devant après le cinéma et Machine Head)
     @Test fun `son d'annonce seulement Frank devant, hors film, apres le cinema et Machine Head`() {
         val A = com.nuvio.tv.core.tools.Announce666
         assertTrue(A.soundAllowed(frankInFront = true, inPlayer = false, cinemaShowing = false, abattoirSoundPlaying = false))
