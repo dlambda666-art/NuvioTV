@@ -79,12 +79,15 @@ class Horreur666Test {
     @Test fun `viseur de Predator 5 s toutes les 40 s, triangle cale apres l'arrivee`() {
         assertNull(Horreur666.predatorLaser(5_000))
         assertNotNull(Horreur666.predatorLaser(12_500))
-        assertNotNull(Horreur666.predatorLaser(12_000 + 5_500))          // 25/11 : reste calé 6 s
-        assertNull(Horreur666.predatorLaser(12_000 + 7_000))
+        assertNotNull(Horreur666.predatorLaser(12_000 + 9_500))          // 25/11 : reste calé 10 s
+        assertNull(Horreur666.predatorLaser(12_000 + 10_500))
         assertNotNull(Horreur666.predatorLaser(12_000 + 30_000 + 1_000))  // 25/11 : toutes les 30 s
         assertNull(Horreur666.predatorLaser(12_000 + 40_000 + 1_000))
         assertEquals(1f, Horreur666.laserSpread(0f), 0.001f)
-        assertEquals(0f, Horreur666.laserSpread(0.3f), 0.001f)           // calés après 1,5 s
+        assertEquals(0f, Horreur666.laserSpread(0.2f), 0.001f)           // calés après 1,5 s
+        assertEquals(0f, Horreur666.laserSmoke(0.45f), 0.001f)           // pas de fumée avant 5 s
+        assertTrue(Horreur666.laserSmoke(0.6f) > 0f)                     // puis la fumée monte
+        assertEquals(1f, Horreur666.laserSmoke(0.95f), 0.001f)
     }
 
     @Test fun `vision thermique 7 s toutes les 5 min, froid bleu chaud rouge`() {

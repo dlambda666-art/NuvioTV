@@ -1534,7 +1534,7 @@ private fun Hero666PlayButton(
 }
 
 
-/** 24/11 : le viseur de Predator : trois points rouges qui arrivent de loin et se calent en triangle. */
+/** 24/11 : le viseur de Predator : trois points rouges qui arrivent de loin et se calent en triangle (25/11 : 10 s, fumée à 5 s). */
 @Composable
 private fun PredatorLaser666(modifier: Modifier) {
     var tMs by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
@@ -1544,16 +1544,36 @@ private fun PredatorLaser666(modifier: Modifier) {
     }
     val p = com.nuvio.tv.core.horreur.Horreur666.predatorLaser(tMs) ?: return
     val spread = com.nuvio.tv.core.horreur.Horreur666.laserSpread(p)
-    val fade = minOf(1f, (1f - p) * 12f)
+    val fade = minOf(1f, (1f - p) * 20f)
+    val smoke = com.nuvio.tv.core.horreur.Horreur666.laserSmoke(p)
     androidx.compose.foundation.Canvas(modifier) {
         val c = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height * 0.5f)
         val tri = 9.dp.toPx()
         val far = 260.dp.toPx() * spread
         val t = tMs / 1000f
+        // 25/11 (David) : laser = chaleur : à 5 s, de la fumée monte du bouton là où les points sont calés
+        if (smoke > 0f) {
+            for (k in 0 until 7) {
+                val u = ((t * 0.45f + k / 7f) % 1f)
+                val r = (5f + 16f * u).dp.toPx()
+                val sx = c.x + (k - 3) * 3.dp.toPx() + 7.dp.toPx() * kotlin.math.sin(t * 1.7f + k * 1.3f) * u
+                val sy = c.y - 70.dp.toPx() * u
+                drawCircle(
+                    brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                        listOf(androidx.compose.ui.graphics.Color(0xFFC8C4BE).copy(alpha = 0.30f * smoke * fade * (1f - u)), androidx.compose.ui.graphics.Color.Transparent),
+                        center = androidx.compose.ui.geometry.Offset(sx, sy), radius = r
+                    ),
+                    radius = r, center = androidx.compose.ui.geometry.Offset(sx, sy)
+                )
+            }
+            // le point chauffe : petite lueur orange sous le triangle
+            drawCircle(androidx.compose.ui.graphics.Color(0xFFFF6A1A).copy(alpha = 0.18f * smoke * fade), radius = 16.dp.toPx(), center = c)
+        }
         val base = listOf(-90.0, 30.0, 150.0)
         base.forEachIndexed { i, deg ->
             val a = Math.toRadians(deg).toFloat()
-            val jitter = 1.5.dp.toPx() * kotlin.math.sin(t * 23f + i * 2.1f)
+            // 25/11 : bien calés : un tremblement minuscule une fois en place
+            val jitter = (0.4f + 1.1f * spread).dp.toPx() * kotlin.math.sin(t * 23f + i * 2.1f)
             val from = Math.toRadians(deg + 40.0 * spread).toFloat()
             val pt = androidx.compose.ui.geometry.Offset(
                 c.x + tri * kotlin.math.cos(a) + far * kotlin.math.cos(from) + jitter,

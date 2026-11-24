@@ -104,11 +104,11 @@ object Horreur666 {
     }
 
     // ---------- Predator : le viseur (trois points laser en triangle) sur le bouton du programme en cours ----------
-    // 25/11 (David) : toutes les 30 s (40 s en 2.0.8), et ils restent calés plus longtemps sur le bouton
+    // 25/11 (David) : toutes les 30 s, 10 s bien calés sur le bouton ; à 5 s, de la fumée monte (laser = chaleur)
     const val LASER_EVERY_MS = 30_000L
-    const val LASER_SHOW_MS = 6_000L
+    const val LASER_SHOW_MS = 10_000L
 
-    /** Règle pure (testée) : progression (0..1) du viseur, ou null s'il n'est pas là (6 s toutes les 30 s, après 12 s). */
+    /** Règle pure (testée) : progression (0..1) du viseur, ou null s'il n'est pas là (10 s toutes les 30 s, après 12 s). */
     fun predatorLaser(tMs: Long): Float? {
         val u = tMs - 12_000L
         if (u < 0) return null
@@ -116,8 +116,11 @@ object Horreur666 {
         return if (p < LASER_SHOW_MS) p.toFloat() / LASER_SHOW_MS else null
     }
 
-    /** Règle pure (testée) : les trois points arrivent des coins (0..0,25 = 1,5 s) puis restent calés en triangle (4 s). */
-    fun laserSpread(progress: Float): Float = if (progress < 0.25f) 1f - progress / 0.25f else 0f
+    /** Règle pure (testée) : les trois points arrivent des coins (0..0,15 = 1,5 s) puis restent calés en triangle. */
+    fun laserSpread(progress: Float): Float = if (progress < 0.15f) 1f - progress / 0.15f else 0f
+
+    /** Règle pure (testée) : la fumée sous les points : rien avant 5 s, puis elle monte de plus en plus (0..1). */
+    fun laserSmoke(progress: Float): Float = if (progress < 0.5f) 0f else ((progress - 0.5f) / 0.3f).coerceAtMost(1f)
 
     // ---------- Predator : vision thermique dans l'écran de veille ----------
     const val THERMAL_EVERY_MS = 5 * 60_000L
