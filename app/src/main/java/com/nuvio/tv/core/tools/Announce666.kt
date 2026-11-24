@@ -138,6 +138,15 @@ object Announce666 {
         }.start()
     }
 
+    const val OVERLAY_MS = 20_000L
+
+    /**
+     * Règle pure (testée) : peut-on jouer un son d'annonce maintenant ? Seulement Frank au premier plan, jamais
+     * pendant un film, jamais pendant le cinéma ni pendant Machine Head (sinon tout se mélange).
+     */
+    fun soundAllowed(frankInFront: Boolean, inPlayer: Boolean, cinemaShowing: Boolean, abattoirSoundPlaying: Boolean): Boolean =
+        frankInFront && !inPlayer && !cinemaShowing && !abattoirSoundPlaying
+
     fun showOverlay(context: Context, title: String, titleGreen: Boolean, lines: List<String>, onDismiss: () -> Unit, posters: List<String?> = emptyList()): Boolean {
         if (!canOverlay(context)) return false
         val app = context.applicationContext
@@ -204,7 +213,7 @@ object Announce666 {
                 exorcise(row)
                 loadPoster(url) { bmp -> img.post { img.setImageBitmap(bmp) } }
             }
-            box.addView(text("Appuie sur OK pour fermer · Détails dans le Calendrier FrankenStream", 13f, Color.rgb(0x8F, 0x8A, 0x85)))
+            box.addView(text("Disparaît toute seule · Détails dans le Calendrier FrankenStream", 13f, Color.rgb(0x8F, 0x8A, 0x85)))
             // 21/11 : Frank surgit à côté de l'annonce, aussi par-dessus les autres applis (comme dans le Calendrier)
             val frank = android.widget.ImageView(app).apply {
                 setImageResource(com.nuvio.tv.R.drawable.frank_cri_666)
@@ -226,7 +235,9 @@ object Announce666 {
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                 else @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                // 24/11 (réparation, David sur Orange TV : son de la TV coupé) : la carte ne prend plus la
+                // télécommande à l'autre appli (elle ne la met plus en pause) et disparaît seule après 20 s
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 PixelFormat.TRANSLUCENT
             ).apply {
                 gravity = Gravity.TOP or Gravity.END
@@ -234,12 +245,13 @@ object Announce666 {
                 y = dp(24)
             }
             wm.addView(container, params)
-            // 23/11 : le même rire que dans Frank (les deux annonces vont ensemble)
-            runCatching {
-                com.nuvio.tv.core.horreur.Horreur666.playHeld(app, com.nuvio.tv.R.raw.rire_vf_666, 0.8f)
-            }
-            box.requestFocus()
+            // 24/11 (réparation) : AUCUN son par-dessus une autre appli. Orange TV envoie son son tel quel à la
+            // barre de son ; un son de Frank par-dessus force la Shield à changer de mode audio : son de la TV
+            // coupé, rire haché « comme un disque rayé ». Le rire attend le retour dans Frank.
             overlayView = container
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                if (overlayView === container) hideOverlay(app)
+            }, OVERLAY_MS)
             true
         }.getOrDefault(false)
     }

@@ -64,4 +64,15 @@ class Horreur666Test {
         val p = Horreur666.nosferatu(6.7 + 9.0 + 4.1)!!
         assertTrue(p in 0.45f..0.55f)
     }
+
+    // 24/11 : rire par-dessus Orange TV = son de la TV coupé + rire haché → jamais de son si Frank n'est pas devant
+    @Test fun `son d'annonce seulement Frank devant, hors film, apres le cinema et Machine Head`() {
+        val A = com.nuvio.tv.core.tools.Announce666
+        assertTrue(A.soundAllowed(frankInFront = true, inPlayer = false, cinemaShowing = false, abattoirSoundPlaying = false))
+        assertFalse(A.soundAllowed(frankInFront = false, inPlayer = false, cinemaShowing = false, abattoirSoundPlaying = false))
+        assertFalse(A.soundAllowed(frankInFront = true, inPlayer = true, cinemaShowing = false, abattoirSoundPlaying = false))
+        assertFalse(A.soundAllowed(frankInFront = true, inPlayer = false, cinemaShowing = true, abattoirSoundPlaying = false))
+        assertFalse(A.soundAllowed(frankInFront = true, inPlayer = false, cinemaShowing = false, abattoirSoundPlaying = true))
+        assertTrue(A.OVERLAY_MS in 10_000L..30_000L)
+    }
 }

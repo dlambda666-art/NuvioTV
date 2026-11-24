@@ -1617,8 +1617,17 @@ open class MainActivity : ComponentActivity() {
                                 }
                                 // 666TVF : le néon de l'abattoir coupe au moment du cri
                                 com.nuvio.tv.ui.screens.home.Abattoir666.requestCut()
-                                runCatching {
-                                    // 23/11 : le rire de David (Three Fingers) à la place de la cloche
+                                // 23/11 : le rire de Three Finger. 24/11 (réparation) : seulement quand Frank est devant,
+                                // après le cinéma et Machine Head (sinon son de la TV coupé / rire haché) ; il attend ton retour (2 h max).
+                                var waited666 = 0
+                                while (!com.nuvio.tv.core.tools.Announce666.soundAllowed(
+                                        bellLifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED),
+                                        com.nuvio.tv.core.tools.Announce666.inPlayer(),
+                                        com.nuvio.tv.ui.components.Splash666.showing,
+                                        com.nuvio.tv.ui.screens.home.AbattoirSound666.isPlaying
+                                    ) && waited666 < 7_200
+                                ) { delay(1_000L); waited666++ }
+                                if (waited666 < 7_200) runCatching {
                                     com.nuvio.tv.core.horreur.Horreur666.playHeld(bellContext, com.nuvio.tv.R.raw.rire_vf_666, 0.8f)
                                 }
                             }
