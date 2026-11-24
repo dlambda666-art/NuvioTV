@@ -92,6 +92,14 @@ object Rapport666 {
         }
         line()
 
+        // 24/11 : M6+ (jamais l'adresse e-mail ni le mot de passe : seulement « oui / non »)
+        line("== M6+ ==")
+        line("Compte M6+ enregistré : " + if (runCatching { com.nuvio.tv.core.m6.M6Plus666.hasAccount(context) }.getOrDefault(false)) "oui" else "non")
+        val m6 = runCatching { com.nuvio.tv.core.m6.M6Plus666.problems(context) }.getOrDefault(emptyList())
+        if (m6.isEmpty()) line("Erreurs : (aucune)")
+        m6.takeLast(10).forEach { line("${day.format(Date(it.at))} · ${it.where} · ${it.msg}") }
+        line()
+
         line("== Annonces (7 jours) ==")
         val annonces = runCatching { Announce666.entries(context, now) }.getOrDefault(emptyList()).take(40)
         if (annonces.isEmpty()) line("(aucune)")

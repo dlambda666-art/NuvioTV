@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,12 +53,16 @@ private data class LiveTvApp(
     val labelMatches: List<String>,
     val storeQuery: String,
     /** 666TV : image de tuile intégrée (sinon la bannière de l'appli). */
-    val tileRes: Int? = null
+    val tileRes: Int? = null,
+    /** 24/11 : écran de Frank lui-même (M6+), pas une appli à lancer. */
+    val internal: Boolean = false
 )
 
 // 666TV : un seul raccourci, Orange TV (toutes les chaînes de l'abonnement, RTLplay et Auvio inclus).
 private val LIVE_TV_APPS = listOf(
     LiveTvApp("Orange TV", "Toutes tes chaînes · RTLplay et Auvio inclus", listOf("orange tv", "orange"), "Orange TV Belgium", tileRes = com.nuvio.tv.R.drawable.tile_live_tv_666),
+    // 24/11 (David) : M6+ dans Frank, avec son compte (direct M6, W9, 6ter, Gulli + replay)
+    LiveTvApp("M6+", "M6, W9, 6ter, Gulli en direct · replay", emptyList(), "", internal = true),
     LiveTvApp("TizenTube", "YouTube sans pub", listOf("tizentube", "tizen tube"), "TizenTube", tileRes = com.nuvio.tv.R.drawable.tile_tizentube_666),
     LiveTvApp("Cache Cleaner", "Vide le cache des applis", listOf("tduk", "cache cleaner"), "TDUK App Cache Cleaner", tileRes = com.nuvio.tv.R.drawable.tile_cache_cleaner_666)
 )
@@ -113,7 +118,7 @@ object LaunchedApp666 {
 @Composable
 fun LiveTvScreen() {
     val context = LocalContext.current
-    val installed = remember { LIVE_TV_APPS.map { findInstalledApp(context, it) } }
+    val installed = remember { LIVE_TV_APPS.map { if (it.internal) null else findInstalledApp(context, it) } }
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
 
@@ -129,7 +134,7 @@ fun LiveTvScreen() {
             color = com.nuvio.tv.ui.components.Font666.Green
         )
         Text(
-            text = "Tes chaînes avec Orange TV, et YouTube sans pub avec TizenTube.",
+            text = "Tes chaînes avec Orange TV, M6+ avec ton compte, et YouTube sans pub avec TizenTube.",
             style = MaterialTheme.typography.bodySmall,
             color = NuvioTheme.colors.TextSecondary
         )
@@ -139,7 +144,7 @@ fun LiveTvScreen() {
                 LiveTvCard(
                     app = app,
                     installed = installed[index],
-                    onClick = { launch(context, app, installed[index]) },
+                    onClick = { if (app.internal) M6Plus666Activity.open(context) else launch(context, app, installed[index]) },
                     modifier = Modifier.weight(1f).then(if (index == 0) Modifier.focusRequester(firstFocus) else Modifier)
                 )
             }
@@ -195,6 +200,25 @@ private fun LiveTvCard(
                         contentScale = ContentScale.Fit,
                         modifier = Modifier.fillMaxSize()
                     )
+                } else if (app.internal) {
+                    // 24/11 : tuile M6+ dessinée par Frank (vert et mauve, pas de logo)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                    listOf(androidx.compose.ui.graphics.Color(0xFF2A1636), androidx.compose.ui.graphics.Color(0xFF0F1A12))
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "M6+",
+                            style = com.nuvio.tv.ui.components.Font666.horror(MaterialTheme.typography.displayMedium, 1.2f),
+                            color = com.nuvio.tv.ui.components.Font666.Green
+                        )
+                    }
                 } else {
                     Text(
                         text = "📺",
@@ -213,7 +237,7 @@ private fun LiveTvCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = NuvioTheme.colors.TextSecondary
             )
-            if (installed == null) {
+            if (installed == null && !app.internal) {
                 Spacer(Modifier.size(6.dp))
                 Text(
                     text = "Appli pas trouvée : appuie pour l'installer",
