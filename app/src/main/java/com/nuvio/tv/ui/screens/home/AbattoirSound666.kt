@@ -24,7 +24,8 @@ object AbattoirSound666 {
 
     /** Durée jouée à l'ouverture des portes (le fichier est repris en boucle s'il est plus court). */
     const val PLAY_MS = 20_000L
-    const val FADE_IN_MS = 1_500L   // 23/11 : monte pendant que la bobine s'efface (fondu croisé)
+    // 24/11 (David : « encore trop sec ») : Machine Head monte doucement sur 5 s pendant que la bobine s'efface (6 s)
+    const val FADE_IN_MS = 5_000L
     const val FADE_OUT_MS = 3_000L
 
     /** Règle pure (testée) : un ancien réglage (toutes les 10 s, 20 s, 1 min, boucle…) devient « aux portes ». */
@@ -80,12 +81,14 @@ object AbattoirSound666 {
         val v = volumePct.coerceIn(0, 100) / 100f
         val k = when {
             tMs < 0 || tMs >= totalMs -> 0f
-            tMs < FADE_IN_MS -> tMs.toFloat() / FADE_IN_MS
+            tMs < fadeIn(totalMs) -> (tMs.toFloat() / fadeIn(totalMs)).let { u -> u * u * (3f - 2f * u) }   // montée en douceur
             tMs > totalMs - fadeOut(totalMs) -> (totalMs - tMs).toFloat() / fadeOut(totalMs)
             else -> 1f
         }
         return v * k.coerceIn(0f, 1f)
     }
+
+    private fun fadeIn(totalMs: Long): Long = minOf(FADE_IN_MS, totalMs / 3).coerceAtLeast(1L)
 
     private fun fadeOut(totalMs: Long): Long = minOf(FADE_OUT_MS, totalMs / 4).coerceAtLeast(1L)
 
@@ -139,10 +142,24 @@ object AbattoirSound666 {
         val app = context.applicationContext
         runCatching {
             // 23/11 (réparation, David : « tjrs 3x le son ») : plus de boucle, le fichier une seule fois
-            val mp = (if (readyUri == uri) ready else null) ?: MediaPlayer().apply {
-                setDataSource(app, Uri.parse(uri)); prepare()
-            }
+            val pre = if (readyUri == uri) ready else null
             ready = null; readyUri = null
+            if (pre == null) {
+                // 24/11 : pas encore préparé → on le prépare à côté (jamais sur l'écran : sinon les portes sautent)
+                Thread {
+                    runCatching {
+                        val mp = MediaPlayer().apply { setDataSource(app, Uri.parse(uri)); prepare() }
+                        handler.post { startPrepared(mp, volumePct) }
+                    }
+                }.apply { isDaemon = true }.start()
+                return
+            }
+            startPrepared(pre, volumePct)
+        }.onFailure { stop() }
+    }
+
+    private fun startPrepared(mp: MediaPlayer, volumePct: Int) {
+        runCatching {
             mp.isLooping = false
             mp.setOnCompletionListener { stop() }
             mp.setOnErrorListener { _, _, _ -> stop(); true }

@@ -56,7 +56,8 @@ object Splash666 {
  */
 object Bobine666 {
     const val VOLUME = 0.7f
-    const val CROSSFADE_MS = 4_000L
+    // 24/11 (David : « encore trop sec, fonds-les l'un dans l'autre ») : 6 s de fondu croisé avec Machine Head
+    const val CROSSFADE_MS = 6_000L
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private var player: android.media.MediaPlayer? = null
     private var vol = VOLUME
@@ -64,10 +65,12 @@ object Bobine666 {
     /** Règle pure (testée) : volume du fondu de sortie à l'instant t (part du volume courant, descend jusqu'à 0). */
     fun fadeLevel(from: Float, tMs: Long, durationMs: Long): Float {
         if (durationMs <= 0 || tMs >= durationMs) return 0f
-        // 23/11 (David : « ça s'arrête encore un peu sec ») : courbe douce (l'oreille entend en logarithme) :
-        // la baisse est surtout au début, la fin s'éteint lentement au lieu de tomber d'un coup
-        val k = 1f - tMs.toFloat() / durationMs
-        return (from * k * k * k).coerceIn(0f, from)
+        if (tMs <= 0) return from
+        // 24/11 (David : « encore trop sec ») : avant (cube) la bobine avait presque disparu en 1,5 s.
+        // Maintenant courbe en cloche : elle reste présente au début, se mêle à Machine Head au milieu,
+        // et s'éteint tout doucement (aucune cassure ni au début ni à la fin).
+        val u = tMs.toFloat() / durationMs
+        return (from * 0.5f * (1f + kotlin.math.cos(Math.PI.toFloat() * u))).coerceIn(0f, from)
     }
 
     fun start(context: android.content.Context) {
@@ -201,9 +204,10 @@ fun StartupSplashScreen(
         // 12/11 : les portes s'ouvrent et on avance sans s'arrêter, jusqu'à ce que les montants sortent
         // de l'écran : on est dans l'abattoir. Plus de fondu (rien ne reste à effacer).
         kotlinx.coroutines.coroutineScope {
-            launch { open.animateTo(1f, tween(3_200, easing = FastOutSlowInEasing)) }
+            // 24/11 (David : « léger sursaut à l'ouverture ») : démarrage et arrivée tout en douceur
+            launch { open.animateTo(1f, tween(3_400, easing = androidx.compose.animation.core.CubicBezierEasing(0.42f, 0f, 0.3f, 1f))) }
             kotlinx.coroutines.delay(1_100)
-            push.animateTo(1f, tween(2_500, easing = androidx.compose.animation.core.CubicBezierEasing(0.5f, 0f, 0.9f, 0.6f)))
+            push.animateTo(1f, tween(2_700, easing = androidx.compose.animation.core.CubicBezierEasing(0.45f, 0f, 0.55f, 1f)))
         }
         finalFade.snapTo(1f)
         onClosedNow()
@@ -356,8 +360,8 @@ fun StartupSplashScreen(
                             .graphicsLayer {
                                 transformOrigin = TransformOrigin(0f, 0.5f)
                                 rotationY = angle   // poussée : le battant part vers l'intérieur
-                                cameraDistance = 6f * density.density
-                                alpha = if (angle > 89f) 0f else 1f
+                                cameraDistance = 12f * density.density   // 24/11 : moins de déformation en tournant (sursaut)
+                                alpha = ((90f - angle) / 20f).coerceIn(0f, 1f)   // 24/11 : s'efface en douceur au lieu de disparaître d'un coup
                             }
                     )
                     Image(
@@ -371,8 +375,8 @@ fun StartupSplashScreen(
                             .graphicsLayer {
                                 transformOrigin = TransformOrigin(1f, 0.5f)
                                 rotationY = -angle
-                                cameraDistance = 6f * density.density
-                                alpha = if (angle > 89f) 0f else 1f
+                                cameraDistance = 12f * density.density   // 24/11 : moins de déformation en tournant (sursaut)
+                                alpha = ((90f - angle) / 20f).coerceIn(0f, 1f)   // 24/11 : s'efface en douceur au lieu de disparaître d'un coup
                             }
                     )
                 }
