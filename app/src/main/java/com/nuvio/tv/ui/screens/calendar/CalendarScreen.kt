@@ -337,7 +337,36 @@ fun CalendarVfBanner(episodes: List<CalendarEpisode>, modifier: Modifier = Modif
             contentDescription = null,
             modifier = Modifier.height(170.dp).offset(x = 18.dp)
         )
-        CalendarVfBannerBox666(episodes)
+        // 24/11 (David) : Alien : un film en VF le jour même de sa sortie → le chestburster déchire la carte
+        val ctx666 = androidx.compose.ui.platform.LocalContext.current
+        val burst = androidx.compose.runtime.remember(episodes) {
+            com.nuvio.tv.core.horreur.Horreur666.chestbursterFor(ctx666, episodes.map { it.seriesId })
+        }
+        androidx.compose.foundation.layout.Box {
+            CalendarVfBannerBox666(episodes)
+            if (burst) {
+                val bt = androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(-1L) }
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    kotlinx.coroutines.delay(1_600)   // après le titre à l'envers
+                    val start = System.currentTimeMillis()
+                    while (bt.longValue < 5_200) { bt.longValue = System.currentTimeMillis() - start; kotlinx.coroutines.delay(16) }
+                }
+                val tms = bt.longValue
+                if (tms >= 0) androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(com.nuvio.tv.R.drawable.chestburster_666),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .align(androidx.compose.ui.Alignment.Center)
+                        .width(300.dp)
+                        .graphicsLayer {
+                            val sc = com.nuvio.tv.core.horreur.Horreur666.burstScale(tms)
+                            scaleX = sc; scaleY = sc
+                            alpha = com.nuvio.tv.core.horreur.Horreur666.burstAlpha(tms)
+                            translationX = if (tms < 700) (kotlin.math.sin(tms / 18.0) * 6).toFloat() else 0f
+                        }
+                )
+            }
+        }
     }
 }
 

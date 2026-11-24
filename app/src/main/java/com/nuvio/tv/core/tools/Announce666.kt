@@ -148,7 +148,7 @@ object Announce666 {
     fun soundAllowed(frankInFront: Boolean, inPlayer: Boolean, cinemaShowing: Boolean, abattoirSoundPlaying: Boolean): Boolean =
         frankInFront && !inPlayer && !cinemaShowing && !abattoirSoundPlaying
 
-    fun showOverlay(context: Context, title: String, titleGreen: Boolean, lines: List<String>, onDismiss: () -> Unit, posters: List<String?> = emptyList()): Boolean {
+    fun showOverlay(context: Context, title: String, titleGreen: Boolean, lines: List<String>, onDismiss: () -> Unit, posters: List<String?> = emptyList(), burst: Boolean = false): Boolean {
         if (!canOverlay(context)) return false
         val app = context.applicationContext
         val wm = app.getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return false
@@ -223,11 +223,26 @@ object Announce666 {
                 alpha = 0f
                 translationY = dp(80).toFloat()
             }
+            // 24/11 : Alien : film en VF le jour même de sa sortie → le chestburster déchire la carte
+            val boxHolder: android.view.View = if (!burst) box else android.widget.FrameLayout(app).apply {
+                addView(box, android.widget.FrameLayout.LayoutParams(dp(420), android.widget.FrameLayout.LayoutParams.WRAP_CONTENT))
+                val beast = android.widget.ImageView(app).apply {
+                    setImageResource(com.nuvio.tv.R.drawable.chestburster_666)
+                    scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                    alpha = 0f; scaleX = 0.2f; scaleY = 0.2f
+                }
+                // même hauteur que la carte (elle ne la fait pas grandir), il déborde en grossissant
+                addView(beast, android.widget.FrameLayout.LayoutParams(dp(300), android.widget.FrameLayout.LayoutParams.MATCH_PARENT, Gravity.CENTER))
+                clipChildren = false
+                beast.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(1_600).setDuration(600)
+                    .setInterpolator(android.view.animation.OvershootInterpolator(2.2f))
+                    .withEndAction { beast.animate().alpha(0f).setStartDelay(3_400).setDuration(1_000).start() }.start()
+            }
             val container = LinearLayout(app).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.BOTTOM
                 addView(frank, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(170)).apply { rightMargin = -dp(14) })
-                addView(box, LinearLayout.LayoutParams(dp(420), LinearLayout.LayoutParams.WRAP_CONTENT))
+                addView(boxHolder, LinearLayout.LayoutParams(dp(420), LinearLayout.LayoutParams.WRAP_CONTENT))
             }
             frank.animate().alpha(1f).translationY(0f).setStartDelay(120).setDuration(520)
                 .setInterpolator(android.view.animation.OvershootInterpolator(1.4f)).start()

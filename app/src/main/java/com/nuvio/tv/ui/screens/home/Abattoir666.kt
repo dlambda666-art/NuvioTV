@@ -270,22 +270,26 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 alpha = off * alpha
             )
         }
-        // 24/11 (David, image Gemini) : l'œuf d'Alien sur l'étagère à bocaux. Il respire ; de temps en temps
-        // il s'entrouvre : une lueur monte de l'intérieur avec un peu de vapeur. Il suit la lumière du néon.
-        run {
-            val eh = 95f * scale
+        // 24/11 (David) : deux œufs d'Alien sur l'étagère des têtes, au fond, à la place des têtes de gauche et de
+        // droite (celle du milieu reste). Ils respirent ; de temps en temps l'un s'entrouvre (rien ne sort), l'autre
+        // s'ouvre plus tard (le facehugger sortira de celui-là). Ils suivent la lumière du néon.
+        fun egg(cx1920: Float, bottom1920: Float, h1920: Float, stir: Float, phase: Double) {
+            val eh = h1920 * scale
             val ew = eh * alienEgg.width / alienEgg.height
-            val ecx = left + 1175f * scale
-            val ebottom = 381f * scale
-            val breath = 1f + 0.018f * kotlin.math.sin(t * 1.3).toFloat()
-            val stir = com.nuvio.tv.core.horreur.Horreur666.eggStir(t)
+            val ecx = left + cx1920 * scale
+            val ebottom = bottom1920 * scale
+            val breath = 1f + 0.018f * kotlin.math.sin(t * 1.3 + phase).toFloat()
             val h2 = eh * (breath + 0.03f * stir)
             drawImage(
                 alienEgg,
                 dstOffset = IntOffset((ecx - ew / 2f).toInt(), (ebottom - h2).toInt()),
                 dstSize = IntSize(ew.toInt(), h2.toInt()),
                 alpha = alpha,
-                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.Black.copy(alpha = 0.72f * off), androidx.compose.ui.graphics.BlendMode.SrcAtop)
+                // assombri comme le fond de la pièce (sinon il ressort comme un autocollant), et encore plus quand le néon coupe
+                colorFilter = run {
+                    val k = 0.62f * (1f - 0.72f * off)
+                    androidx.compose.ui.graphics.ColorFilter.lighting(Color(k * 0.94f, k, k * 0.92f), Color.Black)
+                }
             )
             if (stir > 0.01f) {
                 val top = Offset(ecx, ebottom - h2 + eh * 0.12f)
@@ -302,6 +306,8 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 }
             }
         }
+        egg(Home666.EGG_LEFT_X, Home666.EGG_BOTTOM, Home666.EGG_H, com.nuvio.tv.core.horreur.Horreur666.eggStir(t), 0.0)
+        egg(Home666.EGG_RIGHT_X, Home666.EGG_BOTTOM, Home666.EGG_H, com.nuvio.tv.core.horreur.Horreur666.eggStir(t - 37.0), 1.7)
         // 22/11 : une ampoule nue au-dessus du corps pendu (David : « on voit à peine le corps ») ;
         // elle baisse avec le néon et grésille un peu de son côté.
         // Dessinée AVANT les morceaux pendus : elle éclaire le mur derrière sans délaver le corps (22/11)

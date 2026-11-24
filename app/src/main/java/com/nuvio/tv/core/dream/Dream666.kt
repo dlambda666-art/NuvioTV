@@ -538,7 +538,8 @@ private class Dream666View(context: Context) : View(context) {
     private var lastFigureAt = 0L
 
     private fun drawThermal(canvas: Canvas, w: Float, h: Float, now: Long, t: Float, driftX: Float, driftY: Float, p: Float) {
-        val sw = (w / 4f).toInt().coerceAtLeast(1); val sh = (h / 4f).toInt().coerceAtLeast(1)
+        // 24/11 (David : « moins net que le mien ») : rendu à moitié de la taille de l'écran (avant : au quart)
+        val sw = (w / 2f).toInt().coerceAtLeast(1); val sh = (h / 2f).toInt().coerceAtLeast(1)
         val bmp = thermBmp?.takeIf { it.width == sw && it.height == sh } ?: Bitmap.createBitmap(sw, sh, Bitmap.Config.ARGB_8888).also {
             thermBmp = it; thermPx = IntArray(sw * sh)
         }

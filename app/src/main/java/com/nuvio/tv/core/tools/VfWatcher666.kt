@@ -99,6 +99,10 @@ class VfWatcher666 @Inject constructor(
                 if (shouldCry(firstTmdb, id in prefs.getStringSet("vf_known", emptySet()).orEmpty(), c?.released, LocalDate.now())) {
                     val poster = c?.poster ?: posterFor(id)
                     addFresh(Found(id, c?.name ?: id, poster))
+                    // 24/11 : VF le jour même de la sortie → le chestburster déchire la carte de l'annonce
+                    if (com.nuvio.tv.core.horreur.Horreur666.releaseDay(c?.released, LocalDate.now())) {
+                        runCatching { com.nuvio.tv.core.horreur.Horreur666.markReleaseDay(context, id) }
+                    }
                     // 666TVF (09/11) : « En VF cette semaine » est maintenant tenu sur la Shield
                     LocalCatalogs666.recordVf(id, "movie", (c?.name ?: id).replace(Regex("""\s*\(\d{4}\)$"""), ""), poster)
                 }

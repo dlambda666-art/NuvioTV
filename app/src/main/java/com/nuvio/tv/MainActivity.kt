@@ -1566,7 +1566,8 @@ open class MainActivity : ComponentActivity() {
                                     titleGreen = shown.none { it.seriesId.startsWith("alerte:") || it.seriesId.startsWith("sport:") || it.seriesId.startsWith("retard:") },
                                     lines = shown.map { announceLine666(it) },
                                     onDismiss = { announcements666.value = emptyList() },
-                                    posters = shown.map { it.poster }
+                                    posters = shown.map { it.poster },
+                                    burst = com.nuvio.tv.core.horreur.Horreur666.chestbursterFor(pendingContext666, shown.map { it.seriesId })
                                 )
                                 // 24/11 : la carte par-dessus l'autre appli a déjà ri : pas de 2e rire au retour dans Frank
                                 if (overlay) bellRung666 += shown.map { it.key }

@@ -172,4 +172,39 @@ object Horreur666 {
             else -> 0f
         }
     }
+
+    // ---------- Alien : le chestburster quand un film sort en VF le jour même de sa sortie ----------
+    /** Règle pure (testée) : la VF arrive le jour de la sortie (ou la veille au soir / le lendemain : ±1 jour). */
+    fun releaseDay(released: java.time.LocalDate?, today: java.time.LocalDate): Boolean =
+        released != null && kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(released, today)) <= 1
+
+    fun markReleaseDay(context: Context, imdbId: String) {
+        val p = context.getSharedPreferences("666tv_horreur", Context.MODE_PRIVATE)
+        val set = p.getStringSet("jour_j", emptySet()).orEmpty().toMutableSet()
+        set += imdbId
+        p.edit().putStringSet("jour_j", set.toList().takeLast(30).toSet()).apply()
+    }
+
+    /** Règle pure (testée) : l'annonce contient-elle un film du jour J ? (id de la forme « film:tt… ») */
+    fun chestburster(seriesIds: List<String>, releaseDayIds: Set<String>): Boolean =
+        seriesIds.any { it.startsWith("film:") && it.removePrefix("film:") in releaseDayIds }
+
+    fun chestbursterFor(context: Context, seriesIds: List<String>): Boolean = runCatching {
+        chestburster(seriesIds, context.getSharedPreferences("666tv_horreur", Context.MODE_PRIVATE).getStringSet("jour_j", emptySet()).orEmpty())
+    }.getOrDefault(false)
+
+    /** Règle pure (testée) : taille du chestburster à l'instant t : il jaillit (rebond), reste, puis s'efface après 4 s. */
+    fun burstScale(tMs: Long): Float = when {
+        tMs < 0 -> 0f
+        tMs < 450 -> { val k = tMs / 450f; (k * (1.25f - 0.25f * k)).coerceAtMost(1.15f) }
+        tMs < 700 -> 1.15f - 0.15f * ((tMs - 450) / 250f)
+        else -> 1f
+    }
+
+    fun burstAlpha(tMs: Long): Float = when {
+        tMs < 0 -> 0f
+        tMs < 4_000 -> 1f
+        tMs < 5_000 -> 1f - (tMs - 4_000) / 1_000f
+        else -> 0f
+    }
 }

@@ -108,4 +108,18 @@ class Horreur666Test {
         assertEquals(0f, Horreur666.eggStir(20.0 + 30.0), 0.001f)
         assertEquals(1f, Horreur666.eggStir(20.0 + 75.0 + 2.0), 0.001f)
     }
+
+    @Test fun `chestburster seulement pour un film en VF le jour de sa sortie`() {
+        val d = java.time.LocalDate.of(2026, 11, 24)
+        assertTrue(Horreur666.releaseDay(d, d))
+        assertTrue(Horreur666.releaseDay(d.minusDays(1), d))
+        assertFalse(Horreur666.releaseDay(d.minusDays(5), d))
+        assertFalse(Horreur666.releaseDay(null, d))
+        assertTrue(Horreur666.chestburster(listOf("film:tt123"), setOf("tt123")))
+        assertFalse(Horreur666.chestburster(listOf("film:tt999"), setOf("tt123")))
+        assertFalse(Horreur666.chestburster(listOf("serie:tt123"), setOf("tt123")))
+        assertEquals(1f, Horreur666.burstScale(2_000), 0.001f)
+        assertEquals(0f, Horreur666.burstAlpha(6_000), 0.001f)
+        assertEquals(1f, Horreur666.burstAlpha(1_000), 0.001f)
+    }
 }
