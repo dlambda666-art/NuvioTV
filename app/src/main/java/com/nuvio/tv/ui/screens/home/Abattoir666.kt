@@ -215,6 +215,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
     val neonOff: ImageBitmap = ImageBitmap.imageResource(R.drawable.neon_off_666)
     val nosfShadow: ImageBitmap = ImageBitmap.imageResource(R.drawable.ombre_nosferatu_666)
     val alienEgg: ImageBitmap = ImageBitmap.imageResource(R.drawable.oeuf_alien_666)
+    val facehugger: ImageBitmap = ImageBitmap.imageResource(R.drawable.facehugger_666)
     val hangs: List<ImageBitmap> = listOf(
         ImageBitmap.imageResource(R.drawable.pend_bras_666),
         ImageBitmap.imageResource(R.drawable.pend_jambe_666),
@@ -308,6 +309,31 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
         }
         egg(Home666.EGG_LEFT_X, Home666.EGG_BOTTOM, Home666.EGG_H, com.nuvio.tv.core.horreur.Horreur666.eggStir(t), 0.0)
         egg(Home666.EGG_RIGHT_X, Home666.EGG_BOTTOM, Home666.EGG_H, com.nuvio.tv.core.horreur.Horreur666.eggStir(t - 37.0), 1.7)
+        // 24/11 (David, image Gemini) : de temps en temps, le facehugger jaillit de l'œuf de droite et saute vers nous
+        com.nuvio.tv.core.horreur.Horreur666.facehuggerLeap(t)?.let { k ->
+            val eggW = Home666.EGG_H * scale * alienEgg.width / alienEgg.height
+            val sx = left + Home666.EGG_RIGHT_X * scale
+            val sy = (Home666.EGG_BOTTOM - Home666.EGG_H * 0.85f) * scale
+            val e = k * k
+            val cxF = sx + (size.width * 0.5f - sx) * e
+            val cyF = sy + (size.height * 0.42f - sy) * e - kotlin.math.sin(k * Math.PI).toFloat() * 40f * scale
+            val fw = eggW * (0.6f + 9f * e)
+            val fh = fw * facehugger.height / facehugger.width
+            val a = if (k < 0.8f) 1f else (1f - (k - 0.8f) / 0.2f)
+            rotate(degrees = -12f + 20f * k, pivot = Offset(cxF, cyF)) {
+                drawImage(
+                    facehugger,
+                    dstOffset = IntOffset((cxF - fw / 2f).toInt(), (cyF - fh / 2f).toInt()),
+                    dstSize = IntSize(fw.toInt(), fh.toInt()),
+                    alpha = a * alpha,
+                    // dans la pénombre au fond, plus éclairé en arrivant sur nous
+                    colorFilter = run {
+                        val lk = (0.55f + 0.35f * k) * (1f - 0.6f * off)
+                        androidx.compose.ui.graphics.ColorFilter.lighting(Color(lk, lk * 0.95f, lk * 0.92f), Color.Black)
+                    }
+                )
+            }
+        }
         // 22/11 : une ampoule nue au-dessus du corps pendu (David : « on voit à peine le corps ») ;
         // elle baisse avec le néon et grésille un peu de son côté.
         // Dessinée AVANT les morceaux pendus : elle éclaire le mur derrière sans délaver le corps (22/11)

@@ -207,4 +207,17 @@ object Horreur666 {
         tMs < 5_000 -> 1f - (tMs - 4_000) / 1_000f
         else -> 0f
     }
+
+    /**
+     * Règle pure (testée) : le facehugger saute de l'œuf de droite vers nous : progression (0..1) du saut, ou null.
+     * Une ouverture sur trois de l'œuf de droite (≈ toutes les 3 min 45), quand il est grand ouvert ; le saut dure 0,9 s.
+     */
+    fun facehuggerLeap(t: Double): Float? {
+        val u = t - 37.0 - 20.0
+        if (u < 0) return null
+        val cycle = Math.floor(u / 75.0).toLong()
+        val p = u - cycle * 75.0
+        if (Math.floorMod(cycle, 3L) != 1L || p < 2.0 || p >= 2.9) return null
+        return ((p - 2.0) / 0.9).toFloat()
+    }
 }
