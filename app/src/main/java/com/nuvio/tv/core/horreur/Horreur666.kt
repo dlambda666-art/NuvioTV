@@ -154,7 +154,7 @@ object Horreur666 {
         val l = lum.coerceIn(0, 255)
         val cold = (l * 0.40f).toInt()
         if (hot <= 8) return cold
-        val body = (120 + hot * 0.30f + l * 0.30f).toInt()
+        val body = (150 + hot * 0.22f + l * 0.12f).toInt()   // 24/11 : corps orange-rouge comme la retouche de David
         val k = (hot / 255f).coerceIn(0f, 1f)
         return (cold + (body - cold) * k).toInt().coerceIn(0, 255)
     }
