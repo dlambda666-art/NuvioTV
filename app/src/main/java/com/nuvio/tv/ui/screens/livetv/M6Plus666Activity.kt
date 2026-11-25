@@ -84,9 +84,24 @@ class M6Plus666Activity : ComponentActivity() {
         }
     }
 
+    private var previousHandler: Thread.UncaughtExceptionHandler? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 25/11 (piège M6+) : si cet écran plante, la cause est gardée et affichée à la prochaine ouverture
+        previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+        val app = applicationContext
+        Thread.setDefaultUncaughtExceptionHandler { t, e ->
+            M6Plus666.saveCrash(app, e)
+            previousHandler?.uncaughtException(t, e)
+        }
         super.onCreate(savedInstanceState)
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK))
         setContent { NuvioTheme { M6PlusScreen(onExit = { finish() }) } }
+    }
+
+    override fun onDestroy() {
+        if (!isChangingConfigurations) previousHandler?.let { Thread.setDefaultUncaughtExceptionHandler(it) }
+        super.onDestroy()
     }
 }
 
@@ -137,7 +152,23 @@ private fun M6PlusScreen(onExit: () -> Unit) {
                 )
                 Pill(if (M6Plus666.hasAccount(context)) "Mon compte M6+" else "Entrer mon compte M6+") { showAccount = true }
             }
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(12.dp))
+            var crash by remember { mutableStateOf(M6Plus666.lastCrash(context)) }
+            crash?.let { c ->
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFF2A0A0A))
+                        .border(1.dp, Color(0xFFB3261E), RoundedCornerShape(10.dp)).padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "M6+ a planté la dernière fois. Prends cette ligne en photo pour Claude :\n$c",
+                        color = Color(0xFFFFB4AB), fontSize = 13.sp, modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Pill("Effacer") { M6Plus666.clearCrash(context); crash = null }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
             if (showAccount) {
                 AccountPanel(onDone = { showAccount = false })
             } else when (val p = page) {

@@ -237,6 +237,20 @@ private fun LiveTvCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = NuvioTheme.colors.TextSecondary
             )
+            if (app.internal) {
+                // 25/11 (piège M6+) : si l'écran M6+ a planté, la cause s'affiche ici (photo pour Claude)
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                val crash = remember { com.nuvio.tv.core.m6.M6Plus666.lastCrash(ctx) }
+                if (crash != null) {
+                    Spacer(Modifier.size(6.dp))
+                    Text(
+                        text = "Dernier plantage (photo pour Claude) : $crash",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = androidx.compose.ui.graphics.Color(0xFFFFB4AB),
+                        maxLines = 8
+                    )
+                }
+            }
             if (installed == null && !app.internal) {
                 Spacer(Modifier.size(6.dp))
                 Text(

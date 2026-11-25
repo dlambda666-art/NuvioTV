@@ -93,7 +93,7 @@ object M6Plus666 {
     /** Pour le Rapport : les dernières erreurs M6+ (sans adresse e-mail, sans jeton, sans lien complet). */
     fun safeMessage(msg: String?): String =
         (msg ?: "erreur inconnue").replace(Regex("https?://[^\\s?]*\\?\\S*")) { it.value.substringBefore('?') + "?…" }
-            .replace(Regex("[A-Za-z0-9_\\-]{40,}"), "…").take(160)
+            .replace(Regex("[A-Za-z0-9_\\-]{40,}"), "…").take(600)
 
     fun noteError(context: Context, where: String, msg: String?) {
         runCatching {
@@ -107,6 +107,33 @@ object M6Plus666 {
     }
 
     data class Problem(val at: Long, val where: String, val msg: String)
+
+    /**
+     * 25/11 (piège M6+ 2.0.10 : écran blanc puis cinéma, Rapport pas rafraîchi) : si l'écran M6+ plante, la
+     * cause est gardée ici et affichée EN CLAIR à la prochaine ouverture de M6+ (une photo suffit).
+     * Jamais d'e-mail ni de jeton dedans (safeMessage).
+     */
+    fun crashText(e: Throwable): String {
+        val root = generateSequence(e) { it.cause }.last()
+        val frames = (root.stackTrace.take(6) + e.stackTrace.filter { it.className.startsWith("com.nuvio") }.take(4))
+            .distinct().joinToString(" ← ") { "${it.className.substringAfterLast('.')}.${it.methodName}:${it.lineNumber}" }
+        return safeMessage("${root.javaClass.simpleName}: ${root.message} | $frames").take(600)
+    }
+
+    fun saveCrash(context: Context, e: Throwable) {
+        runCatching {
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putString("crash", crashText(e)).putLong("crash_at", System.currentTimeMillis()).commit()
+        }
+        noteError(context, "plantage de l'écran M6+", crashText(e))
+    }
+
+    fun lastCrash(context: Context): String? =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("crash", null)
+
+    fun clearCrash(context: Context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove("crash").remove("crash_at").apply()
+    }
 
     fun problems(context: Context): List<Problem> = runCatching {
         val arr = JSONArray(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("errors", "[]"))

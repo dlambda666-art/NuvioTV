@@ -63,7 +63,15 @@ class M6Plus666PlayerActivity : Activity() {
     private lateinit var playerView: PlayerView
     private lateinit var status: TextView
 
+    private var previousHandler: Thread.UncaughtExceptionHandler? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+        val app = applicationContext
+        Thread.setDefaultUncaughtExceptionHandler { t, e ->
+            M6Plus666.saveCrash(app, e)
+            previousHandler?.uncaughtException(t, e)
+        }
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
@@ -164,6 +172,7 @@ class M6Plus666PlayerActivity : Activity() {
     }
 
     override fun onDestroy() {
+        if (!isChangingConfigurations) previousHandler?.let { Thread.setDefaultUncaughtExceptionHandler(it) }
         player?.release(); player = null
         super.onDestroy()
     }
