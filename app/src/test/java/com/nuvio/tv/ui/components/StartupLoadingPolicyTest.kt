@@ -62,6 +62,9 @@ class StartupLoadingPolicyTest {
     fun `startup uses exactly one loader then releases ownership`() {
         assertTrue(show(StartupDestination.Home))
         assertFalse(shouldShowHomeStartupLoader(true, true, false))
+        // 25/11 (David) : jamais le petit pentacle derrière les portes du cinéma
+        assertFalse(shouldShowHomeStartupLoader(true, false, true, cinemaOnScreen = true))
+        assertTrue(shouldShowHomeStartupLoader(true, false, true, cinemaOnScreen = false))
         assertFalse(show(StartupDestination.Home, complete = true))
         assertFalse(shouldShowHomeStartupLoader(false, true, true))
         assertTrue(shouldShowHomeStartupLoader(true, true, true))

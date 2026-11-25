@@ -176,7 +176,7 @@ object StreamAutoPlaySelector {
     fun notYetMessage666(airDate: String?, title: String?): String? {
         val d = airDate?.take(10)?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() } ?: return null
         val name = title?.takeIf { it.isNotBlank() } ?: "Cet épisode"
-        return "$name du ${"%02d/%02d".format(d.dayOfMonth, d.monthValue)} : pas encore disponible en VF (aucun ancien épisode lancé)"
+        return "$name du ${"%02d/%02d".format(d.dayOfMonth, d.monthValue)} : pas encore de fichier VF daté de ce jour (aucun ancien épisode lancé, choisis dans la liste si tu le reconnais)"
     }
 
     /** 18/11 : le texte porte-t-il une date (émission datée comme WWE Raw) ? */
@@ -199,7 +199,10 @@ object StreamAutoPlaySelector {
         // 18/11 (bis, piège « Reprendre » Raw en haut) : si un fichier porte la bonne date, on ne garde que
         // ceux-là ; sinon les fichiers sans date restent permis (un fichier daté d'un autre jour, jamais).
         val rightDated = notOther.filter { episodeRank(it, season, episode) == 0 || hasDate(textOf(it)) && !dateMismatch(textOf(it), air) }
-        return if (rightDated.isNotEmpty()) rightDated else notOther
+        // 25/11 (David : « il a encore lancé un vieil épisode ») : un fichier SANS date ne prouve pas qu'il est
+        // de la semaine (c'était le trou). Émission datée → seulement un fichier du bon jour ; sinon rien n'est
+        // lancé tout seul : Frank dit « pas encore » et la liste reste là pour choisir à la main.
+        return rightDated
     }
 
     private val DV = Regex("""(?i)(?<![a-z0-9])(DV|DoVi|Dolby[ ._-]?Vision)(?![a-z0-9])""")

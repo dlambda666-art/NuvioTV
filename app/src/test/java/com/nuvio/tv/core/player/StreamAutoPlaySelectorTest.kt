@@ -325,7 +325,7 @@ class StreamAutoPlaySelectorTest {
                 selectedAddons = emptySet(), selectedPlugins = emptySet(), season = 2026, episode = 46
             )
             org.junit.Assert.assertNull(selected)
-            assertEquals("WWE Raw du 16/11 : pas encore disponible en VF (aucun ancien épisode lancé)",
+            assertEquals("WWE Raw du 16/11 : pas encore de fichier VF daté de ce jour (aucun ancien épisode lancé, choisis dans la liste si tu le reconnais)",
                 StreamAutoPlaySelector.notYetMessage666("2026-11-16", "WWE Raw"))
             org.junit.Assert.assertNull(StreamAutoPlaySelector.notYetMessage666(null, "Dexter"))
         } finally {
@@ -363,12 +363,13 @@ class StreamAutoPlaySelectorTest {
                 source = StreamAutoPlaySource.ALL_SOURCES, installedAddonNames = emptySet(),
                 selectedAddons = emptySet(), selectedPlugins = emptySet(), season = 2026, episode = 46
             )
-            // seul un fichier sans date : il est lancé (avant : chargement sans fin)
-            assertEquals(noDate, pick(noDate))
+            // 25/11 (piège Raw 3) : un fichier sans date n'est plus lancé tout seul (c'était un vieux Raw) ;
+            // pas de chargement sans fin pour autant : rien n'est choisi → message « pas encore » + liste
+            org.junit.Assert.assertNull(pick(noDate))
             // date en toutes lettres
             val oldFr = stream("Wascustom666", url = "https://a.test/oldfr", name = "WWE Raw du 9 Novembre 2026 VF")
             val goodFr = stream("Wascustom666", url = "https://a.test/goodfr", name = "WWE Raw du 17 novembre 2026 VF")
-            assertEquals(noDate, pick(oldFr, noDate))
+            org.junit.Assert.assertNull(pick(oldFr, noDate))
             assertEquals(goodFr, pick(noDate, oldFr, goodFr))
             org.junit.Assert.assertTrue(StreamAutoPlaySelector.dateMismatch("Raw Nov 9, 2026", "2026-11-16"))
             org.junit.Assert.assertTrue(StreamAutoPlaySelector.hasDate("Raw 16 Nov 2026"))

@@ -248,7 +248,8 @@ fun HomeScreen(
     val showHomeLoader = shouldShowHomeStartupLoader(
         loading = showStartupLoader,
         sharedSplashEnabled = LocalStartupSplashEnabled.current,
-        startupComplete = startupLoadingState?.complete != false
+        startupComplete = startupLoadingState?.complete != false,
+        cinemaOnScreen = com.nuvio.tv.ui.components.Splash666.visible.value
     )
     LaunchedEffect(showStartupLoader, startupLoadingState) {
         if (!showStartupLoader) {

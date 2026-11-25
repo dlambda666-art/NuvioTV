@@ -47,6 +47,9 @@ private val Splash666Bg = Color(0xFF0C0F0E)
 /** 666TVF (10/11) : l'ouverture est à l'écran (la morgue ne s'ouvre pas, le néon se tait dessous). */
 object Splash666 {
     @Volatile var showing: Boolean = false
+        set(v) { field = v; visible.value = v }
+    /** 25/11 : même chose en état Compose : tant que le cinéma est là, l'accueil n'affiche pas son pentacle de chargement. */
+    val visible = androidx.compose.runtime.mutableStateOf(false)
     /** À l'arrivée sur l'accueil : le curseur va sur le bouton mauve (une fois par ouverture). */
     @Volatile var focusHeroOnce: Boolean = true
 }

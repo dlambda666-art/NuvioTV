@@ -142,6 +142,7 @@ jobs:
             --tests 'com.nuvio.tv.core.tools.Lien666Test' \
             --tests 'com.nuvio.tv.ui.screens.stream.MotionTracker666Test' \
             --tests 'com.nuvio.tv.core.m6.M6Plus666Test' \
+            --tests 'com.nuvio.tv.ui.components.StartupLoadingPolicyTest' \
             --tests 'com.nuvio.tv.updater.ui.Mother666Test' \
             --tests 'com.nuvio.tv.core.wake.WakeLaunch666Test' \
             --tests 'com.nuvio.tv.core.horreur.Horreur666Test' \

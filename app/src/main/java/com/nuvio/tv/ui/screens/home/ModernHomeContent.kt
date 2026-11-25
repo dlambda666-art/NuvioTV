@@ -184,7 +184,17 @@ fun ModernHomeContent(
     val hasCatalogs = uiState.catalogRows.isNotEmpty()
     if (hasCollections && !hasCatalogs && uiState.installedAddonsCount > 0 && uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            LoadingIndicator()
+            // 25/11 (David) : derrière les portes du cinéma on voit déjà l'Abattoir, pas un écran noir avec
+            // le petit pentacle ; le pentacle ne tourne que si ça charge encore une fois le cinéma parti
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(com.nuvio.tv.R.drawable.fond_collections_666),
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                alignment = Alignment.TopEnd,
+                modifier = Modifier.fillMaxSize()
+            )
+            Abattoir666Layer(visible = true, modifier = Modifier.fillMaxSize())
+            if (!com.nuvio.tv.ui.components.Splash666.visible.value) LoadingIndicator()
         }
         return
     }

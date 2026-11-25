@@ -27,5 +27,7 @@ fun shouldShowStartupSplash(
 fun shouldShowHomeStartupLoader(
     loading: Boolean,
     sharedSplashEnabled: Boolean,
-    startupComplete: Boolean
-): Boolean = loading && (!sharedSplashEnabled || startupComplete)
+    startupComplete: Boolean,
+    // 25/11 (David) : le petit pentacle n'a rien à faire derrière les portes du cinéma
+    cinemaOnScreen: Boolean = false
+): Boolean = loading && !cinemaOnScreen && (!sharedSplashEnabled || startupComplete)
