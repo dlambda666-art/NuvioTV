@@ -8,6 +8,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.ConscryptMode
 
 /**
  * 25/11 (piège M6+) : sur la 2.0.10, l'écran M6+ plantait à l'ouverture (écran blanc puis cinéma).
@@ -15,6 +16,7 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
+@ConscryptMode(ConscryptMode.Mode.OFF)
 class M6Plus666ScreenTest {
 
     @get:Rule
