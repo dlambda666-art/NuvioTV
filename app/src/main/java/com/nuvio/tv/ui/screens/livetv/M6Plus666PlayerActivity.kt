@@ -136,7 +136,14 @@ class M6Plus666PlayerActivity : Activity() {
             }
         }
         val drm = DefaultDrmSessionManager.Builder()
-            .setUuidAndExoMediaDrmProvider(C.WIDEVINE_UUID, FrameworkMediaDrm.DEFAULT_PROVIDER)
+            // 25/11 (photo de David : DECODING_FAILED · IllegalStateException) : en Widevine L1, la licence peut
+            // exiger un décodeur sécurisé pour TOUT (le son aussi, qui n'en a pas) → le décodage casse.
+            // 2e essai : Widevine logiciel (L3), comme les lecteurs Android qui marchent partout.
+            .setUuidAndExoMediaDrmProvider(C.WIDEVINE_UUID) { uuid ->
+                val drm = FrameworkMediaDrm.newInstance(uuid)
+                if (attempt >= 1) runCatching { drm.setPropertyString("securityLevel", "L3") }
+                drm
+            }
             .build(drmCallback)
         val source = DashMediaSource.Factory(
             DefaultHttpDataSource.Factory().setAllowCrossProtocolRedirects(true)
@@ -181,11 +188,13 @@ class M6Plus666PlayerActivity : Activity() {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                val detail = error.cause?.let { c -> (c.cause ?: c).javaClass.simpleName + ": " + (c.cause ?: c).message }.orEmpty()
+                val root = generateSequence(error as Throwable) { it.cause }.last()
+                val where = root.stackTrace.take(2).joinToString(" ← ") { it.className.substringAfterLast('.') + "." + it.methodName }
+                val detail = root.javaClass.simpleName + ": " + root.message + (if (where.isNotBlank()) " @ $where" else "")
                 M6Plus666.noteError(this@M6Plus666PlayerActivity, "lecture ${p.title} (essai ${attempt + 1})", error.errorCodeName + " · " + detail)
                 val decoder = error.errorCode in PlaybackException.ERROR_CODE_DECODER_INIT_FAILED..PlaybackException.ERROR_CODE_DECODING_RESOURCES_RECLAIMED
                 if (decoder && attempt == 0) {
-                    // 2e essai tout seul : son AAC stéréo (le plus simple à décoder)
+                    // 2e essai tout seul : Widevine logiciel (L3) + son AAC stéréo (le plus simple à décoder)
                     attempt = 1
                     status.text = "M6+ : nouvel essai…"
                     runCatching { player?.release() }; player = null
