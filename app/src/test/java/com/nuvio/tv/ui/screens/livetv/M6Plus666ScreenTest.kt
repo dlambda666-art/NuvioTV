@@ -30,4 +30,18 @@ class M6Plus666ScreenTest {
         val direct = rule.onAllNodesWithText("EN DIRECT").fetchSemanticsNodes().isNotEmpty()
         assertTrue(compte || direct)
     }
+
+    @Test
+    fun `lecteur M6+ s'ouvre sans planter (photo 25-11 - PlayerView sans commandes)`() {
+        val ctx = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val intent = android.content.Intent(ctx, M6Plus666PlayerActivity::class.java)
+            .putExtra("live", "M6").putExtra("title", "M6")
+        androidx.test.core.app.ActivityScenario.launch<M6Plus666PlayerActivity>(intent).use { sc ->
+            sc.onActivity { a ->
+                // la touche OK ne doit rien faire planter non plus, même avant la lecture
+                a.dispatchKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_DPAD_CENTER))
+                assertTrue(!a.isFinishing)
+            }
+        }
+    }
 }

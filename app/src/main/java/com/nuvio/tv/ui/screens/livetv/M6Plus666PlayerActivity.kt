@@ -29,7 +29,6 @@ import androidx.media3.exoplayer.drm.FrameworkMediaDrm
 import androidx.media3.exoplayer.drm.HttpMediaDrmCallback
 import androidx.media3.exoplayer.drm.MediaDrmCallback
 import androidx.media3.exoplayer.drm.MediaDrmCallbackException
-import androidx.media3.ui.PlayerView
 import com.nuvio.tv.core.m6.M6Plus666
 import java.util.UUID
 import kotlin.concurrent.thread
@@ -60,7 +59,13 @@ class M6Plus666PlayerActivity : Activity() {
     }
 
     private var player: ExoPlayer? = null
-    private lateinit var playerView: PlayerView
+    // 25/11 (photo de David : IllegalStateException dans PlayerView.setUseController) : la PlayerView de la
+    // bibliothèque de Frank n'a pas de barre de commandes → plantage à l'ouverture. Le lecteur M6+ dessine
+    // maintenant l'image lui-même (SurfaceView) et gère la télécommande lui-même : rien qui puisse manquer.
+    private lateinit var surface: android.view.SurfaceView
+    private lateinit var info: TextView
+    private val ui = android.os.Handler(android.os.Looper.getMainLooper())
+    private var isLive = false
     private lateinit var status: TextView
 
     private var previousHandler: Thread.UncaughtExceptionHandler? = null
@@ -75,17 +80,19 @@ class M6Plus666PlayerActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
-        playerView = PlayerView(this).apply {
-            useController = true
-            controllerShowTimeoutMs = 3500
-            setShowNextButton(false); setShowPreviousButton(false)
+        surface = android.view.SurfaceView(this)
+        info = TextView(this).apply {
+            setTextColor(0xFFFFFFFF.toInt()); textSize = 18f
+            setBackgroundColor(0xB0000000.toInt()); setPadding(28, 14, 28, 14)
+            visibility = android.view.View.GONE
         }
         status = TextView(this).apply {
             setTextColor(0xFF5BE36B.toInt()); textSize = 22f; gravity = Gravity.CENTER
             text = "M6+ : ouverture de ${intent.getStringExtra(EXTRA_TITLE).orEmpty()}…"
         }
-        root.addView(playerView, FrameLayout.LayoutParams(-1, -1))
+        root.addView(surface, FrameLayout.LayoutParams(-1, -1, Gravity.CENTER))
         root.addView(status, FrameLayout.LayoutParams(-1, -1))
+        root.addView(info, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.START).apply { setMargins(48, 0, 0, 48) })
         setContentView(root)
 
         val liveId = intent.getStringExtra(EXTRA_LIVE)
@@ -138,11 +145,22 @@ class M6Plus666PlayerActivity : Activity() {
             )
         val exo = ExoPlayer.Builder(this).build()
         player = exo
-        playerView.player = exo
+        exo.setVideoSurfaceView(surface)
+        isLive = live
         exo.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_READY) status.text = ""
                 if (state == Player.STATE_ENDED && !live) finish()
+            }
+
+            override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+                // image entière, sans déformation (bandes noires si besoin)
+                val vw = videoSize.width * videoSize.pixelWidthHeightRatio
+                val vh = videoSize.height.toFloat()
+                val root = surface.parent as? android.view.View ?: return
+                if (vw <= 0f || vh <= 0f || root.width == 0) return
+                val k = minOf(root.width / vw, root.height / vh)
+                surface.layoutParams = FrameLayout.LayoutParams((vw * k).toInt(), (vh * k).toInt(), Gravity.CENTER)
             }
 
             override fun onPlayerError(error: PlaybackException) {
@@ -155,15 +173,50 @@ class M6Plus666PlayerActivity : Activity() {
         exo.playWhenReady = true
     }
 
+    private fun fmt(ms: Long): String {
+        val t = (ms / 1000).coerceAtLeast(0)
+        return if (t >= 3600) "%d:%02d:%02d".format(t / 3600, t / 60 % 60, t % 60) else "%d:%02d".format(t / 60, t % 60)
+    }
+
+    private fun showInfo(text: String) {
+        val p = player
+        val pos = if (p != null && !isLive && p.duration > 0) "   " + fmt(p.currentPosition) + " / " + fmt(p.duration) else ""
+        info.text = text + pos
+        info.visibility = android.view.View.VISIBLE
+        ui.removeCallbacksAndMessages(null)
+        ui.postDelayed({ info.visibility = android.view.View.GONE }, 2500)
+    }
+
+    /** Télécommande : OK = pause / lecture, ◀ ▶ = −10 s / +10 s (replay), ⏪ ⏩ = −30 s / +30 s, Retour = quitter. */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        // Retour ferme le lecteur ; le reste (lecture/pause, avance) passe par les commandes du lecteur
-        if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP && !playerView.isControllerFullyVisible) {
-            finish(); return true
+        if (event.keyCode == KeyEvent.KEYCODE_BACK) {
+            if (event.action == KeyEvent.ACTION_UP) finish()
+            return true
         }
-        if (event.action == KeyEvent.ACTION_DOWN && !playerView.isControllerFullyVisible && event.keyCode != KeyEvent.KEYCODE_BACK) {
-            playerView.showController()
+        val p = player ?: return super.dispatchKeyEvent(event)
+        if (event.action != KeyEvent.ACTION_DOWN) return true
+        when (event.keyCode) {
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+            KeyEvent.KEYCODE_MEDIA_PLAY, KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                p.playWhenReady = !p.playWhenReady
+                showInfo(if (p.playWhenReady) "▶ Lecture" else "⏸ Pause")
+            }
+            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
+            KeyEvent.KEYCODE_MEDIA_REWIND, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
+                if (isLive) { showInfo("En direct"); return true }
+                val step = when (event.keyCode) {
+                    KeyEvent.KEYCODE_DPAD_LEFT -> -10_000L
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> 10_000L
+                    KeyEvent.KEYCODE_MEDIA_REWIND -> -30_000L
+                    else -> 30_000L
+                }
+                val target = (p.currentPosition + step).coerceIn(0L, if (p.duration > 0) p.duration - 1_000L else Long.MAX_VALUE)
+                p.seekTo(target)
+                showInfo(if (step < 0) "⏪ ${-step / 1000} s" else "⏩ ${step / 1000} s")
+            }
+            else -> showInfo(if (p.playWhenReady) "▶ Lecture" else "⏸ Pause")
         }
-        return super.dispatchKeyEvent(event)
+        return true
     }
 
     override fun onStop() {
