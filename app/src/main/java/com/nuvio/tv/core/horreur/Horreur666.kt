@@ -237,6 +237,17 @@ object Horreur666 {
         return if (p >= 1.4 && p < 2.6) ((p - 1.4) / 1.2).toFloat() else null
     }
 
+    /**
+     * 25/11 (règle pure, testée) : part de l'image « œuf + pattes » à la place de l'œuf normal (jamais les deux
+     * en entier en même temps = plus de dédoublement). Monte vite quand les pattes sortent, s'efface au
+     * début du bond (la bête a quitté l'œuf).
+     */
+    fun legsAlpha(emerge: Float?, leap: Float?): Float = when {
+        emerge != null -> (emerge * 4f).coerceIn(0f, 1f)
+        leap != null -> (1f - leap * 8f).coerceIn(0f, 1f)
+        else -> 0f
+    }
+
     /** Le bond : progression 0..1 (2,6 s → 3,7 s du cycle), ou null. */
     fun facehuggerLeap(t: Double): Float? {
         val p = leapCyclePhase(t) ?: return null

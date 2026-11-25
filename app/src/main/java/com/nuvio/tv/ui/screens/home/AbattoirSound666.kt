@@ -1,7 +1,6 @@
 package com.nuvio.tv.ui.screens.home
 
 import android.content.Context
-import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -107,82 +106,92 @@ object AbattoirSound666 {
     }
 
     // ---------- Lecture ----------
+    // 25/11 (David, 2.0.10 : « la bobine coupe puis reprend en fondu avec Machine Head », surtout en bas avec
+    // la barre de son) : MediaPlayer envoyait Machine Head (fichier long, mp3) par la sortie « offload » de la
+    // Shield → la sortie HDMI se réinitialise → TOUT le son coupe une fraction de seconde (bobine comprise).
+    // Maintenant Machine Head passe par ExoPlayer (jamais d'offload, même mélangeur que la bobine) : plus
+    // de coupure, le fondu croisé s'entend en entier. Toujours sur le fil principal.
     private val handler = Handler(Looper.getMainLooper())
-    @Volatile private var player: MediaPlayer? = null
+    @Volatile private var player: androidx.media3.exoplayer.ExoPlayer? = null
     @Volatile private var lastStartAt = -1L
     val isPlaying: Boolean get() = player != null
 
     fun sinceLastStart(now: Long = System.currentTimeMillis()): Long = if (lastStartAt < 0) -1L else now - lastStartAt
 
     // 23/11 (réparation) : le fichier est préparé pendant le cinéma → il part pile à l'ouverture
-    @Volatile private var ready: MediaPlayer? = null
+    @Volatile private var ready: androidx.media3.exoplayer.ExoPlayer? = null
     @Volatile private var readyUri: String? = null
+
+    private fun build(context: Context, uri: String): androidx.media3.exoplayer.ExoPlayer =
+        androidx.media3.exoplayer.ExoPlayer.Builder(context.applicationContext).build().apply {
+            // pas de prise du « focus » audio : ne coupe ni ne baisse rien d'autre
+            setAudioAttributes(
+                androidx.media3.common.AudioAttributes.Builder()
+                    .setUsage(androidx.media3.common.C.USAGE_MEDIA)
+                    .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MUSIC).build(),
+                false
+            )
+            repeatMode = androidx.media3.common.Player.REPEAT_MODE_OFF
+            volume = 0f
+            playWhenReady = false
+            setMediaItem(androidx.media3.common.MediaItem.fromUri(Uri.parse(uri)))
+            prepare()
+        }
 
     fun preload(context: Context) {
         val s = settings(context)
         val uri = s.uri ?: return
         if (s.mode == 0 || (ready != null && readyUri == uri)) return
         val app = context.applicationContext
-        Thread {
+        handler.post {
             runCatching {
-                val mp = MediaPlayer()
-                mp.setDataSource(app, Uri.parse(uri))
-                mp.prepare()
                 ready?.let { old -> runCatching { old.release() } }
-                ready = mp; readyUri = uri
+                ready = build(app, uri); readyUri = uri
             }
-        }.apply { isDaemon = true }.start()
+        }
     }
 
     /** Règle pure (testée) : durée jouée : le fichier une seule fois, coupé à 20 s s'il est plus long. */
     fun playLength(fileMs: Long): Long = if (fileMs <= 0) PLAY_MS else minOf(fileMs, PLAY_MS)
 
+    /** Appelé par le cinéma quand les portes commencent à s'ouvrir. */
     fun play(context: Context, uri: String, volumePct: Int) {
-        stop()
         val app = context.applicationContext
-        runCatching {
-            // 23/11 (réparation, David : « tjrs 3x le son ») : plus de boucle, le fichier une seule fois
-            val pre = if (readyUri == uri) ready else null
-            ready = null; readyUri = null
-            if (pre == null) {
-                // 24/11 : pas encore préparé → on le prépare à côté (jamais sur l'écran : sinon les portes sautent)
-                Thread {
-                    runCatching {
-                        val mp = MediaPlayer().apply { setDataSource(app, Uri.parse(uri)); prepare() }
-                        handler.post { startPrepared(mp, volumePct) }
+        handler.post {
+            stop()
+            runCatching {
+                // 23/11 (réparation, David : « tjrs 3x le son ») : plus de boucle, le fichier une seule fois
+                val p = (if (readyUri == uri) ready else null) ?: build(app, uri)
+                ready = null; readyUri = null
+                p.addListener(object : androidx.media3.common.Player.Listener {
+                    override fun onPlaybackStateChanged(state: Int) {
+                        if (state == androidx.media3.common.Player.STATE_ENDED && player === p) stop()
                     }
-                }.apply { isDaemon = true }.start()
-                return
-            }
-            startPrepared(pre, volumePct)
-        }.onFailure { stop() }
-    }
-
-    private fun startPrepared(mp: MediaPlayer, volumePct: Int) {
-        runCatching {
-            mp.isLooping = false
-            mp.setOnCompletionListener { stop() }
-            mp.setOnErrorListener { _, _, _ -> stop(); true }
-            mp.setVolume(0f, 0f)
-            mp.start()
-            player = mp
-            val start = System.currentTimeMillis()
-            lastStartAt = start
-            val total = playLength(runCatching { mp.duration.toLong() }.getOrDefault(-1L))
-            val tick = object : Runnable {
-                override fun run() {
-                    val p = player ?: return
-                    val t = System.currentTimeMillis() - start
-                    if (t >= total || com.nuvio.tv.core.tools.Announce666.inPlayer() || !com.nuvio.tv.core.wake.WakeLaunch666.resumed) {
-                        stop(); return
+                    override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                        if (player === p) stop()
                     }
-                    val g = fadeGain(t, volumePct, total)
-                    runCatching { p.setVolume(g, g) }
-                    handler.postDelayed(this, 50L)
+                })
+                p.volume = 0f
+                p.playWhenReady = true
+                player = p
+                val start = android.os.SystemClock.uptimeMillis()
+                lastStartAt = System.currentTimeMillis()
+                val tick = object : Runnable {
+                    override fun run() {
+                        val cur = player ?: return
+                        if (cur !== p) return
+                        val t = android.os.SystemClock.uptimeMillis() - start
+                        val total = playLength(p.duration.takeIf { it != androidx.media3.common.C.TIME_UNSET } ?: -1L)
+                        if (t >= total || com.nuvio.tv.core.tools.Announce666.inPlayer() || !com.nuvio.tv.core.wake.WakeLaunch666.resumed) {
+                            stop(); return
+                        }
+                        p.volume = fadeGain(t, volumePct, total)
+                        handler.postDelayed(this, 40L)
+                    }
                 }
-            }
-            handler.post(tick)
-        }.onFailure { stop() }
+                handler.post(tick)
+            }.onFailure { stop() }
+        }
     }
 
     fun stop() {

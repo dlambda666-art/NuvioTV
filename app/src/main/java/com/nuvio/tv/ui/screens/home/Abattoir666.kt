@@ -275,7 +275,9 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
         // 25/11 (David) : un seul œuf d'Alien, sur le rebord du mur à gauche du corps pendu (les têtes de gauche et
         // de droite de l'étagère du fond sont retirées du décor, celle du milieu reste). Il respire ; toutes les 15 s
         // il s'entrouvre (lueur verte + fumée) ; une fois sur deux (toutes les 30 s) le facehugger sort et bondit.
-        fun egg(cx1920: Float, bottom1920: Float, h1920: Float, stir: Float, phase: Double, legs: Float = 0f) {
+        // 25/11 (David : « l'œuf se dédouble quand la bête sort ») : l'image des pattes contient SON œuf ;
+        // posée par-dessus l'œuf normal, les deux se voyaient. Maintenant l'un remplace l'autre (fondu rapide).
+        fun egg(cx1920: Float, bottom1920: Float, h1920: Float, stir: Float, phase: Double, legs: Float = 0f, legsAlpha: Float = 0f) {
             val eh = h1920 * scale
             val ew = eh * alienEgg.width / alienEgg.height
             val ecx = left + cx1920 * scale
@@ -286,7 +288,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 alienEgg,
                 dstOffset = IntOffset((ecx - ew / 2f).toInt(), (ebottom - h2).toInt()),
                 dstSize = IntSize(ew.toInt(), h2.toInt()),
-                alpha = alpha,
+                alpha = alpha * (1f - legsAlpha),
                 // assombri comme le fond de la pièce (sinon il ressort comme un autocollant), et encore plus quand le néon coupe
                 colorFilter = run {
                     val k = 0.62f * (1f - 0.72f * off)
@@ -294,7 +296,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 }
             )
             // 24/11 (image de David) : les pattes du facehugger sortent de l'œuf grand ouvert
-            if (legs > 0.01f) {
+            if (legsAlpha > 0.01f) {
                 val k = (ew * 140f / 199f) / 151f           // corps de l'œuf de même largeur dans les deux images
                 val lw = 271f * k; val lh = 283f * k * (0.96f + 0.04f * legs)
                 val wig = 2.5f * kotlin.math.sin(t * 9.0).toFloat() * legs
@@ -303,7 +305,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                         eggLegs,
                         dstOffset = IntOffset((ecx - 154.5f * k).toInt(), (ebottom - lh).toInt()),
                         dstSize = IntSize(lw.toInt(), lh.toInt()),
-                        alpha = (legs * 3f).coerceAtMost(1f) * alpha,
+                        alpha = legsAlpha * alpha,
                         colorFilter = run {
                             val kk = 0.62f * (1f - 0.72f * off)
                             androidx.compose.ui.graphics.ColorFilter.lighting(Color(kk * 0.94f, kk, kk * 0.92f), Color.Black)
@@ -326,8 +328,11 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 }
             }
         }
+        val emerge666 = com.nuvio.tv.core.horreur.Horreur666.facehuggerEmerge(t)
+        val leap666 = com.nuvio.tv.core.horreur.Horreur666.facehuggerLeap(t)
         egg(Home666.EGG_X, Home666.EGG_BOTTOM, Home666.EGG_H, com.nuvio.tv.core.horreur.Horreur666.eggStir(t), 0.0,
-            legs = com.nuvio.tv.core.horreur.Horreur666.facehuggerEmerge(t) ?: 0f)
+            legs = emerge666 ?: 1f,
+            legsAlpha = com.nuvio.tv.core.horreur.Horreur666.legsAlpha(emerge666, leap666))
         // 22/11 : une ampoule nue au-dessus du corps pendu (David : « on voit à peine le corps ») ;
         // elle baisse avec le néon et grésille un peu de son côté.
         // Dessinée AVANT les morceaux pendus : elle éclaire le mur derrière sans délaver le corps (22/11)

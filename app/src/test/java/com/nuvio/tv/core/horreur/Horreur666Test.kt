@@ -140,6 +140,14 @@ class Horreur666Test {
         assertTrue(Horreur666.eggStir(20.0 + 15.0 + 2.0) > 0.9f)         // l'œuf est bien ouvert quand il sort
     }
 
+    @Test fun `oeuf - jamais deux oeufs a la fois (25-11, dedoublement)`() {
+        assertEquals(0f, Horreur666.legsAlpha(null, null), 0.001f)       // œuf normal seul
+        assertEquals(1f, Horreur666.legsAlpha(0.5f, null), 0.001f)       // œuf + pattes seul
+        assertEquals(0f, Horreur666.legsAlpha(null, 0.2f), 0.001f)       // la bête est partie : œuf normal
+        val a = Horreur666.legsAlpha(0.1f, null)
+        assertTrue(a > 0f && a < 1f)                                       // passage rapide, en fondu
+    }
+
     @Test fun `ki-ki-ki - encore plus bas`() {
         assertTrue(Horreur666.KIKI_VOLUME <= 0.35f)
     }
