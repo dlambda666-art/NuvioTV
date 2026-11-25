@@ -87,7 +87,7 @@ class M6Plus666PlayerActivity : Activity() {
             visibility = android.view.View.GONE
         }
         status = TextView(this).apply {
-            setTextColor(0xFF5BE36B.toInt()); textSize = 22f; gravity = Gravity.CENTER
+            setTextColor(0xFF5BE36B.toInt()); textSize = 20f; gravity = Gravity.CENTER; setPadding(80, 0, 80, 0)
             text = "M6+ : ouverture de ${intent.getStringExtra(EXTRA_TITLE).orEmpty()}…"
         }
         root.addView(surface, FrameLayout.LayoutParams(-1, -1, Gravity.CENTER))
@@ -114,7 +114,11 @@ class M6Plus666PlayerActivity : Activity() {
         }
     }
 
+    private var lastPlayable: M6Plus666.Playable? = null
+    private var attempt = 0
+
     private fun start(p: M6Plus666.Playable, live: Boolean) {
+        lastPlayable = p
         val drmCallback = object : MediaDrmCallback {
             private val provision = HttpMediaDrmCallback(null, DefaultHttpDataSource.Factory())
             override fun executeProvisionRequest(uuid: UUID, request: ExoMediaDrm.ProvisionRequest): ByteArray =
@@ -143,7 +147,20 @@ class M6Plus666PlayerActivity : Activity() {
                     .setDrmConfiguration(MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID).build())
                     .build()
             )
-        val exo = ExoPlayer.Builder(this).build()
+        // 25/11 (photo de David : ERROR_CODE_DECODING_FAILED sur la Shield du haut) : comme le lecteur principal de
+        // Frank (qui lit tout sur ces Shield) : si un décodeur échoue, on passe au suivant, et le décodeur logiciel
+        // de Frank (FFmpeg) prend le son si besoin. 2e essai automatique : son AAC stéréo seulement.
+        val renderers = androidx.media3.exoplayer.DefaultRenderersFactory(this)
+            .setEnableDecoderFallback(true)
+            .setExtensionRendererMode(androidx.media3.exoplayer.DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+        val selector = androidx.media3.exoplayer.trackselection.DefaultTrackSelector(this).apply {
+            parameters = buildUponParameters()
+                .setPreferredAudioLanguage("fr")
+                .setPreferredAudioMimeType(MimeTypes.AUDIO_AAC)
+                .apply { if (attempt >= 1) setMaxAudioChannelCount(2).setExceedAudioConstraintsIfNecessary(false) }
+                .build()
+        }
+        val exo = ExoPlayer.Builder(this).setRenderersFactory(renderers).setTrackSelector(selector).build()
         player = exo
         exo.setVideoSurfaceView(surface)
         isLive = live
@@ -164,8 +181,30 @@ class M6Plus666PlayerActivity : Activity() {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                M6Plus666.noteError(this@M6Plus666PlayerActivity, "lecture ${p.title}", error.errorCodeName + " · " + (error.cause?.let { c -> (c.cause ?: c).javaClass.simpleName + ": " + (c.cause ?: c).message } ?: ""))
-                status.text = "M6+ : lecture impossible (${error.errorCodeName})"
+                val detail = error.cause?.let { c -> (c.cause ?: c).javaClass.simpleName + ": " + (c.cause ?: c).message }.orEmpty()
+                M6Plus666.noteError(this@M6Plus666PlayerActivity, "lecture ${p.title} (essai ${attempt + 1})", error.errorCodeName + " · " + detail)
+                val decoder = error.errorCode in PlaybackException.ERROR_CODE_DECODER_INIT_FAILED..PlaybackException.ERROR_CODE_DECODING_RESOURCES_RECLAIMED
+                if (decoder && attempt == 0) {
+                    // 2e essai tout seul : son AAC stéréo (le plus simple à décoder)
+                    attempt = 1
+                    status.text = "M6+ : nouvel essai…"
+                    runCatching { player?.release() }; player = null
+                    // nouveau jeton de lecture (un jeton peut ne servir qu'une fois)
+                    val liveId = intent.getStringExtra(EXTRA_LIVE)
+                    val videoId = intent.getStringExtra(EXTRA_VIDEO)
+                    thread(name = "m6plus-retry") {
+                        val again = runCatching {
+                            if (liveId != null) M6Plus666.liveStream(this@M6Plus666PlayerActivity, M6Plus666.CHANNELS.first { it.liveId == liveId })
+                            else M6Plus666.replayStream(this@M6Plus666PlayerActivity, videoId!!, p.title)
+                        }
+                        runOnUiThread {
+                            if (isFinishing || isDestroyed) return@runOnUiThread
+                            again.onSuccess { start(it, live) }.onFailure { status.text = it.message ?: "M6+ : impossible d'ouvrir la vidéo" }
+                        }
+                    }
+                    return
+                }
+                status.text = "M6+ : lecture impossible (${error.errorCodeName})\n" + M6Plus666.safeMessage(detail).take(220)
             }
         })
         exo.setMediaSource(source)
