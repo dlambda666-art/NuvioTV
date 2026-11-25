@@ -287,7 +287,6 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
             val ebottom = Home666.EGG_BOTTOM * scale
             val open = com.nuvio.tv.core.horreur.Horreur666.eggOpen(t)
             val stir = maxOf(com.nuvio.tv.core.horreur.Horreur666.eggStir(t), 0.75f * open)
-            val breath = 1f + 0.018f * kotlin.math.sin(t * 1.3).toFloat()
             val ow = ew * 1.1f
             val oh = ow * eggOpened.height / eggOpened.width
             val dimEgg = run {
@@ -323,9 +322,8 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 )
             }
             if (open < 0.999f) {
-                // respire (et gonfle un peu quand ça pulse), ancré au pied de l'œuf
-                val k2 = breath + 0.03f * stir
-                val w2 = iw * (1f + (k2 - 1f) * 0.3f); val h2 = ih * k2
+                // 25/11 (David) : l'œuf reste bien fixe (plus de respiration ni de gonflement), seul le vert pulse
+                val w2 = iw; val h2 = ih
                 drawImage(
                     eggClosed,
                     dstOffset = IntOffset((ecx - Home666.EGG_BODY_CX * w2).toInt(), (ebottom - Home666.EGG_BODY_BOTTOM * h2).toInt()),
@@ -346,7 +344,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
             }
             if (stir > 0.01f) {
                 // lueur verte qui pulse à travers la fente (fermé) ou au fond de l'œuf (ouvert), et fumée
-                val topY = ebottom - eh * breath + eh * 0.22f
+                val topY = ebottom - eh + eh * 0.22f
                 val top = Offset(ecx, topY + (ebottom - oh - topY + oh * 0.12f) * open)
                 val pulse = 0.75f + 0.25f * kotlin.math.sin(t * 5.0).toFloat()
                 drawCircle(
