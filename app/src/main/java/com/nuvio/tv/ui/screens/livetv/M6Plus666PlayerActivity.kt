@@ -115,9 +115,12 @@ class M6Plus666PlayerActivity : Activity() {
     }
 
     private var lastPlayable: M6Plus666.Playable? = null
-    private var attempt = 0
+    // 25/11 (David : « ça marche, mais c'est long à démarrer ») : le 1er essai (L1) échoue toujours sur ses
+    // Shield → on retient que le 2e (L3) marche et on démarre directement en L3 les fois suivantes.
+    private var attempt = -1
 
     private fun start(p: M6Plus666.Playable, live: Boolean) {
+        if (attempt < 0) attempt = if (M6Plus666.prefersL3(this)) 1 else 0
         lastPlayable = p
         val drmCallback = object : MediaDrmCallback {
             private val provision = HttpMediaDrmCallback(null, DefaultHttpDataSource.Factory())
@@ -152,6 +155,8 @@ class M6Plus666PlayerActivity : Activity() {
             .createMediaSource(
                 MediaItem.Builder().setUri(p.manifest).setMimeType(MimeTypes.APPLICATION_MPD)
                     .setDrmConfiguration(MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID).build())
+                    // 25/11 (« ça fige au début ») : le direct démarre un peu plus loin du bord (plus de réserve)
+                    .setLiveConfiguration(MediaItem.LiveConfiguration.Builder().setTargetOffsetMs(20_000).build())
                     .build()
             )
         // 25/11 (photo de David : ERROR_CODE_DECODING_FAILED sur la Shield du haut) : comme le lecteur principal de
@@ -167,13 +172,23 @@ class M6Plus666PlayerActivity : Activity() {
                 .apply { if (attempt >= 1) setMaxAudioChannelCount(2).setExceedAudioConstraintsIfNecessary(false) }
                 .build()
         }
-        val exo = ExoPlayer.Builder(this).setRenderersFactory(renderers).setTrackSelector(selector).build()
+        // 25/11 (« ça fige au début ») : démarre sur une qualité raisonnable puis monte, et attend 3 s de réserve
+        // avant de lancer l'image (au lieu de partir trop vite puis de figer)
+        val meter = androidx.media3.exoplayer.upstream.DefaultBandwidthMeter.Builder(this)
+            .setInitialBitrateEstimate(4_000_000L).build()
+        val load = androidx.media3.exoplayer.DefaultLoadControl.Builder()
+            .setBufferDurationsMs(20_000, 50_000, 3_000, 5_000).build()
+        val exo = ExoPlayer.Builder(this).setRenderersFactory(renderers).setTrackSelector(selector)
+            .setBandwidthMeter(meter).setLoadControl(load).build()
         player = exo
         exo.setVideoSurfaceView(surface)
         isLive = live
         exo.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_READY) status.text = ""
+                if (state == Player.STATE_READY) {
+                    status.text = ""
+                    if (attempt >= 1) M6Plus666.rememberL3(this@M6Plus666PlayerActivity)
+                }
                 if (state == Player.STATE_ENDED && !live) finish()
             }
 

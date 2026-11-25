@@ -128,6 +128,14 @@ object M6Plus666 {
         noteError(context, "plantage de l'écran M6+", crashText(e))
     }
 
+    /** 25/11 : sur les Shield de David, la lecture ne marche qu'en Widevine logiciel (L3) : on le retient. */
+    fun prefersL3(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("l3", false)
+
+    fun rememberL3(context: Context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("l3", true).apply()
+    }
+
     fun lastCrash(context: Context): String? =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("crash", null)
 
