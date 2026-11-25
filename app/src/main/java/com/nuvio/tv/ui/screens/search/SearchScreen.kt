@@ -158,6 +158,8 @@ fun SearchScreen(
     var inputRowHasFocus by remember { mutableStateOf(false) }
     var isRecentSearchSectionFocused by remember { mutableStateOf(false) }
     var focusResults by remember { mutableStateOf(false) }
+    // 25/11 (David) : résumé de l'affiche ciblée, sans ouvrir la fiche
+    var synopsis666 by remember { mutableStateOf<com.nuvio.tv.domain.model.MetaPreview?>(null) }
     var pendingFocusMoveToResultsQuery by remember { mutableStateOf<String?>(null) }
     var pendingFocusMoveSawSearching by remember { mutableStateOf(false) }
     var pendingFocusMoveHadExistingSearchRows by remember { mutableStateOf(false) }
@@ -620,7 +622,8 @@ fun SearchScreen(
             state = listState,
             contentPadding = PaddingValues(
                 top = if (isDiscoverMode) 10.dp else NuvioTheme.spacing.lg,
-                bottom = NuvioTheme.spacing.lg
+                // place pour le résumé en bas (25/11)
+                bottom = if (isDiscoverMode) NuvioTheme.spacing.lg else 176.dp
             ),
             verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.lg)
         ) {
@@ -861,6 +864,8 @@ fun SearchScreen(
                                     pendingFocusMoveToResultsQuery = null
                                     searchRowFocusedItemIndex[catalogKey] = itemIndex
                                     focusedResultItemIndex.intValue = itemIndex
+                                    synopsis666 = catalogRow.items.getOrNull(itemIndex)
+                                        ?.takeUnless { it.id.startsWith("__placeholder_") }
                                     // Prefetch meta for the focused item to warm cache for detail screen.
                                     catalogRow.items.getOrNull(itemIndex)?.let { item ->
                                         viewModel.prefetchMetaOnFocus(item.id, item.rawType)
@@ -930,6 +935,27 @@ fun SearchScreen(
                         }
                     }
                 }
+            }
+        }
+
+        // 25/11 (David) : résumé de l'affiche ciblée en bas, tout en vert, sans ouvrir la fiche
+        if (!isDiscoverMode && !inputRowHasFocus && synopsis666 != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .height(176.dp)
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            listOf(androidx.compose.ui.graphics.Color.Transparent, androidx.compose.ui.graphics.Color(0xE6000000))
+                        )
+                    )
+                    .padding(start = 52.dp, end = 52.dp, top = 22.dp)
+            ) {
+                com.nuvio.tv.ui.components.Synopsis666(
+                    data = com.nuvio.tv.ui.components.Synopsis666Data.of(synopsis666),
+                    modifier = Modifier.fillMaxWidth(0.7f)
+                )
             }
         }
     }

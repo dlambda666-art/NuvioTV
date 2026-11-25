@@ -218,7 +218,19 @@ fun CatalogSeeAllScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(NuvioTheme.spacing.xl))
+        // 25/11 (David) : résumé de l'affiche ciblée, sans ouvrir la fiche (hauteur fixe : la grille ne saute pas)
+        var synopsisItem666 by remember(catalogKey) { mutableStateOf<com.nuvio.tv.domain.model.MetaPreview?>(null) }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(168.dp)
+                .padding(start = NuvioTheme.spacing.xxxl, end = NuvioTheme.spacing.xxxl, top = NuvioTheme.spacing.sm)
+        ) {
+            com.nuvio.tv.ui.components.Synopsis666(
+                data = com.nuvio.tv.ui.components.Synopsis666Data.of(synopsisItem666),
+                modifier = Modifier.fillMaxWidth(0.7f)
+            )
+        }
 
         val hasItems = catalogRow?.items?.isNotEmpty() == true
         val isCatalogLoading = catalogRow == null || catalogRow.isLoading
@@ -271,6 +283,7 @@ fun CatalogSeeAllScreen(
                                     return@GridContentCard
                                 }
                                 focusedItemKey = itemFocusKey
+                                synopsisItem666 = item
                             },
                             onClick = {
                                 focusedItemKey = itemFocusKey

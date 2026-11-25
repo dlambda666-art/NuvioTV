@@ -1,3 +1,14 @@
+package com.nuvio.tv.core.tools
+
+import com.nuvio.tv.ui.screens.player.releaseNameForVerdict666
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+/** Cas pièges (07/11) : AHS S13E01 « MULTi (VF ?) » sans piste française. (Hibernation retirée le 25/11.) */
+class Hibernate666NoFrenchTest {
+    private val mixio = "a".repeat(40)
+    private val good = "b".repeat(40)
+
 
     @Test fun `AHS - Frank recoit le vrai nom de release, pas la ligne drapeau`() {
         val rel = "American.Horror.Story.S13E01-06..MULTi.1080p.WEB-DL.H264-Mixio"

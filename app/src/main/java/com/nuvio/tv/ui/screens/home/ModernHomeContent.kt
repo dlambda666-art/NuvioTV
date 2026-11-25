@@ -1115,6 +1115,20 @@ fun ModernHomeContent(
                 modifier = heroMetadataModifier
             )
 
+            // 25/11 (David) : dans le cimetière, le résumé de l'affiche ciblée (sans ouvrir la fiche), tout en vert.
+            if (forcedBackdrop666 != null) {
+                val p666 = heroSceneStateLambda().preview
+                com.nuvio.tv.ui.components.Synopsis666(
+                    data = p666?.let {
+                        com.nuvio.tv.ui.components.Synopsis666Data.of(
+                            title = it.title, isSeries = it.isSeries, year = it.yearText, runtime = it.runtimeText,
+                            rating = it.imdbText, description = it.description, genres = it.genres
+                        )
+                    },
+                    modifier = heroMetadataModifier
+                )
+            }
+
             // 666TV : bouton « ▶ Lecture VF » sous le bandeau. Joignable en remontant depuis la
             // première rangée ; la touche Lecture de la télécommande fait la même chose partout.
             val latestOnPlayFromHome by rememberUpdatedState(onPlayFromHome)
