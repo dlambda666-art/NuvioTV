@@ -63,7 +63,6 @@ object Rapport666 {
         line("== Réglages ==")
         line("Toujours revenir : " + if (runCatching { com.nuvio.tv.core.wake.Return666.enabled(context) }.getOrDefault(false)) "activé" else "COUPÉ")
         line("Ouvrir sur l'Abattoir : " + if (runCatching { com.nuvio.tv.core.wake.WakeLaunch666.abattoirOnOpen(context) }.getOrDefault(false)) "activé" else "coupé")
-        line("Hibernation des cavaliers : " + if (runCatching { Hibernate666.enabled(context) }.getOrDefault(false)) "activée" else "coupée (tous ensemble)")
         line("4 connexions en WiFi (appris) : " + if (runCatching { WifiParallel666.learned(context) }.getOrDefault(false)) "oui" else "non")
         line("Annonces par-dessus les autres applis : " + if (runCatching { Announce666.canOverlay(context) }.getOrDefault(false)) "autorisées" else "PAS autorisées")
         line()

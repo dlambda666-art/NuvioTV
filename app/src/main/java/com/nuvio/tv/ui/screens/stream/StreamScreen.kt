@@ -966,11 +966,8 @@ private fun RightStreamSection(
             ) {
                 when {
                     isLoading -> {
-                        // 24/11 (David) : le détecteur de mouvement d'Alien pendant la recherche des liens
-                        val total666 = sourceChips.size
-                        val done666 = sourceChips.count { it.status != com.nuvio.tv.ui.components.SourceChipStatus.LOADING }
-                        val blips666 = sourceChips.count { it.status == com.nuvio.tv.ui.components.SourceChipStatus.SUCCESS }
-                        MotionTracker666View(done = done666, total = total666, blips = blips666)
+                        // 25/11 (grand ménage, David) : détecteur de mouvement retiré (jamais vu : il attend le préchauffage)
+                        LoadingState(showAddonLogo = showAddonLogo)
                     }
                     error != null -> {
                         ErrorState(

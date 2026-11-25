@@ -213,7 +213,6 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
     var lastBackup by remember { mutableStateOf(Backup666.lastBackupAt(context)) }
     var busy by remember { mutableStateOf(false) }
     val sourceStats = remember { com.nuvio.tv.core.tools.SourceStats666.summary(context) }
-    var hibernate by remember { mutableStateOf(com.nuvio.tv.core.tools.Hibernate666.enabled(context)) }
     var morgue by remember { mutableStateOf(com.nuvio.tv.ui.screens.home.Morgue666.enabled(context)) }
     var menuOrder by remember { mutableStateOf(com.nuvio.tv.core.tools.MenuOrder666.fullOrder()) }
     var movingRoute by remember { mutableStateOf<String?>(null) }
@@ -833,18 +832,6 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                 }
             }
 
-            item {
-                ActionRow(
-                    "Hibernation des cavaliers : " + if (hibernate) "activée 💤" else "coupée",
-                    if (hibernate) "Seul le 1er cavalier cherche ; les autres se réveillent s'il ne trouve aucun lien VF lisible. Le guetteur et la cloche gardent tous les cavaliers"
-                    else "Tous les cavaliers cherchent en même temps",
-                    onClick = {
-                        hibernate = !hibernate
-                        com.nuvio.tv.core.tools.Hibernate666.setEnabled(context, hibernate)
-                    }
-                )
-            }
-
             // ---------- Affichage ----------
             item { Section("Affichage", null) }
             item {
@@ -879,18 +866,6 @@ fun Tools666Screen(viewModel: Tools666ViewModel = hiltViewModel()) {
                     "Heure et météo sur l'accueil : " + if (Clock666.enabled) "affichées" else "masquées",
                     "En haut à droite de l'accueil",
                     onClick = { Clock666.setEnabled(context, !Clock666.enabled) }
-                )
-            }
-            item {
-                val addr = remember { com.nuvio.tv.core.tools.PhoneLink666.address(context) }
-                ActionRow(
-                    "Envoyer depuis le téléphone : " + if (com.nuvio.tv.core.tools.PhoneLink666.enabled) "activé" else "désactivé",
-                    if (com.nuvio.tv.core.tools.PhoneLink666.enabled && addr != null)
-                        "Sur ton téléphone (même Wi-Fi), ouvre $addr et tape un titre"
-                    else "Tape un titre sur ton téléphone, la recherche s'ouvre sur la TV",
-                    onClick = {
-                        com.nuvio.tv.core.tools.PhoneLink666.setEnabled(context, !com.nuvio.tv.core.tools.PhoneLink666.enabled)
-                    }
                 )
             }
             item { CityPicker666() }

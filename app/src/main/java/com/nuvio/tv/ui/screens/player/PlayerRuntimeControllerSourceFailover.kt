@@ -324,8 +324,7 @@ private fun PlayerRuntimeController.maybeFailoverToNextSource(error: String) {
         // on réveille tous les cavaliers et on cherche une fois de plus (4e dimension S03E07).
         if (next == null && !sourceFailoverWokeAll666) {
             sourceFailoverWokeAll666 = true
-            com.nuvio.tv.core.tools.Hibernate666.wakeAllUntil = System.currentTimeMillis() + 120_000L
-            _uiState.update { it.copy(streamSourceIndicatorText = "Pas de VF ici : les autres cavaliers cherchent…") }
+            _uiState.update { it.copy(streamSourceIndicatorText = "Pas de VF ici : les cavaliers cherchent encore…") }
             loadSourceStreams(forceRefresh = true)
             waited = 0L
             while (waited <= SourceFailoverRules.LIST_WAIT_MS * 3) {

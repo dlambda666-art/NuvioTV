@@ -1369,11 +1369,7 @@ fun ModernHomeContent(
                 com.nuvio.tv.core.dream.Dream666Data.save(dreamContext, posters, label)
             }
             HomeClock666(Modifier.align(Alignment.TopEnd).padding(top = 18.dp, end = 30.dp))
-            ResumeOnWake666(
-                items = uiState.continueWatchingItems,
-                onResume = onContinueWatchingClick,
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 22.dp)
-            )
+            // 25/11 (grand ménage) : bouton « Reprendre » du réveil retiré (doublon du bouton sous le corps et de la Morgue)
         }
         // 666TVF (07/11) : la morgue (toutes les étiquettes « Continuer à regarder »)
         if (forcedBackdrop666 == null) {

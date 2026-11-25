@@ -596,33 +596,8 @@ class StreamRepositoryImpl @Inject constructor(
                 }
                 return sent
             }
-            // 666TVF (07/11) : hibernation — le 1er cavalier d'abord, les autres seulement s'il ne trouve
-            // aucun lien VF lisible.
-            val leaderEnabled = pluginManager.enabledScrapers.first().any { com.nuvio.tv.core.tools.Hibernate666.isLeader(it.id) }
-            if (!com.nuvio.tv.core.tools.Hibernate666.enabled(context) || !leaderEnabled) {
-                runScrapers(null)
-            } else {
-                // 19/11 (piège NXT) : le 1er cavalier (Comet666) peut mettre longtemps (trackers lents) ; avant,
-                // Lumio attendait la fin pour démarrer. Maintenant : s'il n'a pas fini dans le délai, les autres
-                // partent tout de suite pendant qu'il continue.
-                coroutineScope {
-                    val leaderJob = async { runScrapers { com.nuvio.tv.core.tools.Hibernate666.isLeader(it.id) } }
-                    val leader = kotlinx.coroutines.withTimeoutOrNull(com.nuvio.tv.core.tools.Hibernate666.LEADER_BUDGET_MS) { leaderJob.await() }
-                    if (leader == null) {
-                        Log.d(TAG, "Hibernation : 1er cavalier trop lent → réveil des autres sans attendre")
-                        runScrapers { !com.nuvio.tv.core.tools.Hibernate666.isLeader(it.id) }
-                        leaderJob.await()
-                    } else {
-                        val checked = runCatching { localDebridAvailabilityService.annotateCachedAvailability(leader) }.getOrDefault(leader)
-                        val ready = if (allDebrid666.isConfigured) allDebrid666.readyHashes() else emptySet()
-                        val wake = com.nuvio.tv.core.tools.Hibernate666.shouldWake(
-                            checked.flatMap { it.streams }, ready, com.nuvio.tv.core.tools.NoFrench666.hashes(context)
-                        )
-                        Log.d(TAG, "Hibernation : " + if (wake) "1er cavalier sans lien lisible → réveil des autres" else "1er cavalier suffit")
-                        if (wake) runScrapers { !com.nuvio.tv.core.tools.Hibernate666.isLeader(it.id) }
-                    }
-                }
-            }
+            // 25/11 (grand ménage) : plus d'hibernation, tous les cavaliers partent ensemble
+            runScrapers(null)
             com.nuvio.tv.core.streams.PluginProgress666.finish(
                 progressKey666, allScrapers666.filter { it.id !in ranIds666 }.map { it.name }.toSet()
             )

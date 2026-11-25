@@ -384,7 +384,6 @@ open class MainActivity : ComponentActivity() {
         runCatching { com.nuvio.tv.core.wake.ExitReason666.installCrashCatcher(this) }
         com.nuvio.tv.core.tools.Light666.init(this)
         com.nuvio.tv.core.tools.Clock666.init(this)
-        com.nuvio.tv.core.tools.PhoneLink666.init(this)
         com.nuvio.tv.core.tools.MenuOrder666.init(this)
         com.nuvio.tv.ui.screens.home.Door666.init(this)
         com.nuvio.tv.core.tools.PluginOrder666.init(this)
@@ -932,15 +931,6 @@ open class MainActivity : ComponentActivity() {
                                     launchSingleTop = true
                                 }
                             }
-                        }
-                    }
-                    // 666TV : un titre envoyé depuis le téléphone → on ouvre la recherche.
-                    val phoneRequest by com.nuvio.tv.core.tools.PhoneLink666.requests.collectAsState()
-                    LaunchedEffect(phoneRequest) {
-                        if (phoneRequest != null &&
-                            navController.currentBackStackEntry?.destination?.route != Screen.Search.route
-                        ) {
-                            runCatching { navController.navigate(Screen.Search.route) { launchSingleTop = true } }
                         }
                     }
                     // 666TVF : panne d'internet à l'ouverture → directement sur les enregistrements.
