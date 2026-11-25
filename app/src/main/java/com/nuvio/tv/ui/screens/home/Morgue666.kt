@@ -125,6 +125,10 @@ object Home666 {
     /** Libellé du bouton sur le tiroir choisi dans la morgue (pur, testé). */
     fun drawerPlayLabel(progress: Float): String = if (progress > 0f) "▶ Reprendre en VF" else "▶ Lecture VF"
 
+    /** 25/11 (David) : le viseur de Predator se cale sur le front de Frank, couché sur la table (image 1920 × 1080). */
+    const val FRANK_FOREHEAD_X = 1210f
+    const val FRANK_FOREHEAD_Y = 612f
+
     /** 25/11 (David : « comme au départ, à gauche du corps pendu, on verra mieux l'œuf ») — image 1920 × 1080. */
     const val EGG_X = 222f
     const val EGG_BOTTOM = 376f
