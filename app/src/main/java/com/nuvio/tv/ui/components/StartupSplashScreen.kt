@@ -59,8 +59,12 @@ object Splash666 {
  */
 object Bobine666 {
     const val VOLUME = 0.7f
-    // 24/11 (David : « encore trop sec, fonds-les l'un dans l'autre ») : 6 s de fondu croisé avec Machine Head
-    const val CROSSFADE_MS = 6_000L
+    // 25/11 (David : « garde la bobine qui s'arrête, et lance MH quand les portes sont ouvertes ; pas de fin de
+    // bobine sur le son de MH ») : la bobine s'éteint en douceur PENDANT l'ouverture des portes (4,5 s), Machine
+    // Head ne démarre qu'une fois les portes ouvertes (DOORS_MS) : jamais les deux en même temps.
+    const val CROSSFADE_MS = 4_500L
+    /** Durée de l'ouverture : fondu vers la porte 0,7 s + 0,4 s + battants / avancée 3,8 s. */
+    const val DOORS_MS = 700L + 400L + 1_100L + 2_700L
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private var player: android.media.MediaPlayer? = null
     private var vol = VOLUME
@@ -199,9 +203,8 @@ fun StartupSplashScreen(
     LaunchedEffect(Unit) { pool.animateTo(1f, tween(12_000, easing = LinearEasing)) }
     LaunchedEffect(closing) {
         if (!closing) return@LaunchedEffect
-        // 23/11 (David) : dès que la salle commence à s'ouvrir, la bobine s'efface pendant que Machine Head monte
+        // 25/11 (David) : la bobine s'éteint pendant l'ouverture ; Machine Head attend que les portes soient ouvertes
         Bobine666.fadeOut(Bobine666.CROSSFADE_MS)
-        runCatching { com.nuvio.tv.ui.screens.home.AbattoirSound666.onDoorsOpening(context) }
         toDoor.animateTo(1f, tween(700))
         kotlinx.coroutines.delay(400)
         // 12/11 : les portes s'ouvrent et on avance sans s'arrêter, jusqu'à ce que les montants sortent
@@ -212,6 +215,8 @@ fun StartupSplashScreen(
             kotlinx.coroutines.delay(1_100)
             push.animateTo(1f, tween(2_700, easing = androidx.compose.animation.core.CubicBezierEasing(0.45f, 0f, 0.55f, 1f)))
         }
+        // portes ouvertes, bobine éteinte : Machine Head part maintenant (montée douce)
+        runCatching { com.nuvio.tv.ui.screens.home.AbattoirSound666.onDoorsOpening(context) }
         finalFade.snapTo(1f)
         onClosedNow()
     }
@@ -320,7 +325,10 @@ fun StartupSplashScreen(
         }
 
         // ---------------- La porte ----------------
-        if (toDoor.value > 0f) {
+        // 25/11 (David : « sursaut à l'ouverture ») : les images de la porte étaient chargées au moment même où le
+        // fondu vers la porte commençait (à-coup). Elles sont maintenant prêtes dès le début du cinéma
+        // (invisibles tant que toDoor = 0) : le passage à la porte est fluide.
+        run {
             // ×2,05 autour du centre de l'embrasure : les montants sont alors hors de l'écran
             val zoom = 1f + push.value * 1.05f
             Box(Modifier.fillMaxSize().graphicsLayer {

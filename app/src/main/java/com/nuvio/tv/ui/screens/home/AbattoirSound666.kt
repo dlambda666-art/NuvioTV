@@ -23,8 +23,8 @@ object AbattoirSound666 {
 
     /** Durée jouée à l'ouverture des portes (le fichier est repris en boucle s'il est plus court). */
     const val PLAY_MS = 20_000L
-    // 24/11 (David : « encore trop sec ») : Machine Head monte doucement sur 5 s pendant que la bobine s'efface (6 s)
-    const val FADE_IN_MS = 5_000L
+    // 25/11 (David) : Machine Head part quand les portes sont ouvertes (la bobine est déjà éteinte) : montée douce 1,5 s
+    const val FADE_IN_MS = 1_500L
     const val FADE_OUT_MS = 3_000L
 
     /** Règle pure (testée) : un ancien réglage (toutes les 10 s, 20 s, 1 min, boucle…) devient « aux portes ». */
