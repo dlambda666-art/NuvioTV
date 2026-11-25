@@ -126,6 +126,10 @@ object Home666 {
     fun drawerPlayLabel(progress: Float): String = if (progress > 0f) "▶ Reprendre en VF" else "▶ Lecture VF"
 
     /** 25/11 (David) : un seul œuf d'Alien, sur le rebord du mur, à gauche du sac (le corps pendu balance) — image 1920 × 1080. */
+    /** 25/11 (David) : le viseur de Predator se cale sur le front de Frank, couché sur la table (image 1920 × 1080). */
+    const val FRANK_FOREHEAD_X = 1210f
+    const val FRANK_FOREHEAD_Y = 612f
+
     const val EGG_X = 52f
     const val EGG_BOTTOM = 374f
     const val EGG_H = 112f

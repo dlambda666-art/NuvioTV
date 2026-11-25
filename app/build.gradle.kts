@@ -337,6 +337,8 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
+        // 25/11 : l'écran M6+ est ouvert pour de vrai dans un test (Robolectric) : il faut les ressources
+        unitTests.isIncludeAndroidResources = true
     }
 }
 
@@ -563,6 +565,10 @@ dependencies {
     testImplementation("org.json:json:20240303")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("io.mockk:mockk:1.13.12")
+    // 25/11 : ouvrir l'écran M6+ dans un test (il plantait sur la Shield à l'ouverture)
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation(platform("androidx.compose:compose-bom:2026.05.01"))
+    testImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

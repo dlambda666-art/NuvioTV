@@ -1210,9 +1210,7 @@ fun ModernHomeContent(
                             onClick = { firstCwState.value?.let { latestOnContinueWatchingClick(it) } },
                             compact = true
                         )
-                        // 24/11 (David) : Predator : les trois points laser se calent sur le bouton.
-                        // 25/11 : dessinés APRÈS le bouton (avant, le bouton les cachait une fois calés)
-                        PredatorLaser666(Modifier.matchParentSize())
+                        // 25/11 (David) : le viseur de Predator vise maintenant le front de Frank (dessiné dans l'Abattoir)
                     }
                 }
             }
@@ -1544,72 +1542,3 @@ private fun Hero666PlayButton(
 }
 
 
-/** 24/11 : le viseur de Predator : trois points rouges qui arrivent de loin et se calent en triangle (25/11 : 10 s, fumée à 5 s). */
-@Composable
-private fun PredatorLaser666(modifier: Modifier) {
-    var tMs by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
-    LaunchedEffect(Unit) {
-        val start = androidx.compose.runtime.withFrameMillis { it }
-        while (true) androidx.compose.runtime.withFrameMillis { tMs = it - start }
-    }
-    val p = com.nuvio.tv.core.horreur.Horreur666.predatorLaser(tMs) ?: return
-    val spread = com.nuvio.tv.core.horreur.Horreur666.laserSpread(p)
-    val fade = minOf(1f, (1f - p) * 20f)
-    val smoke = com.nuvio.tv.core.horreur.Horreur666.laserSmoke(p)
-    androidx.compose.foundation.Canvas(modifier) {
-        val c = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height * 0.5f)
-        val tri = 12.dp.toPx()   // 25/11 : triangle un peu plus large sur le bouton
-        val far = 260.dp.toPx() * spread
-        val t = tMs / 1000f
-        // 25/11 (David) : laser = chaleur : à 5 s, de la fumée monte du bouton là où les points sont calés
-        if (smoke > 0f) {
-            for (k in 0 until 7) {
-                val u = ((t * 0.45f + k / 7f) % 1f)
-                val r = (5f + 16f * u).dp.toPx()
-                val sx = c.x + (k - 3) * 3.dp.toPx() + 7.dp.toPx() * kotlin.math.sin(t * 1.7f + k * 1.3f) * u
-                val sy = c.y - 70.dp.toPx() * u
-                drawCircle(
-                    brush = androidx.compose.ui.graphics.Brush.radialGradient(
-                        listOf(androidx.compose.ui.graphics.Color(0xFFC8C4BE).copy(alpha = 0.30f * smoke * fade * (1f - u)), androidx.compose.ui.graphics.Color.Transparent),
-                        center = androidx.compose.ui.geometry.Offset(sx, sy), radius = r
-                    ),
-                    radius = r, center = androidx.compose.ui.geometry.Offset(sx, sy)
-                )
-            }
-            // le point chauffe : petite lueur orange sous le triangle
-            drawCircle(androidx.compose.ui.graphics.Color(0xFFFF6A1A).copy(alpha = 0.18f * smoke * fade), radius = 16.dp.toPx(), center = c)
-        }
-        val base = listOf(-90.0, 30.0, 150.0)
-        base.forEachIndexed { i, deg ->
-            val a = Math.toRadians(deg).toFloat()
-            // 25/11 : bien calés : un tremblement minuscule une fois en place
-            val jitter = (0.4f + 1.1f * spread).dp.toPx() * kotlin.math.sin(t * 23f + i * 2.1f)
-            val from = Math.toRadians(deg + 40.0 * spread).toFloat()
-            val pt = androidx.compose.ui.geometry.Offset(
-                c.x + tri * kotlin.math.cos(a) + far * kotlin.math.cos(from) + jitter,
-                c.y + tri * kotlin.math.sin(a) + far * kotlin.math.sin(from) - jitter
-            )
-            // 24/11 (retouche Gemini de David) : point fin + éclat en croix, halo rouge.
-            // 25/11 (David : « les lasers disparaissent ») : rouge fin sur le bouton mauve = invisible une fois
-            // calés. Maintenant halo rouge vif, croix épaisse cernée de sombre, cœur blanc : bien visibles.
-            val red = androidx.compose.ui.graphics.Color(0xFFFF2D23)
-            val dark = androidx.compose.ui.graphics.Color(0xFF140000)
-            drawCircle(
-                brush = androidx.compose.ui.graphics.Brush.radialGradient(
-                    listOf(androidx.compose.ui.graphics.Color(0xFFFF281E).copy(alpha = 0.85f * fade), androidx.compose.ui.graphics.Color(0xFFFF1414).copy(alpha = 0.45f * fade), androidx.compose.ui.graphics.Color.Transparent),
-                    center = pt, radius = 13.dp.toPx()
-                ),
-                radius = 13.dp.toPx(), center = pt
-            )
-            val g = 10.dp.toPx() * (0.88f + 0.12f * kotlin.math.sin(t * 9f + i))
-            val h = androidx.compose.ui.geometry.Offset(g, 0f)
-            val v = androidx.compose.ui.geometry.Offset(0f, g * 0.7f)
-            drawLine(dark.copy(alpha = 0.55f * fade), pt - h, pt + h, strokeWidth = 3.4.dp.toPx())
-            drawLine(dark.copy(alpha = 0.55f * fade), pt - v, pt + v, strokeWidth = 3.4.dp.toPx())
-            drawLine(red.copy(alpha = fade), pt - h, pt + h, strokeWidth = 1.8.dp.toPx())
-            drawLine(red.copy(alpha = fade), pt - v, pt + v, strokeWidth = 1.8.dp.toPx())
-            drawCircle(dark.copy(alpha = 0.6f * fade), radius = 3.6.dp.toPx(), center = pt)
-            drawCircle(androidx.compose.ui.graphics.Color(0xFFFFF4F0).copy(alpha = fade), radius = 2.4.dp.toPx(), center = pt)
-        }
-    }
-}

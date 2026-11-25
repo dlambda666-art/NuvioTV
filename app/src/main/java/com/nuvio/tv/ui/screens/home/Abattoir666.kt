@@ -413,6 +413,64 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 )
             }
         }
+        // 25/11 (David) : Predator vise Frank : trois points laser arrivent des coins de la pièce et se calent en
+        // triangle sur son front (10 s toutes les 30 s) ; à 5 s, le laser chauffe : lueur orange et fumée qui monte.
+        com.nuvio.tv.core.horreur.Horreur666.predatorLaser((t * 1000.0).toLong())?.let { p ->
+            val spread = com.nuvio.tv.core.horreur.Horreur666.laserSpread(p)
+            val smoke = com.nuvio.tv.core.horreur.Horreur666.laserSmoke(p)
+            val fade = minOf(1f, (1f - p) * 20f) * alpha
+            val c = Offset(left + Home666.FRANK_FOREHEAD_X * scale, Home666.FRANK_FOREHEAD_Y * scale)
+            val u1 = scale   // 1 px de l'image 1920
+            if (smoke > 0f) {
+                drawCircle(
+                    brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                        listOf(Color(0xFFFF6A1A).copy(alpha = 0.35f * smoke * fade), Color.Transparent), center = c, radius = 34f * u1
+                    ),
+                    radius = 34f * u1, center = c
+                )
+                for (k in 0 until 9) {
+                    val u = ((t * 0.32 + k / 9.0) % 1.0).toFloat()
+                    val r = (12f + 38f * u) * u1
+                    val sc = Offset(
+                        c.x + ((k % 3) - 1) * 6f * u1 + 16f * u1 * kotlin.math.sin(t * 1.4 + k * 1.7).toFloat() * u,
+                        c.y - 150f * u1 * u
+                    )
+                    drawCircle(
+                        brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                            listOf(Color(0xFFD2CEC8).copy(alpha = 0.42f * smoke * fade * (1f - u)), Color.Transparent), center = sc, radius = r
+                        ),
+                        radius = r, center = sc
+                    )
+                }
+            }
+            val red = Color(0xFFFF2D23)
+            val dark = Color(0xFF140000)
+            listOf(-90.0, 30.0, 150.0).forEachIndexed { i, deg ->
+                val a = Math.toRadians(deg).toFloat()
+                val from = Math.toRadians(deg + 40.0 * spread).toFloat()
+                val far = 520f * u1 * spread
+                val jitter = (0.6f + 1.6f * spread) * u1 * kotlin.math.sin(t * 23.0 + i * 2.1).toFloat()
+                val pt = Offset(
+                    c.x + 18f * u1 * kotlin.math.cos(a) + far * kotlin.math.cos(from) + jitter,
+                    c.y + 18f * u1 * kotlin.math.sin(a) + far * kotlin.math.sin(from) - jitter
+                )
+                drawCircle(
+                    brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                        listOf(Color(0xFFFF281E).copy(alpha = 0.85f * fade), Color(0xFFFF1414).copy(alpha = 0.4f * fade), Color.Transparent),
+                        center = pt, radius = 20f * u1
+                    ),
+                    radius = 20f * u1, center = pt
+                )
+                val g = 15f * u1 * (0.88f + 0.12f * kotlin.math.sin(t * 9.0 + i).toFloat())
+                val hO = Offset(g, 0f); val vO = Offset(0f, g * 0.7f)
+                drawLine(dark.copy(alpha = 0.55f * fade), pt - hO, pt + hO, strokeWidth = 5f * u1)
+                drawLine(dark.copy(alpha = 0.55f * fade), pt - vO, pt + vO, strokeWidth = 5f * u1)
+                drawLine(red.copy(alpha = fade), pt - hO, pt + hO, strokeWidth = 2.6f * u1)
+                drawLine(red.copy(alpha = fade), pt - vO, pt + vO, strokeWidth = 2.6f * u1)
+                drawCircle(dark.copy(alpha = 0.6f * fade), radius = 5.5f * u1, center = pt)
+                drawCircle(Color(0xFFFFF4F0).copy(alpha = fade), radius = 3.6f * u1, center = pt)
+            }
+        }
         // 23/11 : l'ombre de Nosferatu monte le long du mur du fond (néon allumé : il faut de la lumière pour une ombre)
         com.nuvio.tv.core.horreur.Horreur666.nosferatu(t)?.let { p ->
             val fade = minOf(1f, p * 8f, (1f - p) * 10f)
