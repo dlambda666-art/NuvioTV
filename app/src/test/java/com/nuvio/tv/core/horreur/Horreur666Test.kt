@@ -128,25 +128,20 @@ class Horreur666Test {
         assertEquals(1f, Horreur666.burstAlpha(1_000), 0.001f)
     }
 
-    @Test fun `facehugger - les pattes sortent puis il bondit, toutes les 30 s`() {
-        assertNull(Horreur666.facehuggerLeap(20.0 + 3.0))                // 1re ouverture : lueur + fumée, rien ne sort
-        assertNull(Horreur666.facehuggerEmerge(20.0 + 2.0))
-        assertNotNull(Horreur666.facehuggerEmerge(20.0 + 15.0 + 2.0))    // 2e : les pattes sortent
-        assertNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 2.0))
-        assertNotNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 3.0))      // puis le bond
-        assertNotNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 4.5))      // 25/11 : bond plus lent, encore en vol
-        assertNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 5.0))         // fini
-        assertNull(Horreur666.facehuggerLeap(20.0 + 30.0 + 3.0))         // la suivante : rien
-        assertNotNull(Horreur666.facehuggerLeap(20.0 + 45.0 + 3.0))      // 30 s plus tard : il ressaute
-        assertTrue(Horreur666.eggStir(20.0 + 15.0 + 2.0) > 0.9f)         // l'œuf est bien ouvert quand il sort
-    }
-
-    @Test fun `oeuf - jamais deux oeufs a la fois (25-11, dedoublement)`() {
-        assertEquals(0f, Horreur666.legsAlpha(null, null), 0.001f)       // œuf normal seul
-        assertEquals(1f, Horreur666.legsAlpha(0.5f, null), 0.001f)       // œuf + pattes seul
-        assertEquals(0f, Horreur666.legsAlpha(null, 0.2f), 0.001f)       // la bête est partie : œuf normal
-        val a = Horreur666.legsAlpha(0.1f, null)
-        assertTrue(a > 0f && a < 1f)                                       // passage rapide, en fondu
+    @Test fun `oeuf ferme qui s'ouvre doucement, la bete sort puis bondit, toutes les 30 s (25-11)`() {
+        assertEquals(0f, Horreur666.eggOpen(20.0 + 3.0), 0.001f)                 // 1er passage : fermé (ça pulse seulement)
+        assertNull(Horreur666.facehuggerLeap(20.0 + 8.0))
+        assertEquals(0f, Horreur666.eggOpen(20.0 + 15.0 + 1.0), 0.001f)         // 2e : d'abord fermé, ça pulse vert
+        val mid = Horreur666.eggOpen(20.0 + 15.0 + 4.0)
+        assertTrue(mid > 0.2f && mid < 0.8f)                                       // s'ouvre doucement (pas d'un coup)
+        assertEquals(1f, Horreur666.eggOpen(20.0 + 15.0 + 6.0), 0.001f)
+        assertNotNull(Horreur666.facehuggerEmerge(20.0 + 15.0 + 6.0))            // la bête monte
+        assertNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 6.0))
+        assertNotNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 8.0))              // le bond (lent)
+        assertNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 10.0))
+        assertEquals(0f, Horreur666.eggOpen(20.0 + 15.0 + 14.5), 0.001f)        // refermé avant le tour suivant
+        assertNotNull(Horreur666.facehuggerLeap(20.0 + 45.0 + 8.0))              // 30 s plus tard : ça recommence
+        assertTrue(Horreur666.LEAP_S >= 2.0)
     }
 
     @Test fun `ki-ki-ki - encore plus bas`() {

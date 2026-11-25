@@ -231,29 +231,43 @@ object Horreur666 {
         return u - cycle * EGG_EVERY_S
     }
 
-    /** Pattes qui sortent de l'œuf : progression 0..1 (1,4 s → 2,6 s du cycle), ou null. */
+    // 25/11 (David, photo des œufs) : l'œuf est FERMÉ au repos ; une fois sur deux : ça pulse vert (0-2,5 s),
+    // il s'ouvre doucement (2,5-5,5 s), la bête monte d'entre les pétales (5,5-7,5 s), bond (7,5 s + LEAP_S),
+    // puis il se referme doucement (11,5-14 s).
+    const val OPEN_AT_S = 2.5
+    const val OPEN_S = 3.0
+    const val EMERGE_AT_S = 5.5
+    const val EMERGE_S = 2.0   // 25/11 (David) : on voit d'abord le bout des pattes dépasser, puis il bondit
+    const val LEAP_AT_S = EMERGE_AT_S + EMERGE_S
+    const val CLOSE_AT_S = 11.5
+    const val CLOSE_S = 2.5
+
+    private fun smooth(x: Double): Float { val c = x.coerceIn(0.0, 1.0); return (c * c * (3 - 2 * c)).toFloat() }
+
+    /** Règle pure (testée) : ouverture de l'œuf 0 (fermé) .. 1 (grand ouvert), toujours en douceur. */
+    fun eggOpen(t: Double): Float {
+        val p = leapCyclePhase(t) ?: return 0f
+        return when {
+            p < OPEN_AT_S -> 0f
+            p < OPEN_AT_S + OPEN_S -> smooth((p - OPEN_AT_S) / OPEN_S)
+            p < CLOSE_AT_S -> 1f
+            p < CLOSE_AT_S + CLOSE_S -> 1f - smooth((p - CLOSE_AT_S) / CLOSE_S)
+            else -> 0f
+        }
+    }
+
+    /** La bête monte d'entre les pétales : progression 0..1, ou null. */
     fun facehuggerEmerge(t: Double): Float? {
         val p = leapCyclePhase(t) ?: return null
-        return if (p >= 1.4 && p < 2.6) ((p - 1.4) / 1.2).toFloat() else null
+        return if (p >= EMERGE_AT_S && p < LEAP_AT_S) ((p - EMERGE_AT_S) / EMERGE_S).toFloat() else null
     }
 
-    /**
-     * 25/11 (règle pure, testée) : part de l'image « œuf + pattes » à la place de l'œuf normal (jamais les deux
-     * en entier en même temps = plus de dédoublement). Monte vite quand les pattes sortent, s'efface au
-     * début du bond (la bête a quitté l'œuf).
-     */
-    fun legsAlpha(emerge: Float?, leap: Float?): Float = when {
-        emerge != null -> (emerge * 4f).coerceIn(0f, 1f)
-        leap != null -> (1f - leap * 8f).coerceIn(0f, 1f)
-        else -> 0f
-    }
-
+    // 25/11 (David : « ralentis le bond, qu'on ait le temps de voir la bête ») : 2,2 s
     const val LEAP_S = 2.2
 
-    /** Le bond : progression 0..1 (2,6 s → 4,8 s du cycle), ou null. */
+    /** Le bond : progression 0..1, ou null. */
     fun facehuggerLeap(t: Double): Float? {
         val p = leapCyclePhase(t) ?: return null
-        // 25/11 (David : « ralentis le bond, qu'on ait le temps de voir la bête ») : 2,2 s au lieu de 1,1 s
-        return if (p >= 2.6 && p < 2.6 + LEAP_S) ((p - 2.6) / LEAP_S).toFloat() else null
+        return if (p >= LEAP_AT_S && p < LEAP_AT_S + LEAP_S) ((p - LEAP_AT_S) / LEAP_S).toFloat() else null
     }
 }

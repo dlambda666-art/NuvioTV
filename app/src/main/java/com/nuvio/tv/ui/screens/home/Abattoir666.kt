@@ -214,9 +214,10 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val neonOff: ImageBitmap = ImageBitmap.imageResource(R.drawable.neon_off_666)
     val nosfShadow: ImageBitmap = ImageBitmap.imageResource(R.drawable.ombre_nosferatu_666)
-    val alienEgg: ImageBitmap = ImageBitmap.imageResource(R.drawable.oeuf_alien_666)
+    // 25/11 (photo de David) : œuf fermé / œuf ouvert (même photo, même style) + son facehugger
+    val eggClosed: ImageBitmap = ImageBitmap.imageResource(R.drawable.oeuf_ferme_666)
+    val eggOpened: ImageBitmap = ImageBitmap.imageResource(R.drawable.oeuf_ouvert_666)
     val facehugger: ImageBitmap = ImageBitmap.imageResource(R.drawable.facehugger_666)
-    val eggLegs: ImageBitmap = ImageBitmap.imageResource(R.drawable.oeuf_pattes_666)
     val hangs: List<ImageBitmap> = listOf(
         ImageBitmap.imageResource(R.drawable.pend_bras_666),
         ImageBitmap.imageResource(R.drawable.pend_jambe_666),
@@ -272,67 +273,79 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 alpha = off * alpha
             )
         }
-        // 25/11 (David) : un seul œuf d'Alien, sur le rebord du mur à gauche du corps pendu (les têtes de gauche et
-        // de droite de l'étagère du fond sont retirées du décor, celle du milieu reste). Il respire ; toutes les 15 s
-        // il s'entrouvre (lueur verte + fumée) ; une fois sur deux (toutes les 30 s) le facehugger sort et bondit.
-        // 25/11 (David : « l'œuf se dédouble quand la bête sort ») : l'image des pattes contient SON œuf ;
-        // posée par-dessus l'œuf normal, les deux se voyaient. Maintenant l'un remplace l'autre (fondu rapide).
-        fun egg(cx1920: Float, bottom1920: Float, h1920: Float, stir: Float, phase: Double, legs: Float = 0f, legsAlpha: Float = 0f) {
-            val eh = h1920 * scale
-            val ew = eh * alienEgg.width / alienEgg.height
-            val ecx = left + cx1920 * scale
-            val ebottom = bottom1920 * scale
-            val breath = 1f + 0.018f * kotlin.math.sin(t * 1.3 + phase).toFloat()
-            val h2 = eh * (breath + 0.03f * stir)
-            drawImage(
-                alienEgg,
-                dstOffset = IntOffset((ecx - ew / 2f).toInt(), (ebottom - h2).toInt()),
-                dstSize = IntSize(ew.toInt(), h2.toInt()),
-                alpha = alpha * (1f - legsAlpha),
-                // assombri comme le fond de la pièce (sinon il ressort comme un autocollant), et encore plus quand le néon coupe
-                colorFilter = run {
-                    val k = 0.62f * (1f - 0.72f * off)
-                    androidx.compose.ui.graphics.ColorFilter.lighting(Color(k * 0.94f, k, k * 0.92f), Color.Black)
-                }
-            )
-            // 24/11 (image de David) : les pattes du facehugger sortent de l'œuf grand ouvert
-            if (legsAlpha > 0.01f) {
-                val k = (ew * 140f / 199f) / 151f           // corps de l'œuf de même largeur dans les deux images
-                val lw = 271f * k; val lh = 283f * k * (0.96f + 0.04f * legs)
-                val wig = 2.5f * kotlin.math.sin(t * 9.0).toFloat() * legs
-                rotate(degrees = wig, pivot = Offset(ecx, ebottom)) {
+        // 25/11 (David, photo des œufs) : l'œuf est fermé au repos, à gauche du corps pendu. Toutes les 15 s ça
+        // pulse vert à l'intérieur (lueur + fumée) ; une fois sur deux il s'ouvre DOUCEMENT (3 s), la bête monte
+        // d'entre les pétales, bondit vers nous, puis l'œuf se referme doucement.
+        run {
+            val eh = Home666.EGG_H * scale
+            val ew = eh * eggClosed.width / eggClosed.height
+            val ecx = left + Home666.EGG_X * scale
+            val ebottom = Home666.EGG_BOTTOM * scale
+            val open = com.nuvio.tv.core.horreur.Horreur666.eggOpen(t)
+            val stir = maxOf(com.nuvio.tv.core.horreur.Horreur666.eggStir(t), 0.75f * open)
+            val breath = 1f + 0.018f * kotlin.math.sin(t * 1.3).toFloat()
+            val ow = ew * 1.05f
+            val oh = ow * eggOpened.height / eggOpened.width
+            val dimEgg = run {
+                val k = 0.62f * (1f - 0.72f * off)
+                androidx.compose.ui.graphics.ColorFilter.lighting(Color(k * 0.94f, k, k * 0.92f), Color.Black)
+            }
+            // la bête monte d'entre les pétales (dessinée derrière l'œuf ouvert : le devant de l'œuf la cache)
+            com.nuvio.tv.core.horreur.Horreur666.facehuggerEmerge(t)?.let { e ->
+                val fw = ew * 0.95f
+                val fh = fw * facehugger.height / facehugger.width
+                val sm = e * e * (3f - 2f * e)
+                // départ caché derrière le devant de l'œuf : le bout des pattes dépasse d'abord des pétales
+                val cy = ebottom - oh * 0.40f - (oh * 0.60f + fh * 0.2f) * sm
+                val wig = 4f * kotlin.math.sin(t * 7.0).toFloat()
+                rotate(degrees = wig, pivot = Offset(ecx, cy)) {
                     drawImage(
-                        eggLegs,
-                        dstOffset = IntOffset((ecx - 154.5f * k).toInt(), (ebottom - lh).toInt()),
-                        dstSize = IntSize(lw.toInt(), lh.toInt()),
-                        alpha = legsAlpha * alpha,
-                        colorFilter = run {
-                            val kk = 0.62f * (1f - 0.72f * off)
-                            androidx.compose.ui.graphics.ColorFilter.lighting(Color(kk * 0.94f, kk, kk * 0.92f), Color.Black)
-                        }
+                        facehugger,
+                        dstOffset = IntOffset((ecx - fw / 2f).toInt(), (cy - fh / 2f).toInt()),
+                        dstSize = IntSize(fw.toInt(), fh.toInt()),
+                        alpha = (e * 5f).coerceAtMost(1f) * alpha,
+                        colorFilter = dimEgg
                     )
                 }
             }
+            if (open < 0.999f) {
+                val h2 = eh * (breath + 0.03f * stir)
+                drawImage(
+                    eggClosed,
+                    dstOffset = IntOffset((ecx - ew / 2f).toInt(), (ebottom - h2).toInt()),
+                    dstSize = IntSize(ew.toInt(), h2.toInt()),
+                    alpha = alpha * (1f - open),
+                    // assombri comme le fond de la pièce, et encore plus quand le néon coupe
+                    colorFilter = dimEgg
+                )
+            }
+            if (open > 0.001f) {
+                drawImage(
+                    eggOpened,
+                    dstOffset = IntOffset((ecx - ow / 2f).toInt(), (ebottom - oh).toInt()),
+                    dstSize = IntSize(ow.toInt(), oh.toInt()),
+                    alpha = alpha * open,
+                    colorFilter = dimEgg
+                )
+            }
             if (stir > 0.01f) {
-                val top = Offset(ecx, ebottom - h2 + eh * 0.12f)
+                // lueur verte qui pulse à travers la fente (fermé) ou au fond de l'œuf (ouvert), et fumée
+                val topY = ebottom - eh * breath + eh * 0.22f
+                val top = Offset(ecx + ew * 0.06f * (1f - open), topY + (ebottom - oh - topY + oh * 0.12f) * open)
+                val pulse = 0.75f + 0.25f * kotlin.math.sin(t * 5.0).toFloat()
                 drawCircle(
                     brush = androidx.compose.ui.graphics.Brush.radialGradient(
-                        listOf(Color(0xFFB8FF9A).copy(alpha = 0.45f * stir * (1f - 0.7f * off)), Color.Transparent), center = top, radius = eh * 0.32f
+                        listOf(Color(0xFFB8FF9A).copy(alpha = 0.5f * stir * pulse * (1f - 0.7f * off)), Color.Transparent), center = top, radius = eh * 0.34f
                     ),
-                    radius = eh * 0.32f, center = top, alpha = alpha
+                    radius = eh * 0.34f, center = top, alpha = alpha
                 )
-                for (k in 0 until 4) {
-                    val u = ((t * 0.35 + k / 4.0) % 1.0).toFloat()
-                    drawCircle(Color(0xFFD8E8D0).copy(alpha = 0.18f * stir * (1f - u)), radius = eh * (0.06f + 0.12f * u),
-                        center = Offset(top.x + eh * 0.08f * kotlin.math.sin(t * 2 + k).toFloat(), top.y - eh * 0.5f * u), alpha = alpha)
+                for (k in 0 until 5) {
+                    val u = ((t * 0.32 + k / 5.0) % 1.0).toFloat()
+                    drawCircle(Color(0xFFD8E8D0).copy(alpha = 0.22f * stir * (1f - u)), radius = eh * (0.06f + 0.14f * u),
+                        center = Offset(top.x + eh * 0.09f * kotlin.math.sin(t * 2 + k).toFloat(), top.y - eh * 0.6f * u), alpha = alpha)
                 }
             }
         }
-        val emerge666 = com.nuvio.tv.core.horreur.Horreur666.facehuggerEmerge(t)
-        val leap666 = com.nuvio.tv.core.horreur.Horreur666.facehuggerLeap(t)
-        egg(Home666.EGG_X, Home666.EGG_BOTTOM, Home666.EGG_H, com.nuvio.tv.core.horreur.Horreur666.eggStir(t), 0.0,
-            legs = emerge666 ?: 1f,
-            legsAlpha = com.nuvio.tv.core.horreur.Horreur666.legsAlpha(emerge666, leap666))
         // 22/11 : une ampoule nue au-dessus du corps pendu (David : « on voit à peine le corps ») ;
         // elle baisse avec le néon et grésille un peu de son côté.
         // Dessinée AVANT les morceaux pendus : elle éclaire le mur derrière sans délaver le corps (22/11)
@@ -383,17 +396,19 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
         // dessiné après les morceaux pendus pour passer devant le corps)
         com.nuvio.tv.core.horreur.Horreur666.facehuggerLeap(t)?.let { k ->
             // le bond : il se ramasse (0-15 %), jaillit en arc au-dessus de l'œuf, puis fonce sur nous en grossissant
-            val eggW = Home666.EGG_H * scale * alienEgg.width / alienEgg.height
+            val eggW = Home666.EGG_H * scale * eggClosed.width / eggClosed.height
+            val openH = eggW * 1.05f * eggOpened.height / eggOpened.width
             val sx = left + Home666.EGG_X * scale
-            val sy = (Home666.EGG_BOTTOM - Home666.EGG_H * 0.95f) * scale
+            // part d'où la bête est sortie (au-dessus des pétales)
+            val sy = Home666.EGG_BOTTOM * scale - openH * 1.0f - eggW * 0.95f * facehugger.height / facehugger.width * 0.2f
             val crouch = if (k < 0.15f) k / 0.15f else 0f
             val j = ((k - 0.15f) / 0.85f).coerceIn(0f, 1f)
             val e = j * j * (3f - 2f * j)
             val tx = size.width * 0.52f; val ty = size.height * 0.40f
             val cxF = sx + (tx - sx) * e
             val cyF = sy + (ty - sy) * e - kotlin.math.sin(j * Math.PI).toFloat() * 90f * scale
-            // même taille d'arrivée qu'en 2.0.8 (l'œuf de l'étagère faisait 86 de haut)
-            val grow = (0.7f + 10f * e * e) * 86f / Home666.EGG_H
+            // part à la taille où elle est sortie de l'œuf, arrive grande vers nous
+            val grow = 0.95f + 5.1f * e * e
             val fw = eggW * grow
             val fh = fw * facehugger.height / facehugger.width
             val squashX = if (k < 0.15f) 1f - 0.18f * crouch else 1f + 0.08f * kotlin.math.sin(j * 6f)
