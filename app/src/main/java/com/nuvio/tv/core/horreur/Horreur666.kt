@@ -248,9 +248,12 @@ object Horreur666 {
         else -> 0f
     }
 
-    /** Le bond : progression 0..1 (2,6 s → 3,7 s du cycle), ou null. */
+    const val LEAP_S = 2.2
+
+    /** Le bond : progression 0..1 (2,6 s → 4,8 s du cycle), ou null. */
     fun facehuggerLeap(t: Double): Float? {
         val p = leapCyclePhase(t) ?: return null
-        return if (p >= 2.6 && p < 3.7) ((p - 2.6) / 1.1).toFloat() else null
+        // 25/11 (David : « ralentis le bond, qu'on ait le temps de voir la bête ») : 2,2 s au lieu de 1,1 s
+        return if (p >= 2.6 && p < 2.6 + LEAP_S) ((p - 2.6) / LEAP_S).toFloat() else null
     }
 }

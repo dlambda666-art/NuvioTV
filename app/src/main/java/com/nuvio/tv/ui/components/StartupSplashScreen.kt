@@ -62,9 +62,13 @@ object Bobine666 {
     // 25/11 (David : « garde la bobine qui s'arrête, et lance MH quand les portes sont ouvertes ; pas de fin de
     // bobine sur le son de MH ») : la bobine s'éteint en douceur PENDANT l'ouverture des portes (4,5 s), Machine
     // Head ne démarre qu'une fois les portes ouvertes (DOORS_MS) : jamais les deux en même temps.
-    const val CROSSFADE_MS = 4_500L
+    // 25/11 (David : « MH une seconde plus tôt ») : Machine Head part 1 s avant la fin de l'ouverture,
+    // la bobine est éteinte pile à ce moment-là (jamais sa fin sur Machine Head)
+    const val CROSSFADE_MS = 3_900L
     /** Durée de l'ouverture : fondu vers la porte 0,7 s + 0,4 s + battants / avancée 3,8 s. */
     const val DOORS_MS = 700L + 400L + 1_100L + 2_700L
+    /** Départ de Machine Head (depuis le début de la fermeture du cinéma). */
+    const val MH_AT_MS = DOORS_MS - 1_000L
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private var player: android.media.MediaPlayer? = null
     private var vol = VOLUME
@@ -213,10 +217,13 @@ fun StartupSplashScreen(
             // 24/11 (David : « léger sursaut à l'ouverture ») : démarrage et arrivée tout en douceur
             launch { open.animateTo(1f, tween(3_400, easing = androidx.compose.animation.core.CubicBezierEasing(0.42f, 0f, 0.3f, 1f))) }
             kotlinx.coroutines.delay(1_100)
+            // Machine Head : 1 s avant la fin de l'ouverture (bobine éteinte à ce moment-là)
+            launch {
+                kotlinx.coroutines.delay(Bobine666.MH_AT_MS - 700L - 400L - 1_100L)
+                runCatching { com.nuvio.tv.ui.screens.home.AbattoirSound666.onDoorsOpening(context) }
+            }
             push.animateTo(1f, tween(2_700, easing = androidx.compose.animation.core.CubicBezierEasing(0.45f, 0f, 0.55f, 1f)))
         }
-        // portes ouvertes, bobine éteinte : Machine Head part maintenant (montée douce)
-        runCatching { com.nuvio.tv.ui.screens.home.AbattoirSound666.onDoorsOpening(context) }
         finalFade.snapTo(1f)
         onClosedNow()
     }

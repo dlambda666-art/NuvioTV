@@ -428,16 +428,19 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                     ),
                     radius = 34f * u1, center = c
                 )
-                for (k in 0 until 9) {
-                    val u = ((t * 0.32 + k / 9.0) % 1.0).toFloat()
-                    val r = (12f + 38f * u) * u1
+                // 25/11 (David : « la fumée est presque pas visible, faut qu'elle monte bien ») : colonne épaisse
+                // et claire qui monte haut au-dessus de la tête et s'élargit en montant
+                for (k in 0 until 14) {
+                    val u = ((t * 0.28 + k / 14.0) % 1.0).toFloat()
+                    val r = (16f + 70f * u) * u1
                     val sc = Offset(
-                        c.x + ((k % 3) - 1) * 6f * u1 + 16f * u1 * kotlin.math.sin(t * 1.4 + k * 1.7).toFloat() * u,
-                        c.y - 150f * u1 * u
+                        c.x + ((k % 3) - 1) * 8f * u1 + 34f * u1 * kotlin.math.sin(t * 1.1 + k * 1.7).toFloat() * u,
+                        c.y - 10f * u1 - 300f * u1 * u
                     )
+                    val a = 0.75f * smoke * fade * (if (u < 0.12f) u / 0.12f else 1f - (u - 0.12f) / 0.88f)
                     drawCircle(
                         brush = androidx.compose.ui.graphics.Brush.radialGradient(
-                            listOf(Color(0xFFD2CEC8).copy(alpha = 0.42f * smoke * fade * (1f - u)), Color.Transparent), center = sc, radius = r
+                            listOf(Color(0xFFE4E0DA).copy(alpha = a), Color(0xFFBDB8B0).copy(alpha = a * 0.45f), Color.Transparent), center = sc, radius = r
                         ),
                         radius = r, center = sc
                     )

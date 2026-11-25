@@ -69,7 +69,8 @@ class AbattoirSound666Test {
         assertTrue(b.fadeLevel(0.7f, 5_800, 6_000) > 0f)                // pas d'arrêt sec avant la fin
         assertEquals(0f, b.fadeLevel(0.7f, 6_000, 6_000), 0.001f)
         // 25/11 (David) : jamais la fin de la bobine sur Machine Head : elle est éteinte avant que les portes soient ouvertes
-        assertTrue(b.CROSSFADE_MS < b.DOORS_MS)
+        assertTrue(b.CROSSFADE_MS <= b.MH_AT_MS)                        // bobine éteinte quand Machine Head part
+        assertEquals(b.DOORS_MS - 1_000L, b.MH_AT_MS)                    // 25/11 : 1 s avant la fin de l'ouverture
         // Machine Head monte en douceur : à peine là au début, plein volume après 1,5 s
         assertTrue(AbattoirSound666.fadeGain(100, 40) < 0.02f)
         assertEquals(0.4f, AbattoirSound666.fadeGain(2_000, 40), 0.001f)

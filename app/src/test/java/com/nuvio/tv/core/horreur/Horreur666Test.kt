@@ -134,7 +134,8 @@ class Horreur666Test {
         assertNotNull(Horreur666.facehuggerEmerge(20.0 + 15.0 + 2.0))    // 2e : les pattes sortent
         assertNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 2.0))
         assertNotNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 3.0))      // puis le bond
-        assertNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 4.0))         // fini
+        assertNotNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 4.5))      // 25/11 : bond plus lent, encore en vol
+        assertNull(Horreur666.facehuggerLeap(20.0 + 15.0 + 5.0))         // fini
         assertNull(Horreur666.facehuggerLeap(20.0 + 30.0 + 3.0))         // la suivante : rien
         assertNotNull(Horreur666.facehuggerLeap(20.0 + 45.0 + 3.0))      // 30 s plus tard : il ressaute
         assertTrue(Horreur666.eggStir(20.0 + 15.0 + 2.0) > 0.9f)         // l'œuf est bien ouvert quand il sort
