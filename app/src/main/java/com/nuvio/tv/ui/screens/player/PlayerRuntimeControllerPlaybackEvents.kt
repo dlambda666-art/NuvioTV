@@ -1199,6 +1199,8 @@ fun PlayerRuntimeController.onEvent(
                     stopProgressUpdates()
                     stopWatchProgressSaving()
                     emitPauseScrobbleForCurrentProgress()
+                    // Same as Exo's pause: a paused player left alone can be killed by the system.
+                    saveWatchProgress()
                     schedulePauseOverlay()
                 } else {
                     userPausedManually = false

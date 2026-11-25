@@ -831,6 +831,8 @@ internal fun PlayerRuntimeController.switchToSourceStream(
     nextEpisodeAutoPlayJob?.cancel()
     nextEpisodeAutoPlayJob = null
 
+    // 25/11 (Nuvio 1.1.1) : on garde la position en changeant de source (avant : retour au début)
+    val resumePositionMs = currentPlaybackPositionMs()?.coerceAtLeast(0L) ?: 0L
     flushPlaybackSnapshotForSwitchOrExit()
 
     val newHeaders = PlayerMediaSourceFactory.sanitizeHeaders(
@@ -848,6 +850,7 @@ internal fun PlayerRuntimeController.switchToSourceStream(
     val playbackUrl = currentStreamUrl
     val playbackHeaders = currentHeaders
     persistSelectedStreamForReuse(stream = stream, url = playbackUrl, headers = playbackHeaders)
+    persistStreamRouteState(stream, isTorrent = false)
 
     // Reset stream-state error flags for the new stream.
     hasRetriedCurrentStreamAfter416 = false
@@ -884,6 +887,10 @@ internal fun PlayerRuntimeController.switchToSourceStream(
             detectedFrameRate = 0f,
             detectedFrameRateSource = null
         )
+    }
+    if (resumePositionMs > 0L) {
+        pendingResumeProgress = null
+        _uiState.update { it.copy(pendingSeekPosition = resumePositionMs) }
     }
     showStreamSourceIndicator(stream)
     resetPostPlayOverlayState(clearEpisode = false)
@@ -1007,6 +1014,7 @@ private fun PlayerRuntimeController.switchToTorrentSourceStream(
     resetPostPlayOverlayState(clearEpisode = false)
     launchTorrentSourceStream(stream, infoHash, loadSavedProgress = true)
     persistTorrentStreamForReuse(stream)
+    persistStreamRouteState(stream, isTorrent = true)
 }
 
 private fun PlayerRuntimeController.switchToTorrentEpisodeStream(
@@ -1023,6 +1031,7 @@ private fun PlayerRuntimeController.switchToTorrentEpisodeStream(
     switchToEpisodeStreamCommon(stream, forcedTargetVideo)
     launchTorrentSourceStream(stream, infoHash, loadSavedProgress = true)
     persistTorrentStreamForReuse(stream)
+    persistStreamRouteState(stream, isTorrent = true)
 }
 
 internal fun PlayerRuntimeController.loadEpisodesIfNeeded() {
@@ -1426,6 +1435,7 @@ internal fun PlayerRuntimeController.switchToEpisodeStream(
     currentSeason = targetVideo?.season ?: _uiState.value.episodeStreamsSeason ?: currentSeason
     currentEpisode = targetVideo?.episode ?: _uiState.value.episodeStreamsEpisode ?: currentEpisode
     currentEpisodeTitle = targetVideo?.title ?: _uiState.value.episodeStreamsTitle ?: currentEpisodeTitle
+    persistStreamRouteState(stream, isTorrent = false)
     // Until the new file loads, MPV keeps reporting the old one, which is often at its end.
     hasRenderedFirstFrame = false
     mpvView?.markMediaRequested(playbackUrl)

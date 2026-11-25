@@ -100,7 +100,7 @@ class PlayerRuntimeController(
     internal val playbackIssueReportRepository: PlaybackIssueReportRepository,
     internal val tvRecommendationManager: com.nuvio.tv.core.recommendations.TvRecommendationManager,
     internal val profileId: Int,
-    savedStateHandle: SavedStateHandle,
+    internal val savedStateHandle: SavedStateHandle,
     internal val scope: CoroutineScope
 ) {
 
