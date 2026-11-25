@@ -77,12 +77,15 @@ class Horreur666Test {
     }
 
     @Test fun `viseur de Predator 5 s toutes les 40 s, triangle cale apres l'arrivee`() {
+        // 25/11 au soir : les lasers arrivent quand la bête se pose sur Frank (35 s + 9,7 s), 10 s, toutes les 30 s
+        val land = ((20.0 + 15.0 + Horreur666.CLING_AT_S) * 1000).toLong()
         assertNull(Horreur666.predatorLaser(5_000))
-        assertNotNull(Horreur666.predatorLaser(12_500))
-        assertNotNull(Horreur666.predatorLaser(12_000 + 9_500))          // 25/11 : reste calé 10 s
-        assertNull(Horreur666.predatorLaser(12_000 + 10_500))
-        assertNotNull(Horreur666.predatorLaser(12_000 + 30_000 + 1_000))  // 25/11 : toutes les 30 s
-        assertNull(Horreur666.predatorLaser(12_000 + 40_000 + 1_000))
+        assertNull(Horreur666.predatorLaser(land - 500))
+        assertNotNull(Horreur666.predatorLaser(land + 500))
+        assertNotNull(Horreur666.predatorLaser(land + 9_500))            // reste calé 10 s
+        assertNull(Horreur666.predatorLaser(land + 10_500))
+        assertNotNull(Horreur666.predatorLaser(land + 30_000 + 1_000))   // toutes les 30 s
+        assertNull(Horreur666.predatorLaser(land + 20_000))
         assertEquals(1f, Horreur666.laserSpread(0f), 0.001f)
         assertEquals(0f, Horreur666.laserSpread(0.2f), 0.001f)           // calés après 1,5 s
         assertEquals(0f, Horreur666.laserSmoke(0.45f), 0.001f)           // pas de fumée avant 5 s
@@ -142,6 +145,14 @@ class Horreur666Test {
         assertEquals(0f, Horreur666.eggOpen(20.0 + 15.0 + 14.5), 0.001f)        // refermé avant le tour suivant
         assertNotNull(Horreur666.facehuggerLeap(20.0 + 45.0 + 8.0))              // 30 s plus tard : ça recommence
         assertTrue(Horreur666.LEAP_S >= 2.0)
+        // 25/11 au soir : agrippée au visage de Frank, puis dissoute dans la fumée du laser
+        val c0 = 20.0 + 15.0
+        assertNull(Horreur666.facehuggerCling(c0 + 8.0))
+        assertEquals(1f, Horreur666.facehuggerCling(c0 + Horreur666.CLING_AT_S + 1.0)!!, 0.001f)
+        val laserAtSmoke = Horreur666.predatorLaser(((c0 + Horreur666.DISSOLVE_AT_S) * 1000).toLong())!!
+        assertTrue(Horreur666.laserSmoke(laserAtSmoke) > 0f)                       // elle part quand la fumée monte
+        assertNull(Horreur666.facehuggerCling(c0 + Horreur666.DISSOLVE_AT_S + Horreur666.DISSOLVE_S + 0.1))
+        assertNull(Horreur666.facehuggerLeap(c0 + Horreur666.CLING_AT_S + 1.0))   // plus de bond vers nous
     }
 
     @Test fun `ki-ki-ki - encore plus bas`() {

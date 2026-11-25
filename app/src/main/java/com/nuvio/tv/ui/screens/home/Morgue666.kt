@@ -129,6 +129,14 @@ object Home666 {
     const val FRANK_FOREHEAD_X = 1210f
     const val FRANK_FOREHEAD_Y = 612f
 
+    /** 25/11 (David, 21 h 23, sa photo d'Alien) : la bête agrippée au visage de Frank (image 1920 × 1080) :
+     *  centre du corps, largeur de l'image facehugger_visage_666, et point visé par les lasers (sur la bête). */
+    const val FACEHUGGER_FACE_X = 1165f
+    const val FACEHUGGER_FACE_Y = 598f
+    const val FACEHUGGER_FACE_W = 270f
+    const val FACEHUGGER_LASER_X = 1188f
+    const val FACEHUGGER_LASER_Y = 578f
+
     /** 25/11 (David, 19 h 15) : l'œuf (avec ses racines) à gauche du sac — image 1920 × 1080. X / BOTTOM = pied du corps de l'œuf. */
     const val EGG_X = 64f
     const val EGG_BOTTOM = 374f

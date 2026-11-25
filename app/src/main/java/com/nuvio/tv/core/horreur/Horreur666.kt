@@ -108,12 +108,15 @@ object Horreur666 {
     const val LASER_EVERY_MS = 30_000L
     const val LASER_SHOW_MS = 10_000L
 
-    /** Règle pure (testée) : progression (0..1) du viseur, ou null s'il n'est pas là (10 s toutes les 30 s, après 12 s). */
+    /**
+     * Règle pure (testée) : progression (0..1) du viseur, ou null s'il n'est pas là.
+     * 25/11 (David, 21 h 23) : synchro avec la bête : les lasers arrivent quand le facehugger se pose sur le
+     * visage de Frank (CLING_AT_S) et restent 10 s ; toutes les 30 s.
+     */
     fun predatorLaser(tMs: Long): Float? {
-        val u = tMs - 12_000L
-        if (u < 0) return null
-        val p = Math.floorMod(u, LASER_EVERY_MS)
-        return if (p < LASER_SHOW_MS) p.toFloat() / LASER_SHOW_MS else null
+        val p = leapCyclePhase(tMs / 1000.0) ?: return null
+        val q = p - CLING_AT_S
+        return if (q >= 0 && q < LASER_SHOW_MS / 1000.0) (q * 1000.0 / LASER_SHOW_MS).toFloat() else null
     }
 
     /** Règle pure (testée) : les trois points arrivent des coins (0..0,15 = 1,5 s) puis restent calés en triangle. */
@@ -224,11 +227,11 @@ object Horreur666 {
      * Entre deux, l'œuf garde sa lueur verte et sa fumée (rien ne sort).
      */
     private fun leapCyclePhase(t: Double): Double? {
-        val u = t - EGG_START_S
+        // 25/11 : phase dans une période de 30 s qui commence à chaque 2e respiration (0..30 s), pour que la
+        // bête, les lasers et la fumée qui suivent le bond restent dans la même scène
+        val u = t - EGG_START_S - EGG_EVERY_S
         if (u < 0) return null
-        val cycle = Math.floor(u / EGG_EVERY_S).toLong()
-        if (Math.floorMod(cycle, 2L) != 1L) return null
-        return u - cycle * EGG_EVERY_S
+        return u % (2 * EGG_EVERY_S)
     }
 
     // 25/11 (David, photo des œufs) : l'œuf est FERMÉ au repos ; une fois sur deux : ça pulse vert (0-2,5 s),
@@ -265,9 +268,27 @@ object Horreur666 {
     // 25/11 (David : « ralentis le bond, qu'on ait le temps de voir la bête ») : 2,2 s
     const val LEAP_S = 2.2
 
-    /** Le bond : progression 0..1, ou null. */
+    /** Le bond (25/11 au soir : vers le visage de Frank) : progression 0..1, ou null. */
     fun facehuggerLeap(t: Double): Float? {
         val p = leapCyclePhase(t) ?: return null
         return if (p >= LEAP_AT_S && p < LEAP_AT_S + LEAP_S) ((p - LEAP_AT_S) / LEAP_S).toFloat() else null
+    }
+
+    // 25/11 (David, 21 h 23) : la bête se pose sur le visage de Frank, les lasers se calent sur elle ; quand le laser
+    // chauffe (5 s), la fumée monte et elle se dissout (2 s) ; puis plus rien jusqu'au tour suivant.
+    const val CLING_AT_S = LEAP_AT_S + LEAP_S
+    const val DISSOLVE_AT_S = CLING_AT_S + 5.5
+    const val DISSOLVE_S = 2.0
+
+    /** Règle pure (testée) : opacité (0..1) de la bête agrippée au visage, ou null si elle n'y est pas. */
+    fun facehuggerCling(t: Double): Float? {
+        val p = leapCyclePhase(t) ?: return null
+        return when {
+            p < CLING_AT_S - 0.35 -> null
+            p < CLING_AT_S -> ((p - (CLING_AT_S - 0.35)) / 0.35).toFloat()   // elle se referme sur la tête en touchant
+            p < DISSOLVE_AT_S -> 1f
+            p < DISSOLVE_AT_S + DISSOLVE_S -> (1.0 - (p - DISSOLVE_AT_S) / DISSOLVE_S).toFloat()
+            else -> null
+        }
     }
 }

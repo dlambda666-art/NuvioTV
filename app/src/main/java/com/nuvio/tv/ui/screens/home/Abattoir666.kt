@@ -220,6 +220,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
     // 25/11 (image de David) : les racines qui tiennent l'œuf (restent quand il est ouvert)
     val eggRoots: ImageBitmap = ImageBitmap.imageResource(R.drawable.racines_oeuf_666)
     val facehugger: ImageBitmap = ImageBitmap.imageResource(R.drawable.facehugger_666)
+    val facehuggerFace: ImageBitmap = ImageBitmap.imageResource(R.drawable.facehugger_visage_666)
     val hangs: List<ImageBitmap> = listOf(
         ImageBitmap.imageResource(R.drawable.pend_bras_666),
         ImageBitmap.imageResource(R.drawable.pend_jambe_666),
@@ -406,10 +407,12 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                 )
             }
         }
-        // 24/11 (David, image Gemini) : le facehugger jaillit de l'œuf et saute vers nous (25/11 : toutes les 30 s ;
-        // dessiné après les morceaux pendus pour passer devant le corps)
+        // 25/11 au soir (David) : le facehugger jaillit de l'œuf et bondit en arc à travers la pièce sur le visage de
+        // Frank, couché sur la table ; en le touchant il se referme sur sa tête (photo d'Alien de David).
+        val faceX = left + Home666.FACEHUGGER_FACE_X * scale
+        val faceY = Home666.FACEHUGGER_FACE_Y * scale
+        val faceW = Home666.FACEHUGGER_FACE_W * scale
         com.nuvio.tv.core.horreur.Horreur666.facehuggerLeap(t)?.let { k ->
-            // le bond : il se ramasse (0-15 %), jaillit en arc au-dessus de l'œuf, puis fonce sur nous en grossissant
             val eggW = Home666.EGG_H * scale / Home666.EGG_BODY_BOTTOM * eggClosed.width / eggClosed.height * Home666.EGG_BODY_W
             val openH = eggW * 1.1f * eggOpened.height / eggOpened.width
             val sx = left + Home666.EGG_X * scale
@@ -418,29 +421,43 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
             val crouch = if (k < 0.15f) k / 0.15f else 0f
             val j = ((k - 0.15f) / 0.85f).coerceIn(0f, 1f)
             val e = j * j * (3f - 2f * j)
-            val tx = size.width * 0.52f; val ty = size.height * 0.40f
-            val cxF = sx + (tx - sx) * e
-            val cyF = sy + (ty - sy) * e - kotlin.math.sin(j * Math.PI).toFloat() * 90f * scale
-            // part à la taille où elle est sortie de l'œuf, arrive grande vers nous
-            val grow = 0.95f + 5.1f * e * e
-            val fw = eggW * grow
+            val cxF = sx + (faceX - sx) * e
+            val cyF = sy + (faceY - sy) * e - kotlin.math.sin(j * Math.PI).toFloat() * 140f * scale
+            // grandit en approchant (on la voit de plus près), jusqu'à la taille de la tête de Frank
+            val fw = eggW * 0.95f + (faceW * 0.9f - eggW * 0.95f) * e
             val fh = fw * facehugger.height / facehugger.width
             val squashX = if (k < 0.15f) 1f - 0.18f * crouch else 1f + 0.08f * kotlin.math.sin(j * 6f)
             val squashY = if (k < 0.15f) 1f + 0.22f * crouch else 1f
-            val a = if (j < 0.85f) 1f else (1f - (j - 0.85f) / 0.15f)
-            rotate(degrees = -25f + 35f * e, pivot = Offset(cxF, cyF)) {
+            // s'efface pendant qu'elle se referme sur la tête (fondu avec l'image agrippée)
+            val a = if (k < 0.84f) 1f else (1f - (k - 0.84f) / 0.16f).coerceIn(0f, 1f)
+            rotate(degrees = -25f + 20f * e, pivot = Offset(cxF, cyF)) {
                 drawImage(
                     facehugger,
                     dstOffset = IntOffset((cxF - fw * squashX / 2f).toInt(), (cyF - fh * squashY / 2f).toInt()),
                     dstSize = IntSize((fw * squashX).toInt(), (fh * squashY).toInt()),
                     alpha = a * alpha,
-                    // dans la pénombre au fond, plus éclairé en arrivant sur nous
                     colorFilter = run {
-                        val lk = (0.55f + 0.4f * e) * (1f - 0.6f * off)
+                        val lk = (0.55f + 0.15f * e) * (1f - 0.6f * off)
                         androidx.compose.ui.graphics.ColorFilter.lighting(Color(lk, lk * 0.95f, lk * 0.92f), Color.Black)
                     }
                 )
             }
+        }
+        // agrippée au visage : respire un peu ; se dissout quand le laser chauffe
+        com.nuvio.tv.core.horreur.Horreur666.facehuggerCling(t)?.let { ca ->
+            val breathe = 1f + 0.018f * kotlin.math.sin(t * 2.2).toFloat()
+            val w = faceW
+            val h = w * facehuggerFace.height / facehuggerFace.width * breathe
+            drawImage(
+                facehuggerFace,
+                dstOffset = IntOffset((faceX - w * 0.52f).toInt(), (faceY - h * 0.5f).toInt()),
+                dstSize = IntSize(w.toInt(), h.toInt()),
+                alpha = ca * alpha,
+                colorFilter = run {
+                    val lk = 0.66f * (1f - 0.6f * off)
+                    androidx.compose.ui.graphics.ColorFilter.lighting(Color(lk, lk * 0.96f, lk * 0.93f), Color.Black)
+                }
+            )
         }
         // 25/11 (David) : Predator vise Frank : trois points laser arrivent des coins de la pièce et se calent en
         // triangle sur son front (10 s toutes les 30 s) ; à 5 s, le laser chauffe : lueur orange et fumée qui monte.
@@ -448,7 +465,8 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
             val spread = com.nuvio.tv.core.horreur.Horreur666.laserSpread(p)
             val smoke = com.nuvio.tv.core.horreur.Horreur666.laserSmoke(p)
             val fade = minOf(1f, (1f - p) * 20f) * alpha
-            val c = Offset(left + Home666.FRANK_FOREHEAD_X * scale, Home666.FRANK_FOREHEAD_Y * scale)
+            // 25/11 au soir : le viseur se cale sur la bête agrippée au visage de Frank
+            val c = Offset(left + Home666.FACEHUGGER_LASER_X * scale, Home666.FACEHUGGER_LASER_Y * scale)
             val u1 = scale   // 1 px de l'image 1920
             if (smoke > 0f) {
                 drawCircle(
