@@ -217,6 +217,8 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
     // 25/11 (photo de David) : œuf fermé / œuf ouvert (même photo, même style) + son facehugger
     val eggClosed: ImageBitmap = ImageBitmap.imageResource(R.drawable.oeuf_ferme_666)
     val eggOpened: ImageBitmap = ImageBitmap.imageResource(R.drawable.oeuf_ouvert_666)
+    // 25/11 (image de David) : les racines qui tiennent l'œuf (restent quand il est ouvert)
+    val eggRoots: ImageBitmap = ImageBitmap.imageResource(R.drawable.racines_oeuf_666)
     val facehugger: ImageBitmap = ImageBitmap.imageResource(R.drawable.facehugger_666)
     val hangs: List<ImageBitmap> = listOf(
         ImageBitmap.imageResource(R.drawable.pend_bras_666),
@@ -277,14 +279,16 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
         // pulse vert à l'intérieur (lueur + fumée) ; une fois sur deux il s'ouvre DOUCEMENT (3 s), la bête monte
         // d'entre les pétales, bondit vers nous, puis l'œuf se referme doucement.
         run {
-            val eh = Home666.EGG_H * scale
-            val ew = eh * eggClosed.width / eggClosed.height
+            val eh = Home666.EGG_H * scale                       // hauteur du corps de l'œuf
+            val ih = eh / Home666.EGG_BODY_BOTTOM                  // image entière (œuf + racines)
+            val iw = ih * eggClosed.width / eggClosed.height
+            val ew = iw * Home666.EGG_BODY_W                       // largeur du corps de l'œuf
             val ecx = left + Home666.EGG_X * scale
             val ebottom = Home666.EGG_BOTTOM * scale
             val open = com.nuvio.tv.core.horreur.Horreur666.eggOpen(t)
             val stir = maxOf(com.nuvio.tv.core.horreur.Horreur666.eggStir(t), 0.75f * open)
             val breath = 1f + 0.018f * kotlin.math.sin(t * 1.3).toFloat()
-            val ow = ew * 1.05f
+            val ow = ew * 1.1f
             val oh = ow * eggOpened.height / eggOpened.width
             val dimEgg = run {
                 val k = 0.62f * (1f - 0.72f * off)
@@ -308,12 +312,24 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
                     )
                 }
             }
+            // racines (sous l'œuf ouvert ; l'image fermée a déjà les siennes)
+            if (open > 0.001f) {
+                drawImage(
+                    eggRoots,
+                    dstOffset = IntOffset((ecx - Home666.EGG_BODY_CX * iw).toInt(), (ebottom - Home666.EGG_BODY_BOTTOM * ih).toInt()),
+                    dstSize = IntSize(iw.toInt(), ih.toInt()),
+                    alpha = alpha * open,
+                    colorFilter = dimEgg
+                )
+            }
             if (open < 0.999f) {
-                val h2 = eh * (breath + 0.03f * stir)
+                // respire (et gonfle un peu quand ça pulse), ancré au pied de l'œuf
+                val k2 = breath + 0.03f * stir
+                val w2 = iw * (1f + (k2 - 1f) * 0.3f); val h2 = ih * k2
                 drawImage(
                     eggClosed,
-                    dstOffset = IntOffset((ecx - ew / 2f).toInt(), (ebottom - h2).toInt()),
-                    dstSize = IntSize(ew.toInt(), h2.toInt()),
+                    dstOffset = IntOffset((ecx - Home666.EGG_BODY_CX * w2).toInt(), (ebottom - Home666.EGG_BODY_BOTTOM * h2).toInt()),
+                    dstSize = IntSize(w2.toInt(), h2.toInt()),
                     alpha = alpha * (1f - open),
                     // assombri comme le fond de la pièce, et encore plus quand le néon coupe
                     colorFilter = dimEgg
@@ -331,7 +347,7 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
             if (stir > 0.01f) {
                 // lueur verte qui pulse à travers la fente (fermé) ou au fond de l'œuf (ouvert), et fumée
                 val topY = ebottom - eh * breath + eh * 0.22f
-                val top = Offset(ecx + ew * 0.06f * (1f - open), topY + (ebottom - oh - topY + oh * 0.12f) * open)
+                val top = Offset(ecx, topY + (ebottom - oh - topY + oh * 0.12f) * open)
                 val pulse = 0.75f + 0.25f * kotlin.math.sin(t * 5.0).toFloat()
                 drawCircle(
                     brush = androidx.compose.ui.graphics.Brush.radialGradient(
@@ -396,8 +412,8 @@ fun Abattoir666Layer(visible: Boolean, modifier: Modifier = Modifier) {
         // dessiné après les morceaux pendus pour passer devant le corps)
         com.nuvio.tv.core.horreur.Horreur666.facehuggerLeap(t)?.let { k ->
             // le bond : il se ramasse (0-15 %), jaillit en arc au-dessus de l'œuf, puis fonce sur nous en grossissant
-            val eggW = Home666.EGG_H * scale * eggClosed.width / eggClosed.height
-            val openH = eggW * 1.05f * eggOpened.height / eggOpened.width
+            val eggW = Home666.EGG_H * scale / Home666.EGG_BODY_BOTTOM * eggClosed.width / eggClosed.height * Home666.EGG_BODY_W
+            val openH = eggW * 1.1f * eggOpened.height / eggOpened.width
             val sx = left + Home666.EGG_X * scale
             // part d'où la bête est sortie (au-dessus des pétales)
             val sy = Home666.EGG_BOTTOM * scale - openH * 1.0f - eggW * 0.95f * facehugger.height / facehugger.width * 0.2f

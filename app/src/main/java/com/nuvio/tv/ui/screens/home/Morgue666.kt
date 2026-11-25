@@ -129,10 +129,14 @@ object Home666 {
     const val FRANK_FOREHEAD_X = 1210f
     const val FRANK_FOREHEAD_Y = 612f
 
-    /** 25/11 (David : « comme au départ, à gauche du corps pendu, on verra mieux l'œuf ») — image 1920 × 1080. */
-    const val EGG_X = 222f
-    const val EGG_BOTTOM = 376f
-    const val EGG_H = 132f
+    /** 25/11 (David, 19 h 15) : l'œuf (avec ses racines) à gauche du sac — image 1920 × 1080. X / BOTTOM = pied du corps de l'œuf. */
+    const val EGG_X = 64f
+    const val EGG_BOTTOM = 374f
+    const val EGG_H = 112f
+    /** Dans l'image oeuf_ferme_666 (œuf + racines) : centre, bas et largeur du corps de l'œuf (fractions de l'image). */
+    const val EGG_BODY_CX = 0.455f
+    const val EGG_BODY_BOTTOM = 0.772f
+    const val EGG_BODY_W = 0.335f
 
     /** Bas du corps pendu (coordonnées de l'image 1920 × 1080) et centre du corps. */
     const val BODY_X = 330f
