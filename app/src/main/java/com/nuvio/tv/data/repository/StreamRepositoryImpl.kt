@@ -330,7 +330,10 @@ class StreamRepositoryImpl @Inject constructor(
                         } ?: annotatedResult
                     val displacedReleases = HashSet<String>()
                     val keptInBatch = ArrayList<Stream>()
-                    for (stream in probedResult.streams) {
+                    for (stream0 in probedResult.streams) {
+                        // 26/11 (David : « ça a lancé un vieil épisode d'avant Money in the Bank ») : émission datée
+                        // et lien sans date ni numéro d'épisode (« Wwe Raw Saison 34 ») → prévenu dans la liste
+                        val stream = com.nuvio.tv.core.player.StreamAutoPlaySelector.markUndated666(stream0, season, episode)
                         // P2P coupé : un torrent absent du cache debrid ne se lancerait pas.
                         val hiddenUncached = !com.nuvio.tv.core.torrent.TorrentService.P2P_ENABLED &&
                             stream.debridCacheStatus?.state == com.nuvio.tv.domain.model.StreamDebridCacheState.NOT_CACHED

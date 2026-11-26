@@ -99,6 +99,16 @@ object Rapport666 {
         m6.takeLast(10).forEach { line("${day.format(Date(it.at))} · ${it.where} · ${it.msg}") }
         line()
 
+        // 26/11 (David : pas de cri pour Raw / NXT) : pourquoi le cri « VF dispo » est venu, ou pas
+        line("== Cri VF : dernières vérifications (pourquoi) ==")
+        val why = runCatching { com.nuvio.tv.core.calendar.VfWhy666.entries(context) }.getOrDefault(emptyList()).take(8)
+        if (why.isEmpty()) line("(aucune vérification notée depuis la mise à jour)")
+        why.forEach { e ->
+            line("${day.format(Date(e.at))} · ${e.episode} · ${e.verdict}")
+            e.lines.forEach { line("   $it") }
+        }
+        line()
+
         line("== Annonces (7 jours) ==")
         val annonces = runCatching { Announce666.entries(context, now) }.getOrDefault(emptyList()).take(40)
         if (annonces.isEmpty()) line("(aucune)")

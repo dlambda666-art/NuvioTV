@@ -137,6 +137,7 @@ jobs:
             --tests 'com.nuvio.tv.LaunchIntentReplayTest' \
             --tests 'com.nuvio.tv.ui.screens.player.PlayerStreamRouteStateTest' \
             --tests 'com.nuvio.tv.core.player.StreamAutoPlaySelectorTest' \
+            --tests 'com.nuvio.tv.core.calendar.CalendarVfRule666Test' \
             --tests 'com.nuvio.tv.core.debrid.DebridStreamFormatterTest' \
             --tests 'com.nuvio.tv.ui.screens.player.SourceFailoverRulesTest' \
             --tests 'com.nuvio.tv.domain.model.ThemeAccessTest' \

@@ -179,6 +179,20 @@ object StreamAutoPlaySelector {
         return "$name du ${"%02d/%02d".format(d.dayOfMonth, d.monthValue)} : pas encore de fichier VF daté de ce jour (aucun ancien épisode lancé, choisis dans la liste si tu le reconnais)"
     }
 
+    const val UNDATED_666 = "⚠ Sans date ni n° d'épisode : sans doute un ANCIEN épisode"
+
+    /**
+     * 26/11 — règle pure (testée) : émission datée (date de diffusion connue) et lien qui ne porte ni date ni
+     * SxxEyy (Lumio : « Wwe Raw Saison 34 (2026) » = le vieux Raw d'avant Money in the Bank) → on le dit dans la liste.
+     */
+    fun markUndated666(stream: Stream, season: Int?, episode: Int?): Stream {
+        if (airDateFor(season, episode) == null) return stream
+        if (episodeRank(stream, season, episode) != 1 || hasDate(textOf(stream))) return stream
+        val base = stream.description ?: stream.title
+        if (base?.startsWith(UNDATED_666) == true) return stream
+        return stream.copy(description = UNDATED_666 + (base?.let { "\n$it" } ?: ""))
+    }
+
     /** 18/11 : le texte porte-t-il une date (émission datée comme WWE Raw) ? */
     fun hasDate(text: String): Boolean = datesIn(text).isNotEmpty()
 

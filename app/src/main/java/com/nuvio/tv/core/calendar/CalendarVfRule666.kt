@@ -20,21 +20,25 @@ object CalendarVfRule666 {
     private val LOW = Regex("""(?i)(?<![0-9])(720p|576p|480p|360p)""")
 
     /** Règle pure (testée). [airDates] = jours de diffusion admis (US et France). */
-    fun counts(text: String, quality: String?, season: Int?, episode: Int?, airDates: Set<LocalDate>): Boolean {
-        if (UNSURE.containsMatchIn(text)) return false
+    fun counts(text: String, quality: String?, season: Int?, episode: Int?, airDates: Set<LocalDate>): Boolean =
+        rejectReason(text, quality, season, episode, airDates) == null
+
+    /** 26/11 : la raison pour laquelle un résultat ne compte pas (pour le Rapport), ou null s'il compte. */
+    fun rejectReason(text: String, quality: String?, season: Int?, episode: Int?, airDates: Set<LocalDate>): String? {
+        if (UNSURE.containsMatchIn(text)) return "VF pas sûre"
         if (season != null && episode != null) {
             val eps = EPISODE.findAll(text).map { it.groupValues[1].toInt() to it.groupValues[2].toInt() }.toList()
-            if (eps.isNotEmpty() && eps.none { (s, e) -> s == season && e == episode }) return false
+            if (eps.isNotEmpty() && eps.none { (s, e) -> s == season && e == episode }) return "autre épisode"
         }
         if (airDates.isNotEmpty()) {
             val dates = (YMD.findAll(text).mapNotNull { m -> date(m.groupValues[1], m.groupValues[2], m.groupValues[3]) } +
                 DMY.findAll(text).mapNotNull { m -> date(m.groupValues[3], m.groupValues[2], m.groupValues[1]) }).toList()
             val ok = airDates.flatMap { listOf(it.minusDays(1), it, it.plusDays(1)) }.toSet()
-            if (dates.isNotEmpty() && dates.none { it in ok }) return false
+            if (dates.isNotEmpty() && dates.none { it in ok }) return "autre date"
         }
         val q = listOfNotNull(quality, text).joinToString(" ")
-        if (LOW.containsMatchIn(q) && !HD.containsMatchIn(q)) return false
-        return true
+        if (LOW.containsMatchIn(q) && !HD.containsMatchIn(q)) return "720p ou moins"
+        return null
     }
 
     private fun date(y: String, m: String, d: String): LocalDate? =

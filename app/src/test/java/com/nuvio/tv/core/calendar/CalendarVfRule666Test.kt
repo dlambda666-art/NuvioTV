@@ -49,4 +49,16 @@ class CalendarVfRule666Test {
         assertTrue(CalendarVfRule666.namesEpisode("American Horror Story S13E13 VF 1080p", 13, 13, emptySet()))
         assertFalse(CalendarVfRule666.namesEpisode("American Horror Story S13E12 VF 1080p", 13, 13, emptySet()))
     }
+
+    // 26/11 : la raison de chaque rejet (Rapport « pourquoi pas de cri »)
+    @Test fun `raison du rejet pour le rapport`() {
+        val raw = setOf(LocalDate.of(2026, 11, 24))
+        org.junit.Assert.assertEquals("720p ou moins", CalendarVfRule666.rejectReason("WWE.RAW.2026.11.24.FRENCH.720p", null, 34, 47, raw))
+        org.junit.Assert.assertEquals("autre date", CalendarVfRule666.rejectReason("WWE.RAW.2026.11.17.FRENCH.1080p", null, 34, 47, raw))
+        org.junit.Assert.assertEquals("VF pas sûre", CalendarVfRule666.rejectReason("WWE.RAW.2026.11.24.VOSTFR.1080p", null, 34, 47, raw))
+        org.junit.Assert.assertNull(CalendarVfRule666.rejectReason("WWE.RAW.2026.11.24.FRENCH.1080p", null, 34, 47, raw))
+        val line = VfWhy666.scraperLine("Comet666", 4, mapOf("720p ou moins" to 3, "autre date" to 1), "rien de valable", "WWE.RAW.2026.11.24.FRENCH.720p")
+        assertTrue(line.startsWith("Comet666 : 4 trouvé(s) · écartés : 3 720p ou moins, 1 autre date → rien de valable"))
+        assertFalse(com.nuvio.tv.core.tools.Rapport666.looksSecret(com.nuvio.tv.core.tools.Rapport666.clean(line)))
+    }
 }

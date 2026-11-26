@@ -10,6 +10,7 @@ import com.nuvio.tv.domain.model.StreamDebridCacheState
 import com.nuvio.tv.domain.model.StreamDebridCacheStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StreamAutoPlaySelectorTest {
@@ -447,6 +448,30 @@ class StreamAutoPlaySelectorTest {
         assertEquals(0, StreamAutoPlaySelector.cacheRank(stream(addonName = "StreamFusion666", name = "[TB+] 1080p")))
         assertEquals(2, StreamAutoPlaySelector.cacheRank(stream(addonName = "Lumio666", name = "[TB download] 2160p")))
         assertEquals(1, StreamAutoPlaySelector.cacheRank(stream(addonName = "Wastream666", name = "1080p")))
+    }
+
+    // 26/11 (piège Raw de David) : « Wwe Raw Saison 34 (2026) » sans date = le vieux Raw d'avant Money in the Bank
+    @Test
+    fun `raw sans date ni numero est signale comme ancien episode`() {
+        StreamAutoPlaySelector.airDateHint666 = Triple(34, 47, "2026-11-24")
+        try {
+            val old = stream("Lumio", url = "https://x", name = "Lumio Salon666").copy(description = "Wwe Raw Saison 34 (2026)")
+            val marked = StreamAutoPlaySelector.markUndated666(old, 34, 47)
+            assertTrue(marked.description!!.startsWith(StreamAutoPlaySelector.UNDATED_666))
+            assertTrue(marked.description!!.contains("Wwe Raw Saison 34"))
+            // jamais lancé tout seul
+            assertTrue(StreamAutoPlaySelector.playableForEpisode(listOf(marked), 34, 47).isEmpty())
+            // le bon fichier, daté, n'est pas touché
+            val good = stream("Lumio", url = "https://y", name = "WWE.RAW.2026.11.24.FRENCH.1080p")
+            assertEquals(good, StreamAutoPlaySelector.markUndated666(good, 34, 47))
+            // une seule fois
+            assertEquals(marked, StreamAutoPlaySelector.markUndated666(marked, 34, 47))
+        } finally {
+            StreamAutoPlaySelector.airDateHint666 = null
+        }
+        // pas d'émission datée : rien
+        val any = stream("Lumio", url = "https://z", name = "Lumio").copy(description = "Wwe Raw Saison 34 (2026)")
+        assertEquals(any, StreamAutoPlaySelector.markUndated666(any, 34, 47))
     }
 
     private fun stream(

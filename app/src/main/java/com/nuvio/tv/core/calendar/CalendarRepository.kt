@@ -339,6 +339,7 @@ class CalendarRepository @Inject constructor(
             .sortedBy { it.first }
             .map { it.second }
         if (checkers.isEmpty()) return@withContext VfState.NO_CHECKER
+        val whyLines666 = ArrayList<String>()
         val found = vfSemaphore.withPermit {
             // Même demande qu'à l'ouverture de l'épisode : id TMDB, sinon id IMDb (WWE, UFC…),
             // et la même numérotation saison/épisode.
@@ -351,29 +352,38 @@ class CalendarRepository @Inject constructor(
                 season = episode.season,
                 episode = episode.episode
             )
+            val why666 = whyLines666
             val airDates666 = setOf(
                 episode.airInstant.atZone(java.time.ZoneId.of("America/New_York")).toLocalDate(),
                 episode.airInstant.atZone(java.time.ZoneId.of("Europe/Paris")).toLocalDate()
             )
             suspend fun lookFor(ps: Int?, pe: Int?): Boolean = checkers.any { scraper ->
+                val label666 = com.nuvio.tv.core.tools.PluginOrder666.displayName(scraper.id, scraper.name)
                 runCatching {
-                    val results = withTimeoutOrNull(30_000) {
+                    val raw666 = withTimeoutOrNull(30_000) {
                         com.nuvio.tv.core.tools.Background666.paced {
                             pluginManager.executeScraper(scraper, requestId, "tv", ps, pe)
                         }
-                    }.orEmpty()
+                    }
+                    if (raw666 == null) why666 += VfWhy666.scraperLine(label666, 0, emptyMap(), "ne répond pas (30 s)", null)
+                    val results = raw666.orEmpty()
+                    // 26/11 : on compte ce qui est écarté et pourquoi (pour le Rapport)
+                    val rejected666 = LinkedHashMap<String, Int>()
                     val sure = results.filter { result ->
-                        (result.url.isNotBlank() || !result.infoHash.isNullOrBlank()) &&
-                            result.name?.contains("diagnostic", ignoreCase = true) != true &&
+                        val text666 = listOfNotNull(result.name, result.title).joinToString(" ")
+                        val reason = when {
+                            result.url.isBlank() && result.infoHash.isNullOrBlank() -> "sans lien"
+                            result.name?.contains("diagnostic", ignoreCase = true) == true -> "message du cavalier"
                             // 666TVF : un « MULTi (VF ?) » ne prouve rien (AHS S13 : c'était du polonais).
                             // Le calendrier n'annonce que de la VF sûre.
-                            !result.title.contains("VF ?") && !result.title.contains("VF?") &&
+                            result.title.contains("VF ?") || result.title.contains("VF?") -> "VF pas sûre"
                             // 666TVF (07/11) : bon épisode, bonne date, pas de VOSTFR, pas de 720p
-                            CalendarVfRule666.counts(
-                                listOfNotNull(result.name, result.title).joinToString(" "),
-                                result.quality, ps, pe, airDates666
-                            )
+                            else -> CalendarVfRule666.rejectReason(text666, result.quality, ps, pe, airDates666)
+                        }
+                        if (reason != null) rejected666[reason] = (rejected666[reason] ?: 0) + 1
+                        reason == null
                     }
+                    val example666 = (sure.firstOrNull() ?: results.firstOrNull())?.let { listOfNotNull(it.name, it.title).joinToString(" ").replace(Regex("\\s+"), " ") }
                     // Lien prêt (http) : VF dispo. Torrent (Comet666) : seulement s'il est en cache
                     // chez le débrideur, sinon il ne se lancerait pas.
                     // 666TVF (07/11, 2) : un lien prêt ne prouve la VF que s'il NOMME l'épisode (SxxEyy ou
@@ -384,6 +394,7 @@ class CalendarRepository @Inject constructor(
                     }
                     if (proof != null) {
                         trace666(episode, scraper.id, listOfNotNull(proof.name, proof.title).joinToString(" "), "lien prêt")
+                        why666 += VfWhy666.scraperLine(label666, results.size, rejected666, "✓ lien prêt qui nomme l'épisode", listOfNotNull(proof.name, proof.title).joinToString(" "))
                         true
                     } else {
                         val hashes = sure.mapNotNull { r ->
@@ -391,10 +402,24 @@ class CalendarRepository @Inject constructor(
                         }
                         val cached = anyCached666(hashes)
                         if (cached) trace666(episode, scraper.id, sure.firstOrNull { !it.infoHash.isNullOrBlank() }?.let { listOfNotNull(it.name, it.title).joinToString(" ") }.orEmpty(), "torrent en cache")
+                        if (raw666 != null) {
+                            val readyNoName = sure.count { it.url.startsWith("http", ignoreCase = true) }
+                            val outcome = when {
+                                cached -> "✓ torrent en cache chez le débrideur"
+                                results.isEmpty() -> "rien trouvé"
+                                sure.isEmpty() -> "rien de valable"
+                                hashes.isNotEmpty() -> "${hashes.size} torrent(s) VF mais PAS ENCORE en cache chez le débrideur"
+                                readyNoName > 0 -> "$readyNoName lien(s) sans date ni numéro d'épisode (sans doute un ancien épisode) : pas une preuve"
+                                else -> "rien de valable"
+                            }
+                            why666 += VfWhy666.scraperLine(label666, results.size, rejected666, outcome, example666)
+                        }
                         cached
                     }
-                }.onFailure { Log.d(TAG, "VF check ${scraper.id} failed for ${episode.key}: ${it.message}") }
-                    .getOrDefault(false)
+                }.onFailure {
+                    Log.d(TAG, "VF check ${scraper.id} failed for ${episode.key}: ${it.message}")
+                    why666 += VfWhy666.scraperLine(label666, 0, emptyMap(), "erreur (${it.javaClass.simpleName})", null)
+                }.getOrDefault(false)
             }
             if (lookFor(pluginSeason, pluginEpisode)) return@withPermit true
             // 666TVF (06/11) : numérotation différente (le calendrier compte les PLE de NXT) → on
@@ -407,6 +432,15 @@ class CalendarRepository @Inject constructor(
                 if (alt != null && alt != pluginEpisode) return@withPermit lookFor(s0, alt)
             }
             false
+        }
+        runCatching {
+            val d = episode.airInstant.atZone(java.time.ZoneId.of("Europe/Paris")).toLocalDate()
+            VfWhy666.record(
+                appContext,
+                "${episode.seriesName} S${episode.season}E${episode.episode} (${"%02d/%02d".format(d.dayOfMonth, d.monthValue)})",
+                if (found) "✓ cri : VF dispo" else "pas de cri (pas encore de VF sûre)",
+                whyLines666
+            )
         }
         if (found) {
             rememberVf(episode)
