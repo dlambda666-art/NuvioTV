@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 
 /**
- * 666TV : partout où l'appli charge, le pentagramme vert de l'écran d'ouverture tourne.
+ * 666TV : partout où l'appli charge, le bouclier viking de David (bouclier_666) tourne, comme au cinéma (26/11 ; avant : pentagramme).
  * (`color` est gardé pour la compatibilité, le pentagramme a ses propres couleurs.)
  */
 @Composable
@@ -38,7 +38,7 @@ fun LoadingIndicator(
     )
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Image(
-            painter = painterResource(R.drawable.splash_penta_666),
+            painter = painterResource(R.drawable.bouclier_666),
             contentDescription = null,
             modifier = Modifier
                 .sizeIn(maxWidth = NuvioTheme.spacing.xxxl, maxHeight = NuvioTheme.spacing.xxxl)

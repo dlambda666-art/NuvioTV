@@ -277,9 +277,9 @@ fun StartupSplashScreen(
                         .size(width = w * LOGO_W, height = w * LOGO_W * LOGO_RATIO)
                         .offset(x = w * LOGO_X, y = h * LOGO_Y)
                 )
-                // Pentagramme qui tourne : c'est le « chargement »
+                // 26/11 (David) : son bouclier viking Lambda666 qui tourne : c'est le « chargement » (avant : pentagramme)
                 Image(
-                    painter = painterResource(R.drawable.splash_penta_666),
+                    painter = painterResource(R.drawable.bouclier_666),
                     contentDescription = null,
                     modifier = Modifier
                         .size(w * 0.16f)
