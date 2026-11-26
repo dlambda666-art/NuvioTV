@@ -369,7 +369,7 @@ const cases = [
         };
         const out = await comet.getStreams('tt0052520', 'tv', 3, 6);
         const txt = out.map(x => x.title).join(' | ');
-        const okLines = out.length >= 2 && out.every(x => x.name === 'Comet666 enquête' && !x.infoHash);
+        const okLines = out.length === 1 && out.every(x => x.name === 'Comet666 enquête' && !x.infoHash);
         if (!okLines || !/YggReborn : \d+ recherche/.test(txt) || !/1 VOSTFR/.test(txt) || !/autre épisode/.test(txt) || !/720p/.test(txt)) {
             fails++; console.log('✗ Mode enquête → ' + txt);
         } else console.log('✓ Mode enquête : VOSTFR, autre épisode et 720p expliqués, aucun lien lançable');

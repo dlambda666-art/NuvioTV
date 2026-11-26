@@ -844,7 +844,7 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.36';
+var COMET_VERSION = '1.1.37';
 async function trace(data) { }   // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
@@ -1001,9 +1001,16 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     });
     // 666TVF (07/11) : mode enquête — rien de proposable : on dit pourquoi, source par source.
     if (!shown.length && String(tmdbId).replace(/^tmdb:/i, '') !== '603') {
-        investigation(why, YGG_STATS).reverse().forEach(function (line) {
-            shown.unshift({ name: 'Comet666 enquête', title: line, url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct' });
-        });
+        // 26/11 : UNE seule carte d'enquête (666TVF affichait la même ligne sur toutes les cartes) : tout bout à bout,
+        // l'envoi à TorBox et ton compte TorBox d'abord
+        var inv = investigation(why, YGG_STATS);
+        var head = inv[0], rest = inv.slice(1);
+        var tbl = rest.filter(function (l) { return /^TorBox ton compte/.test(l); });
+        rest = tbl.concat(rest.filter(function (l) { return !/^TorBox ton compte/.test(l); }));
+        if (PUSHED) rest.unshift(PUSHED.ok ? '📤 envoyé à ton TorBox : ' + String(PUSHED.release).slice(0, 60) + ' — refais ↻ dans quelques minutes'
+            : '📤 envoi à TorBox impossible (' + PUSHED.detail + ')');
+        PUSHED = null;
+        shown.unshift({ name: 'Comet666 enquête', title: ('🔎 Comet666 : ' + rest.join(' · ')).slice(0, 600), url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct' });
     }
     if (PUSHED) {
         shown.push({ name: 'Comet666 enquête', url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct',
