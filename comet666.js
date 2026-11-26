@@ -851,7 +851,7 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.38';
+var COMET_VERSION = '1.1.39';
 async function trace(data) { }   // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
@@ -1012,8 +1012,13 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
         // l'envoi à TorBox et ton compte TorBox d'abord
         var inv = investigation(why, YGG_STATS);
         var head = inv[0], rest = inv.slice(1);
-        var tbl = rest.filter(function (l) { return /^TorBox ton compte/.test(l); });
-        rest = tbl.concat(rest.filter(function (l) { return !/^TorBox ton compte/.test(l); }));
+        // 26/11 (2) : YggReborn d'abord (c'est lui qui peut envoyer à TorBox), le compte TorBox en bref à la fin
+        var yg = rest.filter(function (l) { return /^YggReborn/.test(l); });
+        var tbl = rest.filter(function (l) { return /^TorBox ton compte/.test(l); }).map(function (l) {
+            var m = l.match(/(\d+) torrents.*?(\d+) bon épisode/);
+            return m ? 'compte TorBox : ' + m[2] + ' sur ' + m[1] : l;
+        });
+        rest = yg.concat(rest.filter(function (l) { return !/^YggReborn/.test(l) && !/^TorBox ton compte/.test(l); })).concat(tbl);
         if (PUSHED) rest.unshift(PUSHED.ok ? '📤 envoyé à ton TorBox : ' + String(PUSHED.release).slice(0, 60) + ' — refais ↻ dans quelques minutes'
             : '📤 envoi à TorBox impossible (' + PUSHED.detail + ')');
         PUSHED = null;
