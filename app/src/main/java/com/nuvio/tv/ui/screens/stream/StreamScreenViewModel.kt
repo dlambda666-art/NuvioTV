@@ -924,7 +924,10 @@ class StreamScreenViewModel @Inject constructor(
                 ?.firstOrNull { it.id == videoId || (it.season == season && it.episode == episode) }
                 ?.released
         }.getOrNull()?.take(10)?.takeIf { Regex("\\d{4}-\\d{2}-\\d{2}").matches(it) }
-        StreamAutoPlaySelector.airDateHint666 = released?.let { Triple(season, episode, it) }
+        // 26/11 : lancé depuis le calendrier, la fiche n'est pas toujours en cache : on garde la date déjà posée
+        // pour CET épisode (garde anti-vieux-Raw) au lieu de l'effacer
+        val kept = StreamAutoPlaySelector.airDateHint666?.takeIf { it.first == season && it.second == episode }
+        StreamAutoPlaySelector.airDateHint666 = released?.let { Triple(season, episode, it) } ?: kept
     }
 
     private fun shouldAttemptEmbeddedMetaStreamLookup(): Boolean {

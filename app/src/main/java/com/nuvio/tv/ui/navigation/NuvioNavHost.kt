@@ -1265,6 +1265,25 @@ private fun PlaybackNavHost(
                             returnFocusEpisode = episode
                         )
                     )
+                },
+                // 26/11 (David) : « Sortis récemment » → lecture directe (liste des liens, lecture auto VF)
+                onPlayEpisode = { ep ->
+                    val usDate = ep.airInstant.atZone(java.time.ZoneId.of("America/New_York")).toLocalDate().toString()
+                    // garde anti-vieux-Raw : la date de diffusion est connue même si la fiche n'est pas en cache
+                    com.nuvio.tv.core.player.StreamAutoPlaySelector.airDateHint666 = Triple(ep.season, ep.episode, usDate)
+                    navController.navigate(
+                        Screen.Stream.createRoute(
+                            videoId = ep.videoId ?: "${ep.seriesId}:${ep.season}:${ep.episode}",
+                            contentType = "series",
+                            title = ep.seriesName,
+                            poster = ep.poster,
+                            season = ep.season,
+                            episode = ep.episode,
+                            episodeName = ep.title,
+                            contentId = ep.seriesId,
+                            contentName = ep.seriesName
+                        )
+                    )
                 }
             )
         }

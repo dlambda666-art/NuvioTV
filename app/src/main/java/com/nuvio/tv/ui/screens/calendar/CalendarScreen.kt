@@ -55,7 +55,9 @@ import java.util.Locale
 @Composable
 fun CalendarScreen(
     viewModel: CalendarViewModel = hiltViewModel(),
-    onOpenEpisode: (seriesId: String, addonBaseUrl: String?, season: Int, episode: Int) -> Unit
+    onOpenEpisode: (seriesId: String, addonBaseUrl: String?, season: Int, episode: Int) -> Unit,
+    // 26/11 (David : « on peut pas lancer depuis le calendrier ») : un épisode sorti se lance directement
+    onPlayEpisode: (com.nuvio.tv.core.calendar.CalendarEpisode) -> Unit = { onOpenEpisode(it.seriesId, it.addonBaseUrl, it.season, it.episode) }
 ) {
     val state by viewModel.state.collectAsState()
     val bells by viewModel.bells.collectAsState()
@@ -140,7 +142,7 @@ fun CalendarScreen(
                     dateText = dayLabel(ep, today, zone) + timeSuffix(ep, zone),
                     vf = state.vf[ep.key] ?: VfState.CHECKING,
                     bellOn = ep.seriesId in bells,
-                    onOpen = { onOpenEpisode(ep.seriesId, ep.addonBaseUrl, ep.season, ep.episode) },
+                    onOpen = { onPlayEpisode(ep) },
                     onBell = { viewModel.toggleBell(ep.seriesId) },
                     modifier = if (isFirst) Modifier.focusRequester(firstFocus) else Modifier
                 )
