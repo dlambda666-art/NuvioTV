@@ -202,6 +202,19 @@ object AbattoirSound666 {
         runCatching { p.release() }
     }
 
+    /**
+     * 26/11 (David : pertes de son au début des films, en bas avec la barre de son) : un film démarre →
+     * plus aucun lecteur de l'Abattoir ouvert (ni Machine Head en fin de fondu, ni celui préparé
+     * d'avance pendant le cinéma) : une seule sortie son, celle du film.
+     */
+    fun onFilmStart() {
+        handler.post {
+            stop()
+            ready?.let { old -> runCatching { old.release() } }
+            ready = null; readyUri = null
+        }
+    }
+
     private val AUDIO_EXT = Regex("""\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|wma|amr)$""", RegexOption.IGNORE_CASE)
 
     /** Règle pure (testée) : ce nom de fichier est-il un son ? */

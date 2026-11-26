@@ -1015,6 +1015,7 @@ internal fun PlayerRuntimeController.initializePlayer(
             delay(PLAYER_REBUILD_SETTLE_DELAY_MS)
             // 26/11 (David : pertes de son au début des films, en bas) : journal du son pour le Rapport
             runCatching { com.nuvio.tv.core.tools.Son666.start(context, title) }
+            runCatching { com.nuvio.tv.ui.screens.home.AbattoirSound666.onFilmStart() }
 
             _exoPlayer = if (useLibass) {
                 val playerDataSourceFactory = PlayerPlaybackNetworking.createDataSourceFactory(context, headers)
