@@ -585,19 +585,32 @@ async function fromAllDebridAccount(imdbId, isTv, season, episode) {
 // 666TVF (26/11, David : « le Raw je l'ai mis sur TorBox depuis hier ») : ton compte TorBox comme source,
 // comme AllDebrid. Ce que tu y as ajouté (le Raw de SkY pris sur YGG…) et qui est prêt sort chez Comet666 (⚡).
 // La clé est prêtée par 666TVF le temps de la recherche (jamais écrite ici ni enregistrée).
+// 26/11 : ce que le compte TorBox a donné (pour l'enquête, en 1re ligne)
+var TB_STATS = null;
 function parseTorboxAccount(data, titles, year, isTv, season, episode) {
     var list = (data && data.data) || [];
     if (!Array.isArray(list)) list = [list];
     var out = [];
+    var st = { total: 0, ready: 0, title: 0, episode: 0, near: '' };
+    TB_STATS = st;
     list.forEach(function (t) {
         if (!t) return;
+        st.total++;
         var hash = String(t.hash || '').toLowerCase();
         var name = String(t.name || '');
         var ready = t.download_finished === true || t.download_present === true ||
             /^(completed|cached|uploading|seeding)/i.test(String(t.download_state || ''));
         if (!ready || !/^[0-9a-f]{40}$/.test(hash) || !name) return;
-        if (!releaseMatches(name, titles, year, isTv)) return;
-        if (isTv && !matchesEpisode(name, season, episode)) return;
+        st.ready++;
+        if (!releaseMatches(name, titles, year, isTv)) {
+            // un nom qui ressemble (un mot du titre) : montré dans l'enquête
+            var w = normTitle(titles[0] || '').split(' ').filter(function (x) { return x.length >= 3; });
+            if (!st.near && w.some(function (x) { return (' ' + normTitle(name) + ' ').indexOf(' ' + x + ' ') >= 0; })) st.near = name;
+            return;
+        }
+        st.title++;
+        if (isTv && !matchesEpisode(name, season, episode)) { if (!st.near) st.near = name; return; }
+        st.episode++;
         out.push({ hash: hash, release: name, text: name, bytes: Number(t.size) || 0, seeders: null,
             source: 'TorBox ⚡ (ton compte)', cached: true, frTitle: frenchTitleOnly(name, titles) });
     });
@@ -605,14 +618,15 @@ function parseTorboxAccount(data, titles, year, isTv, season, episode) {
 }
 async function fromTorboxAccount(imdbId, isTv, season, episode) {
     var key = setting('torbox_auto');
+    TB_STATS = { nokey: !key };
     if (!key) return [];
     var meta = await frankMeta(imdbId, isTv, season, episode);
     var titles = (meta && meta.titles) || [];
-    if (!titles.length) return [];
+    if (!titles.length) { TB_STATS = { notitle: true }; return []; }
     try {
         var res = await fetch('https://api.torbox.app/v1/api/torrents/mylist?bypass_cache=true',
             { headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + key } });
-        if (!res || !res.ok) return [];
+        if (!res || !res.ok) { TB_STATS = { http: res ? res.status : 0 }; return []; }
         return parseTorboxAccount(await res.json(), titles, meta && meta.year ? Number(meta.year) : 0, isTv, season, episode);
     } catch (e) {
         console.log('Comet666 compte TorBox : ' + (e && e.message));
@@ -750,13 +764,21 @@ function investigation(why, ygg) {
     if (ygg && ygg.cut) parts.push('YggReborn : recherches coupées (trop long)');
     if (TIMING && TIMING.slow.length) parts.push('⏱ lent : ' + TIMING.slow.join(' · '));
     if (TIMING && TIMING.skipped.length) parts.push('⏱ pas interrogé (temps écoulé) : ' + TIMING.skipped.join(', '));
+    // 26/11 : le compte TorBox en tête (le Raw que tu y as ajouté sort-il ?)
+    if (TB_STATS) {
+        var tb = TB_STATS;
+        parts.unshift('TorBox ton compte : ' + (tb.nokey ? 'pas de clé TorBox prêtée par Frank' : tb.notitle ? 'titre de la fiche inconnu' :
+            tb.http !== undefined ? 'refusé (HTTP ' + tb.http + ')' :
+            tb.total + ' torrents · ' + tb.ready + ' prêts · ' + tb.title + ' bon titre · ' + tb.episode + ' bon épisode' +
+            (tb.near ? ' · proche : ' + String(tb.near).slice(0, 40) : '')) + ' · v' + COMET_VERSION + (AIR_DATE ? ' · ' + AIR_DATE : ''));
+    }
     if (!parts.length) parts.push('aucune source n\'a répondu');
     return lines.concat(parts.slice(0, 7)).map(function (l) { return l.slice(0, 90); });
 }
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.23';
+var COMET_VERSION = '1.1.33';
 async function trace(data) { }   // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
