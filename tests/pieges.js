@@ -471,6 +471,17 @@ const cases = [
         if (!ok || old || none) { fails++; console.log('✗ Épisode daté → bon jour ' + ok + ' · autre date ' + old + ' · sans date connue ' + none); }
         else console.log('✓ SmackDown daté : bon jour gardé, 31/10 écarté, rien sans date de diffusion');
     }
+    // Raw du 24/11 (26/11) : release à la française « WWE.RAW.24.11.2026.FRENCH » écartée → pas de cri
+    {
+        comet._setAirDate('2026-11-24');
+        const ok = comet._matchesEpisode('WWE.RAW.24.11.2026.FRENCH.1080p.WEB.H264-TFA', 34, 47);
+        const old = comet._matchesEpisode('WWE.RAW.17.11.2026.FRENCH.1080p.WEB.H264-TFA', 34, 47);
+        const space = comet._matchesEpisode('WWE Raw 24 11 2026 VFF 1080p', 34, 47);
+        comet._setAirDate(null);
+        const q = comet._yggQueries(['WWE Raw S34E47'], ['WWE Raw'], 1993, true, 34, 47, '2026-11-24');
+        if (!ok || old || !space || q.indexOf('WWE Raw 24.11.2026') < 0) { fails++; console.log('✗ Raw à la française → bon jour ' + ok + ' · 17/11 ' + old + ' · espaces ' + space + ' · ' + JSON.stringify(q)); }
+        else console.log('✓ Raw « 24.11.2026 » reconnu (17/11 écarté), et YGG cherché aussi « WWE Raw 24.11.2026 »');
+    }
     // Guetteur films (08/11) : une seule recherche YggReborn (titre FR) → releases au titre original ratées
     {
         const q = comet._yggQueries(["L'Odyssée 2026"], ["L'Odyssée", 'The Odyssey'], 2026, false);

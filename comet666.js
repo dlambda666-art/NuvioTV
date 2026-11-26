@@ -157,7 +157,8 @@ function matchesEpisode(title, season, episode) {
         return parseInt(sOnly[1], 10) === season;
     }
     // 666TVF (07/11) : émission datée sans SxxEyy (« WWE.SmackDown.2026.11.06 ») : le bon jour = le bon épisode
-    if (AIR_DATE && /\b20\d\d[ ._-]\d\d[ ._-]\d\d\b/.test(t)) return !dateMismatch(t, AIR_DATE);
+    // 666TVF (26/11) : aussi les dates à la française (« WWE.RAW.24.11.2026.FRENCH ») : le Raw du 24/11 était écarté
+    if (AIR_DATE && (/\b20\d\d[ ._-]\d\d[ ._-]\d\d\b/.test(t) || DMY_RE.test(t))) return !dateMismatch(t, AIR_DATE);
     return /\b(INTEGRALE|COMPLETE|COMPLETA|INT[ÉE]GRALE)\b/i.test(t);
 }
 
@@ -177,13 +178,20 @@ async function episodeAirDate(tmdbId, season, episode) {
 }
 
 // Vrai si le nom porte une date (2026.10.19) qui n'est pas celle de l'épisode (± 1 jour 1/2).
+// 666TVF (26/11) : date à la française « 24.11.2026 » (jour.mois.année)
+var DMY_RE = /(^|[^\d])(\d{1,2})[ ._-](\d{1,2})[ ._-](20\d\d)(?!\d)/;
 function dateMismatch(text, airDate) {
     if (!airDate) return false;
     var target = Date.parse(airDate + 'T00:00:00Z');
     if (isNaN(target)) return false;
-    var re = /\b(20\d\d)[ ._-](\d\d)[ ._-](\d\d)\b/g, m, any = false;
-    while ((m = re.exec(String(text)))) {
-        var d = Date.parse(m[1] + '-' + m[2] + '-' + m[3] + 'T00:00:00Z');
+    var dates = [], m;
+    var re = /\b(20\d\d)[ ._-](\d\d)[ ._-](\d\d)\b/g;
+    while ((m = re.exec(String(text)))) dates.push(m[1] + '-' + m[2] + '-' + m[3]);
+    var re2 = /(^|[^\d])(\d{1,2})[ ._-](\d{1,2})[ ._-](20\d\d)(?!\d)/g;
+    while ((m = re2.exec(String(text)))) dates.push(m[4] + '-' + pad2(parseInt(m[3], 10)) + '-' + pad2(parseInt(m[2], 10)));
+    var any = false;
+    for (var i = 0; i < dates.length; i++) {
+        var d = Date.parse(dates[i] + 'T00:00:00Z');
         if (isNaN(d)) continue;
         any = true;
         if (Math.abs(d - target) <= 36 * 3600 * 1000) return false;
@@ -422,8 +430,10 @@ function yggQueries(frankQueries, titles, year, isTv, season, episode, airDate) 
     if (isTv && airDate && /^\d{4}-\d\d-\d\d$/.test(airDate)) {
         var dot = airDate.replace(/-/g, '.');
         exact.slice(0, 1).forEach(variants);
+        // 26/11 : et à la française (« WWE Raw 24.11.2026 »)
+        var dmy = airDate.slice(8, 10) + '.' + airDate.slice(5, 7) + '.' + airDate.slice(0, 4);
         titles.map(stripAccents).filter(function (t, i, a) { return t && a.indexOf(t) === i; }).slice(0, 2)
-            .forEach(function (t) { add(t + ' ' + dot); });
+            .forEach(function (t) { add(t + ' ' + dot); add(t + ' ' + dmy); });
     }
     exact.forEach(variants);
     // 666TVF (08/11) : films — Frank ne donnait souvent qu'UNE recherche (titre français) : le guetteur

@@ -8,7 +8,7 @@
       "id": "comet666",
       "name": "Comet666",
       "description": "Torrents en VF, lus via TorBox/AllDebrid. Tes trackers C411 / Tr4ker / YggReborn (clés dans Plugins → « mes sources »), puis StremThru, Torrentio, Zilean, TorrentsDB. Jamais de P2P.",
-      "version": "1.1.29",
+      "version": "1.1.30",
       "filename": "comet666.js",
       "supportedTypes": [
         "movie",
