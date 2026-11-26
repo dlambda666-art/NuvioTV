@@ -61,4 +61,17 @@ class CalendarVfRule666Test {
         assertTrue(line.startsWith("Comet666 : 4 trouvé(s) · écartés : 3 720p ou moins, 1 autre date → rien de valable"))
         assertFalse(com.nuvio.tv.core.tools.Rapport666.looksSecret(com.nuvio.tv.core.tools.Rapport666.clean(line)))
     }
+
+    // 26/11 : le cri dit NXT S20E47 (TMDB), la fiche Cinemeta appelle le NXT du 25/11 S20E51 → on lance S20E51
+    @Test fun `lancer depuis le calendrier retrouve l'episode de la fiche du meme jour`() {
+        fun at(s: String) = java.time.Instant.parse(s)
+        val fiche = listOf(
+            Triple("tt1:20:47", 20 to 47, at("2026-10-29T00:00:00Z")),
+            Triple("tt1:20:50", 20 to 50, at("2026-11-19T01:00:00Z")),
+            Triple("tt1:20:51", 20 to 51, at("2026-11-26T01:00:00Z"))
+        )
+        val got = pickSameDay666(fiche, 20, at("2026-11-26T01:00:00Z"))
+        org.junit.Assert.assertEquals("tt1:20:51", got?.first)
+        org.junit.Assert.assertNull(pickSameDay666(fiche, 20, at("2026-12-10T01:00:00Z")))
+    }
 }

@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -60,6 +61,7 @@ fun CalendarScreen(
     onPlayEpisode: (com.nuvio.tv.core.calendar.CalendarEpisode) -> Unit = { onOpenEpisode(it.seriesId, it.addonBaseUrl, it.season, it.episode) }
 ) {
     val state by viewModel.state.collectAsState()
+    val playScope666 = androidx.compose.runtime.rememberCoroutineScope()
     val bells by viewModel.bells.collectAsState()
     val firstFocus = remember { FocusRequester() }
     val zone = remember { ZoneId.systemDefault() }
@@ -142,7 +144,7 @@ fun CalendarScreen(
                     dateText = dayLabel(ep, today, zone) + timeSuffix(ep, zone),
                     vf = state.vf[ep.key] ?: VfState.CHECKING,
                     bellOn = ep.seriesId in bells,
-                    onOpen = { onPlayEpisode(ep) },
+                    onOpen = { playScope666.launch { onPlayEpisode(viewModel.playTarget(ep)) }; Unit },
                     onBell = { viewModel.toggleBell(ep.seriesId) },
                     modifier = if (isFirst) Modifier.focusRequester(firstFocus) else Modifier
                 )

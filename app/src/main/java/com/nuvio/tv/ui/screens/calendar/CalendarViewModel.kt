@@ -112,4 +112,7 @@ class CalendarViewModel @Inject constructor(
 
 /** Règle pure (testée) : les épisodes affichés dont la VF est connue passent en « dispo » ; rien d'autre ne bouge. */
 internal fun applyKnownVf666(vf: Map<String, VfState>, known: Set<String>): Map<String, VfState> =
-    vf.mapValues { (key, state) -> if (key in known) VfState.AVAILABLE else state }
+    vf.mapValues { (key, state) -> if (key in known) VfState.AVAILABLE else state 
+    /** 26/11 : l'épisode à lancer (numérotation de la fiche, même jour de diffusion). */
+    suspend fun playTarget(ep: com.nuvio.tv.core.calendar.CalendarEpisode) = repository.playTarget666(ep)
+}

@@ -216,6 +216,30 @@ class CalendarRepository @Inject constructor(
     }
 
     /**
+     * 26/11 (NXT : le calendrier dit S20E47 — numérotation TMDB, sans les PLE —, la fiche Cinemeta appelle
+     * le même NXT du 25/11 S20E51) : pour LANCER depuis le calendrier, on retrouve l'épisode de la fiche
+     * diffusé le même jour (± 1 jour) et on lance celui-là. Sinon l'épisode du calendrier tel quel.
+     */
+    suspend fun playTarget666(ep: CalendarEpisode): CalendarEpisode = runCatching {
+        val meta: Meta = withTimeoutOrNull(10_000) {
+            metaRepository.getMetaFromPrimaryAddon("series", ep.seriesId)
+                .firstOrNull { it is NetworkResult.Success || it is NetworkResult.Error }
+                ?.let { (it as? NetworkResult.Success)?.data }
+                ?.takeIf { it.videos.isNotEmpty() }
+        } ?: cinemeta666(ep.seriesId) ?: return@runCatching ep
+        val target = pickSameDay666(
+            meta.videos.mapNotNull { v ->
+                val s = v.season ?: return@mapNotNull null
+                val e = v.episode ?: return@mapNotNull null
+                val at = parseEpisodeReleaseInstant(v.released) ?: return@mapNotNull null
+                Triple(v.id, s to e, at)
+            },
+            ep.season, ep.airInstant
+        ) ?: return@runCatching ep
+        ep.copy(season = target.second.first, episode = target.second.second, videoId = target.first.takeIf { it.isNotBlank() })
+    }.getOrDefault(ep)
+
+    /**
      * 666TVF (09/11) : aiometa retiré — les épisodes viennent de Cinemeta, demandé directement (même s'il
      * n'est pas activé dans les addons) ; un id TMDB est d'abord traduit en id IMDb.
      */
@@ -586,3 +610,13 @@ internal fun isFastVf666(airMs: Long, announcedMs: Long): Boolean =
 /** 666TVF : toujours sans VF entre 18 h et 72 h après la diffusion → retard à signaler. */
 internal fun isLateVf666(airMs: Long, nowMs: Long): Boolean =
     nowMs - airMs in (18L * 3600_000)..(72L * 3600_000)
+
+/** 26/11 — règle pure (testée) : l'épisode de la fiche diffusé le même jour (± 36 h), même saison d'abord. */
+internal fun pickSameDay666(
+    videos: List<Triple<String, Pair<Int, Int>, java.time.Instant>>,
+    season: Int,
+    air: java.time.Instant
+): Triple<String, Pair<Int, Int>, java.time.Instant>? {
+    val near = videos.filter { kotlin.math.abs(java.time.Duration.between(it.third, air).toHours()) <= 36 }
+    return near.sortedWith(compareBy({ if (it.second.first == season) 0 else 1 }, { kotlin.math.abs(java.time.Duration.between(it.third, air).toMinutes()) })).firstOrNull()
+}
