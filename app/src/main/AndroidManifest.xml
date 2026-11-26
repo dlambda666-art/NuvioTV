@@ -190,17 +190,6 @@
             </intent-filter>
         </activity>
 
-        <!-- 24/11 (David) : M6+ dans Frank (son compte M6+, direct + replay) -->
-        <activity
-            android:name=".ui.screens.livetv.M6Plus666Activity"
-            android:exported="false"
-            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|uiMode|keyboard|keyboardHidden|navigation|layoutDirection|fontScale|locale"
-            android:theme="@style/Theme.MyApplication" />
-        <activity
-            android:name=".ui.screens.livetv.M6Plus666PlayerActivity"
-            android:exported="false"
-            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|uiMode|keyboard|keyboardHidden|navigation|layoutDirection|fontScale|locale"
-            android:theme="@style/Theme.MyApplication" />
         <activity
             android:name=".launcher.AppIconDefault"
             android:banner="@mipmap/banner"

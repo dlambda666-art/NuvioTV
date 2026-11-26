@@ -92,7 +92,7 @@ class Roulette666ViewModel @Inject constructor(
             runCatching {
                 val url = "https://api.themoviedb.org/3/discover/movie?api_key=$key&language=fr-FR&with_genres=27" +
                     "&primary_release_date.gte=1930-01-01&primary_release_date.lte=1990-12-31&vote_count.gte=25" +
-                    "&without_genres=99,10770&watch_region=FR&with_watch_monetization_types=flatrate%7Cfree%7Cads%7Crent%7Cbuy" +
+                    "&without_genres=99,10770,10749&watch_region=FR&with_watch_monetization_types=flatrate%7Cfree%7Cads%7Crent%7Cbuy" +
                     "&sort_by=vote_count.desc&include_adult=false&page=$page"
                 val raw = com.nuvio.tv.core.tools.Http666.get(url, 20_000) ?: return@runCatching emptyList()
                 val arr = JSONObject(raw).optJSONArray("results") ?: return@runCatching emptyList()

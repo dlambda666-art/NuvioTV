@@ -1732,11 +1732,8 @@ open class MainActivity : ComponentActivity() {
         // 23/11 (David) : et aussi en revenant d'Orange TV ou d'une autre appli
         val away666 = com.nuvio.tv.core.wake.WakeLaunch666.backgroundSince.let { if (it > 0) System.currentTimeMillis() - it else -1L }
         com.nuvio.tv.core.wake.WakeLaunch666.backgroundSince = 0L
-        // 24/11 : retour de l'écran M6+ de Frank : ce n'est pas « une autre appli », pas de cinéma
-        val fromM6Plus666 = com.nuvio.tv.ui.screens.livetv.M6Plus666Activity.ownScreenOpened
-        com.nuvio.tv.ui.screens.livetv.M6Plus666Activity.ownScreenOpened = false
         val fromOtherApp666 = away666 >= 0 && com.nuvio.tv.core.wake.WakeLaunch666.replayCinemaAfterOtherApp(
-            away666, com.nuvio.tv.core.tools.Announce666.inPlayer(), externalPlaybackTracker.awaitingExternal666 || externalPlaybackTracker.isTracking || fromM6Plus666
+            away666, com.nuvio.tv.core.tools.Announce666.inPlayer(), externalPlaybackTracker.awaitingExternal666 || externalPlaybackTracker.isTracking
         )
         if (com.nuvio.tv.core.wake.WakeLaunch666.screenWentOff || fromOtherApp666) {
             com.nuvio.tv.core.wake.WakeLaunch666.screenWentOff = false

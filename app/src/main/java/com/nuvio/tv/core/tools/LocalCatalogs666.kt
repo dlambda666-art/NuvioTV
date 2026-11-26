@@ -49,6 +49,9 @@ object LocalCatalogs666 {
         POURTOI -> "Pour toi, Lambda"
         UPCOMING -> if (type == "series") "Séries à venir" else "Prochainement"
         AVOIR -> if (type == "series") "Séries à voir en VF" else "À voir en VF"
+        // 26/11 : noms des onglets Top 10 dans le Cimetière, même avant que l'accueil les ait calculés
+        Top10Folder666.FILMS_ADDON -> "Top 10 VF de la semaine"
+        Top10Folder666.SERIES_ADDON -> "Top 10 séries VF de la semaine"
         else -> null
     }
 
@@ -120,11 +123,11 @@ object LocalCatalogs666 {
         val sources = mapOf(
             "movie" to (1..2).map { page ->
                 "/discover/movie?language=fr-FR&region=FR&with_release_type=4%7C5&release_date.gte=${today.minusDays(30)}" +
-                    "&release_date.lte=$today&without_genres=99%2C10770&sort_by=popularity.desc&include_adult=false&page=$page"
+                    "&release_date.lte=$today&without_genres=99%2C10770%2C10749&sort_by=popularity.desc&include_adult=false&page=$page"
             },
             "series" to (1..2).map { page ->
                 "/discover/tv?language=fr-FR&watch_region=FR&with_watch_monetization_types=flatrate%7Cfree%7Cads&air_date.gte=${today.minusDays(14)}" +
-                    "&air_date.lte=$today&without_genres=99%2C10763%2C10764%2C10767%2C10762&vote_count.gte=10&sort_by=popularity.desc&page=$page"
+                    "&air_date.lte=$today&without_genres=99%2C10763%2C10764%2C10766%2C10767%2C10762&vote_count.gte=10&sort_by=popularity.desc&page=$page"
             }
         )
         // 666TVF (11/11) : d'abord les derniers ajouts EN VF de French-Stream (son flux de nouveautés)
@@ -210,7 +213,8 @@ object LocalCatalogs666 {
         }
     }
 
-    private val EXCLUDED_GENRES = setOf(99, 10770, 10763, 10764, 10767, 10762)
+    // 26/11 (David) : plus aucune romance (10749), ni soap / télénovela (10766)
+    private val EXCLUDED_GENRES = setOf(99, 10770, 10763, 10764, 10767, 10762, 10749, 10766)
     private val SPORT = Regex("""\b(UFC|WWE|AEW|NXT|Bellator|PFL|ONE Championship|SmackDown|Raw|WrestleMania|Royal Rumble|Formule 1|F1|Grand Prix|MotoGP|NBA|NFL|Ligue 1|Champions League)\b""", RegexOption.IGNORE_CASE)
 
     private suspend fun refreshPourToi(repo: WatchProgressRepository) = withContext(Dispatchers.IO) {
@@ -325,12 +329,14 @@ object LocalCatalogs666 {
         val today = LocalDate.now()
         val paths = if (t == "movie") (1..3).map { "/movie/upcoming?language=fr-FR&region=FR&page=$it" }
         else (1..2).map { "/discover/tv?language=fr-FR&first_air_date.gte=${today.plusDays(1)}&first_air_date.lte=${today.plusDays(120)}" +
-            "&without_genres=99%2C10763%2C10764%2C10767%2C10762&sort_by=popularity.desc&page=$it" }
+            "&without_genres=99%2C10763%2C10764%2C10766%2C10767%2C10762&sort_by=popularity.desc&page=$it" }
         val ct = if (t == "series") ContentType.SERIES else ContentType.MOVIE
         val items = paths.flatMap { path ->
             val arr = tmdb(path, key)?.optJSONArray("results") ?: return@flatMap emptyList()
             (0 until arr.length()).mapNotNull { i ->
                 val o = arr.optJSONObject(i) ?: return@mapNotNull null
+                // 26/11 (David) : pas de romance ni de soap dans Prochainement
+                if (o.genreIds().any { it in EXCLUDED_GENRES }) return@mapNotNull null
                 val date = o.optString("release_date").ifBlank { o.optString("first_air_date") }
                 if (date.isBlank() || date <= today.toString()) return@mapNotNull null
                 val id = o.optInt("id").takeIf { it > 0 } ?: return@mapNotNull null

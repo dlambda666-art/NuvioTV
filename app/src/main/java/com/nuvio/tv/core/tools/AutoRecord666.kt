@@ -400,6 +400,8 @@ class AutoRecord666 @Inject constructor(
                     !StreamAutoPlaySelector.autoPlayBlocked(s, season, episode)
             }.sortedWith(
                 compareBy<IndexedValue<Stream>> { StreamAutoPlaySelector.episodeRank(it.value, season, episode) }
+                    // 26/11 (David) : pas de REMUX enregistré s'il y a autre chose (buffering, fichier énorme)
+                    .thenBy { if (StreamAutoPlaySelector.isRemux(it.value)) 1 else 0 }
                     .thenBy { it.index }
             ).map { it.value }
 

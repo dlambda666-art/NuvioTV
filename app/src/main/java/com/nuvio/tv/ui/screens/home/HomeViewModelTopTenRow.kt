@@ -32,6 +32,8 @@ internal fun HomeViewModel.observeTopTenVfRow() {
             runCatching { com.nuvio.tv.core.tools.FrankFree666.applyAccueil1111(appContext, collectionsDataStore) }
             runCatching { com.nuvio.tv.core.tools.FrankFree666.applyAVoir1411(appContext, collectionsDataStore) }
         }
+        // 666TVF (26/11, David) : une seule pierre, le Cimetière (une fois)
+        runCatching { com.nuvio.tv.core.tools.FrankFree666.applyAccueil2611(appContext, collectionsDataStore) }
         delay(6_000L)
         while (true) {
             val row = runCatching { buildTopTenVfRow() }.getOrNull()

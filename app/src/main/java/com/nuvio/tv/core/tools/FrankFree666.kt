@@ -375,6 +375,66 @@ object FrankFree666 {
         prefs.edit().putBoolean("avoir1411", true).apply()
     }
 
+    // ---------- Accueil du 26/11 (demande de David) ----------
+    // Sous l'Abattoir (la morgue = Continuer à regarder) : une seule pierre qui se lève, « Cimetière ».
+    // Dedans, dans l'ordre : Top 10 (films, séries) · Pour toi, Lambda · Shudder · Prochainement.
+    // Tout le reste part (Horreur et ses onglets, En VF cette semaine / À voir en VF, autres tuiles).
+    // TV en direct, Enregistrements et Roulette restent dans le menu.
+
+    const val CIMETIERE_ID = "666cimetiere"
+    const val CIMETIERE_TITLE = "Cimetière"
+
+    fun isCimetiere(f: CollectionFolder) = f.id == CIMETIERE_ID
+
+    /** Plan pur (testé). Null si déjà fait ou si rien de reconnu. */
+    fun accueil2611(cols: List<Collection>): List<Collection>? {
+        val all = cols.flatMap { it.folders }
+        if (all.any(::isCimetiere)) return null
+        val top10 = all.firstOrNull { Top10Folder666.isTop10(it) }
+        val pourToi = all.firstOrNull(::isPourToiTile)
+        val shudder = all.firstOrNull(::isShudderTile)
+        val coming = all.firstOrNull(::isComingTile)
+        val horror = all.firstOrNull { HomeReorg666.isHorror(it) }
+        val parts = listOfNotNull(top10 ?: Top10Folder666.folder(null), pourToi, shudder, coming)
+        val sources = parts.flatMap { it.sources }.distinct().map(::noRomance)
+        if (pourToi == null && shudder == null && coming == null) return null
+        // la pierre : la porte « Horreur » actuelle (même dalle qui se lève), sinon la 1re tuile
+        val like = horror ?: pourToi ?: shudder ?: coming!!
+        val stone = like.copy(
+            id = CIMETIERE_ID, title = CIMETIERE_TITLE, coverImageUrl = HomeReorg666.PORTE_COVER,
+            focusGifUrl = null, titleLogoUrl = null, hideTitle = false, sources = sources
+        )
+        val row = cols.firstOrNull { c -> c.folders.any { it.id == like.id } } ?: cols.first()
+        return listOf(row.copy(showAllTab = false, folders = listOf(stone)))
+    }
+
+    /** 26/11 : une liste TMDB de films (Shudder…) n'amène jamais de romance (10749). */
+    fun noRomance(s: CollectionSource): CollectionSource {
+        if (s !is TmdbCollectionSource || s.mediaType != TmdbCollectionMediaType.MOVIE) return s
+        val have = s.filters.withoutGenres.orEmpty().split(',', '|').map { it.trim() }.filter { it.isNotEmpty() }
+        if ("10749" in have) return s
+        return s.copy(filters = s.filters.copy(withoutGenres = (have + "10749").joinToString(",")))
+    }
+
+    /** Une seule fois ; l'accueil d'avant est gardé pour « Annuler la réorganisation » (Outils 666). */
+    suspend fun applyAccueil2611(context: Context, store: CollectionsDataStore) {
+        val prefs = context.getSharedPreferences("666tv_frankfree", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("accueil2611", false)) return
+        val current = runCatching { store.getCurrentCollections() }.getOrNull() ?: return
+        if (current.isEmpty()) return
+        val next = accueil2611(current)
+        if (next != null) {
+            // « Annuler » ramène l'accueil de juste avant (pas un plus ancien)
+            store.exportCurrentProfileJson()?.let {
+                context.getSharedPreferences("666tv_reorg", Context.MODE_PRIVATE).edit().putString("before", it).apply()
+            }
+            store.setCollections(next)
+            runCatching { pushCollections(context) }
+            runCatching { Announce666.log(context, "🏠 Accueil : une seule pierre, le Cimetière (Top 10, Pour toi, Shudder, Prochainement)", "accueil") }
+        }
+        prefs.edit().putBoolean("accueil2611", true).apply()
+    }
+
     /** Une seule fois ; sauvegarde pour « Annuler la réorganisation ». */
     suspend fun applyAccueil1111(context: Context, store: CollectionsDataStore) {
         val prefs = context.getSharedPreferences("666tv_frankfree", Context.MODE_PRIVATE)

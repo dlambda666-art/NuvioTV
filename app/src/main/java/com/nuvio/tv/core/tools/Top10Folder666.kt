@@ -43,6 +43,8 @@ object Top10Folder666 {
      */
     fun withTop10(collections: List<Collection>): List<Collection>? {
         if (collections.any { c -> c.folders.any(::isTop10) }) return null
+        // 26/11 : les Top 10 sont dans le Cimetière (ou ailleurs) : on ne remet pas de tuile
+        if (collections.any { c -> c.folders.any { f -> f.sources.any { it is AddonCatalogCollectionSource && isTop10Source(it.addonId) } } }) return null
         val idx = collections.indexOfFirst { c ->
             c.folders.any { HomeReorg666.isShudder(it) || HomeReorg666.isComingSoon(it) }
         }

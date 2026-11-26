@@ -49,12 +49,29 @@ object StreamAutoPlaySelector {
      */
     private fun dvOnlyLast666(group: AddonStreams): AddonStreams {
         val mixed = group.streams.mapNotNull { cavalier666(it) }.distinct().size > 1
-        if (!mixed && group.streams.none { isDvOnly(it) }) return group
+        if (!mixed && group.streams.none { isDvOnly(it) || isRemux(it) }) return group
         return group.copy(streams = group.streams.sortedWith(
-            compareBy<Stream> { if (mixed) cavalier666(it)?.let(::plugin666Rank) ?: Int.MAX_VALUE else 0 }
-                .thenBy { if (isDvOnly(it)) 1 else 0 }
+            compareBy<Stream> { lastBucket666(it) }
+                .thenBy { if (mixed) cavalier666(it)?.let(::plugin666Rank) ?: Int.MAX_VALUE else 0 }
         ))
     }
+
+    /**
+     * Règle pure (testée) — 26/11 (David) : les REMUX font du buffering même sur la Shield Pro
+     * (débit énorme), contrairement aux BluRay encodés, même en 4K. 0 = normal, 1 = REMUX
+     * (en bas de la liste), 2 = Dolby Vision sans HDR (tout en bas, image violette).
+     */
+    fun lastBucket666(stream: Stream): Int = when {
+        isDvOnly(stream) -> 2
+        isRemux(stream) -> 1
+        else -> 0
+    }
+
+    private val REMUX = Regex("""(?i)(?<![a-z0-9])remux(?![a-z0-9])""")
+
+    /** 26/11 : un REMUX (copie intégrale du Blu-ray, débit énorme). */
+    fun isRemux(stream: Stream): Boolean =
+        REMUX.containsMatchIn(listOfNotNull(stream.name, stream.title, stream.description, stream.behaviorHints?.filename).joinToString(" "))
 
     /**
      * 666TVF : le cavalier qui a fourni ce flux (Comet666, Lumio666…), même quand les plugins
@@ -331,6 +348,8 @@ object StreamAutoPlaySelector {
                 .sortedWith(
                     compareBy<Stream> { if (isUncertainFrench(it)) 1 else 0 }
                         .thenBy { episodeRank(it, season, episode) }
+                        // 26/11 (David) : un REMUX seulement s'il n'y a rien d'autre (buffering)
+                        .thenBy { if (isRemux(it)) 1 else 0 }
                         // 666TVF : équipe de release qui a déjà marché sur cette série
                         .thenBy { com.nuvio.tv.core.tools.Proven666.activeRank(it) }
                         // 666TVF (11/11) : un 1080p prêt passe avant un 4K à télécharger

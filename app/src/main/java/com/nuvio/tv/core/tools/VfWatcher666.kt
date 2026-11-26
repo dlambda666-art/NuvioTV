@@ -351,7 +351,7 @@ class VfWatcher666 @Inject constructor(
         for (region in listOf("FR", "US")) for (page in 1..2) {
             val url = "https://api.themoviedb.org/3/discover/movie?api_key=$key&language=fr-FR&region=$region" +
                 "&with_release_type=4%7C5&release_date.gte=$from&release_date.lte=$today" +
-                "&without_genres=99%2C10770&sort_by=popularity.desc&include_adult=false&page=$page"
+                "&without_genres=99%2C10770%2C10749&sort_by=popularity.desc&include_adult=false&page=$page"
             val raw = Http666.get(url, 20_000) ?: continue
             parseDiscover(raw).forEach { seen.putIfAbsent(it.tmdbId, it) }
         }
@@ -364,7 +364,7 @@ class VfWatcher666 @Inject constructor(
         for (region in listOf("FR", "US")) {
             val url = "https://api.themoviedb.org/3/discover/movie?api_key=$key&language=fr-FR&region=$region" +
                 "&with_release_type=2%7C3&release_date.gte=$cinemaFrom&release_date.lte=$today" +
-                "&without_genres=99%2C10770&sort_by=popularity.desc&include_adult=false&page=1"
+                "&without_genres=99%2C10770%2C10749&sort_by=popularity.desc&include_adult=false&page=1"
             val raw = Http666.get(url, 20_000) ?: continue
             parseDiscover(raw).forEach { if (it.tmdbId !in seen) cinema.putIfAbsent(it.tmdbId, it) }
         }

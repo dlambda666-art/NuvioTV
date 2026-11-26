@@ -211,4 +211,31 @@ class FrankFree666Test {
         org.junit.Assert.assertEquals(listOf(last), out[0].folders[1].sources)   // les autres tuiles : pas touchées
         org.junit.Assert.assertNull(FrankFree666.aVoirTab(out))                   // une seule fois
     }
+
+    @Test fun `accueil du 26-11 - une seule pierre, le Cimetiere, Top 10 puis Pour toi, Shudder, Prochainement`() {
+        val vfw = AddonCatalogCollectionSource(LocalCatalogs666.VFWEEK, "movie", "vf-week")
+        val pt = AddonCatalogCollectionSource(LocalCatalogs666.POURTOI, "movie", "pour-toi")
+        val shudder = TmdbCollectionSource(sourceType = com.nuvio.tv.domain.model.TmdbCollectionSourceType.DISCOVER, title = "Shudder", mediaType = TmdbCollectionMediaType.MOVIE,
+            filters = com.nuvio.tv.domain.model.TmdbCollectionFilters(withWatchProviders = "99"))
+        val cs = AddonCatalogCollectionSource(LocalCatalogs666.UPCOMING, "movie", "upcoming")
+        val row = Collection(id = "r1", title = "1", folders = listOf(
+            CollectionFolder(id = "h", title = "Horreur", coverImageUrl = "x/PrRXbjxT.jpg", sources = listOf(vfw.copy(catalogId = "h"))),
+            CollectionFolder(id = "vf", title = "En VF", sources = listOf(vfw)),
+            CollectionFolder(id = "pt", title = "Pour toi", sources = listOf(pt)),
+            CollectionFolder(id = "sh", title = "Shudder", sources = listOf(shudder)),
+            Top10Folder666.folder(null),
+            CollectionFolder(id = "cs", title = "Prochainement", sources = listOf(cs))
+        ))
+        val other = Collection(id = "r2", title = "2", folders = listOf(CollectionFolder(id = "wwe", title = "WWE", sources = listOf(vfw.copy(catalogId = "w")))))
+        val out = FrankFree666.accueil2611(listOf(row, other))!!
+        assertEquals(1, out.size)
+        val stone = out[0].folders.single()
+        assertEquals(FrankFree666.CIMETIERE_ID, stone.id)
+        assertEquals(HomeReorg666.PORTE_COVER, stone.coverImageUrl)
+        assertEquals(Top10Folder666.folder(null).sources + listOf(pt, FrankFree666.noRomance(shudder), cs), stone.sources)
+        assertEquals("10749", (stone.sources[3] as TmdbCollectionSource).filters.withoutGenres)   // Shudder sans romance
+        assertFalse(out[0].showAllTab)
+        assertNull(FrankFree666.accueil2611(out))                 // une seule fois
+        assertNull(Top10Folder666.withTop10(out))                 // pas de tuile Top 10 remise à côté
+    }
 }

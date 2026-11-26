@@ -474,6 +474,29 @@ class StreamAutoPlaySelectorTest {
         assertEquals(any, StreamAutoPlaySelector.markUndated666(any, 34, 47))
     }
 
+    @Test
+    fun `26-11 les REMUX passent en bas de la liste et ne sont lances qu'en dernier recours`() {
+        val remux = stream("Les 4 cavaliers", url = "https://r", name = "Film.2024.1080p.BluRay.REMUX.MULTi.VFF-GRP")
+        val bluray = stream("Les 4 cavaliers", url = "https://b", name = "Film.2024.2160p.BluRay.x265.MULTi.VFF-GRP")
+        val web = stream("Les 4 cavaliers", url = "https://w", name = "Film.2024.1080p.WEB-DL.MULTi.VFF-GRP")
+        val dv = stream("Les 4 cavaliers", url = "https://d", name = "Film.2024.2160p.DV.WEB-DL.MULTi.VFF-GRP")
+        assertTrue(StreamAutoPlaySelector.isRemux(remux))
+        assertTrue(!StreamAutoPlaySelector.isRemux(bluray))
+        assertTrue(!StreamAutoPlaySelector.isRemux(stream("x", name = "Remuxed.Show.S01E01.1080p")))
+        val ordered = StreamAutoPlaySelector.orderAddonStreams(listOf(addonStreams("Les 4 cavaliers", remux, dv, bluray, web)), emptyList())
+        assertEquals(listOf(bluray, web, remux, dv), ordered.single().streams)
+        val auto = StreamAutoPlaySelector.selectAutoPlayStream(
+            streams = listOf(remux, web),
+            mode = StreamAutoPlayMode.FIRST_STREAM,
+            regexPattern = "",
+            source = StreamAutoPlaySource.ALL_SOURCES,
+            installedAddonNames = emptySet(),
+            selectedAddons = emptySet(),
+            selectedPlugins = emptySet()
+        )
+        assertEquals(web, auto)
+    }
+
     private fun stream(
         addonName: String,
         url: String? = null,

@@ -36,7 +36,9 @@ private val PORTES_666 = listOf(
     "maisons hantees" to R.drawable.title_maisons_hantees_666,
     "possessions" to R.drawable.title_possessions_666,
     "sorcellerie" to R.drawable.title_sorcellerie_666,
-    "horreur cosmique" to R.drawable.title_cosmique_666
+    "horreur cosmique" to R.drawable.title_cosmique_666,
+    // 26/11 : la pierre unique de l'accueil
+    "cimetiere" to R.drawable.title_cimetiere_666
 ).map { (key, title) -> BundledArt("\u0000", coverRes = R.drawable.tile_porte_666, focusGifRes = R.raw.anim_porte_666, titleLogoRes = title, titleKey = key, exact = true) }
 
 private val BUNDLED_ART = listOf(

@@ -238,7 +238,9 @@ interface TmdbApi {
         @Query("release_date.lte") releaseDateLte: String,
         @Query("sort_by") sortBy: String = "popularity.desc",
         @Query("vote_count.gte") voteCountGte: Int? = null,
-        @Query("page") page: Int = 1
+        @Query("page") page: Int = 1,
+        // 26/11 (David) : pas de romance dans le Top 10
+        @Query("without_genres") withoutGenres: String? = "10749"
     ): Response<TmdbDiscoverResponse>
 
     @GET("discover/tv")
