@@ -316,6 +316,13 @@ function sequelMismatch(release, titles) {
 function releaseMatches(release, titles, year, isTv) {
     var r = ' ' + normTitle(release) + ' ';
     var named = titles.some(function (t) { var n = normTitle(t); return n.length >= 2 && r.indexOf(' ' + n + ' ') >= 0; });
+    // 666TVF (26/11) : émission datée du bon jour : « WWE.Monday.Night.Raw.2026.11.16 » porte bien « WWE » et « Raw »
+    if (!named && isTv && AIR_DATE && !dateMismatch(release, AIR_DATE) && /\b20\d\d[ ._-]\d\d[ ._-]\d\d\b|(^|[^\d])\d{1,2}[ ._-]\d{1,2}[ ._-]20\d\d/.test(release)) {
+        named = titles.some(function (t) {
+            var words = normTitle(t).split(' ').filter(function (w) { return w.length >= 2; });
+            return words.length >= 2 && words.every(function (w) { return r.indexOf(' ' + w + ' ') >= 0; });
+        });
+    }
     if (!named) return false;
     if (!isTv && sequelMismatch(release, titles)) return false;
     if (isTv || !year) return true;
@@ -432,8 +439,12 @@ function yggQueries(frankQueries, titles, year, isTv, season, episode, airDate) 
         exact.slice(0, 1).forEach(variants);
         // 26/11 : et à la française (« WWE Raw 24.11.2026 »)
         var dmy = airDate.slice(8, 10) + '.' + airDate.slice(5, 7) + '.' + airDate.slice(0, 4);
-        titles.map(stripAccents).filter(function (t, i, a) { return t && a.indexOf(t) === i; }).slice(0, 2)
-            .forEach(function (t) { add(t + ' ' + dot); add(t + ' ' + dmy); });
+        var dated = titles.map(stripAccents).filter(function (t, i, a) { return t && a.indexOf(t) === i; });
+        dated.slice(0, 2).forEach(function (t) { add(t + ' ' + dot); });
+        // 26/11 (Raw du 24/11 rangé « WWE.RAW.2026.11.23 » sur YGG : jour américain) : la veille aussi,
+        // puis le titre seul (les plus récents remontent ; le bon jour est choisi ensuite par la date)
+        var prev = new Date(Date.parse(airDate + 'T00:00:00Z') - 86400000).toISOString().slice(0, 10).replace(/-/g, '.');
+        dated.slice(0, 1).forEach(function (t) { add(t + ' ' + prev); add(t); add(t + ' ' + dmy); });
     }
     exact.forEach(variants);
     // 666TVF (08/11) : films — Frank ne donnait souvent qu'UNE recherche (titre français) : le guetteur

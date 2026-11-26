@@ -482,6 +482,19 @@ const cases = [
         if (!ok || old || !space || q.indexOf('WWE Raw 24.11.2026') < 0) { fails++; console.log('✗ Raw à la française → bon jour ' + ok + ' · 17/11 ' + old + ' · espaces ' + space + ' · ' + JSON.stringify(q)); }
         else console.log('✓ Raw « 24.11.2026 » reconnu (17/11 écarté), et YGG cherché aussi « WWE Raw 24.11.2026 »');
     }
+    // Raw du 24/11 rangé « WWE.RAW.2026.11.23 » sur YGG (photo de David, 26/11) : veille + titre seul cherchés,
+    // « WWE.Monday.Night.Raw » reconnu le bon jour
+    {
+        const q = comet._yggQueries(['WWE Raw S34E47'], ['WWE Raw'], 1993, true, 34, 47, '2026-11-24');
+        const okQ = q.indexOf('WWE Raw 2026.11.23') >= 0 && q.indexOf('WWE Raw') >= 0 && q.indexOf('WWE Raw 2026.11.24') >= 0;
+        comet._setAirDate('2026-11-24');
+        const sky = comet._matchesEpisode('WWE.RAW.2026.11.23.1080p.NF.WEB-DL.MULTi.AAC2.0.HFR.H.265-SkY', 34, 47);
+        const monday = comet._releaseMatches('WWE.Monday.Night.Raw.2026.11.23.1080p.NF.WEB-DL.MULTi.AAC2.0.HFR.H.265-SkY', ['WWE Raw'], 1993, true);
+        const mondayOld = comet._releaseMatches('WWE.Monday.Night.Raw.2026.11.16.1080p.NF.WEB-DL.MULTi-SkY', ['WWE Raw'], 1993, true);
+        comet._setAirDate(null);
+        if (!okQ || !sky || !monday || mondayOld || q.length > 8) { fails++; console.log('✗ Raw YGG → ' + JSON.stringify(q) + ' · 23/11 ' + sky + ' · Monday Night ' + monday + ' · 16/11 ' + mondayOld); }
+        else console.log('✓ Raw du 24/11 : YGG cherché aussi la veille (2026.11.23) et par titre seul ; « Monday Night Raw » reconnu, le 16/11 écarté');
+    }
     // Guetteur films (08/11) : une seule recherche YggReborn (titre FR) → releases au titre original ratées
     {
         const q = comet._yggQueries(["L'Odyssée 2026"], ["L'Odyssée", 'The Odyssey'], 2026, false);
