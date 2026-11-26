@@ -60,6 +60,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -665,6 +666,22 @@ class StreamScreenViewModel @Inject constructor(
                 }
             }
 
+            // 26/11 (NXT cherché au 28/10) : fiche pas en cache (lancé depuis l'accueil, une annonce…) → on la
+            // demande (5 s max) pour connaître la vraie date de diffusion avant de lancer les cavaliers
+            if (season != null && episode != null && StreamAutoPlaySelector.airDateFor(season, episode) == null) {
+                runCatching {
+                    val metaId = contentId?.takeIf { it.isNotBlank() } ?: videoId.substringBefore(":")
+                    val meta = kotlinx.coroutines.withTimeoutOrNull(5_000) {
+                        metaRepository.getMetaFromPrimaryAddon(contentType, metaId)
+                            .firstOrNull { it is com.nuvio.tv.core.network.NetworkResult.Success || it is com.nuvio.tv.core.network.NetworkResult.Error }
+                            ?.let { (it as? com.nuvio.tv.core.network.NetworkResult.Success)?.data }
+                    }
+                    val released = meta?.videos
+                        ?.firstOrNull { it.id == videoId || (it.season == season && it.episode == episode) }
+                        ?.released?.take(10)?.takeIf { Regex("\\d{4}-\\d{2}-\\d{2}").matches(it) }
+                    if (released != null) StreamAutoPlaySelector.airDateHint666 = Triple(season, episode, released)
+                }
+            }
             val streamLoadInner = launch {
                 streamRepository.getStreamsFromAllAddons(
                     type = contentType,
