@@ -422,7 +422,8 @@ class CalendarRepository @Inject constructor(
                     // date) : Lumio renvoyait le SmackDown de la semaine passée sous un titre sans numéro.
                     val proof = sure.firstOrNull { r ->
                         r.url.startsWith("http", ignoreCase = true) &&
-                            CalendarVfRule666.namesEpisode(listOfNotNull(r.name, r.title).joinToString(" "), ps, pe, airDates666)
+                            CalendarVfRule666.namesEpisode(listOfNotNull(r.name, r.title).joinToString(" "), ps, pe, airDates666,
+                                dated = CalendarVfRule666.isDatedShow(episode.seriesName))
                     }
                     if (proof != null) {
                         trace666(episode, scraper.id, listOfNotNull(proof.name, proof.title).joinToString(" "), "lien prêt")

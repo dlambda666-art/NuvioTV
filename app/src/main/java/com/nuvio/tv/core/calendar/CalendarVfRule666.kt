@@ -41,6 +41,11 @@ object CalendarVfRule666 {
         return null
     }
 
+    private val DATED_SHOW = Regex("""(?i)\b(WWE|NXT|SmackDown|Raw|AEW|UFC|TNA|Dynamite|Collision)\b""")
+
+    /** 26/11 — règle pure (testée) : émission datée (les noms de sorties portent la date, pas SxxEyy). */
+    fun isDatedShow(seriesName: String?): Boolean = seriesName != null && DATED_SHOW.containsMatchIn(seriesName)
+
     private fun date(y: String, m: String, d: String): LocalDate? =
         runCatching { LocalDate.of(y.toInt(), m.toInt(), d.toInt()) }.getOrNull()
 
@@ -48,8 +53,10 @@ object CalendarVfRule666 {
      * Règle pure (testée) : le texte nomme-t-il CET épisode ? SxxEyy identique, ou une date de
      * diffusion (à un jour près). Un titre sans numéro ni date ne prouve rien.
      */
-    fun namesEpisode(text: String, season: Int?, episode: Int?, airDates: Set<LocalDate>): Boolean {
-        if (season != null && episode != null &&
+    fun namesEpisode(text: String, season: Int?, episode: Int?, airDates: Set<LocalDate>, dated: Boolean = false): Boolean {
+        // 26/11 (faux cri NXT S20E47 : pas encore sorti sur YGG) : pour une émission datée (WWE, UFC…), la
+        // numérotation diffère d'un site à l'autre (PLE comptés ou non) : « S20E47 » seul ne prouve rien, il faut la date.
+        if (!dated && season != null && episode != null &&
             EPISODE.findAll(text).any { it.groupValues[1].toInt() == season && it.groupValues[2].toInt() == episode }) return true
         if (airDates.isEmpty()) return false
         val ok = airDates.flatMap { listOf(it.minusDays(1), it, it.plusDays(1)) }.toSet()

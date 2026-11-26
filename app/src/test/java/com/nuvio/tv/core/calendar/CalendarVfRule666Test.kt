@@ -74,4 +74,14 @@ class CalendarVfRule666Test {
         org.junit.Assert.assertEquals("tt1:20:51", got?.first)
         org.junit.Assert.assertNull(pickSameDay666(fiche, 20, at("2026-12-10T01:00:00Z")))
     }
+
+    // 26/11 : faux cri NXT S20E47 (pas encore sorti) — pour une émission datée, « S20E47 » sans date ne prouve rien
+    @Test fun `emission datee - le numero seul ne suffit pas`() {
+        val nxt = setOf(LocalDate.of(2026, 11, 24), LocalDate.of(2026, 11, 25))
+        assertTrue(CalendarVfRule666.isDatedShow("WWE NXT"))
+        assertFalse(CalendarVfRule666.isDatedShow("American Horror Story"))
+        assertFalse(CalendarVfRule666.namesEpisode("WWE NXT S20E47 VF 1080p", 20, 47, nxt, dated = true))
+        assertTrue(CalendarVfRule666.namesEpisode("WWE.NXT.2026.11.24.1080p.MULTi-SkY", 20, 47, nxt, dated = true))
+        assertTrue(CalendarVfRule666.namesEpisode("American Horror Story S13E13 VF 1080p", 13, 13, emptySet()))
+    }
 }
