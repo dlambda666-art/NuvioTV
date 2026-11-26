@@ -809,6 +809,13 @@ async function pushToTorbox(t) {
     }
 }
 
+// 26/11 : 666TVF écarte tout lien « daté d'un autre jour » (vieux Raw) — y compris la carte d'enquête si elle
+// cite un vieux nom (« proche : WWE.NXT.2026.11.18 ») : elle disparaissait (« Aucun lien VF trouvé »).
+// Dans l'enquête, les dates s'écrivent donc « 18/11 » (sans l'année).
+function noDates(t) {
+    return String(t).replace(/(20\d\d)[ ._-](\d\d)[ ._-](\d\d)(?!\d)/g, '$3/$2')
+        .replace(/(^|[^\d])(\d{1,2})[ ._-](\d{1,2})[ ._-]20\d\d(?!\d)/g, '$1$2/$3');
+}
 // Mode enquête (pur, testé) : lignes courtes « Source : N trouvés · 2 VOSTFR · 1 720p ».
 function investigation(why, ygg) {
     var lines = ['🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi :'];
@@ -844,7 +851,7 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.37';
+var COMET_VERSION = '1.1.38';
 async function trace(data) { }   // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
@@ -1010,12 +1017,12 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
         if (PUSHED) rest.unshift(PUSHED.ok ? '📤 envoyé à ton TorBox : ' + String(PUSHED.release).slice(0, 60) + ' — refais ↻ dans quelques minutes'
             : '📤 envoi à TorBox impossible (' + PUSHED.detail + ')');
         PUSHED = null;
-        shown.unshift({ name: 'Comet666 enquête', title: ('🔎 Comet666 : ' + rest.join(' · ')).slice(0, 600), url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct' });
+        shown.unshift({ name: 'Comet666 enquête', title: noDates(('🔎 Comet666 : ' + rest.join(' · ')).slice(0, 600)), url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct' });
     }
     if (PUSHED) {
         shown.push({ name: 'Comet666 enquête', url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct',
-            title: PUSHED.ok ? '📤 Envoyé à ton TorBox : ' + String(PUSHED.release).slice(0, 60) + ' — prêt dans quelques minutes, refais ↻'
-                : '📤 Envoi à TorBox refusé (' + PUSHED.detail + ') : ' + String(PUSHED.release).slice(0, 50) });
+            title: noDates(PUSHED.ok ? '📤 Envoyé à ton TorBox : ' + String(PUSHED.release).slice(0, 60) + ' — prêt dans quelques minutes, refais ↻'
+                : '📤 Envoi à TorBox refusé (' + PUSHED.detail + ') : ' + String(PUSHED.release).slice(0, 50)) });
     }
     // Bouton « Tester » (Matrix) : d'où viennent les liens (gardés / trouvés), en 1re ligne.
     if (String(tmdbId).replace(/^tmdb:/i, '') === '603') {
@@ -1034,4 +1041,4 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _sequelMismatch: sequelMismatch, _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; }, _parseTorboxCached: parseTorboxCached, _parseTorboxAccount: parseTorboxAccount, _pushCandidate: pushCandidate, _multipartBody: multipartBody };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _sequelMismatch: sequelMismatch, _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; }, _parseTorboxCached: parseTorboxCached, _parseTorboxAccount: parseTorboxAccount, _pushCandidate: pushCandidate, _noDates: noDates, _multipartBody: multipartBody };

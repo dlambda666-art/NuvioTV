@@ -529,6 +529,12 @@ const cases = [
             fails++; console.log('✗ Envoi auto TorBox → magnet ' + okMagnet + ' · choisi ' + !!pick + ' · vieux ' + !!old + ' · en cache ' + !!cached + ' · autre source ' + !!other);
         } else console.log('✓ Envoi auto à TorBox : Raw récent de YggReborn pas en cache choisi ; vieux, déjà prêt ou autre source : non');
     }
+    // 26/11 : la carte d'enquête citait « WWE.NXT.2026.11.18 » → 666TVF l'écartait (autre date) → écran vide
+    {
+        const n = comet._noDates('proche : WWE.NXT.2026.11.18.1080p · v1.1.38 · 2026-11-25 · WWE.RAW.24.11.2026');
+        if (/20\d\d[ ._-]\d\d[ ._-]\d\d/.test(n) || /\d{1,2}[ ._-]\d{1,2}[ ._-]20\d\d/.test(n) || n.indexOf('18/11') < 0) { fails++; console.log('✗ Dates dans l\'enquête → ' + n); }
+        else console.log('✓ Enquête sans date complète (18/11) : la carte n\'est plus écartée comme « autre jour »');
+    }
     // Guetteur films (08/11) : une seule recherche YggReborn (titre FR) → releases au titre original ratées
     {
         const q = comet._yggQueries(["L'Odyssée 2026"], ["L'Odyssée", 'The Odyssey'], 2026, false);
