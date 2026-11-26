@@ -80,9 +80,16 @@ fun Records666Screen(
     val first = remember { FocusRequester() }
     // 666TVF (11/11) : Shield du haut → les enregistrements d'en bas, lus par le réseau de la maison
     var remote by remember { mutableStateOf<List<Record666.Rec>?>(null) }
+    // 26/11 : « elle ne répond pas » ≠ « rien de prêt » ; tant qu'elle ne répond pas, on redemande toutes les 30 s
+    var noAnswer by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         if (!Record666.enabledHere()) {
-            remote = com.nuvio.tv.core.tools.Lien666.remoteRecs().sortedByDescending { it.addedAt }
+            while (true) {
+                val got = com.nuvio.tv.core.tools.Lien666.remoteRecs()
+                if (got != null) { remote = got.sortedByDescending { it.addedAt }; noAnswer = false; break }
+                noAnswer = true
+                delay(30_000)
+            }
             runCatching { first.requestFocus() }
         }
     }
@@ -113,8 +120,9 @@ fun Records666Screen(
                 if (!Record666.enabledHere()) {
                     Text(
                         when {
+                            remote == null && noAnswer -> "La Shield du bas ne répond pas (éteinte, ou plus sur le réseau de la maison). Je réessaie toutes les 30 s…"
                             remote == null -> "Je demande à la Shield du bas…"
-                            remote!!.isEmpty() -> "Rien de prêt sur la Shield du bas (ou elle est éteinte / FrankenStream fermé)."
+                            remote!!.isEmpty() -> "Rien de prêt sur la Shield du bas pour l'instant."
                             else -> "Sur la Shield du bas · lus par le réseau de la maison, même si TorBox tombe"
                         },
                         color = RDim, fontSize = 16.sp, modifier = Modifier.padding(top = 30.dp)
@@ -356,7 +364,7 @@ private fun RecordMenu(r: Record666.Rec, onPlayFromStart: () -> Unit, onOpenDeta
     var remote by remember { mutableStateOf<List<Record666.Rec>?>(null) }
     LaunchedEffect(Unit) {
         if (!Record666.enabledHere()) {
-            remote = com.nuvio.tv.core.tools.Lien666.remoteRecs().sortedByDescending { it.addedAt }
+            remote = com.nuvio.tv.core.tools.Lien666.remoteRecs().orEmpty().sortedByDescending { it.addedAt }
             runCatching { first.requestFocus() }
         }
     }

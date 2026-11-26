@@ -260,10 +260,10 @@ object Lien666 {
         runCatching { JSONObject(raw).let { PeerVersion(it.getLong("code"), it.optString("name"), it.optBoolean("playing")) } }.getOrNull()
     }
 
-    /** Les enregistrements prêts de l'autre Shield. */
-    suspend fun remoteRecs(): List<Record666.Rec> = withContext(Dispatchers.IO) {
-        val raw = fetch("/recs") ?: return@withContext emptyList()
-        runCatching { Record666.fromJson(JSONArray(raw)) }.getOrDefault(emptyList())
+    /** Les enregistrements prêts de l'autre Shield. Null si elle ne répond pas (26/11 : à distinguer de « rien de prêt »). */
+    suspend fun remoteRecs(): List<Record666.Rec>? = withContext(Dispatchers.IO) {
+        val raw = fetch("/recs") ?: return@withContext null
+        runCatching { Record666.fromJson(JSONArray(raw)) }.getOrNull()
     }
 
     /** 16/11 : le journal des coupures de l'autre Shield (heures seulement). Null si elle ne répond pas. */
@@ -337,6 +337,8 @@ object Lien666 {
                 uri == "/memoire" -> newFixedLengthResponse(Response.Status.OK, "application/json", Memoire666.export(app).toString())
                 uri == "/recs" -> {
                     // l'adresse d'origine (lien debrid) et ses en-têtes ne quittent jamais la Shield
+                    // 26/11 : serveur démarré sans l'écran de Frank (appli relancée par Android) → la liste doit être chargée
+                    if (Record666.enabledHere()) Record666.init(app)
                     val list = if (Record666.enabledHere()) Record666.ready().map { it.copy(url = "", headers = emptyMap()) } else emptyList()
                     newFixedLengthResponse(Response.Status.OK, "application/json", Record666.toJson(list).toString())
                 }

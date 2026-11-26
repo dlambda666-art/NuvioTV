@@ -88,6 +88,10 @@ class NuvioApplication : Application(), SingletonImageLoader.Factory {
         com.nuvio.tv.core.tools.LocalCatalogs666.init(this)
         com.nuvio.tv.core.tools.VfCheck666.init(this)
         runCatching { com.nuvio.tv.core.tools.NoFrench666.hashes(this) }   // fichiers sans VF connus dès le départ
+        // 26/11 (réparation) : le lien entre les deux Shield démarre avec l'appli elle-même, pas seulement avec
+        // l'écran de Frank. Android relance l'appli en fond (service « toujours revenir ») sans ouvrir l'écran :
+        // la Shield du bas était allumée mais ne répondait plus à celle du haut (Enregistrements vides).
+        runCatching { com.nuvio.tv.core.tools.Lien666.start(this) }
         androidTvChannelSyncService.start()
         // Load locale synchronously so it's available before Activity.attachBaseContext.
         // SharedPreferences reads are fast (cached in memory after first access).
