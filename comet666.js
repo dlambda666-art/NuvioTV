@@ -764,21 +764,23 @@ function investigation(why, ygg) {
     if (ygg && ygg.cut) parts.push('YggReborn : recherches coupées (trop long)');
     if (TIMING && TIMING.slow.length) parts.push('⏱ lent : ' + TIMING.slow.join(' · '));
     if (TIMING && TIMING.skipped.length) parts.push('⏱ pas interrogé (temps écoulé) : ' + TIMING.skipped.join(', '));
-    // 26/11 : le compte TorBox en tête (le Raw que tu y as ajouté sort-il ?)
+    if (!parts.length) parts.push('aucune source n\'a répondu');
+    var tbLine = null;
+    // 26/11 : le compte TorBox en DERNIÈRE ligne : 666TVF n'affiche que la dernière ligne d'enquête sur la carte
     if (TB_STATS) {
         var tb = TB_STATS;
-        parts.unshift('TorBox ton compte : ' + (tb.nokey ? 'pas de clé TorBox prêtée par Frank' : tb.notitle ? 'titre de la fiche inconnu' :
+        tbLine = ('TorBox ton compte : ' + (tb.nokey ? 'pas de clé TorBox prêtée par Frank' : tb.notitle ? 'titre de la fiche inconnu' :
             tb.http !== undefined ? 'refusé (HTTP ' + tb.http + ')' :
             tb.total + ' torrents · ' + tb.ready + ' prêts · ' + tb.title + ' bon titre · ' + tb.episode + ' bon épisode' +
             (tb.near ? ' · proche : ' + String(tb.near).slice(0, 40) : '')) + ' · v' + COMET_VERSION + (AIR_DATE ? ' · ' + AIR_DATE : ''));
     }
-    if (!parts.length) parts.push('aucune source n\'a répondu');
-    return lines.concat(parts.slice(0, 7)).map(function (l) { return l.slice(0, 90); });
+    if (!tbLine) tbLine = 'TorBox ton compte : pas interrogé · v' + COMET_VERSION + (AIR_DATE ? ' · ' + AIR_DATE : '');
+    return lines.concat(parts.slice(0, 7)).concat([tbLine]).map(function (l) { return l.slice(0, 120); });
 }
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.33';
+var COMET_VERSION = '1.1.34';
 async function trace(data) { }   // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
