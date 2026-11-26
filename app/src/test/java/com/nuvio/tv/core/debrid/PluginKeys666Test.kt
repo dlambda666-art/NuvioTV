@@ -15,4 +15,15 @@ class PluginKeys666Test {
         PluginKeys666.torbox = ""; PluginKeys666.alldebrid = ""
         assertEquals(emptyMap<String, Any>(), PluginKeys666.withAutoKeys("comet666", emptyMap()))
     }
+
+    // 26/11 : la date de diffusion de Frank prêtée à Comet666 (NXT : numérotation TMDB différente)
+    @org.junit.Test fun `date de diffusion pretee a comet`() {
+        PluginKeys666.putAirDate(20, 47, "2026-11-25T00:00:00Z")
+        PluginKeys666.putAirDate(1, 2, "pas une date")
+        val comet = PluginKeys666.withAutoKeys("comet666", emptyMap())
+        val json = org.json.JSONObject(comet["air_dates_auto"] as String)
+        org.junit.Assert.assertEquals("2026-11-25", json.getString("20:47"))
+        org.junit.Assert.assertFalse(json.has("1:2"))
+        org.junit.Assert.assertFalse(PluginKeys666.withAutoKeys("lumio666", emptyMap()).containsKey("air_dates_auto"))
+    }
 }

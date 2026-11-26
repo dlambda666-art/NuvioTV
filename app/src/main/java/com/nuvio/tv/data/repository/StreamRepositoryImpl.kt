@@ -566,6 +566,10 @@ class StreamRepositoryImpl @Inject constructor(
             )
             val ranIds666: MutableSet<String> = java.util.Collections.synchronizedSet(HashSet<String>())
 
+            // 26/11 : la vraie date de diffusion (celle de la fiche) prêtée à Comet666
+            com.nuvio.tv.core.debrid.PluginKeys666.putAirDate(
+                season, episode, com.nuvio.tv.core.player.StreamAutoPlaySelector.airDateFor(season, episode)
+            )
             // Collect streaming results from each scraper
             suspend fun runScrapers(only: ((com.nuvio.tv.domain.model.ScraperInfo) -> Boolean)?): List<AddonStreams> {
                 allScrapers666.filter { only == null || only(it) }.forEach { ranIds666 += it.id }

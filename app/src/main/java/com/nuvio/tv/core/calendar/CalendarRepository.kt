@@ -364,6 +364,10 @@ class CalendarRepository @Inject constructor(
             suspend fun lookFor(ps: Int?, pe: Int?, among: List<com.nuvio.tv.domain.model.ScraperInfo> = checkers): Boolean = among.any { scraper ->
                 val label666 = com.nuvio.tv.core.tools.PluginOrder666.displayName(scraper.id, scraper.name)
                 runCatching {
+                    // 26/11 : date de diffusion américaine (celle des noms de sorties) prêtée à Comet666
+                    com.nuvio.tv.core.debrid.PluginKeys666.putAirDate(
+                        ps, pe, episode.airInstant.atZone(java.time.ZoneId.of("America/New_York")).toLocalDate().toString()
+                    )
                     val raw666 = withTimeoutOrNull(30_000) {
                         com.nuvio.tv.core.tools.Background666.paced {
                             pluginManager.executeScraper(scraper, requestId, "tv", ps, pe)
