@@ -338,7 +338,11 @@ class CalendarRepository @Inject constructor(
             }
             .sortedBy { it.first }
             .map { it.second }
-        if (checkers.isEmpty()) return@withContext VfState.NO_CHECKER
+        // 26/11 (David : Raw / NXT seulement sur YGG) : StreamFusion (le chemin vers YGG) n'est jamais interrogé en
+        // rafale ; mais si les autres n'ont rien, on lui pose UNE question (Background666.rareOk).
+        val rareCheckers666 = pluginManager.enabledScrapers.first()
+            .filter { s -> s.id.substringAfterLast(':').lowercase() in VF_CHECKERS && !com.nuvio.tv.core.tools.Background666.allowed(s.id) }
+        if (checkers.isEmpty() && rareCheckers666.isEmpty()) return@withContext VfState.NO_CHECKER
         val whyLines666 = ArrayList<String>()
         val found = vfSemaphore.withPermit {
             // Même demande qu'à l'ouverture de l'épisode : id TMDB, sinon id IMDb (WWE, UFC…),
@@ -357,7 +361,7 @@ class CalendarRepository @Inject constructor(
                 episode.airInstant.atZone(java.time.ZoneId.of("America/New_York")).toLocalDate(),
                 episode.airInstant.atZone(java.time.ZoneId.of("Europe/Paris")).toLocalDate()
             )
-            suspend fun lookFor(ps: Int?, pe: Int?): Boolean = checkers.any { scraper ->
+            suspend fun lookFor(ps: Int?, pe: Int?, among: List<com.nuvio.tv.domain.model.ScraperInfo> = checkers): Boolean = among.any { scraper ->
                 val label666 = com.nuvio.tv.core.tools.PluginOrder666.displayName(scraper.id, scraper.name)
                 runCatching {
                     val raw666 = withTimeoutOrNull(30_000) {
@@ -429,8 +433,12 @@ class CalendarRepository @Inject constructor(
             if (tmdbNum != null && s0 != null && s0 > 0) {
                 val usDate = episode.airInstant.atZone(java.time.ZoneId.of("America/New_York")).toLocalDate()
                 val alt = runCatching { tmdbService.episodeNumberForAirDate666(tmdbNum, s0, usDate) }.getOrNull()
-                if (alt != null && alt != pluginEpisode) return@withPermit lookFor(s0, alt)
+                if (alt != null && alt != pluginEpisode && lookFor(s0, alt)) return@withPermit true
             }
+            // 26/11 : dernier recours, une seule question à StreamFusion (YGG), espacée
+            val rare = rareCheckers666.filter { com.nuvio.tv.core.tools.Background666.takeRare(it.id, episode.key) }
+            if (rare.isNotEmpty() && lookFor(pluginSeason, pluginEpisode, rare)) return@withPermit true
+            if (rare.isEmpty() && rareCheckers666.isNotEmpty()) why666 += "StreamFusion : pas interrogé cette fois (une question toutes les 4 h par épisode, 10 min entre deux, pour éviter le blocage 429)"
             false
         }
         runCatching {

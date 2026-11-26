@@ -22,6 +22,27 @@ object Background666 {
         return NOT_IN_BACKGROUND.none { id.contains(it) }
     }
 
+    // 26/11 (David : Raw / NXT seulement sur YGG) : StreamFusion peut quand même servir au cri, mais au compte-gouttes
+    const val RARE_GAP_MS = 10 * 60_000L          // jamais deux questions à moins de 10 min
+    const val RARE_PER_EPISODE_MS = 4 * 3600_000L // la même question au plus toutes les 4 h
+
+    /** Règle pure (testée) : peut-on poser une question « rare » maintenant ? */
+    fun rareOk(lastAny: Long, lastForKey: Long, now: Long): Boolean =
+        now - lastAny >= RARE_GAP_MS && now - lastForKey >= RARE_PER_EPISODE_MS
+
+    private var rareLastAny = 0L
+    private val rareLastByKey = HashMap<String, Long>()
+
+    /** Réserve une question rare à [scraperId] pour [key] (épisode) ; faux si c'est trop tôt. */
+    @Synchronized
+    fun takeRare(scraperId: String, key: String, now: Long = System.currentTimeMillis()): Boolean {
+        val k = scraperId + "|" + key
+        if (!rareOk(rareLastAny, rareLastByKey[k] ?: 0L, now)) return false
+        rareLastAny = now
+        rareLastByKey[k] = now
+        return true
+    }
+
     private val lock = Mutex()
     private var last = 0L
 
