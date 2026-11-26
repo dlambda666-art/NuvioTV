@@ -582,6 +582,44 @@ async function fromAllDebridAccount(imdbId, isTv, season, episode) {
     }
 }
 
+// 666TVF (26/11, David : « le Raw je l'ai mis sur TorBox depuis hier ») : ton compte TorBox comme source,
+// comme AllDebrid. Ce que tu y as ajouté (le Raw de SkY pris sur YGG…) et qui est prêt sort chez Comet666 (⚡).
+// La clé est prêtée par 666TVF le temps de la recherche (jamais écrite ici ni enregistrée).
+function parseTorboxAccount(data, titles, year, isTv, season, episode) {
+    var list = (data && data.data) || [];
+    if (!Array.isArray(list)) list = [list];
+    var out = [];
+    list.forEach(function (t) {
+        if (!t) return;
+        var hash = String(t.hash || '').toLowerCase();
+        var name = String(t.name || '');
+        var ready = t.download_finished === true || t.download_present === true ||
+            /^(completed|cached|uploading|seeding)/i.test(String(t.download_state || ''));
+        if (!ready || !/^[0-9a-f]{40}$/.test(hash) || !name) return;
+        if (!releaseMatches(name, titles, year, isTv)) return;
+        if (isTv && !matchesEpisode(name, season, episode)) return;
+        out.push({ hash: hash, release: name, text: name, bytes: Number(t.size) || 0, seeders: null,
+            source: 'TorBox ⚡ (ton compte)', cached: true, frTitle: frenchTitleOnly(name, titles) });
+    });
+    return out;
+}
+async function fromTorboxAccount(imdbId, isTv, season, episode) {
+    var key = setting('torbox_auto');
+    if (!key) return [];
+    var meta = await frankMeta(imdbId, isTv, season, episode);
+    var titles = (meta && meta.titles) || [];
+    if (!titles.length) return [];
+    try {
+        var res = await fetch('https://api.torbox.app/v1/api/torrents/mylist?bypass_cache=true',
+            { headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + key } });
+        if (!res || !res.ok) return [];
+        return parseTorboxAccount(await res.json(), titles, meta && meta.year ? Number(meta.year) : 0, isTv, season, episode);
+    } catch (e) {
+        console.log('Comet666 compte TorBox : ' + (e && e.message));
+        return [];
+    }
+}
+
 // 666TVF (07/11) : moteur de recherche TorBox (sa propre base, cache inclus).
 // La clé TorBox est passée par 666TVF au moment de la recherche (jamais écrite ici ni enregistrée).
 var TORBOX_SEARCH_URL = 'https://search-api.torbox.app';
@@ -766,7 +804,8 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     var sources = [
         ['Trackers', function () { return fromTrackers({ imdbId: ids.imdbId, tmdbId: /^\d+$/.test(tmdbNum) ? tmdbNum : null }, isTv, season, episode); }],
         ['YggReborn', function () { return fromYggReborn(ids.imdbId, isTv, season, episode); }],
-        ['TorBox', function () { return fromTorboxSearch(ids.imdbId, isTv, season, episode); }],
+        // 26/11 : ton compte TorBox d'abord (ce que tu as ajouté toi-même), puis son moteur de recherche
+        ['TorBox', async function () { return (await fromTorboxAccount(ids.imdbId, isTv, season, episode)).concat(await fromTorboxSearch(ids.imdbId, isTv, season, episode)); }],
         ['AllDebrid', function () { return fromAllDebridAccount(ids.imdbId, isTv, season, episode); }],
         ['StremThru', function () { return fromStremThru(ids.imdbId, isTv, season, episode); }],
         ['Torrentio', function () { return fromTorrentio(ids.imdbId, isTv, season, episode); }],
@@ -882,4 +921,4 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _sequelMismatch: sequelMismatch, _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; }, _parseTorboxCached: parseTorboxCached };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _sequelMismatch: sequelMismatch, _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; }, _parseTorboxCached: parseTorboxCached, _parseTorboxAccount: parseTorboxAccount };

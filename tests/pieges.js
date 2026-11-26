@@ -495,6 +495,20 @@ const cases = [
         if (!okQ || !sky || !monday || mondayOld || q.length > 8) { fails++; console.log('✗ Raw YGG → ' + JSON.stringify(q) + ' · 23/11 ' + sky + ' · Monday Night ' + monday + ' · 16/11 ' + mondayOld); }
         else console.log('✓ Raw du 24/11 : YGG cherché aussi la veille (2026.11.23) et par titre seul ; « Monday Night Raw » reconnu, le 16/11 écarté');
     }
+    // 26/11 : le Raw de SkY ajouté par David dans son compte TorBox (pris sur YGG) doit sortir chez Comet666
+    {
+        comet._setAirDate('2026-11-24');
+        const data = { success: true, data: [
+            { hash: 'a'.repeat(40), name: 'WWE.RAW.2026.11.23.1080p.NF.WEB-DL.MULTi.AAC2.0.HFR.H.265-SkY', download_finished: true, size: 5e9 },
+            { hash: 'b'.repeat(40), name: 'WWE.Monday.Night.Raw.2026.11.16.1080p.NF.WEB-DL.MULTi.AAC2.0.HFR.H.265-SkY', download_finished: true },
+            { hash: 'c'.repeat(40), name: 'WWE.RAW.2026.11.23.1080p.NF.WEB-DL.MULTi-SkY', download_finished: false, download_state: 'downloading' },
+            { hash: 'd'.repeat(40), name: 'Dune.Part.Two.2024.MULTi.1080p', download_finished: true }
+        ] };
+        const got = comet._parseTorboxAccount(data, ['WWE Raw'], 1993, true, 34, 47);
+        comet._setAirDate(null);
+        if (got.length !== 1 || got[0].hash !== 'a'.repeat(40) || !got[0].cached) { fails++; console.log('✗ Compte TorBox → ' + JSON.stringify(got.map(g => g.release))); }
+        else console.log('✓ Compte TorBox : le Raw du 23/11 prêt sort (⚡), le 16/11, celui en cours et Dune non');
+    }
     // Guetteur films (08/11) : une seule recherche YggReborn (titre FR) → releases au titre original ratées
     {
         const q = comet._yggQueries(["L'Odyssée 2026"], ["L'Odyssée", 'The Odyssey'], 2026, false);
