@@ -177,6 +177,15 @@ async function episodeAirDate(tmdbId, season, episode) {
     return ep && ep.air_date ? ep.air_date : null;
 }
 
+/** 26/11 — pur, testé : date prêtée par Frank pour « saison:épisode » (réglage air_dates_auto). */
+function frankAirDate(season, episode) {
+    try {
+        var m = JSON.parse(setting('air_dates_auto') || '{}');
+        var d = m[String(season) + ':' + String(episode)];
+        return /^\d{4}-\d\d-\d\d$/.test(String(d || '')) ? d : null;
+    } catch (e) { return null; }
+}
+
 // Vrai si le nom porte une date (2026.10.19) qui n'est pas celle de l'épisode (± 1 jour 1/2).
 // 666TVF (26/11) : date à la française « 24.11.2026 » (jour.mois.année)
 var DMY_RE = /(^|[^\d])(\d{1,2})[ ._-](\d{1,2})[ ._-](20\d\d)(?!\d)/;
@@ -830,6 +839,8 @@ function investigation(why, ygg) {
         var y = 'YggReborn : ' + ygg.queries + ' recherche' + (ygg.queries > 1 ? 's' : '') + ' · ' + ygg.items + ' réponse' + (ygg.items > 1 ? 's' : '');
         if (ygg.episode) y += ' · ' + ygg.episode + ' autre épisode';
         if (ygg.title) y += ' · ' + ygg.title + ' autre titre';
+        if (AIR_DATE) y += ' · cherché le ' + AIR_DATE;
+        if (ygg.samples && ygg.samples.length) y += ' · ex. ' + String(ygg.samples[0]).slice(0, 45);
         parts.unshift(y);
     } else if (setting('yggreborn')) parts.unshift('YggReborn : pas interrogé');
     if (ygg && ygg.cut) parts.push('YggReborn : recherches coupées (trop long)');
@@ -851,7 +862,7 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.39';
+var COMET_VERSION = '1.1.40';
 async function trace(data) { }   // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
@@ -907,7 +918,9 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
         ['DMM', function () { return fromZilean(ids.imdbId, isTv, season, episode); }],
         ['TorrentsDB', function () { return fromTorrentsDb(ids.imdbId, isTv, season, episode); }]
     ];
-    AIR_DATE = isTv ? await episodeAirDate(tmdbId, season, episode) : null;
+    // 26/11 : la date que Frank connaît (fiche / calendrier) d'abord ; TMDB seulement à défaut
+    // (NXT : TMDB compte les PLE, son S20E47 n'est pas celui de Frank → « autre épisode » partout)
+    AIR_DATE = isTv ? (frankAirDate(season, episode) || await episodeAirDate(tmdbId, season, episode)) : null;
     var lists = [];
     TIMING = { skipped: [], slow: [] };
     for (var si = 0; si < sources.length; si++) {
@@ -1046,4 +1059,4 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _sequelMismatch: sequelMismatch, _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; }, _parseTorboxCached: parseTorboxCached, _parseTorboxAccount: parseTorboxAccount, _pushCandidate: pushCandidate, _noDates: noDates, _multipartBody: multipartBody };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _sequelMismatch: sequelMismatch, _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; }, _parseTorboxCached: parseTorboxCached, _parseTorboxAccount: parseTorboxAccount, _pushCandidate: pushCandidate, _noDates: noDates, _frankAirDate: frankAirDate, _multipartBody: multipartBody };

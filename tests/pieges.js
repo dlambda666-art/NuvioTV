@@ -535,6 +535,17 @@ const cases = [
         if (/20\d\d[ ._-]\d\d[ ._-]\d\d/.test(n) || /\d{1,2}[ ._-]\d{1,2}[ ._-]20\d\d/.test(n) || n.indexOf('18/11') < 0) { fails++; console.log('✗ Dates dans l\'enquête → ' + n); }
         else console.log('✓ Enquête sans date complète (18/11) : la carte n\'est plus écartée comme « autre jour »');
     }
+    // 26/11 : NXT S20E47 — la date prêtée par Frank passe avant TMDB (numérotation différente)
+    {
+        const saved = global.SCRAPER_SETTINGS;
+        global.SCRAPER_SETTINGS = { air_dates_auto: JSON.stringify({ '20:47': '2026-11-25' }) };
+        const d = comet._frankAirDate(20, 47), none = comet._frankAirDate(20, 46);
+        global.SCRAPER_SETTINGS = { air_dates_auto: 'pas du json' };
+        const bad = comet._frankAirDate(20, 47);
+        global.SCRAPER_SETTINGS = saved;
+        if (d !== '2026-11-25' || none !== null || bad !== null) { fails++; console.log('✗ Date prêtée par Frank → ' + d + ' / ' + none + ' / ' + bad); }
+        else console.log('✓ NXT : la date de Frank (25/11) passe avant celle de TMDB');
+    }
     // Guetteur films (08/11) : une seule recherche YggReborn (titre FR) → releases au titre original ratées
     {
         const q = comet._yggQueries(["L'Odyssée 2026"], ["L'Odyssée", 'The Odyssey'], 2026, false);
