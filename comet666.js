@@ -758,6 +758,14 @@ function groupsLists() {
     var fr = GROUPS_FR_SEED.concat(csv('groups_fr_auto')).filter(function (g) { return other.indexOf(g) < 0 || csv('groups_fr_auto').indexOf(g) >= 0; });
     return { fr: fr, other: other.filter(function (g) { return csv('groups_fr_auto').indexOf(g) < 0; }) };
 }
+var FR_TRACKER = /^(YggReborn|YGG|C411|Tr4ker|TorBox ⚡ \(ton compte\))/;
+var FR_GROUPS_CACHE = null;
+function frGroupSet() {
+    if (FR_GROUPS_CACHE) return FR_GROUPS_CACHE;
+    var d = groupsLists(), out = {};
+    (d.fr || []).forEach(function (g) { out[g] = 1; });
+    return (FR_GROUPS_CACHE = out);
+}
 async function settleMulti(items) {
     if (!items.some(function (t) { return t.lang.indexOf('?') >= 0; })) return items;
     // 666TVF (09/11) : groupes appris par 666TVF sur tes Shield (prêtés comme les clés), + la base de Frank
@@ -863,7 +871,7 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.41';
+var COMET_VERSION = '1.1.42';
 async function trace(data) { }   // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
@@ -955,6 +963,12 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
             var lang = frenchLabel(t.text);
             // titre français seul, sans mot de langue (YggReborn) : proposé en « VF ? », jamais sûr
             if (!lang && t.frTitle && !SUBTITLE_ONLY.test(t.text) && !CAM_RELEASE.test(t.text) && !OTHER_DUB.test(t.text)) lang = 'VF ? (titre FR)';
+            // 26/11 (SmackDown « WWE.SmackDown.2026.11.20.NF.iNT.1080p.WEB.h265-HEEL ») : sur un tracker français,
+            // une release sans mot de langue d'un groupe français connu (HEEL, SkY appris…) est en VF
+            if (!lang && FR_TRACKER.test(String(t.source || '')) && !SUBTITLE_ONLY.test(t.text) && !CAM_RELEASE.test(t.text) && !OTHER_DUB.test(t.text)) {
+                var g0 = releaseGroup(t.release);
+                if (g0 && frGroupSet()[g0]) lang = 'VF (groupe ' + g0 + ')';
+            }
             if (!lang) {
                 note(t, SUBTITLE_ONLY.test(t.text) ? 'VOSTFR' : CAM_RELEASE.test(t.text) ? 'CAM' : 'pas de VF');
                 return;

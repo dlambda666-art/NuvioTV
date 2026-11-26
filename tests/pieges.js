@@ -546,6 +546,26 @@ const cases = [
         if (d !== '2026-11-25' || none !== null || bad !== null) { fails++; console.log('✗ Date prêtée par Frank → ' + d + ' / ' + none + ' / ' + bad); }
         else console.log('✓ NXT : la date de Frank (25/11) passe avant celle de TMDB');
     }
+    // 26/11 : SmackDown de HEEL sur YggReborn, sans mot de langue → VF (groupe français connu)
+    {
+        const saved = { fetch: global.fetch, key: global.TMDB_API_KEY, settings: global.SCRAPER_SETTINGS };
+        global.TMDB_API_KEY = 'K';
+        global.SCRAPER_SETTINGS = { yggreborn: 'PK', air_dates_auto: JSON.stringify({ '28:47': '2026-11-20' }) };
+        const json = o => ({ ok: true, json: async () => o, text: async () => (typeof o === 'string' ? o : JSON.stringify(o)) });
+        global.fetch = async u => {
+            if (u.includes('themoviedb') && u.includes('/find/')) return json({ tv_results: [{ id: 4325 }] });
+            if (u.includes('themoviedb')) return json({ name: 'WWE SmackDown', original_name: 'WWE SmackDown', first_air_date: '1999-04-29' });
+            if (u.includes('yggreborn')) return json('<rss><item><title>WWE.SmackDown.2026.11.20.NF.iNT.1080p.WEB.h265-HEEL</title><size>6000000000</size>'
+                + '<torznab:attr name="infohash" value="' + '7'.repeat(40) + '"/></item>'
+                + '<item><title>WWE.SmackDown.2026.11.13.NF.iNT.1080p.WEB.h265-HEEL</title><torznab:attr name="infohash" value="' + '8'.repeat(40) + '"/></item></rss>');
+            return { ok: false, json: async () => null, text: async () => '' };
+        };
+        const out = await comet.getStreams('tt0227972', 'tv', 28, 47);
+        global.fetch = saved.fetch; global.TMDB_API_KEY = saved.key; global.SCRAPER_SETTINGS = saved.settings;
+        const ok = out.some(x => x.infoHash === '7'.repeat(40) && /VF \(groupe HEEL\)/.test(x.title)) && !out.some(x => x.infoHash === '8'.repeat(40));
+        if (!ok) { fails++; console.log('✗ SmackDown HEEL → ' + out.map(x => x.title.split('\n').join(' / ')).join(' | ')); }
+        else console.log('✓ SmackDown de HEEL (sans mot de langue) gardé en VF, celui du 13/11 écarté');
+    }
     // Guetteur films (08/11) : une seule recherche YggReborn (titre FR) → releases au titre original ratées
     {
         const q = comet._yggQueries(["L'Odyssée 2026"], ["L'Odyssée", 'The Odyssey'], 2026, false);
