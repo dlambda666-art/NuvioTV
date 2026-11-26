@@ -23,6 +23,8 @@ object PluginKeys666 {
         airDates["$season:$episode"] = d
     }
 
+    fun clearAirDates() = airDates.clear()
+
     /** Règle pure (testée) : le JSON prêté à Comet666. */
     fun airDatesJson(): String = org.json.JSONObject(airDates as Map<*, *>).toString()
 
