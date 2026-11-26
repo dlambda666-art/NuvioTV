@@ -623,11 +623,27 @@ async function fromTorboxAccount(imdbId, isTv, season, episode) {
     var meta = await frankMeta(imdbId, isTv, season, episode);
     var titles = (meta && meta.titles) || [];
     if (!titles.length) { TB_STATS = { notitle: true }; return []; }
+    // 26/11 : 585 téléchargements chez David → réponse > 1 Mo, coupée par 666TVF → « 0 torrent ».
+    // On lit par pages de 40 (jusqu à 1200 téléchargements), on s arrête dès que le bon épisode est trouvé.
     try {
-        var res = await fetch('https://api.torbox.app/v1/api/torrents/mylist?bypass_cache=true',
-            { headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + key } });
-        if (!res || !res.ok) { TB_STATS = { http: res ? res.status : 0 }; return []; }
-        return parseTorboxAccount(await res.json(), titles, meta && meta.year ? Number(meta.year) : 0, isTv, season, episode);
+        var out = [], agg = { total: 0, ready: 0, title: 0, episode: 0, near: '', pages: 0 };
+        for (var off = 0; off < 1200; off += 40) {
+            var res = await fetch('https://api.torbox.app/v1/api/torrents/mylist?bypass_cache=true&limit=40&offset=' + off,
+                { headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + key } });
+            if (!res || !res.ok) { if (!agg.pages) { TB_STATS = { http: res ? res.status : 0 }; return []; } break; }
+            var data = null;
+            try { data = await res.json(); } catch (e) { data = null; }
+            if (!data) { agg.cut = true; break; }
+            var page = parseTorboxAccount(data, titles, meta && meta.year ? Number(meta.year) : 0, isTv, season, episode);
+            var st = TB_STATS || {};
+            agg.pages++; agg.total += st.total || 0; agg.ready += st.ready || 0; agg.title += st.title || 0; agg.episode += st.episode || 0;
+            if (!agg.near && st.near) agg.near = st.near;
+            out = out.concat(page);
+            if ((st.total || 0) < 40 || out.length) break;
+            if (late()) break;
+        }
+        TB_STATS = agg;
+        return out;
     } catch (e) {
         console.log('Comet666 compte TorBox : ' + (e && e.message));
         return [];
@@ -771,7 +787,7 @@ function investigation(why, ygg) {
         var tb = TB_STATS;
         tbLine = ('TorBox ton compte : ' + (tb.nokey ? 'pas de clé TorBox prêtée par Frank' : tb.notitle ? 'titre de la fiche inconnu' :
             tb.http !== undefined ? 'refusé (HTTP ' + tb.http + ')' :
-            tb.total + ' torrents · ' + tb.ready + ' prêts · ' + tb.title + ' bon titre · ' + tb.episode + ' bon épisode' +
+            tb.total + ' torrents' + (tb.cut ? ' (liste coupée)' : '') + ' · ' + tb.ready + ' prêts · ' + tb.title + ' bon titre · ' + tb.episode + ' bon épisode' +
             (tb.near ? ' · proche : ' + String(tb.near).slice(0, 40) : '')) + ' · v' + COMET_VERSION + (AIR_DATE ? ' · ' + AIR_DATE : ''));
     }
     if (!tbLine) tbLine = 'TorBox ton compte : pas interrogé · v' + COMET_VERSION + (AIR_DATE ? ' · ' + AIR_DATE : '');
@@ -780,7 +796,7 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.34';
+var COMET_VERSION = '1.1.35';
 async function trace(data) { }   // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
