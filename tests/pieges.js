@@ -509,6 +509,26 @@ const cases = [
         if (got.length !== 1 || got[0].hash !== 'a'.repeat(40) || !got[0].cached) { fails++; console.log('✗ Compte TorBox → ' + JSON.stringify(got.map(g => g.release))); }
         else console.log('✓ Compte TorBox : le Raw du 23/11 prêt sort (⚡), le 16/11, celui en cours et Dune non');
     }
+    // 26/11 (David : « auto depuis YGG ») : Raw seulement sur YggReborn, pas en cache → envoyé à TON TorBox
+    {
+        const xml = '<rss><channel><item><title>WWE.RAW.2026.11.23.1080p.NF.WEB-DL.MULTi.AAC2.0.HFR.H.265-SkY</title>' +
+            '<size>11000000000</size><torznab:attr name="infohash" value="' + 'e'.repeat(40) + '"/>' +
+            '<torznab:attr name="magneturl" value="magnet:?xt=urn:btih:' + 'e'.repeat(40) + '&amp;tr=https%3A%2F%2Ftracker.test%2FPASSKEY123%2Fannounce"/></item></channel></rss>';
+        comet._setAirDate('2026-11-24');
+        const items = comet._parseTorznab(xml, true, 34, 47, 'YggReborn');
+        comet._setAirDate(null);
+        const t = Object.assign({}, items[0] || {}, { lang: 'MULTi (VF ?)', quality: '1080p' });
+        const now = Date.parse('2026-11-26T08:00:00Z');
+        const pick = comet._pushCandidate([t], '2026-11-24', now);
+        const old = comet._pushCandidate([t], '2026-10-01', now);                       // trop vieux : non
+        const cached = comet._pushCandidate([Object.assign({}, t, { cached: true })], '2026-11-24', now);
+        const other = comet._pushCandidate([Object.assign({}, t, { source: 'Torrentio' })], '2026-11-24', now);
+        const body = comet._multipartBody({ magnet: 'magnet:?xt=x', seed: '3' }, 'B');
+        const okMagnet = items.length === 1 && /PASSKEY123/.test(items[0].magnet || '') && (items[0].magnet || '').indexOf('&amp;') < 0;
+        if (!okMagnet || !pick || old || cached || other || body.indexOf('name="magnet"\r\n\r\nmagnet:?xt=x\r\n') < 0 || !/--B--\r\n$/.test(body)) {
+            fails++; console.log('✗ Envoi auto TorBox → magnet ' + okMagnet + ' · choisi ' + !!pick + ' · vieux ' + !!old + ' · en cache ' + !!cached + ' · autre source ' + !!other);
+        } else console.log('✓ Envoi auto à TorBox : Raw récent de YggReborn pas en cache choisi ; vieux, déjà prêt ou autre source : non');
+    }
     // Guetteur films (08/11) : une seule recherche YggReborn (titre FR) → releases au titre original ratées
     {
         const q = comet._yggQueries(["L'Odyssée 2026"], ["L'Odyssée", 'The Odyssey'], 2026, false);

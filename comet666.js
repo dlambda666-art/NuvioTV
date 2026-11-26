@@ -239,7 +239,10 @@ function parseTorznab(xml, isTv, season, episode, label) {
         if (isTv && !matchesEpisode(title, season, episode)) return;
         var size = Number((it.match(/<size>(\d+)<\/size>/) || [])[1]) || Number((it.match(/name="size"\s+value="(\d+)"/) || [])[1]) || 0;
         var seeders = (it.match(/name="seeders"\s+value="(\d+)"/) || [])[1];
-        out.push({ hash: hash.toLowerCase(), release: title, text: title, bytes: size, seeders: seeders ? parseInt(seeders, 10) : null, source: label });
+        // 26/11 : lien magnet avec le tracker (et ta passkey) — sert seulement à l'envoyer à TON TorBox
+        var mg = (it.match(/name="magneturl"\s+value="(magnet:[^"]+)"/) || it.match(/<link>\s*(magnet:[^<]+)<\/link>/) || it.match(/<enclosure[^>]+url="(magnet:[^"]+)"/) || [])[1];
+        out.push({ hash: hash.toLowerCase(), release: title, text: title, bytes: size, seeders: seeders ? parseInt(seeders, 10) : null, source: label,
+            magnet: mg ? decodeEntities(mg).replace(/&amp;/g, '&') : null });
     });
     return out;
 }
@@ -761,6 +764,51 @@ async function settleMulti(items) {
     });
 }
 
+// 666TVF (26/11, David : « auto depuis YGG ») : une émission datée que tu suis (Raw, NXT…) n'existe en VF
+// que sur YGG et TorBox ne l'a pas encore → Comet666 l'envoie lui-même à TON TorBox (le lien magnet de
+// YggReborn porte ta passkey : il ne va que chez TorBox, jamais affiché ni noté). Prête quelques minutes après :
+// la vérification suivante du calendrier la trouve dans ton compte → le cri.
+var PUSHED = null;
+/** Règle pure (testée) : faut-il envoyer ce candidat à TorBox ? */
+function pushCandidate(found, airDate, nowMs) {
+    if (!airDate) return null;
+    var air = Date.parse(airDate + 'T00:00:00Z');
+    if (isNaN(air) || nowMs - air > 10 * 86400000 || air - nowMs > 2 * 86400000) return null;
+    var c = found.filter(function (t) {
+        return /^YggReborn/.test(String(t.source || '')) && t.magnet && /^magnet:\?/i.test(t.magnet) && !t.cached &&
+            (t.quality === '1080p' || t.quality === '1440p' || t.quality === '2160p') && t.lang && t.lang.indexOf('étranger') < 0;
+    });
+    // VF sûre d'abord, puis la plus grosse
+    c.sort(function (a, b) { return ((a.lang.indexOf('?') >= 0) - (b.lang.indexOf('?') >= 0)) || ((b.bytes || 0) - (a.bytes || 0)); });
+    return c[0] || null;
+}
+/** Corps multipart (texte seulement) pour TorBox createtorrent — pur, testé. */
+function multipartBody(fields, boundary) {
+    var out = '';
+    Object.keys(fields).forEach(function (k) {
+        out += '--' + boundary + '\r\nContent-Disposition: form-data; name="' + k + '"\r\n\r\n' + fields[k] + '\r\n';
+    });
+    return out + '--' + boundary + '--\r\n';
+}
+async function pushToTorbox(t) {
+    var key = setting('torbox_auto');
+    if (!key || !t) return null;
+    var boundary = '----comet666' + Date.now();
+    try {
+        var res = await fetch('https://api.torbox.app/v1/api/torrents/createtorrent', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + key, 'Content-Type': 'multipart/form-data; boundary=' + boundary },
+            body: multipartBody({ magnet: t.magnet, seed: '3', allow_zip: 'false', name: String(t.release).slice(0, 200) }, boundary)
+        });
+        var j = null;
+        try { j = await res.json(); } catch (e) { }
+        var ok = res && res.ok && (!j || j.success !== false);
+        return { release: t.release, ok: !!ok, detail: ok ? '' : String((j && (j.detail || j.error)) || ('HTTP ' + (res ? res.status : 0))).slice(0, 60) };
+    } catch (e) {
+        return { release: t.release, ok: false, detail: String(e && e.message || e).slice(0, 60) };
+    }
+}
+
 // Mode enquête (pur, testé) : lignes courtes « Source : N trouvés · 2 VOSTFR · 1 720p ».
 function investigation(why, ygg) {
     var lines = ['🔎 Comet666 : rien de lisible en VF 1080p+ — pourquoi :'];
@@ -796,7 +844,7 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.35';
+var COMET_VERSION = '1.1.36';
 async function trace(data) { }   // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
@@ -923,6 +971,19 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
         if (q) return q;
         return (b.bytes || 0) - (a.bytes || 0);
     });
+    // 26/11 : envoi automatique à TorBox (émission datée, seulement sur YggReborn, pas encore en cache)
+    PUSHED = null;
+    var cand = isTv && !found.some(function (t) { return t.cached; }) ? pushCandidate(found, airDate, Date.now()) : null;
+    if (!cand && isTv && airDate && !found.some(function (t) { return t.cached; }) &&
+        found.some(function (t) { return /^YggReborn/.test(String(t.source || '')) && !t.magnet; })) {
+        PUSHED = { ok: false, release: (found.filter(function (t) { return /^YggReborn/.test(String(t.source || '')); })[0] || {}).release || '',
+            detail: 'YggReborn ne donne pas de lien magnet' };
+    }
+    if (cand && !late()) {
+        var inCache = await torboxCached([cand.hash]);
+        if (inCache[cand.hash]) cand.cached = true;
+        else PUSHED = await pushToTorbox(cand);
+    }
     var shown = found.slice(0, MAX_RESULTS).map(function (t) {
         var line2 = ['🇫🇷 ' + t.lang].concat(extras(t.text)).join(' · ');
         var line3 = [t.cached ? '⚡ prêt' : '', formatSize(t.bytes), t.seeders != null ? '👤 ' + t.seeders : '', String(t.source || '').replace(/ ⚡$/, '')].filter(Boolean).join(' · ');
@@ -944,6 +1005,11 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
             shown.unshift({ name: 'Comet666 enquête', title: line, url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct' });
         });
     }
+    if (PUSHED) {
+        shown.push({ name: 'Comet666 enquête', url: 'https://diagnostic.invalid/comet', provider: 'Comet666', type: 'direct',
+            title: PUSHED.ok ? '📤 Envoyé à ton TorBox : ' + String(PUSHED.release).slice(0, 60) + ' — prêt dans quelques minutes, refais ↻'
+                : '📤 Envoi à TorBox refusé (' + PUSHED.detail + ') : ' + String(PUSHED.release).slice(0, 50) });
+    }
     // Bouton « Tester » (Matrix) : d'où viennent les liens (gardés / trouvés), en 1re ligne.
     if (String(tmdbId).replace(/^tmdb:/i, '') === '603') {
         var raw = {}, kept = {};
@@ -961,4 +1027,4 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     return shown;
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { _sequelMismatch: sequelMismatch, _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; }, _parseTorboxCached: parseTorboxCached, _parseTorboxAccount: parseTorboxAccount };
+if (typeof module !== 'undefined' && module.exports) module.exports = { _sequelMismatch: sequelMismatch, _yggEvents: yggEvents, _parseTorznab: parseTorznab, _releaseMatches: releaseMatches, _releaseGroup: releaseGroup, _settleMulti: settleMulti, getStreams: getStreams, _frenchLabel: frenchLabel, _matchesEpisode: matchesEpisode, _dateMismatch: dateMismatch, _qualityOf: qualityOf, _parseTorboxSearch: parseTorboxSearch, _yggQueries: yggQueries, _setAirDate: function (d) { AIR_DATE = d; }, _frenchTitleOnly: frenchTitleOnly, _normTitle: normTitle, _investigation: investigation, _parseAllDebridAccount: parseAllDebridAccount, _baseQueries: baseQueries, _groupsLists: groupsLists, _budget: function (ms) { BUDGET_MS = ms; }, _parseTorboxCached: parseTorboxCached, _parseTorboxAccount: parseTorboxAccount, _pushCandidate: pushCandidate, _multipartBody: multipartBody };
