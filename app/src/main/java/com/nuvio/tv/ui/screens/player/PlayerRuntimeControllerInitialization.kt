@@ -1013,6 +1013,8 @@ internal fun PlayerRuntimeController.initializePlayer(
 
             disposeExoPlayerBeforeRebuild()
             delay(PLAYER_REBUILD_SETTLE_DELAY_MS)
+            // 26/11 (David : pertes de son au début des films, en bas) : journal du son pour le Rapport
+            runCatching { com.nuvio.tv.core.tools.Son666.start(context, title) }
 
             _exoPlayer = if (useLibass) {
                 val playerDataSourceFactory = PlayerPlaybackNetworking.createDataSourceFactory(context, headers)
@@ -1708,6 +1710,34 @@ internal fun PlayerRuntimeController.initializePlayer(
                 addAnalyticsListener(object : AnalyticsListener {
                     override fun onPlaybackStateChanged(eventTime: AnalyticsListener.EventTime, state: Int) {
                         playbackAnalyticsDiagnostics.onPlaybackStateChanged(eventTime, state)
+                        if (state == androidx.media3.common.Player.STATE_BUFFERING && eventTime.currentPlaybackPositionMs > 3_000L) {
+                            runCatching { com.nuvio.tv.core.tools.Son666.note(context, "attente réseau (chargement) à ${eventTime.currentPlaybackPositionMs / 1000} s du film") }
+                        }
+                    }
+
+                    // 26/11 (David) : journal du son (10 premières minutes) → Rapport « Son »
+                    override fun onAudioTrackInitialized(
+                        eventTime: AnalyticsListener.EventTime,
+                        audioTrackConfig: androidx.media3.exoplayer.audio.AudioSink.AudioTrackConfig
+                    ) {
+                        runCatching {
+                            com.nuvio.tv.core.tools.Son666.note(context, "sortie son (re)créée : " +
+                                com.nuvio.tv.core.tools.Son666.encodingName(audioTrackConfig.encoding) +
+                                " ${audioTrackConfig.sampleRate} Hz" +
+                                (if (audioTrackConfig.offload) " · offload" else "") +
+                                (if (audioTrackConfig.tunneling) " · tunneling" else ""))
+                        }
+                    }
+
+                    override fun onAudioTrackReleased(
+                        eventTime: AnalyticsListener.EventTime,
+                        audioTrackConfig: androidx.media3.exoplayer.audio.AudioSink.AudioTrackConfig
+                    ) {
+                        runCatching { com.nuvio.tv.core.tools.Son666.note(context, "sortie son fermée") }
+                    }
+
+                    override fun onAudioSinkError(eventTime: AnalyticsListener.EventTime, audioSinkError: Exception) {
+                        runCatching { com.nuvio.tv.core.tools.Son666.note(context, "erreur de sortie son : ${audioSinkError.javaClass.simpleName} ${audioSinkError.message.orEmpty().take(80)}") }
                     }
 
                     override fun onPlayWhenReadyChanged(
@@ -1820,6 +1850,7 @@ internal fun PlayerRuntimeController.initializePlayer(
                             decoderName = decoderName,
                             initializationDurationMs = initializationDurationMs
                         )
+                        runCatching { com.nuvio.tv.core.tools.Son666.note(context, "décodeur son : $decoderName") }
                     }
 
                     override fun onAudioDecoderReleased(eventTime: AnalyticsListener.EventTime, decoderName: String) {
@@ -1836,6 +1867,10 @@ internal fun PlayerRuntimeController.initializePlayer(
                             format = format,
                             reuseEvaluation = decoderReuseEvaluation
                         )
+                        runCatching {
+                            com.nuvio.tv.core.tools.Son666.note(context,
+                                "piste son : ${format.sampleMimeType.orEmpty().substringAfter('/')} ${format.channelCount} canaux ${format.language.orEmpty()}".trim())
+                        }
                     }
 
                     override fun onAudioUnderrun(
@@ -1850,6 +1885,10 @@ internal fun PlayerRuntimeController.initializePlayer(
                             bufferSizeMs = bufferSizeMs,
                             elapsedSinceLastFeedMs = elapsedSinceLastFeedMs
                         )
+                        runCatching {
+                            com.nuvio.tv.core.tools.Son666.note(context,
+                                "COUPURE du son (le décodeur n'a pas suivi : tampon ${bufferSizeMs / 1000} ms, rien reçu depuis $elapsedSinceLastFeedMs ms)")
+                        }
                     }
 
                     override fun onBandwidthEstimate(

@@ -112,6 +112,12 @@ object Rapport666 {
         if (traces.isBlank()) line("(aucun noté)") else traces.lines().forEach { out.append(cleanTrace(it)).append('\n') }
         line()
 
+        // 26/11 (David : pertes de son au début des films, Shield du bas) : les 10 premières minutes de chaque film
+        line("== Son (début des derniers films) ==")
+        val son = runCatching { Son666.entries(context) }.getOrDefault(emptyList())
+        if (son.isEmpty()) line("(rien de noté)") else son.forEach { line(it) }
+        line()
+
         line("== Coupures réseau / redémarrages ==")
         val net = runCatching { Net666.entries(context) }.getOrDefault(emptyList()).sortedByDescending { it.start }.take(25)
         if (net.isEmpty()) line("(aucune)")

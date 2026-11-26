@@ -408,6 +408,61 @@ object FrankFree666 {
         return listOf(row.copy(showAllTab = false, folders = listOf(stone)))
     }
 
+    // ---------- Accueil du 26/11 au soir (David, 22 h 40) : exit la pierre ----------
+    // Sous la morgue, les 4 tombes l'une à côté de l'autre, chacune avec ses catégories, comme avant :
+    // Top 10 (films, séries) · Pour toi, Lambda (films, séries) · Shudder · Prochainement (films, séries).
+    // Le cimetière reste dans l'écran de veille.
+
+    /**
+     * Plan pur (testé). [before] = l'accueil gardé pour « Annuler » (celui d'avant la pierre), qui a encore
+     * les vraies tuiles. Sans lui, les tombes sont refaites à partir des listes rangées dans la pierre.
+     * Null si rien n'est reconnu.
+     */
+    fun accueil2611b(cols: List<Collection>, before: List<Collection>?): List<Collection>? {
+        val stoneRow = cols.firstOrNull { c -> c.folders.any(::isCimetiere) }
+        val base = if (stoneRow != null) before.orEmpty() else cols
+        val old = base.flatMap { it.folders }.filterNot(::isCimetiere)
+        val oldRow = base.firstOrNull { c -> c.folders.any { isPourToiTile(it) || isShudderTile(it) || isComingTile(it) } }
+        val stoneSources = stoneRow?.folders?.first(::isCimetiere)?.sources.orEmpty()
+        val like = oldRow?.folders?.firstOrNull()
+        fun rebuilt(id: String, title: String, cover: String?, keep: (CollectionSource) -> Boolean): CollectionFolder? =
+            stoneSources.filter(keep).takeIf { it.isNotEmpty() }?.let {
+                CollectionFolder(id = id, title = title, coverImageUrl = cover,
+                    tileShape = like?.tileShape ?: com.nuvio.tv.domain.model.PosterShape.LANDSCAPE, sources = it)
+            }
+        fun local(id: String): (CollectionSource) -> Boolean = { it is AddonCatalogCollectionSource && it.addonId == id }
+        val top10 = old.firstOrNull { Top10Folder666.isTop10(it) } ?: Top10Folder666.folder(like)
+        val pourToi = old.firstOrNull(::isPourToiTile)
+            ?: rebuilt("666pourtoi", "Pour toi", null, local(LocalCatalogs666.POURTOI))
+        val shudder = old.firstOrNull(::isShudderTile)
+            ?: rebuilt("666shudder", "Shudder", "666art:streaming-shudder") { it is TmdbCollectionSource }
+        val coming = old.firstOrNull(::isComingTile)
+            ?: rebuilt("666prochainement", "Prochainement", "666art:cLGKrgcd", local(LocalCatalogs666.UPCOMING))
+        if (pourToi == null && shudder == null && coming == null) return null
+        val tombs = listOfNotNull(top10, pourToi, shudder, coming).map { f -> f.copy(sources = f.sources.map(::noRomance)) }
+        val row = (oldRow ?: stoneRow ?: cols.first()).copy(showAllTab = oldRow?.showAllTab ?: true, folders = tombs)
+        val out = listOf(row)
+        return if (out == cols) null else out
+    }
+
+    /** Une seule fois. « Annuler la réorganisation » garde l'accueil d'avant la pierre. */
+    suspend fun applyAccueil2611b(context: Context, store: CollectionsDataStore) {
+        val prefs = context.getSharedPreferences("666tv_frankfree", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("accueil2611b", false)) return
+        val current = runCatching { store.getCurrentCollections() }.getOrNull() ?: return
+        if (current.isEmpty()) return
+        val reorg = context.getSharedPreferences("666tv_reorg", Context.MODE_PRIVATE)
+        val before = reorg.getString("before", null)?.let { json -> runCatching { store.importFromJson(json) }.getOrNull() }
+        val next = accueil2611b(current, before)
+        if (next != null) {
+            if (before == null) store.exportCurrentProfileJson()?.let { reorg.edit().putString("before", it).apply() }
+            store.setCollections(next)
+            runCatching { pushCollections(context) }
+            runCatching { Announce666.log(context, "🏠 Accueil : sous la morgue, les tombes Top 10, Pour toi, Shudder, Prochainement", "accueil") }
+        }
+        prefs.edit().putBoolean("accueil2611b", true).putBoolean("accueil2611", true).apply()
+    }
+
     /** 26/11 : une liste TMDB de films (Shudder…) n'amène jamais de romance (10749). */
     fun noRomance(s: CollectionSource): CollectionSource {
         if (s !is TmdbCollectionSource || s.mediaType != TmdbCollectionMediaType.MOVIE) return s

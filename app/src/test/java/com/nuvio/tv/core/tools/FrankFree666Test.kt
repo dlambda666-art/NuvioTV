@@ -238,4 +238,43 @@ class FrankFree666Test {
         assertNull(FrankFree666.accueil2611(out))                 // une seule fois
         assertNull(Top10Folder666.withTop10(out))                 // pas de tuile Top 10 remise à côté
     }
+
+    @Test fun `accueil du 26-11 soir - exit la pierre, les 4 tombes sous la morgue`() {
+        val vfw = AddonCatalogCollectionSource(LocalCatalogs666.VFWEEK, "movie", "vf-week")
+        val pt = AddonCatalogCollectionSource(LocalCatalogs666.POURTOI, "movie", "pour-toi")
+        val pts = AddonCatalogCollectionSource(LocalCatalogs666.POURTOI, "series", "pour-toi")
+        val shudder = TmdbCollectionSource(sourceType = com.nuvio.tv.domain.model.TmdbCollectionSourceType.DISCOVER, title = "Shudder", mediaType = TmdbCollectionMediaType.MOVIE,
+            filters = com.nuvio.tv.domain.model.TmdbCollectionFilters(withWatchProviders = "99"))
+        val cs = AddonCatalogCollectionSource(LocalCatalogs666.UPCOMING, "movie", "upcoming")
+        val row = Collection(id = "r1", title = "1", folders = listOf(
+            CollectionFolder(id = "h", title = "Horreur", coverImageUrl = "x/PrRXbjxT.jpg", sources = listOf(vfw.copy(catalogId = "h"))),
+            CollectionFolder(id = "vf", title = "En VF", sources = listOf(vfw)),
+            CollectionFolder(id = "pt", title = "Pour toi", coverImageUrl = "p.jpg", sources = listOf(pt, pts)),
+            CollectionFolder(id = "sh", title = "Shudder", coverImageUrl = "x/streaming-shudder.jpg", sources = listOf(shudder)),
+            Top10Folder666.folder(null),
+            CollectionFolder(id = "cs", title = "Prochainement", coverImageUrl = "x/cLGKrgcd.jpg", sources = listOf(cs))
+        ))
+        val before = listOf(row, Collection(id = "r2", title = "2", folders = listOf(CollectionFolder(id = "wwe", title = "WWE", sources = listOf(vfw)))))
+        val stone = FrankFree666.accueil2611(before)!!
+
+        // avec l'accueil d'avant la pierre : les vraies tuiles, dans l'ordre
+        val out = FrankFree666.accueil2611b(stone, before)!!
+        assertEquals(1, out.size)
+        assertEquals(listOf(Top10Folder666.ID, "pt", "sh", "cs"), out[0].folders.map { it.id })
+        assertEquals(listOf(pt, pts), out[0].folders[1].sources)
+        assertEquals("10749", (out[0].folders[2].sources.single() as TmdbCollectionSource).filters.withoutGenres)
+        assertEquals("x/streaming-shudder.jpg", out[0].folders[2].coverImageUrl)
+        assertNull(FrankFree666.accueil2611b(out, before))      // déjà fait
+        assertNull(Top10Folder666.withTop10(out))               // pas de 2e Top 10
+
+        // sans sauvegarde : refaites à partir des listes de la pierre
+        val rebuilt = FrankFree666.accueil2611b(stone, null)!!
+        assertEquals(listOf("Top 10", "Pour toi", "Shudder", "Prochainement"), rebuilt[0].folders.map { it.title })
+        assertEquals(listOf(pt, pts), rebuilt[0].folders[1].sources)
+        assertEquals(listOf(cs), rebuilt[0].folders[3].sources)
+
+        // Shield qui n'a jamais eu la pierre : directement depuis son accueil
+        val direct = FrankFree666.accueil2611b(before, null)!!
+        assertEquals(listOf(Top10Folder666.ID, "pt", "sh", "cs"), direct[0].folders.map { it.id })
+    }
 }
