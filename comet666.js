@@ -413,6 +413,7 @@ var YGGREBORN_URL = 'https://www.yggreborn.org/api';
 var YGG_STATS = null;
 var LAST_WHY = null;
 var AIR_DATE = null;
+var AIR_FROM = '';
 var TMDB_NUM = null;
 // 666TVF (07/11) : budget de temps (voir getStreams)
 var BUDGET_MS = 55000, SLOW_MS = 8000, T0 = 0, TIMING = null;
@@ -839,7 +840,7 @@ function investigation(why, ygg) {
         var y = 'YggReborn : ' + ygg.queries + ' recherche' + (ygg.queries > 1 ? 's' : '') + ' · ' + ygg.items + ' réponse' + (ygg.items > 1 ? 's' : '');
         if (ygg.episode) y += ' · ' + ygg.episode + ' autre épisode';
         if (ygg.title) y += ' · ' + ygg.title + ' autre titre';
-        if (AIR_DATE) y += ' · cherché le ' + AIR_DATE;
+        if (AIR_DATE) y += ' · cherché le ' + AIR_DATE + ' (date ' + AIR_FROM + ')';
         if (ygg.samples && ygg.samples.length) y += ' · ex. ' + String(ygg.samples[0]).slice(0, 45);
         parts.unshift(y);
     } else if (setting('yggreborn')) parts.unshift('YggReborn : pas interrogé');
@@ -862,7 +863,7 @@ function investigation(why, ygg) {
 
 // 666TVF (07/11) : trace envoyée à Frank pour l'enquête (titres et compteurs seulement :
 // jamais de clé, de passkey ni d'adresse de source).
-var COMET_VERSION = '1.1.40';
+var COMET_VERSION = '1.1.41';
 async function trace(data) { }   // 666TVF (09/11) : Frank en pause chez Hugging Face — plus de traces
 
 // --- Point d'entrée appelé par 666TV --------------------------------------
@@ -920,6 +921,7 @@ async function getStreamsInner(tmdbId, mediaType, season, episode) {
     ];
     // 26/11 : la date que Frank connaît (fiche / calendrier) d'abord ; TMDB seulement à défaut
     // (NXT : TMDB compte les PLE, son S20E47 n'est pas celui de Frank → « autre épisode » partout)
+    AIR_FROM = isTv && frankAirDate(season, episode) ? 'Frank' : 'TMDB';
     AIR_DATE = isTv ? (frankAirDate(season, episode) || await episodeAirDate(tmdbId, season, episode)) : null;
     var lists = [];
     TIMING = { skipped: [], slow: [] };
