@@ -316,7 +316,14 @@ class CalendarRepository @Inject constructor(
      * règle stricte (SmackDown / AHS annoncés à tort). S'ils sont vraiment en VF, la cloche resonnera.
      */
     private suspend fun recheckOnce666(episodes: List<CalendarEpisode>) {
-        val prefs = appContext.getSharedPreferences("666tv_calendar_recheck2", android.content.Context.MODE_PRIVATE)
+        recheckWith666(episodes, "666tv_calendar_recheck2")
+        // 26/11 (faux cri NXT S20E47) : une fois, les émissions datées (WWE, UFC…) annoncées « VF dispo » ces
+        // 10 derniers jours sont revérifiées avec la règle « il faut la date dans le nom » (2.0.24)
+        if (CalendarVfRule666.isDatedShow(episodes.firstOrNull()?.seriesName)) recheckWith666(episodes, "666tv_calendar_recheck3_dated")
+    }
+
+    private suspend fun recheckWith666(episodes: List<CalendarEpisode>, prefsName: String) {
+        val prefs = appContext.getSharedPreferences(prefsName, android.content.Context.MODE_PRIVATE)
         val done = prefs.getStringSet("done", emptySet()).orEmpty()
         val seriesId = episodes.firstOrNull()?.seriesId ?: return
         if (seriesId in done) return
