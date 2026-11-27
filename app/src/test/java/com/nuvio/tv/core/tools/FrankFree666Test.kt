@@ -277,4 +277,31 @@ class FrankFree666Test {
         val direct = FrankFree666.accueil2611b(before, null)!!
         assertEquals(listOf(Top10Folder666.ID, "pt", "sh", "cs"), direct[0].folders.map { it.id })
     }
+
+    @Test fun `accueil du 27-11 - la pierre revient avec les 4 tombes dedans`() {
+        val pt = AddonCatalogCollectionSource(LocalCatalogs666.POURTOI, "movie", "pour-toi")
+        val cs = AddonCatalogCollectionSource(LocalCatalogs666.UPCOMING, "movie", "upcoming")
+        val shudder = TmdbCollectionSource(sourceType = com.nuvio.tv.domain.model.TmdbCollectionSourceType.DISCOVER, title = "Shudder", mediaType = TmdbCollectionMediaType.MOVIE,
+            filters = com.nuvio.tv.domain.model.TmdbCollectionFilters(withWatchProviders = "99"))
+        val tombsRow = Collection(id = "r1", title = "1", folders = listOf(
+            Top10Folder666.folder(null),
+            CollectionFolder(id = "pt", title = "Pour toi", sources = listOf(pt)),
+            CollectionFolder(id = "sh", title = "Shudder", coverImageUrl = "x/streaming-shudder.jpg", sources = listOf(shudder)),
+            CollectionFolder(id = "cs", title = "Prochainement", coverImageUrl = "x/cLGKrgcd.jpg", sources = listOf(cs))
+        ))
+        val horror = CollectionFolder(id = "h", title = "Horreur", coverImageUrl = "x/PrRXbjxT.jpg", tileShape = com.nuvio.tv.domain.model.PosterShape.POSTER)
+        val before = listOf(Collection(id = "old", title = "o", folders = listOf(horror)))
+        val out = FrankFree666.accueil2711(listOf(tombsRow), before)!!
+        assertEquals(2, out.size)
+        val stone = out[0].folders.single()
+        assertEquals(FrankFree666.CIMETIERE_ID, stone.id)
+        assertEquals(HomeReorg666.PORTE_COVER, stone.coverImageUrl)
+        assertEquals(com.nuvio.tv.domain.model.PosterShape.POSTER, stone.tileShape)   // même forme que la porte d'hier
+        assertTrue(stone.sources.isEmpty())
+        assertEquals(FrankFree666.TOMBES_ID, out[1].id)
+        assertEquals(listOf(Top10Folder666.ID, "pt", "sh", "cs"), out[1].folders.map { it.id })
+        assertEquals("10749", (out[1].folders[2].sources.single() as TmdbCollectionSource).filters.withoutGenres)
+        assertNull(FrankFree666.accueil2711(out, before))     // déjà fait
+        assertNull(Top10Folder666.withTop10(out))              // pas de 2e Top 10
+    }
 }

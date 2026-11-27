@@ -102,7 +102,8 @@ import kotlinx.coroutines.launch
 fun FolderDetailScreen(
     viewModel: FolderDetailViewModel = hiltViewModel(),
     onNavigateToDetail: (String, String, String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenFolder666: (String, String) -> Unit = { _, _ -> }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val rowsFocusState by viewModel.rowsFocusState.collectAsStateWithLifecycle()
@@ -121,6 +122,13 @@ fun FolderDetailScreen(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(stringResource(R.string.folder_detail_not_found), color = NuvioTheme.colors.TextSecondary)
         }
+        return
+    }
+
+    // 27/11 (David) : la pierre ouvre le cimetière avec les 4 tombes ; chaque tombe s'ouvre sur ses catégories
+    if (folder.id == com.nuvio.tv.core.tools.FrankFree666.CIMETIERE_ID) {
+        val tombs by viewModel.tombs666.collectAsStateWithLifecycle()
+        Cimetiere666(tombs = tombs, onOpenFolder = onOpenFolder666)
         return
     }
 
@@ -1018,5 +1026,43 @@ private fun FollowLayoutContent(
                 }
             }
         )
+    }
+}
+
+/** 27/11 (David) : le cimetière derrière la pierre : le fond du cimetière et les 4 tombes illustrées. */
+@Composable
+private fun Cimetiere666(
+    tombs: com.nuvio.tv.domain.model.Collection?,
+    onOpenFolder: (String, String) -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(R.drawable.bg_cimetiere_666),
+            contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(R.drawable.title_cimetiere_666),
+            contentDescription = "Cimetière",
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 48.dp, top = 32.dp)
+                .height(72.dp)
+        )
+        if (tombs == null || tombs.folders.isEmpty()) {
+            LoadingIndicator(modifier = Modifier.align(Alignment.Center))
+        } else {
+            com.nuvio.tv.ui.components.CollectionRowSection(
+                collection = tombs,
+                onFolderClick = onOpenFolder,
+                posterCardStyle = com.nuvio.tv.ui.components.PosterCardStyle(width = 118.dp, height = 177.dp),
+                focusedItemIndex = 0,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(bottom = 64.dp)
+            )
+        }
     }
 }

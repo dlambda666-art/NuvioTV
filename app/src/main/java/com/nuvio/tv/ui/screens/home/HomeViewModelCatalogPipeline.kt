@@ -51,7 +51,9 @@ internal fun HomeViewModel.observeCollectionsPipeline() {
             .collectLatest { collections ->
                 // Deduplicate by collection ID (keep last occurrence) to prevent
                 // duplicate LazyColumn keys when users import overlapping collections.
-                collectionsCache = applyBundled666Art(collections.associateBy { it.id }.values.toList())
+                // 27/11 : la rangée des tombes du cimetière n'apparaît jamais sur l'accueil (elle s'ouvre par la pierre)
+                collectionsCache = applyBundled666Art(collections.associateBy { it.id }.values.toList()
+                    .filterNot { it.id == com.nuvio.tv.core.tools.FrankFree666.TOMBES_ID })
                 rebuildCatalogOrder(addonsCache)
                 scheduleUpdateCatalogRows()
             }

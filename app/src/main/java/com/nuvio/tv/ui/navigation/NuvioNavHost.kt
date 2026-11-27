@@ -1444,7 +1444,11 @@ private fun PlaybackNavHost(
                     val heroBackdrop = HeroBackdropState.consumeAndClear()
                     navController.navigate(Screen.Detail.createRoute(itemId, itemType, addonBaseUrl, heroBackdropUrl = heroBackdrop))
                 },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                // 27/11 : une tombe du cimetière s'ouvre sur ses catégories
+                onOpenFolder666 = { collectionId, folderId ->
+                    navController.navigate(Screen.FolderDetail.createRoute(collectionId, folderId))
+                }
             )
         }
 

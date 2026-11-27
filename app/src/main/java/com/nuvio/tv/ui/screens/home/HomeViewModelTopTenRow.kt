@@ -34,6 +34,8 @@ internal fun HomeViewModel.observeTopTenVfRow() {
         }
         // 666TVF (26/11, 22 h 40, David) : exit la pierre ; sous la morgue, les 4 tombes côte à côte (une fois)
         runCatching { com.nuvio.tv.core.tools.FrankFree666.applyAccueil2611b(appContext, collectionsDataStore) }
+        // 666TVF (27/11, David) : la pierre revient ; elle ouvre le cimetière avec les 4 tombes (une fois)
+        runCatching { com.nuvio.tv.core.tools.FrankFree666.applyAccueil2711(appContext, collectionsDataStore) }
         delay(6_000L)
         while (true) {
             val row = runCatching { buildTopTenVfRow() }.getOrNull()

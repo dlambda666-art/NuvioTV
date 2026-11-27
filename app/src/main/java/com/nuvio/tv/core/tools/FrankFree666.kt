@@ -463,6 +463,48 @@ object FrankFree666 {
         prefs.edit().putBoolean("accueil2611b", true).putBoolean("accueil2611", true).apply()
     }
 
+    // ---------- Accueil du 27/11 (David, 6 h 20) : la pierre revient, avec les tombes dedans ----------
+    // Sous la morgue, la même pierre qui se lève (même dalle, même fondu) ; elle ouvre le cimetière où
+    // se trouvent les 4 tombes de l'accueil avec leurs illustrations (Top 10, Pour toi, Shudder,
+    // Prochainement) ; chaque tombe s'ouvre sur ses catégories.
+
+    /** Rangée cachée (jamais affichée sur l'accueil) qui garde les 4 tombes du cimetière. */
+    const val TOMBES_ID = "666tombes"
+    const val TOMBES_TITLE = "Tombes du cimetière"
+
+    /**
+     * Plan pur (testé). [cols] = l'accueil des 4 tombes (2.0.29). [before] = l'accueil gardé pour
+     * « Annuler » : on y reprend la porte « Horreur » pour que la pierre ait la même forme qu'hier.
+     */
+    fun accueil2711(cols: List<Collection>, before: List<Collection>?): List<Collection>? {
+        if (cols.any { it.id == TOMBES_ID }) return null
+        val tombsRow = cols.firstOrNull { c -> c.folders.any { isPourToiTile(it) || isShudderTile(it) || isComingTile(it) } } ?: return null
+        val horror = (before.orEmpty() + cols).flatMap { it.folders }.firstOrNull { HomeReorg666.isHorror(it) }
+        val stone = (horror ?: tombsRow.folders.first()).copy(
+            id = CIMETIERE_ID, title = CIMETIERE_TITLE, coverImageUrl = HomeReorg666.PORTE_COVER,
+            focusGifUrl = null, titleLogoUrl = null, hideTitle = false, sources = emptyList()
+        )
+        val tombs = tombsRow.copy(id = TOMBES_ID, title = TOMBES_TITLE, folders = tombsRow.folders.map { f -> f.copy(sources = f.sources.map(::noRomance)) })
+        return listOf(tombsRow.copy(showAllTab = false, folders = listOf(stone)), tombs)
+    }
+
+    suspend fun applyAccueil2711(context: Context, store: CollectionsDataStore) {
+        val prefs = context.getSharedPreferences("666tv_frankfree", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("accueil2711", false)) return
+        val current = runCatching { store.getCurrentCollections() }.getOrNull() ?: return
+        if (current.isEmpty()) return
+        val reorg = context.getSharedPreferences("666tv_reorg", Context.MODE_PRIVATE)
+        val before = reorg.getString("before", null)?.let { json -> runCatching { store.importFromJson(json) }.getOrNull() }
+        val next = accueil2711(current, before)
+        if (next != null) {
+            if (before == null) store.exportCurrentProfileJson()?.let { reorg.edit().putString("before", it).apply() }
+            store.setCollections(next)
+            runCatching { pushCollections(context) }
+            runCatching { Announce666.log(context, "🏠 Accueil : la pierre ouvre le cimetière et ses 4 tombes", "accueil") }
+        }
+        prefs.edit().putBoolean("accueil2711", true).apply()
+    }
+
     /** 26/11 : une liste TMDB de films (Shudder…) n'amène jamais de romance (10749). */
     fun noRomance(s: CollectionSource): CollectionSource {
         if (s !is TmdbCollectionSource || s.mediaType != TmdbCollectionMediaType.MOVIE) return s

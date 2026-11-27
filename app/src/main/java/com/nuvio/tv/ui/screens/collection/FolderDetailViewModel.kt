@@ -52,6 +52,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -133,6 +134,14 @@ class FolderDetailViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(FolderDetailUiState())
     val uiState: StateFlow<FolderDetailUiState> = _uiState.asStateFlow()
+
+    /** 27/11 : les 4 tombes du cimetière (rangée cachée), avec leurs illustrations, pour la pierre. */
+    val tombs666: StateFlow<com.nuvio.tv.domain.model.Collection?> = collectionsDataStore.collections
+        .map { cols ->
+            cols.firstOrNull { it.id == com.nuvio.tv.core.tools.FrankFree666.TOMBES_ID }
+                ?.let { com.nuvio.tv.ui.screens.home.applyBundled666Art(listOf(it)).first() }
+        }
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, null)
 
     private var movieWatchedJob: Job? = null
     private var enrichFocusJob: Job? = null
