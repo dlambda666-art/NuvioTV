@@ -128,16 +128,24 @@ object Rapport666 {
     }
 
     /** La page HTML servie au téléphone : le texte + un bouton pour tout copier. */
-    fun page(text: String): String {
+    /**
+     * 27/11 (David : « le rapport ne s'actualise pas, c'est toujours celui du 23 novembre ») : le texte était
+     * dans une zone de saisie (textarea) ; le navigateur du téléphone y remet tout seul l'ancien contenu
+     * quand on rouvre / actualise la page. Le texte est maintenant affiché tel quel (jamais retenu par le
+     * navigateur), la page n'est jamais gardée en cache, et l'heure du rapport est écrite en titre.
+     */
+    fun page(text: String, now: Long = System.currentTimeMillis()): String {
         val esc = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        val stamp = SimpleDateFormat("EEEE d MMMM · HH:mm:ss", Locale.FRANCE).format(Date(now))
         return """<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-store"><meta http-equiv="Pragma" content="no-cache">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Rapport pour Claude</title>
 <style>body{margin:0;background:#141214;color:#eee;font-family:system-ui,sans-serif;padding:16px}
 h1{color:#78e66e;font-size:20px}button{background:#7a3fd9;color:#fff;border:0;border-radius:24px;padding:14px 22px;font-size:17px;width:100%}
-textarea{width:100%;height:65vh;margin-top:12px;background:#1f1c21;color:#eee;border:1px solid #7a3fd9;border-radius:8px;font:13px monospace;padding:8px;box-sizing:border-box}
+pre{white-space:pre-wrap;word-break:break-word;margin-top:12px;background:#1f1c21;color:#eee;border:1px solid #7a3fd9;border-radius:8px;font:13px monospace;padding:8px}
 p{color:#bbb;font-size:14px}</style></head><body>
-<h1>Rapport pour Claude</h1><p><i>Avant-poste 31 · journal de MacReady</i></p><p>Appuie sur le bouton, puis colle le texte dans la conversation avec Claude.</p>
-<button onclick="var t=document.getElementById('r');t.focus();t.select();t.setSelectionRange(0,99999);var ok=false;try{ok=document.execCommand('copy')}catch(e){}if(navigator.clipboard&&!ok){navigator.clipboard.writeText(t.value)}this.textContent='Copié ✓'">Tout copier</button>
-<textarea id="r" readonly>$esc</textarea></body></html>"""
+<h1>Rapport pour Claude</h1><p><b style="color:#c9a3ff">Fait le $stamp</b> · <i>Avant-poste 31 · journal de MacReady</i></p><p>Appuie sur le bouton, puis colle le texte dans la conversation avec Claude.</p>
+<button onclick="var s=document.getElementById('r').textContent;var t=document.createElement('textarea');t.value=s;t.setAttribute('readonly','');t.style.position='fixed';t.style.top='-1000px';document.body.appendChild(t);t.select();t.setSelectionRange(0,999999);var ok=false;try{ok=document.execCommand('copy')}catch(e){}document.body.removeChild(t);if(!ok&&navigator.clipboard){navigator.clipboard.writeText(s)}this.textContent='Copié ✓'">Tout copier</button>
+<pre id="r">$esc</pre></body></html>"""
     }
 }

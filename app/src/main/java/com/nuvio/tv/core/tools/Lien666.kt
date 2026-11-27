@@ -333,7 +333,13 @@ object Lien666 {
                 // 16/11 : journal des coupures réseau (heures et durées seulement)
                 uri == "/netlog" -> newFixedLengthResponse(Response.Status.OK, "application/json", Net666.export(app))
                 // 22/11 : le « Rapport pour Claude » (texte filtré : ni clé, ni token, ni lien de config)
+                // 27/11 : jamais gardé en cache par le téléphone (le rapport est refait à chaque ouverture)
                 uri == Rapport666.PATH -> newFixedLengthResponse(Response.Status.OK, "text/html; charset=utf-8", Rapport666.page(Rapport666.build(app)))
+                    .apply {
+                        addHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+                        addHeader("Pragma", "no-cache")
+                        addHeader("Expires", "0")
+                    }
                 uri == "/memoire" -> newFixedLengthResponse(Response.Status.OK, "application/json", Memoire666.export(app).toString())
                 uri == "/recs" -> {
                     // l'adresse d'origine (lien debrid) et ses en-têtes ne quittent jamais la Shield
