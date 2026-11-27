@@ -112,15 +112,17 @@ fun FolderDetailScreen(
     val tabFocusStates by viewModel.tabFocusStates.collectAsStateWithLifecycle()
     val folder = uiState.folder
 
+    // 27/11 (David : « en ouvrant Top 10, on revoit l'Abattoir une seconde avant le cimetière ») : l'attente
+    // se fait déjà sur le fond du cimetière
     if (uiState.isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize().cemetery666(), contentAlignment = Alignment.Center) {
             LoadingIndicator()
         }
         return
     }
 
     if (folder == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize().cemetery666(), contentAlignment = Alignment.Center) {
             Text(stringResource(R.string.folder_detail_not_found), color = NuvioTheme.colors.TextSecondary)
         }
         return
@@ -904,7 +906,7 @@ private fun FollowLayoutContent(
     val horreurModernContext = androidx.compose.ui.platform.LocalContext.current
 
     if (homeState == null || (homeState.isLoading && homeState.catalogRows.isEmpty())) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize().cemetery666(), contentAlignment = Alignment.Center) {
             LoadingIndicator()
         }
         return
@@ -1042,14 +1044,6 @@ private fun Cimetiere666(
             contentDescription = null,
             contentScale = androidx.compose.ui.layout.ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
-        )
-        androidx.compose.foundation.Image(
-            painter = androidx.compose.ui.res.painterResource(R.drawable.title_cimetiere_666),
-            contentDescription = "Cimetière",
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 48.dp, top = 32.dp)
-                .height(72.dp)
         )
         if (tombs == null || tombs.folders.isEmpty()) {
             LoadingIndicator(modifier = Modifier.align(Alignment.Center))

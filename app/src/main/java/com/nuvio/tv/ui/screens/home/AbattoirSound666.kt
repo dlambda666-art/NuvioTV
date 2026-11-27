@@ -174,12 +174,21 @@ object AbattoirSound666 {
                 p.volume = 0f
                 p.playWhenReady = true
                 player = p
-                val start = android.os.SystemClock.uptimeMillis()
+                // 27/11 : la montée (1,5 s) commence quand le son sort vraiment (fichier prêt), pas avant :
+                // sinon, si le fichier se prépare encore, le début de la montée est perdu et on entend un retard
+                var start = -1L
                 lastStartAt = System.currentTimeMillis()
                 val tick = object : Runnable {
                     override fun run() {
                         val cur = player ?: return
                         if (cur !== p) return
+                        if (start < 0) {
+                            if (p.playbackState != androidx.media3.common.Player.STATE_READY) {
+                                if (com.nuvio.tv.core.tools.Announce666.inPlayer()) { stop(); return }
+                                handler.postDelayed(this, 15L); return
+                            }
+                            start = android.os.SystemClock.uptimeMillis()
+                        }
                         val t = android.os.SystemClock.uptimeMillis() - start
                         val total = playLength(p.duration.takeIf { it != androidx.media3.common.C.TIME_UNSET } ?: -1L)
                         if (t >= total || com.nuvio.tv.core.tools.Announce666.inPlayer() || !com.nuvio.tv.core.wake.WakeLaunch666.resumed) {
@@ -208,11 +217,9 @@ object AbattoirSound666 {
      * d'avance pendant le cinéma) : une seule sortie son, celle du film.
      */
     fun onFilmStart() {
-        handler.post {
-            stop()
-            ready?.let { old -> runCatching { old.release() } }
-            ready = null; readyUri = null
-        }
+        // 27/11 (David : Machine Head de nouveau en retard aux portes) : on ne jette plus le lecteur préparé
+        // d'avance (il ne sort aucun son tant qu'il ne joue pas) ; on arrête seulement Machine Head s'il joue.
+        handler.post { if (player != null) stop() }
     }
 
     private val AUDIO_EXT = Regex("""\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|wma|amr)$""", RegexOption.IGNORE_CASE)
