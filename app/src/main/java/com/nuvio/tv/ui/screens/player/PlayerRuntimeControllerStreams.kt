@@ -833,6 +833,8 @@ internal fun PlayerRuntimeController.switchToSourceStream(
 
     // 25/11 (Nuvio 1.1.1) : on garde la position en changeant de source (avant : retour au début)
     val resumePositionMs = currentPlaybackPositionMs()?.coerceAtLeast(0L) ?: 0L
+    // 27/11 : on garde la durée de l'ancien fichier pour reprendre au même moment du FILM (voir mapResume666)
+    switchOldDurationMs666 = if (resumePositionMs > 0L) _playbackTimeline.value.duration.coerceAtLeast(0L) else 0L
     flushPlaybackSnapshotForSwitchOrExit()
 
     val newHeaders = PlayerMediaSourceFactory.sanitizeHeaders(

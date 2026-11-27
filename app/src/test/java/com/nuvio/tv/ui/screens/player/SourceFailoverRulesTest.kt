@@ -3,6 +3,7 @@ package com.nuvio.tv.ui.screens.player
 import com.nuvio.tv.domain.model.Stream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SourceFailoverRulesTest {
@@ -155,5 +156,17 @@ class SourceFailoverRulesTest {
         org.junit.Assert.assertFalse(r.shouldWaitForNetwork(err, false, false, 0L))
         // un refus du serveur n'est pas une coupure réseau
         org.junit.Assert.assertFalse(r.shouldWaitForNetwork("HTTP 403", true, false, 0L))
+    }
+
+    @Test fun `27-11 changement de source pres de la fin - on reprend au meme moment du film`() {
+        val min = 60_000L
+        // 1 h 58 d'un fichier de 2 h 00 → version 25 i/s de 1 h 55 : pas le générique, le même moment
+        assertEquals((118 * min * 115.0 / 120.0).toLong(), SourceFailoverRules.mapResume666(118 * min, 120 * min, 115 * min))
+        // durées presque égales ou inconnues : la même seconde
+        assertEquals(118 * min, SourceFailoverRules.mapResume666(118 * min, 120 * min, 120 * min + 20_000L))
+        assertEquals(118 * min, SourceFailoverRules.mapResume666(118 * min, 0L, 115 * min))
+        assertEquals(118 * min, SourceFailoverRules.mapResume666(118 * min, 120 * min, -9_223_372_036_854_775_807L))
+        // jamais au-delà de la fin du nouveau fichier
+        assertTrue(SourceFailoverRules.mapResume666(119 * min, 100 * min, 130 * min) < 130 * min)
     }
 }

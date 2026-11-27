@@ -401,6 +401,8 @@ class PlayerRuntimeController(
     internal var startupPhaseSequence: Int = 0
 
     internal var lastSavedPosition: Long = 0L
+    /** 27/11 : durée du fichier qu'on quitte en changeant de source (0 = pas de changement en cours). */
+    internal var switchOldDurationMs666: Long = 0L
     internal val saveThresholdMs = 5000L
     internal var hasMarkedCurrentEpisodeCompleted: Boolean = false
     internal var lastKnownDuration: Long = 0L

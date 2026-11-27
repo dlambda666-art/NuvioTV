@@ -76,6 +76,19 @@ internal object SourceFailoverRules {
         !url.isNullOrBlank() && url !in refreshed && hasPlayed && positionMs >= 30_000L &&
             (isServerRefusal(error) || Regex("HTTP\\s*410|expired|expir", RegexOption.IGNORE_CASE).containsMatchIn(error))
 
+    /**
+     * 27/11 — règle pure (testée) : reprise après un changement de source. Si les deux fichiers n'ont pas
+     * la même durée (écart > 1 %), la même seconde ne tombe pas au même moment du film (ex. 1 h 58 d'un
+     * fichier de 2 h 00 = déjà le générique d'une version 25 i/s de 1 h 55) : on reprend au même
+     * pourcentage. Durées inconnues ou presque égales → la même seconde.
+     */
+    fun mapResume666(positionMs: Long, oldDurationMs: Long, newDurationMs: Long): Long {
+        if (positionMs <= 0L || oldDurationMs <= 0L || newDurationMs <= 0L) return positionMs
+        val ratio = newDurationMs.toDouble() / oldDurationMs.toDouble()
+        if (kotlin.math.abs(ratio - 1.0) <= 0.01) return positionMs
+        return (positionMs * ratio).toLong().coerceIn(0L, (newDurationMs - 1_000L).coerceAtLeast(0L))
+    }
+
     /** 16/11 : erreur due au réseau de la maison (câble, box) plutôt qu'au lien. */
     fun isNetworkError(error: String): Boolean =
         Regex(

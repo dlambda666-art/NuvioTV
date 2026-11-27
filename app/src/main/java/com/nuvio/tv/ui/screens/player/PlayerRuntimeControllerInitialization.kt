@@ -1291,8 +1291,12 @@ internal fun PlayerRuntimeController.initializePlayer(
                                 PlayerStartupPlaybackPolicy.ReadyAction.None -> Unit
                             }
                             tryApplyPendingResumeProgress(this@apply)
-                            _uiState.value.pendingSeekPosition?.let { position ->
-                                seekTo(position)
+                            _uiState.value.pendingSeekPosition?.let { pending ->
+                                // 27/11 (David : « à quelques minutes de la fin, le bouclier charge puis on est au
+                                // générique ») : le lien qui prend le relais n'a pas toujours la même durée (version
+                                // 25 images/s ~4 % plus courte, autre montage) : on reprend au même moment du FILM.
+                                val position = SourceFailoverRules.mapResume666(pending, switchOldDurationMs666, duration)
+                                switchOldDurationMs666 = 0L
                                 if (NuvioExoPlayerPerformanceHelper.enabled) {
                                     seekBufferingUiDeferred = true
                                     seekBufferingUiJob?.cancel()
