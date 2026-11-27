@@ -69,6 +69,17 @@ object Bobine666 {
     const val DOORS_MS = 700L + 400L + 1_100L + 2_700L
     /** Départ de Machine Head (depuis le début de la fermeture du cinéma). */
     const val MH_AT_MS = DOORS_MS - 1_000L
+
+    /**
+     * 27/11 (David, Rapport : Machine Head prêt en 1-13 ms, mais en bas il ne s'entend que ~2 s plus tard ;
+     * en haut, sans barre de son, il part à l'heure) : la barre Majority met ~2 s à sortir un nouveau son.
+     * Sur la Shield du bas, Machine Head est donc lancé 2 s plus tôt pour s'entendre au même moment.
+     */
+    const val SOUNDBAR_LEAD_MS = 2_000L
+
+    /** Règle pure (testée) : départ de Machine Head selon la Shield (« Bas » = avec la barre de son). */
+    fun mhAtMs(where: String): Long =
+        if (where == "Bas") (MH_AT_MS - SOUNDBAR_LEAD_MS).coerceAtLeast(700L + 400L) else MH_AT_MS
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private var player: android.media.MediaPlayer? = null
     private var vol = VOLUME
@@ -225,6 +236,12 @@ fun StartupSplashScreen(
         if (!closing) return@LaunchedEffect
         // 25/11 (David) : la bobine s'éteint pendant l'ouverture ; Machine Head attend que les portes soient ouvertes
         Bobine666.fadeOut(Bobine666.CROSSFADE_MS, tailMs = Bobine666.DOORS_TAIL_MS)
+        // Machine Head : 1 s avant la fin de l'ouverture (bobine éteinte à ce moment-là) ;
+        // 27/11 : en bas, 2 s plus tôt (la barre de son met ~2 s à le sortir) — compté depuis le début de la fermeture
+        launch {
+            kotlinx.coroutines.delay(Bobine666.mhAtMs(com.nuvio.tv.core.tools.Net666.whereAmI()))
+            runCatching { com.nuvio.tv.ui.screens.home.AbattoirSound666.onDoorsOpening(context) }
+        }
         toDoor.animateTo(1f, tween(700))
         kotlinx.coroutines.delay(400)
         // 12/11 : les portes s'ouvrent et on avance sans s'arrêter, jusqu'à ce que les montants sortent
@@ -233,11 +250,6 @@ fun StartupSplashScreen(
             // 24/11 (David : « léger sursaut à l'ouverture ») : démarrage et arrivée tout en douceur
             launch { open.animateTo(1f, tween(3_400, easing = androidx.compose.animation.core.CubicBezierEasing(0.42f, 0f, 0.3f, 1f))) }
             kotlinx.coroutines.delay(1_100)
-            // Machine Head : 1 s avant la fin de l'ouverture (bobine éteinte à ce moment-là)
-            launch {
-                kotlinx.coroutines.delay(Bobine666.MH_AT_MS - 700L - 400L - 1_100L)
-                runCatching { com.nuvio.tv.ui.screens.home.AbattoirSound666.onDoorsOpening(context) }
-            }
             push.animateTo(1f, tween(2_700, easing = androidx.compose.animation.core.CubicBezierEasing(0.45f, 0f, 0.55f, 1f)))
         }
         finalFade.snapTo(1f)

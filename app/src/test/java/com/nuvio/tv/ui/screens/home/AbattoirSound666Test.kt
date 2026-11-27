@@ -84,4 +84,11 @@ class AbattoirSound666Test {
         assertEquals(0f, b.tailLevel(0.7f, 6_400, 3_900, 2_500), 0.0001f)             // puis on arrête
         assertEquals(0f, b.tailLevel(0.7f, 3_900, 3_900, 0), 0.0001f)                 // sans traîne : comme avant
     }
+
+    @org.junit.Test fun `27-11 en bas Machine Head part 2 s plus tot a cause de la barre de son`() {
+        val b = com.nuvio.tv.ui.components.Bobine666
+        assertEquals(b.MH_AT_MS, b.mhAtMs("Haut"))
+        assertEquals(b.MH_AT_MS - 2_000L, b.mhAtMs("Bas"))
+        assertEquals(true, b.mhAtMs("Bas") >= 700L + 400L)   // jamais avant que les portes commencent à s'ouvrir
+    }
 }
