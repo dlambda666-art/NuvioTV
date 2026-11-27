@@ -97,8 +97,8 @@ object Tomb666 {
  * Pose le contenu (l'affiche) dans l'ouverture de la tombe, et dessine la pierre par-dessus.
  * À mettre sur la boîte de l'image, avant le clip. Sans effet si les tombes sont désactivées.
  */
-fun Modifier.tomb666(landscape: Boolean, focused: Boolean, jar: Boolean = false): Modifier = composed {
-    if (!Tomb666.enabled) return@composed this
+fun Modifier.tomb666(landscape: Boolean, focused: Boolean, jar: Boolean = false, forceOn: Boolean = false): Modifier = composed {
+    if (!Tomb666.enabled && !forceOn) return@composed this
     val context = LocalContext.current
     val frame = Tomb666.frame(context, landscape, jar) ?: return@composed this
     val glow by animateFloatAsState(if (focused) 1f else 0f, label = "tombGlow")

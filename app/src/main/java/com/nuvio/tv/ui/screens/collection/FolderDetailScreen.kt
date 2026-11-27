@@ -70,6 +70,7 @@ import androidx.tv.material3.Tab
 import androidx.tv.material3.TabRow
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
+import com.nuvio.tv.ui.components.tomb666
 import com.nuvio.tv.domain.model.FolderViewMode
 import com.nuvio.tv.domain.model.HomeLayout
 import com.nuvio.tv.ui.components.CatalogRowSection
@@ -1053,15 +1054,58 @@ private fun Cimetiere666(
         if (tombs == null || tombs.folders.isEmpty()) {
             LoadingIndicator(modifier = Modifier.align(Alignment.Center))
         } else {
-            com.nuvio.tv.ui.components.CollectionRowSection(
-                collection = tombs,
-                onFolderClick = onOpenFolder,
-                posterCardStyle = com.nuvio.tv.ui.components.PosterCardStyle(width = 118.dp, height = 177.dp),
-                focusedItemIndex = 0,
+            // 27/11 (David) : de vraies pierres tombales (la même dalle que les affiches du cimetière), pas des tuiles
+            val first = remember { FocusRequester() }
+            LaunchedEffect(tombs.folders.size) { runCatching { first.requestFocus() } }
+            androidx.compose.foundation.layout.Row(
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .padding(bottom = 64.dp)
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 56.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(18.dp)
+            ) {
+                tombs.folders.forEachIndexed { index, folder ->
+                    TombStone666(
+                        folder = folder,
+                        modifier = if (index == 0) Modifier.focusRequester(first) else Modifier,
+                        onClick = { onOpenFolder(tombs.id, folder.id) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 27/11 : une tombe du cimetière = l'illustration de la tuile posée dans la dalle de pierre (Tomb666). */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun TombStone666(
+    folder: com.nuvio.tv.domain.model.CollectionFolder,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    var focused by remember { mutableStateOf(false) }
+    androidx.tv.material3.Surface(
+        onClick = onClick,
+        modifier = modifier.onFocusChanged { focused = it.isFocused || it.hasFocus },
+        shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(androidx.compose.foundation.shape.RoundedCornerShape(0.dp)),
+        colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+            focusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+            pressedContainerColor = androidx.compose.ui.graphics.Color.Transparent
+        ),
+        scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(focusedScale = 1f)
+    ) {
+        Box(
+            modifier = Modifier
+                .width(212.dp)
+                .height(153.dp)
+                .tomb666(landscape = true, focused = focused, forceOn = true)
+        ) {
+            AsyncImage(
+                model = folder.coverImageUrl,
+                contentDescription = folder.title,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
