@@ -138,8 +138,13 @@ internal fun ModernHeroMediaLayer(
     // during rapid nav / scroll). Only update when enrichment is not active
     val rawBackdrop by remember { derivedStateOf { heroBackdrop() } }
     val enriching by remember { derivedStateOf { enrichmentActive() } }
-    var displayedBackdrop by remember { mutableStateOf(HeroBackdropState.lastDisplayedUrl ?: heroBackdrop()) }
-    if (rawBackdrop != null && rawBackdrop != displayedBackdrop && !enriching) {
+    // 27/11 (David, photo : 1re ouverture de Top 10 = l'Abattoir) : on démarrait sur le DERNIER fond affiché
+    // (celui de l'accueil, l'Abattoir) puis on attendait la fin de l'enrichissement pour passer au cimetière.
+    // Un fond imposé (le cimetière des pages de catégories) est pris tout de suite, sans attendre.
+    var displayedBackdrop by remember {
+        mutableStateOf(heroBackdrop()?.takeIf { it == CEMETERY_BACKDROP_666 } ?: HeroBackdropState.lastDisplayedUrl ?: heroBackdrop())
+    }
+    if (rawBackdrop != null && rawBackdrop != displayedBackdrop && (!enriching || rawBackdrop == CEMETERY_BACKDROP_666)) {
         displayedBackdrop = rawBackdrop!!
     }
     val imageModel = remember(
