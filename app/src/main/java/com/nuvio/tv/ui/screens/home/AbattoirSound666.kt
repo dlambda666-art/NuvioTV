@@ -161,7 +161,9 @@ object AbattoirSound666 {
             stop()
             runCatching {
                 // 23/11 (réparation, David : « tjrs 3x le son ») : plus de boucle, le fichier une seule fois
+                val preloaded = readyUri == uri && ready != null
                 val p = (if (readyUri == uri) ready else null) ?: build(app, uri)
+                val askedAt = android.os.SystemClock.uptimeMillis()
                 ready = null; readyUri = null
                 p.addListener(object : androidx.media3.common.Player.Listener {
                     override fun onPlaybackStateChanged(state: Int) {
@@ -188,6 +190,11 @@ object AbattoirSound666 {
                                 handler.postDelayed(this, 15L); return
                             }
                             start = android.os.SystemClock.uptimeMillis()
+                            // 27/11 : pour le Rapport (section « Son ») : combien de temps avant que Machine Head sorte
+                            runCatching {
+                                com.nuvio.tv.core.tools.Son666.event(app,
+                                    "Machine Head aux portes : prêt en ${start - askedAt} ms (préparé d'avance : ${if (preloaded) "oui" else "non"})")
+                            }
                         }
                         val t = android.os.SystemClock.uptimeMillis() - start
                         val total = playLength(p.duration.takeIf { it != androidx.media3.common.C.TIME_UNSET } ?: -1L)

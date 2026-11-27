@@ -97,7 +97,23 @@ object Bobine666 {
         vol = VOLUME
     }
 
-    fun fadeOut(durationMs: Long) {
+    /**
+     * 27/11 (David : « Machine Head démarre 2 s après l'ouverture des portes », en bas avec la barre de son) :
+     * quand plus rien ne joue, la sortie HDMI se met en veille et la barre met ~2 s à se réveiller pour le
+     * son suivant. La bobine reste donc là, à un volume qu'on n'entend pas ([TAIL_LEVEL]), [tailMs] de plus :
+     * la sortie reste éveillée et Machine Head sort tout de suite.
+     */
+    const val TAIL_LEVEL = 0.004f
+    const val DOORS_TAIL_MS = 2_500L
+
+    /** Règle pure (testée) : volume avec la traîne inaudible après le fondu (0 = on arrête). */
+    fun tailLevel(from: Float, tMs: Long, durationMs: Long, tailMs: Long): Float {
+        if (tailMs <= 0L) return fadeLevel(from, tMs, durationMs)
+        if (tMs >= durationMs + tailMs) return 0f
+        return maxOf(fadeLevel(from, tMs, durationMs), minOf(TAIL_LEVEL, from))
+    }
+
+    fun fadeOut(durationMs: Long, tailMs: Long = 0L) {
         val mp = player ?: return
         player = null
         val from = vol
@@ -105,7 +121,7 @@ object Bobine666 {
         val step = object : Runnable {
             override fun run() {
                 val t = android.os.SystemClock.uptimeMillis() - t0
-                val v = fadeLevel(from, t, durationMs)
+                val v = tailLevel(from, t, durationMs, tailMs)
                 runCatching { mp.setVolume(v, v) }
                 if (v <= 0f) { runCatching { mp.stop() }; runCatching { mp.release() } }
                 else handler.postDelayed(this, 40L)
@@ -208,7 +224,7 @@ fun StartupSplashScreen(
     LaunchedEffect(closing) {
         if (!closing) return@LaunchedEffect
         // 25/11 (David) : la bobine s'éteint pendant l'ouverture ; Machine Head attend que les portes soient ouvertes
-        Bobine666.fadeOut(Bobine666.CROSSFADE_MS)
+        Bobine666.fadeOut(Bobine666.CROSSFADE_MS, tailMs = Bobine666.DOORS_TAIL_MS)
         toDoor.animateTo(1f, tween(700))
         kotlinx.coroutines.delay(400)
         // 12/11 : les portes s'ouvrent et on avance sans s'arrêter, jusqu'à ce que les montants sortent

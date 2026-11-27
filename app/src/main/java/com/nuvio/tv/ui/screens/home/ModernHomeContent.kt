@@ -186,15 +186,27 @@ fun ModernHomeContent(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             // 25/11 (David) : derrière les portes du cinéma on voit déjà l'Abattoir, pas un écran noir avec
             // le petit pentacle ; le pentacle ne tourne que si ça charge encore une fois le cinéma parti
-            androidx.compose.foundation.Image(
-                painter = androidx.compose.ui.res.painterResource(com.nuvio.tv.R.drawable.fond_collections_666),
-                contentDescription = null,
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                alignment = Alignment.TopEnd,
-                modifier = Modifier.fillMaxSize()
-            )
-            Abattoir666Layer(visible = true, modifier = Modifier.fillMaxSize())
-            if (!com.nuvio.tv.ui.components.Splash666.visible.value) LoadingIndicator()
+            // 27/11 (David : « en ouvrant Top 10, on retourne dans l'Abattoir d'abord ») : une page de
+            // catégories (fond imposé : le cimetière) attend sur SON fond, jamais sur l'Abattoir
+            if (forcedBackdrop666 != null) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(com.nuvio.tv.R.drawable.bg_cimetiere_666),
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                LoadingIndicator()
+            } else {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(com.nuvio.tv.R.drawable.fond_collections_666),
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    alignment = Alignment.TopEnd,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Abattoir666Layer(visible = true, modifier = Modifier.fillMaxSize())
+                if (!com.nuvio.tv.ui.components.Splash666.visible.value) LoadingIndicator()
+            }
         }
         return
     }

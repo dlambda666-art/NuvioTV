@@ -26,6 +26,18 @@ object Son666 {
     /** Règle pure (testée) : on note seulement pendant les 10 premières minutes d'un film. */
     fun inWindow(startAt: Long, now: Long): Boolean = startAt > 0 && now - startAt in 0..WINDOW_MS
 
+    /** 27/11 : un événement noté à tout moment (Machine Head aux portes…), hors des 10 min d'un film. */
+    fun event(context: Context, what: String) {
+        runCatching {
+            val now = System.currentTimeMillis()
+            val z = java.time.Instant.ofEpochMilli(now).atZone(java.time.ZoneId.systemDefault())
+            val clock = "%02d/%02d %02d:%02d:%02d".format(z.dayOfMonth, z.monthValue, z.hour, z.minute, z.second)
+            val p = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val list = p.getString("log", "").orEmpty().lines().filter { it.isNotBlank() } + "$clock · $what"
+            p.edit().putString("log", keepLast(list, MAX).joinToString("\n")).apply()
+        }
+    }
+
     /** Règle pure (testée) : une ligne du journal (heure · temps depuis le début · quoi). */
     fun line(clock: String, sinceStartMs: Long, what: String): String =
         "$clock · +${sinceStartMs / 1000} s · $what"

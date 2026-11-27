@@ -75,4 +75,13 @@ class AbattoirSound666Test {
         assertTrue(AbattoirSound666.fadeGain(100, 40) < 0.02f)
         assertEquals(0.4f, AbattoirSound666.fadeGain(2_000, 40), 0.001f)
     }
+
+    @org.junit.Test fun `27-11 la bobine garde une traine inaudible pour que Machine Head sorte tout de suite`() {
+        val b = com.nuvio.tv.ui.components.Bobine666
+        assertEquals(0.7f, b.tailLevel(0.7f, 0, 3_900, 2_500), 0.001f)
+        assertEquals(b.TAIL_LEVEL, b.tailLevel(0.7f, 3_900, 3_900, 2_500), 0.0001f)   // fondu fini : traîne
+        assertEquals(b.TAIL_LEVEL, b.tailLevel(0.7f, 6_000, 3_900, 2_500), 0.0001f)
+        assertEquals(0f, b.tailLevel(0.7f, 6_400, 3_900, 2_500), 0.0001f)             // puis on arrête
+        assertEquals(0f, b.tailLevel(0.7f, 3_900, 3_900, 0), 0.0001f)                 // sans traîne : comme avant
+    }
 }
