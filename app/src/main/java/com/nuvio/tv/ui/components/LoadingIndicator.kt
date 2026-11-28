@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 
 /**
- * 666TV : partout où l'appli charge, le bouclier viking de David (bouclier_666) tourne, comme au cinéma (26/11 ; avant : pentagramme).
+ * 666TV : partout où l'appli charge, le médaillon de Riho (riho_666 : la chatte écaille de tortue de David, son nom en runes) tourne, comme au cinéma (28/11 ; avant : bouclier viking, pentagramme).
  * (`color` est gardé pour la compatibilité, le pentagramme a ses propres couleurs.)
  */
 @Composable
@@ -38,7 +38,7 @@ fun LoadingIndicator(
     )
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Image(
-            painter = painterResource(R.drawable.bouclier_666),
+            painter = painterResource(R.drawable.riho_666),
             contentDescription = null,
             modifier = Modifier
                 .sizeIn(maxWidth = NuvioTheme.spacing.xxxl, maxHeight = NuvioTheme.spacing.xxxl)

@@ -305,13 +305,13 @@ fun StartupSplashScreen(
                         .size(width = w * LOGO_W, height = w * LOGO_W * LOGO_RATIO)
                         .offset(x = w * LOGO_X, y = h * LOGO_Y)
                 )
-                // 26/11 (David) : son bouclier viking Lambda666 qui tourne : c'est le « chargement » (avant : pentagramme)
+                // 28/11 (David) : le médaillon de Riho (sa chatte, son nom en runes) qui tourne : c'est le « chargement » (avant : bouclier viking, pentagramme)
                 Image(
-                    painter = painterResource(R.drawable.bouclier_666),
+                    painter = painterResource(R.drawable.riho_666),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(w * 0.16f)
-                        .offset(x = w * 0.5f - w * 0.08f, y = h * 0.835f - w * 0.08f)
+                        .size(w * 0.172f)   // 28/11 : médaillon de Riho, même taille que sur l'image de lancement (330 px)
+                        .offset(x = w * 0.5f - w * 0.086f, y = h * 0.835f - w * 0.086f)
                         .graphicsLayer { rotationZ = spin }
                 )
             }
