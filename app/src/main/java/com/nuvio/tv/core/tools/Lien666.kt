@@ -194,10 +194,23 @@ object Lien666 {
     /** 22/11 : l'adresse de cette Shield sur le réseau de la maison (pour le QR code du rapport). */
     fun ownIp(context: Context): String? = ownIpv4(context.applicationContext)
 
+    /**
+     * 28/11 (David : le Rapport du haut ne s'ouvrait pas, adresse 10.2.0.2) : un VPN resté actif devient le
+     * réseau « principal » ; on prenait alors l'adresse du tunnel, injoignable depuis la maison (ni Rapport
+     * sur le téléphone, ni l'autre Shield). On prend toujours l'adresse du WiFi / du câble de la maison.
+     */
     private fun ownIpv4(app: Context): String? = runCatching {
         val cm = app.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-        cm.getLinkProperties(cm.activeNetwork)?.linkAddresses
+        fun v4(n: android.net.Network?): String? = cm.getLinkProperties(n)?.linkAddresses
             ?.map { it.address }?.firstOrNull { it is java.net.Inet4Address && !it.isLoopbackAddress }?.hostAddress
+        @Suppress("DEPRECATION")
+        val home = cm.allNetworks.firstOrNull { n ->
+            val caps = cm.getNetworkCapabilities(n) ?: return@firstOrNull false
+            !caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN) &&
+                (caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET) ||
+                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)) && v4(n) != null
+        }
+        v4(home) ?: v4(cm.activeNetwork)
     }.getOrNull()
 
     /** Cherche l'autre Shield FrankenStream sur le réseau (une fois toutes les 2 min au plus). */
